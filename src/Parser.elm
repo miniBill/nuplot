@@ -1,5 +1,6 @@
 module Parser exposing (parse)
 
+import Cleaner
 import Expression exposing (Expression)
 
 
@@ -200,7 +201,7 @@ import Expression exposing (Expression)
 
 type ParserError
     = EmptyInput
-    |Other String
+    | Other String
 
 
 parse : String -> Result ParserError Expression
@@ -248,7 +249,7 @@ parse string =
                     root_8 =
                         FunctionActivator.activeFunctions root_7
                 in
-                    Other "..."
+                Other "..."
 
 
 

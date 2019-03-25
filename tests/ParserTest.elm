@@ -1,7 +1,7 @@
 module ParserTest exposing (suite)
 
 import Expect
-import Expression exposing (BinaryOperation(..), Expression(..))
+import Expression exposing (BinaryOperation(..), Expression(..), minus, plus)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -30,55 +30,7 @@ suite =
         ]
 
 
-operation default op xs =
-    case xs of
-        [] ->
-            default
-
-        y :: ys ->
-            List.foldl (\e a -> BinaryOperation op a e) y ys
-
-
-plus =
-    operation (Integer 0) Addition
-
-
-minus x =
-    by [ Integer -1, x ]
-
-
-by =
-    operation (Integer 1) Multiplication
-
-
-div =
-    BinaryOperation Division
-
-
-pow =
-    BinaryOperation Power
-
-
-double x =
-    by [ Integer 2, x ]
-
-
-triple x =
-    by [ Integer 3, x ]
-
-
-ipow x y =
-    pow x <| Integer y
-
-
-square x =
-    ipow x 2
-
-
-sqroot x =
-    by [ Variable "sqrt", x ]
-
-tests : List (String, Expression)
+tests : List ( String, Expression )
 tests =
     let
         a =
