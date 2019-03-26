@@ -1,4 +1,4 @@
-module Expression exposing (BinaryOperation(..), Expression(..), by, div, double, equals, int, ipow, minus, plus, pow, sqroot, square, triple)
+module Expression exposing (BinaryOperation(..), Expression(..), by, div, double, equals, int, ipow, minus, partialSubstitute, plus, pow, sqroot, square, triple)
 
 
 type Expression
@@ -15,6 +15,10 @@ type BinaryOperation
     | Multiplication
     | Division
     | Power
+
+
+partialSubstitute expr =
+    Debug.todo "partialSubstitute"
 
 
 equals : Expression -> Expression -> Bool
@@ -62,7 +66,7 @@ equals l r =
             False
 
 
-int: Int->Expression
+int : Int -> Expression
 int =
     Integer
 
