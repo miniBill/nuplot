@@ -95,12 +95,12 @@ by =
     operation (Integer 1) Multiplication
 
 
-div =
-    BinaryOperation Division
+div x y =
+    BinaryOperation Division x y []
 
 
-pow =
-    BinaryOperation Power
+pow x y =
+    BinaryOperation Power x y []
 
 
 double x =
@@ -111,10 +111,12 @@ triple x =
     by [ Integer 3, x ]
 
 
+ipow : Expression -> Int -> Expression
 ipow x y =
     pow x <| Integer y
 
 
+square : Expression -> Expression
 square x =
     ipow x 2
 

@@ -1,8 +1,9 @@
 module ParserTest exposing (suite)
 
 import Expect
-import Expression exposing (BinaryOperation(..), Expression(..), minus, plus)
+import Expression exposing (BinaryOperation(..), Expression(..), by, div, double, minus, plus, sqroot, square, triple)
 import Parser
+import ParserModel
 import Test exposing (Test, describe, test)
 
 
@@ -17,12 +18,12 @@ suite =
                             Parser.parse from
                     in
                     case parsed of
-                        Ok e ->
-                            Expression.equals e to
+                        Ok ok ->
+                            Expression.equals ok to
                                 |> Expect.true "correctly parsed"
 
-                        Err e ->
-                            Expect.fail e
+                        Err err ->
+                            Expect.fail <| ParserModel.parserErrorToString err
     in
     describe "The Parser module"
         [ describe "Parser.parse" <|

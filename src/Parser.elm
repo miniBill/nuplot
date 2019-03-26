@@ -3,11 +3,16 @@ module Parser exposing (parse)
 import AssumptionParser
 import Cleaner
 import Expression exposing (Expression)
-import ParserModel exposing (..)
+import FunctionActivator
 import MatrixDivider
+import OperationActivator
+import ParserModel exposing (..)
+import TokenList exposing (TokenIterator, TokenList)
+
 
 type Token
     = CharToken Char
+
 
 tokenize : String -> List Token
 tokenize =
@@ -201,6 +206,30 @@ tokenize =
 -}
 
 
+aggregateNumbers : TokenIterator -> TokenList
+aggregateNumbers =
+    Debug.todo "aggregateNumbers"
+
+activateSyntax : TokenIterator -> TokenList
+activateSyntax =
+    Debug.todo "activateSyntax"
+
+
+processParenthesis : TokenIterator -> TokenList
+processParenthesis =
+    Debug.todo "processParenthesis"
+
+
+aggregateStrings : TokenIterator -> TokenList
+aggregateStrings =
+    Debug.todo "aggregateStrings"
+
+
+unfoldStrings : TokenIterator -> TokenList
+unfoldStrings =
+    Debug.todo "unfoldStrings"
+
+
 parse : String -> Result ParserError Expression
 parse string =
     case string of
@@ -227,12 +256,16 @@ parse string =
                 in
                 divided.rest
                     |> aggregateNumbers
+                    |> TokenList.getIterator
                     |> activateSyntax
+                    |> TokenList.getIterator
                     |> processParenthesis
+                    |> TokenList.getIterator
                     |> aggregateStrings
+                    |> TokenList.getIterator
                     |> unfoldStrings
-                    |> getIterator
+                    |> TokenList.getIterator
                     |> FunctionActivator.activateFunctions
                     |> OperationActivator.activateOperations
-                    |> toExpression
-                    |> (\out -> List.foldl (\( letter, expr ) -> partialSubstitute letter expr) out divided.iterator)
+                    |> TokenList.toExpression
+                    |> (\out -> List.foldl (\( letter, expr ) -> Expression.partialSubstitute letter expr) out divided.iterator)
