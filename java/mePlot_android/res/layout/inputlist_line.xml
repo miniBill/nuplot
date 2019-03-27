@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content"
+	android:gravity="center_vertical" >
+
+	<meplot.android.gui.input.NoImeEditText
+		android:id="@+id/line_text"
+		android:layout_width="0dip"
+		android:layout_height="wrap_content"
+		android:layout_gravity="left"
+		android:layout_weight="1"
+		android:hint="Add new equation..."
+		android:lines="1" />
+
+	<ImageButton
+		android:id="@+id/line_button"
+		style="@style/MinusButton"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content" />
+
+</LinearLayout>

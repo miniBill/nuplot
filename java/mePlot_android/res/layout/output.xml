@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent" android:layout_height="fill_parent">
+	<meplot.android.graphics.DrawView
+		android:id="@+id/output_view" android:layout_height="fill_parent"
+		android:layout_width="fill_parent" android:layout_x="0px"
+		android:layout_y="0px" android:visible="False">
+	</meplot.android.graphics.DrawView>
+	<meplot.android.graphics.OverlayView
+		android:id="@+id/output_overlay" android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:background="#0000"
+		android:layout_x="0px" android:layout_y="0px"></meplot.android.graphics.OverlayView>
+</AbsoluteLayout>

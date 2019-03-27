@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/tableLayout1" android:stretchColumns="*"
+	android:layout_height="wrap_content" android:layout_width="fill_parent">
+	<TableRow android:id="@+id/tableRow1" android:layout_width="0dip"
+		android:layout_height="wrap_content">
+		<Button style="@style/KeyboardButton" android:text="re"
+			android:id="@+id/functions2_re" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:text="im"
+			android:id="@+id/functions2_im" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:text="arg"
+			android:id="@+id/functions2_arg" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:text="mbrot"
+			android:id="@+id/functions2_mbrot" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:id="@+id/functions2_percent"
+			android:text="%" android:layout_width="0dip" android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:id="@+id/functions2_e"
+			android:text="e" android:layout_width="0dip" android:layout_height="wrap_content"></Button>
+	</TableRow>
+	<TableRow android:id="@+id/tableRow2" android:layout_width="0dip"
+		android:layout_height="wrap_content">
+		<Button style="@style/KeyboardButton" android:text="dd"
+			android:id="@+id/functions2_dd" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:text="ii"
+			android:id="@+id/functions2_ii" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:text="min"
+			android:id="@+id/functions2_min" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:text="max"
+			android:id="@+id/functions2_max" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:id="@+id/functions2_y"
+			android:text="y" android:layout_width="0dip" android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:id="@+id/functions2_i"
+			android:text="i" android:layout_width="0dip" android:layout_height="wrap_content"></Button>
+	</TableRow>
+	<TableRow android:id="@+id/tableRow3" android:layout_width="0dip"
+		android:layout_height="wrap_content">
+		<Button style="@style/KeyboardButton" android:text="("
+			android:id="@+id/functions2_lpar" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:text=")"
+			android:id="@+id/functions2_rpar" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:text=","
+			android:id="@+id/functions2_comma" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:text="hld"
+			android:id="@+id/functions2_hld" android:layout_width="0dip"
+			android:layout_height="wrap_content"></Button>
+		<Button style="@style/KeyboardButton" android:id="@+id/functions2_z"
+			android:text="z" android:layout_height="wrap_content"
+			android:layout_width="0dip"></Button>
+		<Button style="@style/KeyboardButton" android:id="@+id/functions2_p"
+			android:text="p" android:layout_height="wrap_content"
+			android:layout_width="0dip"></Button>
+	</TableRow>
+</TableLayout>

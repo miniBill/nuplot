@@ -1,0 +1,8 @@
+MIDlet-Version: 1.5.1
+MIDlet-Icon: /op.png
+MIDlet-Vendor: Leonardo Taglialegne
+MIDlet-Jar-URL: mePlot.jar
+MIDlet-Description: Plotter/Algebra system
+MicroEdition-Configuration: CLDC-1.1
+MicroEdition-Profile: MIDP-2.0
+MIDlet-Name: mePlot

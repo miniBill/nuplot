@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_height="wrap_content" android:stretchColumns="*"
+	android:id="@+id/dialpad_table" android:layout_width="wrap_content">
+	<TableRow android:layout_height="wrap_content" android:id="@+id/tableRow1"
+		android:layout_width="wrap_content">
+		<Button android:text="7" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button7" />
+		<Button android:text="8" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button8" />
+		<Button android:text="9" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button9" />
+		<Button android:text="+" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_buttonp" />
+	</TableRow>
+	<TableRow android:layout_height="wrap_content" android:id="@+id/tableRow2"
+		android:layout_width="wrap_content">
+		<Button android:text="4" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button4" />
+		<Button android:text="5" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button5" />
+		<Button android:text="6" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button6" />
+		<Button android:text="-" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_buttonm" />
+	</TableRow>
+	<TableRow android:layout_height="wrap_content" android:id="@+id/tableRow3"
+		android:layout_width="wrap_content">
+		<Button android:text="1" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button1" />
+		<Button android:text="2" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button2" />
+		<Button android:text="3" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button3" />
+		<Button android:text="*" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_buttons" />
+	</TableRow>
+	<TableRow android:layout_height="wrap_content" android:id="@+id/tableRow4"
+		android:layout_width="wrap_content">
+		<Button android:text="." android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button." />
+		<Button android:text="0" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_button0" />
+		<Button android:text="\@" android:id="@+id/dialpad_at"
+			android:layout_width="wrap_content" android:layout_height="wrap_content" />
+		<Button android:text="/" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:id="@+id/dialpad_buttond" />
+	</TableRow>
+</TableLayout>

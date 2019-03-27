@@ -1,0 +1,12 @@
+bin
+doc
+deployed
+.mtj.tmp
+.processed
+build
+dist
+.directory
+*/.settings/org.eclipse.core.resources.prefs
+res/it.res
+build.properties
+*/gen

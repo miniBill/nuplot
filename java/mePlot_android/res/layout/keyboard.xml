@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_height="fill_parent" android:id="@+id/input_superlayout"
+	android:layout_width="fill_parent" android:orientation="vertical">
+	<com.viewpagerindicator.CirclePageIndicator
+		android:layout_height="wrap_content" android:layout_width="fill_parent"
+		android:id="@+id/input_indicator"></com.viewpagerindicator.CirclePageIndicator>
+	<LinearLayout android:layout_width="fill_parent"
+		android:layout_height="fill_parent" android:orientation="horizontal"
+		android:id="@+id/input_layout">
+		<android.support.v4.view.ViewPager
+			android:id="@+id/input_flipper" android:layout_width="0dip"
+			android:layout_height="fill_parent" android:layout_weight="4">
+		</android.support.v4.view.ViewPager>
+		<TableLayout android:id="@+id/input_rcolumn"
+			android:layout_width="0dip" android:layout_height="wrap_content"
+			android:stretchColumns="*" android:layout_weight="1">
+			<TableRow android:id="@+id/tableRow1" android:layout_width="wrap_content"
+				android:layout_height="wrap_content">
+				<ImageButton android:src="@drawable/ic_input_delete"
+					android:layout_width="0dip" android:layout_height="fill_parent"
+					android:id="@+id/input_buttonb"></ImageButton>
+			</TableRow>
+			<TableRow android:id="@+id/tableRow2" android:layout_width="wrap_content"
+				android:layout_height="wrap_content">
+				<Button android:text="x" android:id="@+id/input_x"
+					android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
+			</TableRow>
+			<TableRow android:id="@+id/tableRow3" android:layout_width="wrap_content"
+				android:layout_height="wrap_content">
+				<Button android:text="y" android:id="@+id/input_y"
+					android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
+			</TableRow>
+			<TableRow android:id="@+id/tableRow4" android:layout_width="wrap_content"
+				android:layout_height="wrap_content">
+				<Button android:text="=" android:layout_width="wrap_content"
+					android:layout_height="wrap_content" android:id="@+id/input_buttone"></Button>
+			</TableRow>
+		</TableLayout>
+	</LinearLayout>
+</LinearLayout>

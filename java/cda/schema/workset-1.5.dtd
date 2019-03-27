@@ -1,0 +1,87 @@
+<!-- =================================================================== -->
+<!--                                                                     -->
+<!-- Workset DTD                                                         -->
+<!--                                                                     -->
+<!-- Author  : Manfred Duchrow                                           -->
+<!-- Version : 1.5 , 11/05/2007                                          -->
+<!--                                                                     -->
+<!-- History                                                             -->
+<!-- 1.0  09/08/2003 duma                                                -->
+<!-- 1.1  09/10/2003 duma  added  : Variables and Variable               -->
+<!-- 1.2  31/03/2006 duma  added  : Options                              -->
+<!-- 1.3  28/10/2006 duma  added  : shortContainerNames                  -->
+<!-- 1.4  28/01/2007 duma  added  : Architecture                         -->
+<!-- 1.5  11/05/2007 duma  added  : ContainerInfo, Container             -->
+<!--                                                                     -->
+<!-- Copyright (c) 2003-2007, by Manfred Duchrow. All rights reserved.   -->
+<!-- =================================================================== -->
+
+<!ELEMENT Workset ( WorksetName, Description?, Options?, Variables?,
+										Classpath, ViewFilters, IgnoreFilters, Architecture? ) >
+
+<!ATTLIST Workset
+  version ( 1 | 2 | 3 | 4 | 5 ) "5"
+>
+<!ELEMENT WorksetName ( #PCDATA ) >
+
+<!ELEMENT Description ( #PCDATA ) >
+
+<!ELEMENT Options EMPTY >
+<!ATTLIST Options
+  auto-reload ( yes | no ) "no"
+>
+
+<!ELEMENT Variables ( Variable* ) >
+
+<!ELEMENT Variable EMPTY >
+<!ATTLIST Variable
+  name CDATA #REQUIRED
+  value CDATA #REQUIRED
+>
+
+<!ELEMENT ViewFilters ( PatternFilter* ) >
+
+<!ELEMENT IgnoreFilters ( PatternFilter* ) >
+
+<!ELEMENT PatternFilter ( #PCDATA ) >
+
+<!ATTLIST PatternFilter
+  active ( yes | no ) "yes"
+>
+
+<!ELEMENT Classpath ( ClasspathPart*, ContainerInfo? ) >
+<!ATTLIST Classpath
+	shortContainerNames ( yes | no ) "no"
+>
+
+<!ELEMENT ClasspathPart ( #PCDATA ) >
+
+<!ELEMENT ContainerInfo ( Container* ) >
+
+<!ELEMENT Container EMPTY >
+<!ATTLIST Container
+	nameSuffix CDATA #REQUIRED
+	thirdPartyLibrary	( yes | no ) "no"
+>
+
+<!ELEMENT Architecture ( ComponentModel* ) >
+
+<!ELEMENT ComponentModel ( Component* ) >
+<!ATTLIST ComponentModel
+  name CDATA #REQUIRED
+>
+
+<!ELEMENT Component ( Description?, Container*, PackagePattern*, Component*, Dependencies? ) >
+<!ATTLIST Component
+  name CDATA #REQUIRED
+  java-version CDATA #IMPLIED
+>
+
+<!ELEMENT PackagePattern ( #PCDATA ) >
+
+<!ELEMENT Dependencies ( RequiresComponent* ) >
+
+<!ELEMENT RequiresComponent EMPTY >
+<!ATTLIST RequiresComponent
+  name CDATA #REQUIRED
+>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE project SYSTEM "Configuration.dtd"> 
+
+<!-- 
+	name 
+		the project name appears in the reports
+	numberOfCyclesFeedbackOnConsole (default = "1")
+		Every time the configured number of cycles is reached you get an extra warning in your shell
+	numberOfCycleAnalysisProgressFeedbackOnConsole (default = "1")
+		Every time the remaining number of nodes was accordingly reduced you get an extra info in your shell
+	checkLayerDependencies (default = "true")
+	checkSubsystemDependencies (default = "true")
+		"true"	all dependencies are checked against the allowed dependencies (depends-upon node)
+		"false" no dependency check
+	checkPackageDependencies (default = "true")
+		"true" 	all package dependencies are checked against the allowed dependencies (only packages are checked that have a package description)
+		"false" no dependency check
+	cumulateLayerDependencies (default = "true")
+	cumulateSubsystemDependencies (default = "true")
+	cumulatePackageDependencies (default = "true")
+	cumulateCompilationUnitDependencies (default = "true")
+	cumulateTypeDependencies (default = "true")
+		"true"	cumulate dependencies
+		"false" no cumulation
+	maxLayerCycles (default = "0")            		
+	maxSubsystemCycles (default = "0")      		
+	maxPackageCycles (default = "0")          		
+	maxCompilationUnitCycles (default = "0")  		
+	maxTypeCycles (default = "0")             		
+		Configure the cycle analysis behavior to avoid an endlessly running process. As an alternativ you can start the
+		dependometer with the command 'java -jar dependomter.jar -file <your configuration>' and terminate the analyis when
+		ever you want with 'ctrl-c' in the shell. This is possible past the point where in the shell the message 'Terminate
+		running analysis with 'ctrl-c'!' appears. Past this point you have also a valid html output. Only the cycle analyis
+		output gets updated. With a corresponding refresh in your browser you can see the updated information.   
+		"-2" 	no analysis
+		"-1" 	cycle existence check
+		"0"	like "-1" plus detailed cycle participation (which elements participate in cycles?) and levelization
+		">0"	like 0" but with the provided upper limit for detected cycles (stops if 'n' cycles are reached)
+-->
+<project 
+	name											= "mePlot" 
+	numberOfCyclesFeedbackOnConsole 				= "1"
+	numberOfCycleAnalysisProgressFeedbackOnConsole 	= "1"
+	checkLayerDependencies							= "true"
+	checkSubsystemDependencies 						= "true"
+	checkPackageDependencies 						= "true"
+	cumulateLayerDependencies 						= "false"
+	cumulateSubsystemDependencies 					= "false"
+	cumulatePackageDependencies 					= "true"
+	cumulateCompilationUnitDependencies 			= "true"
+	cumulateTypeDependencies 						= "true"
+	maxLayerCycles             						= "0"
+	maxSubsystemCycles         						= "0"
+	maxPackageCycles           						= "0"
+	maxCompilationUnitCycles   						= "0"
+	maxTypeCycles              						= "2000"
+>
+	<!-- DIRECTORIES -->
+	<input dir="mePlot_core/bin"/>
+	<input dir="mePlot_core/src"/>
+
+	<!-- INPUT PACKAGE FILTER -->
+	<include-package name="meplot.*"/>
+
+	<!-- OUTPUT LISTENER -->	    	
+   	<listener class="com.valtech.source.dependometer.ui.console.output.HtmlWriter" args="./result/dependometer"/>
+
+	<!-- ASSERTIONS -->
+	<assertion pattern="assert"/>
+	
+	<!-- SKIP -->
+	<skip prefix="java\..*"/>
+
+	<!-- THRESHOLDS -->
+	<lower-threshold name="Project.PercentageOfPackagesWithRcNotLessThanOne" value="70"/>
+		<!-- 70 percent of the packages may have an relational cohesion not less than 1.0 -->
+	<lower-threshold name="Project.AverageNumberOfAssertionsPerProjectInternalClass" value="1"/>
+		<!-- Checks the average existance of assertion statements per project internal class -->
+	<upper-threshold name="Project.ACD" value="20"/>
+		<!-- Checks the Average component dependency -->
+	<upper-threshold name="Project.PackageCyclesExist" value="0"/>
+		<!-- Checks if cycles are present -->
+	<upper-threshold name="Project.CompilationUnitCyclesExist" value="0"/>
+		<!-- Checks if cycles are present -->
+	<upper-threshold name="Project.TypeCyclesExist" value="0"/>
+		<!-- Checks if cycles are present -->
+	<upper-threshold name="Project.MaxDepthOfInheritance" value="6"/>
+		<!-- Checks the depth of inheritance excluding java.lang.Object -->
+</project>

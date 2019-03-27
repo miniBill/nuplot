@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical" >
+
+	<ListView
+		android:id="@+id/calc_list"
+		android:layout_width="fill_parent"
+		android:layout_height="0dip"
+		android:layout_weight="1" />
+
+	<LinearLayout
+		android:id="@+id/linearLayout1"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content" >
+
+		<meplot.android.gui.input.NoImeEditText
+			android:id="@+id/calc_input"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:lines="1" />
+
+		<ImageButton
+			android:id="@+id/calc_ime"
+			android:layout_width="65dip"
+			android:layout_height="fill_parent"
+			android:layout_weight="0"
+			android:src="@drawable/ic_menu_edit" />
+
+		<Button
+			android:id="@+id/calc_run"
+			android:layout_width="65dip"
+			android:layout_height="fill_parent"
+			android:layout_weight="0"
+			android:text="==" />
+	</LinearLayout>
+
+	<include
+		android:id="@+id/ime_include"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		layout="@layout/keyboard" />
+
+</LinearLayout>

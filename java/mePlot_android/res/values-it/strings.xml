@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="command_back">Indietro</string>
+	<string name="command_calc">Calcolatrice</string>
+	<string name="command_credits">Credits</string>
+	<string name="command_delete_equation">Elimina</string>
+	<string name="command_draw">Disegna</string>
+	<string name="command_guide">Guida</string>
+	<string name="command_home">Home</string>
+	<string name="command_settings">Impostazioni</string>
+	<string name="command_solve">Risolvi</string>
+	<string name="command_reset_zoom">Resetta zoom</string>
+	<string name="command_share">Condividi</string>
+	<string name="command_feedback">Feedback</string>
+	<string name="command_functions">Funzioni</string>
+	<string name="command_matrix">Matrici</string>
+	<string name="command_clear">Pulisci</string>
+	<string name="command_goto">Vai a</string>
+	<string name="command_ok">OK</string>
+	<string name="command_cancel">Annulla</string>
+
+	<string name="equations">Equazioni</string>
+
+	<string name="app_description">
+		Un plotter 2D/3D, con risolutore di equazioni.
+	</string>
+	<string name="app_name">mePlot Free</string>
+	<string name="user_label">Leonardo Taglialegne</string>
+	<string name="app_version">1.5.1</string>
+
+	<string name="credits">
+		Engine: Leonardo Taglialegne. Interfaccia per
+		Android: Leonardo Taglialegne.
+		Alcune icone sono di Joseph Wain /
+		<a href="glyphish.com">glyphish.com</a>. Per informazioni,
+		problemi e suggerimenti:
+		<a href="leonardo.taglialegne+mePlot@gmail.com">
+			leonardo.taglialegne+meplot@gmail.com
+		</a>
+	</string>
+
+	<string-array name="settings_derivatives_localized">
+		<item>Nessuna</item>
+		<item>Prima</item>
+		<item>Entrambe</item>
+	</string-array>
+	<string name="settings_derivatives_summary">
+		Seleziona quali derivate disegnare per le funzioni
+		date esplicitamente.
+	</string>
+	<string name="settings_derivatives_title">Disegna derivate</string>
+</resources>

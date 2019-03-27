@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+	<ListPreference android:key="Derivatives"
+		android:entryValues="@array/settings_derivatives"
+		android:defaultValue="None" android:summary="@string/settings_derivatives_summary"
+		android:title="@string/settings_derivatives_title" android:entries="@array/settings_derivatives_localized"></ListPreference>
+	<CheckBoxPreference android:title="Autoscale"
+		android:key="Autoscale" android:summary="Automatically choose scale for z coordinates in 3d plot."
+		android:defaultValue="False"></CheckBoxPreference>
+	<CheckBoxPreference android:title="Contour lines"
+		android:key="CleanContour" android:summary="Draw line of zeroes in contour and 3d plot."
+		android:defaultValue="True"></CheckBoxPreference>
+	<CheckBoxPreference android:title="Original grid"
+		android:key="Original" android:summary="Show original grid in complex deformation plot."
+		android:defaultValue="True"></CheckBoxPreference>
+	<CheckBoxPreference android:key="CustomIme"
+		android:title="Custom IME" android:summary="Use custom IME for input"
+		android:defaultValue="False"></CheckBoxPreference>
+</PreferenceScreen>

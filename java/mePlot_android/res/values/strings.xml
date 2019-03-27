@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="command_back">Back</string>
+	<string name="command_calc">Calculator</string>
+	<string name="command_credits">Credits</string>
+	<string name="command_delete_equation">Delete</string>
+	<string name="command_draw">Draw</string>
+	<string name="command_guide">Guide</string>
+	<string name="command_home">Home</string>
+	<string name="command_settings">Settings</string>
+	<string name="command_solve">Solve</string>
+	<string name="command_reset_zoom">Reset zoom</string>
+	<string name="command_share">Share</string>
+	<string name="command_feedback">Feedback</string>
+	<string name="command_functions">Functions</string>
+	<string name="command_matrix">Matrix</string>
+	<string name="command_clear">Pulisci</string>
+	<string name="command_goto">Goto</string>
+	<string name="command_ok">OK</string>
+	<string name="command_cancel">Cancel</string>
+
+	<string name="equations">Equations</string>
+
+	<string name="app_description">
+		A 2D/3D plotter, and equation solver.
+	</string>
+	<string name="app_name">mePlot Free</string>
+	<string name="user_label">Leonardo Taglialegne</string>
+	<string name="app_version">1.5.1</string>
+
+	<string name="credits">
+		Engine: Leonardo Taglialegne. Android interface:
+		Leonardo Taglialegne. Some icons by Joseph Wain /
+		<a href="glyphish.com">glyphish.com</a>
+		You can contact me for help,
+		problems or
+		suggestions at
+		<a href="leonardo.taglialegne+mePlot@gmail.com">
+			leonardo.taglialegne+meplot@gmail.com
+		</a>
+	</string>
+
+	<string-array name="settings_derivatives">
+		<item>None</item>
+		<item>First</item>
+		<item>Both</item>
+	</string-array>
+	<string-array name="settings_derivatives_localized">
+		<item>None</item>
+		<item>First</item>
+		<item>Both</item>
+	</string-array>
+	<string name="settings_derivatives_summary">
+		Select which derivatives you want drawn for
+		explicit functions.
+	</string>
+	<string name="settings_derivatives_title">Draw derivatives</string>
+</resources>

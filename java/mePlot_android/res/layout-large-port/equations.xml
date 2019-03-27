@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical" >
+
+	<include
+		android:id="@+id/equations_output"
+		android:layout_width="wrap_content"
+		android:layout_height="0dip"
+		android:layout_weight="2"
+		layout="@layout/output" >
+	</include>
+
+	<ListView
+		android:id="@+id/equations_list"
+		android:layout_width="fill_parent"
+		android:layout_height="0dip"
+		android:layout_gravity="fill_horizontal"
+		android:layout_weight="1"
+		android:scrollbars="vertical" >
+	</ListView>
+
+	<include
+		android:id="@+id/ime_include"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		layout="@layout/keyboard" >
+	</include>
+
+	<LinearLayout
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal" >
+
+		<ImageButton
+			android:id="@+id/equations_keyboard"
+			android:layout_width="fill_parent"
+			android:layout_height="55dip"
+			android:layout_weight="1"
+			android:src="@drawable/ic_menu_edit" >
+		</ImageButton>
+
+		<ImageButton
+			android:id="@+id/equations_draw"
+			android:layout_width="fill_parent"
+			android:layout_height="55dip"
+			android:layout_weight="1"
+			android:src="@drawable/ic_menu_view" >
+		</ImageButton>
+	</LinearLayout>
+
+</LinearLayout>
