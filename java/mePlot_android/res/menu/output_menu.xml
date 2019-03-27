@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-	<item android:id="@+id/menu_reset_zoom" android:icon="@drawable/ic_menu_revert"
-		android:title="@string/command_reset_zoom" android:showAsAction="ifRoom" />
-	<item android:id="@+id/menu_share" android:title="@string/command_share"
-		android:icon="@drawable/ic_menu_share" android:showAsAction="ifRoom" />
-	<item android:id="@+id/menu_goto" android:title="@string/command_goto"
-		android:icon="@drawable/ic_menu_share" android:showAsAction="ifRoom"></item>
-</menu>
