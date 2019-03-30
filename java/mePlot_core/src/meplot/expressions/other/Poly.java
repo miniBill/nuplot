@@ -82,12 +82,11 @@ public final class Poly extends Sum {
 	}
 
 	private static boolean isPower(final Expression next) {
-		if (next instanceof Power) {
-			final Power power = (Power) next;
-			if (power.getExponent() instanceof Int && power.getBase() instanceof Letter)
-				return true;
+		if (!(next instanceof Power)) {
+			return false;
 		}
-		return false;
+		final Power power = (Power) next;
+		return power.getExponent() instanceof Int && power.getBase() instanceof Letter;
 	}
 
 	public Expression getLeadingCoeff() {

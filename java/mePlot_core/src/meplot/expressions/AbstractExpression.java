@@ -33,7 +33,7 @@ public abstract class AbstractExpression implements Expression {
 		buffer.append('}');
 	}
 
-	public static boolean areIdentical(final Expression[] arg0, final Expression[] arg1) {
+	protected static boolean areIdentical(final Expression[] arg0, final Expression[] arg1) {
 		if (arg0.length != arg1.length)
 			return false;
 		for (int i = 0; i < arg0.length; i++)
@@ -261,7 +261,7 @@ public abstract class AbstractExpression implements Expression {
 
 	public abstract INumber value(IValueList letters);
 
-	public static boolean areIdentical(final IIterator<Expression> arg0, final IIterator<Expression> arg1) {
+	protected static boolean areIdentical(final IIterator<Expression> arg0, final IIterator<Expression> arg1) {
 		while (arg0.hasNext() && arg1.hasNext())
 			if (!arg0.next().isIdentical(arg1.next()))
 				return false;

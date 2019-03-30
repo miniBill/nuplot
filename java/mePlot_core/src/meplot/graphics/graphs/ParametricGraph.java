@@ -26,7 +26,7 @@ public class ParametricGraph extends AbstractGraph{
 		yexpr = clean(yfunc).applyConstants();
 	}
 
-	protected static final ISubstitutible clean(final ISubstitutible expr){
+	protected static ISubstitutible clean(final ISubstitutible expr){
 		if(expr instanceof BooleanOp){
 			final BooleanOp bexpr = (BooleanOp)expr;
 			return bexpr.getRight();

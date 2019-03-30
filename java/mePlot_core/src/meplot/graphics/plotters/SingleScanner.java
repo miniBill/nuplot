@@ -87,7 +87,7 @@ public final class SingleScanner extends NormalPlotter implements IntSettingsLis
 	private static int derivativeColor(final int color){
 		final int rcomp = (color & 0xFF0000) >> 16;
 		final int gcomp = (color & 0x00FF00) >> 8;
-		final int bcomp = (color & 0x0000FF) >> 0;
+		final int bcomp = (color & 0x0000FF);
 		final float newr = rcomp * 0.625f;
 		final float newg = gcomp * 0.625f;
 		final float newb = bcomp * 0.625f;
@@ -100,7 +100,7 @@ public final class SingleScanner extends NormalPlotter implements IntSettingsLis
 	private static int secondDerivativeColor(final int color){
 		final int newr = (color & 0xFF0000) >> 16;
 		final int newg = (color & 0x00FF00) >> 8;
-		final int newb = (color & 0x0000FF) >> 0;
+		final int newb = (color & 0x0000FF);
 		return REDPOS * (newr / 2) + GREENPOS * (newg / 2) + BLUEPOS * (newb / 2);
 	}
 

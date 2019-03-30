@@ -94,9 +94,7 @@ public class Matrix extends Tensor {
 			return true;
 		if (operation == Operation.MULTIPLICATION || operation == Operation.DIVISION)
 			return !elementAt.containsMatrix();
-		if (operation == Operation.ADDITION && getRows() == getCols() && !elementAt.containsMatrix())
-			return true;
-		return false;
+		return operation == Operation.ADDITION && getRows() == getCols() && !elementAt.containsMatrix();
 	}
 
 	public final boolean containsMatrix() {

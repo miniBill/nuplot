@@ -90,7 +90,7 @@ public final class L10N{
 	public static String get(final int index){
 		if(index >= ISTANCE.values.length){
 			if(index >= ENGLISH.length)
-				return Integer.toString(index) + "???";
+				return index + "???";
 			return ENGLISH[index] + "?!";
 		}
 		return ISTANCE.values[index];

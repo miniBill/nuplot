@@ -125,7 +125,7 @@ public final class ThreePlotter extends ExpressionPlotter implements BooleanSett
 	}
 
 	/**
-	 * Sets out to the projected point, or to {@link Point3#ZERO} on invalid input.
+	 * Sets out to the projected point, or to zero on invalid input.
 	 * 
 	 * @param out
 	 * @param pointx

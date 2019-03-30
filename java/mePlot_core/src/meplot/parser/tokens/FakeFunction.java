@@ -30,7 +30,7 @@ public final class FakeFunction extends Function{
 	}
 
 	public String getName(){
-		return "FAKE" + Integer.toString(num);
+		return "FAKE" + num;
 	}
 
 	protected INumber value(final INumber[] arg){

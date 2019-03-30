@@ -34,15 +34,13 @@ public final class Monomial extends Proxy{
 			return arg;
 		if(arg.isZero())
 			return this;
-		final int argvar = arg.var;
-		if(argvar != var)
+		if(arg.var != var)
 			throw new CalcException("Trying to add monomials of different vars");
 		return new Monomial(arg.coeff.add(coeff), var, deg);
 	}
 
 	public Monomial divide(final Monomial arg){
-		final int argvar = arg.var;
-		if(argvar != var)
+		if(arg.var != var)
 			throw new CalcException("Trying to divide monomials of different vars");
 		return new Monomial(coeff.divide(arg.coeff), var, deg - arg.deg);
 	}

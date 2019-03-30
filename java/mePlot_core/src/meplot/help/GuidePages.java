@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 public final class GuidePages{
 	public static final String HEADER = "<!DOCTYPE html>"
@@ -39,7 +40,7 @@ public final class GuidePages{
 		final StringBuffer buffer = new StringBuffer(HEADER);
 
 		final char[] cbuf = new char[1024];
-		final Reader inputReader = new InputStreamReader(input, "UTF-8");
+		final Reader inputReader = new InputStreamReader(input, StandardCharsets.UTF_8);
 		int read;
 		do{
 			read = inputReader.read(cbuf, 0, cbuf.length);

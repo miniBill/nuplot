@@ -51,7 +51,7 @@ public final class ExpressionTree {
 		}
 	}
 
-	public ExpressionTree getDeepFirstLeave() {
+	private ExpressionTree getDeepFirstLeave() {
 		if (child == null)
 			return this;
 		return child.getDeepFirstLeave();

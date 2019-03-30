@@ -117,9 +117,7 @@ public class Sum extends AbstractExpression implements ISortable {
 	}
 
 	private boolean canDivide(final ICalculable base) {
-		if (equals(base) || equals(SimplificationHelper.simplify(base.opposite())))
-			return true;
-		return false;
+		return equals(base) || equals(SimplificationHelper.simplify(base.opposite()));
 	}
 
 	public final boolean compatible(final Expression elementAt, final char operation) {
@@ -278,13 +276,11 @@ public class Sum extends AbstractExpression implements ISortable {
 				final Expression second = sub.next();
 
 				if (first.isZero()) {
-					final Expression toret = second;
-					return finishInner(after, first, second, toret);
+					return finishInner(after, first, second, second);
 				}
 
 				if (second.isZero()) {
-					final Expression toret = first;
-					return finishInner(after, first, second, toret);
+					return finishInner(after, first, second, first);
 				}
 
 				if (first.equals(second)) {

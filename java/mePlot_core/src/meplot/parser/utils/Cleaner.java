@@ -38,7 +38,7 @@ public final class Cleaner{
 		return toret;
 	}
 
-	public static String cut(final String string, final String search, final String replace){
+	private static String cut(final String string, final String search, final String replace){
 		String toret = string;
 		while(toret.indexOf(search) >= 0)
 			toret = Cleaner.replace(toret, search, replace);
@@ -65,7 +65,7 @@ public final class Cleaner{
 	 *            String to put as a replacement.
 	 * @return The input string, with replacements done.
 	 */
-	public static String replace(final String text, final String searchStr, final String replacementStr){
+	private static String replace(final String text, final String searchStr, final String replacementStr){
 		// String buffer to store str
 		final StringBuffer sbuffer = new StringBuffer();
 

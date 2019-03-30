@@ -17,7 +17,7 @@ public final class Arg extends ComplexFunction implements IHelpFunction{
 		return new Dou(dvalue(arg));
 	}
 
-	public double dvalue(final IComplex arg){
+	protected double dvalue(final IComplex arg){
 		return arg.arg();
 	}
 

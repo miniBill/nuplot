@@ -52,7 +52,7 @@ public final class CyclicElement extends AbstractInteger{ // NO_UCD
 		throw new CyclicException("Cyclic divided by noncyclic");
 	}
 
-	public CyclicElement divide(final CyclicElement arg){
+	private CyclicElement divide(final CyclicElement arg){
 		if(arg.field == field)
 			return multiply(arg.cinverse());
 		throw new CyclicException("Cyclic of different fields divided");

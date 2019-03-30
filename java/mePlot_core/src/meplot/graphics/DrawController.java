@@ -26,7 +26,7 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 	 * Use this value for initial delta if you want 3d stuff to be drawn with
 	 * increased delta.
 	 */
-	public static final int MAGIC_DELTA = 16;
+	private static final int MAGIC_DELTA = 16;
 
 	private static void drawEndline(final IGraphics graphics) {
 		graphics.setColor(0xFF0000);
@@ -193,7 +193,7 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		return freeroam && isFreeroamMode();
 	}
 
-	public boolean isFreeroamMode() {
+	private boolean isFreeroamMode() {
 		return selector.isFreeroamMode();
 	}
 
@@ -217,7 +217,7 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		}
 	}
 
-	public void tempMove(final float startx, final float currx, final float starty, final float curry) {
+	private void tempMove(final float startx, final float currx, final float starty, final float curry) {
 		if (lastDrawingWas3D) {
 			final double nstartx = 2.0 * startx / width - 0.5;
 			final double ncurrx = 2.0 * currx / width - 0.5;
@@ -384,7 +384,7 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 	}
 
 	public void scale(final double scale) {
-		Log.log(LogLevel.INFO, "Scaling: " + Double.toString(scale));
+		Log.log(LogLevel.INFO, "Scaling: " + scale);
 		this.scale = 1;
 		if (scale < 0) {
 			Log.log(LogLevel.INFO, "Scaling went negative");
@@ -395,13 +395,13 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		minx -= deltaX;
 		maxx += deltaX;
 		Log.log(LogLevel.INFO,
-				"Dx:" + Double.toString(deltaX) + " minx:" + Double.toString(minx) + " maxx:" + Double.toString(maxx));
+				"Dx:" + deltaX + " minx:" + minx + " maxx:" + maxx);
 
 		final double deltaY = (scale - 1) * (maxy - miny) / 2;
 		miny -= deltaY;
 		maxy += deltaY;
 		Log.log(LogLevel.INFO,
-				"Dy:" + Double.toString(deltaY) + " miny:" + Double.toString(miny) + " maxy:" + Double.toString(maxy));
+				"Dy:" + deltaY + " miny:" + miny + " maxy:" + maxy);
 
 		final double deltaZ = (scale - 1) * (maxz - minz) / 2;
 		minz -= deltaZ;
@@ -473,7 +473,7 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		drawing = false;
 	}
 
-	public void stopDrawingAndJoin() {
+	private void stopDrawingAndJoin() {
 		drawing = false;
 
 		if (last != null)

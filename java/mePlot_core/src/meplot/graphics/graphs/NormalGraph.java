@@ -78,8 +78,6 @@ public class NormalGraph extends AbstractGraph{
 	}
 
 	public final boolean isDisequation(){
-		if(expr instanceof BooleanOp && ((BooleanOp)expr).isDisequation())
-			return true;
-		return false;
+		return expr instanceof BooleanOp && ((BooleanOp) expr).isDisequation();
 	}
 }

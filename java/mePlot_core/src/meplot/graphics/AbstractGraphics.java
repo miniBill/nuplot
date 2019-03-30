@@ -34,7 +34,7 @@ public abstract class AbstractGraphics implements IGraphics{
 	}
 
 	// ESCA-JAVA0160:
-	protected void putPixel(final int pointx, final int pointy) throws DrawException{
+    private void putPixel(final int pointx, final int pointy) throws DrawException{
 		drawLine(pointx, pointy, pointx, pointy);
 	}
 

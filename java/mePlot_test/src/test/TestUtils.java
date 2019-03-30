@@ -23,7 +23,7 @@ import platform.log.LogLevel;
 
 public abstract class TestUtils {
 
-	public static final Expression parseOrFail(final String arg) {
+	public static Expression parseOrFail(final String arg) {
 		try {
 			return Parser.parse(arg);
 		} catch (final ParserException e) {
@@ -166,7 +166,7 @@ public abstract class TestUtils {
 				safety += 0;
 		}
 		// ESCA-JAVA0285:
-		if (next != null && current.equals(next) && next.toString().equals(current.toString())
+		if (current.equals(next) && next.toString().equals(current.toString())
 				&& !current.toFullString().equals(next.toFullString())) {
 			final String currString = current.toString();
 			final String currFullString = current.toFullString();
@@ -189,11 +189,11 @@ public abstract class TestUtils {
 		setLogToFail();
 	}
 
-	protected static final void setLogToFail() {
+	protected static void setLogToFail() {
 		Log.setLogger(new FilterLogger(LogLevel.INFO, new FailLog()));
 	}
 
-	protected static final void setLogToNormal() {
+	protected static void setLogToNormal() {
 		Log.setLogger(new FilterLogger(LogLevel.MAX, new FailLog()));
 	}
 
@@ -206,8 +206,8 @@ public abstract class TestUtils {
 		final double delta = val - target;
 		if (percent == 0)
 			assertEquals(
-					"Too low precision, expected " + Double.toString(target) + " got " + Double.toString(val)
-							+ ", so error was " + Double.toString(delta) + " but tolerance was 0",
+					"Too low precision, expected " + target + " got " + val
+							+ ", so error was " + delta + " but tolerance was 0",
 					delta, 0, Double.MIN_VALUE);
 		assertTrue(getPrecisionErrorMessage(target, val, percent, delta),
 				Math.abs(delta) <= percent / 100.0 * Math.abs(target));
@@ -215,10 +215,10 @@ public abstract class TestUtils {
 
 	private static String getPrecisionErrorMessage(final double target, final double val, final double percent,
 			final double delta) {
-		return "Too low precision, expected " + Double.toString(target) + " got " + Double.toString(val)
-				+ ", so error was " + Double.toString(Math.abs(delta / target) * 100.0) + "% that is"
-				+ Double.toString(delta) + " but tolerance was " + Double.toString(percent) + "%, that is "
-				+ Double.toString(percent / 100.0 * Math.abs(target));
+		return "Too low precision, expected " + target + " got " + val
+				+ ", so error was " + Math.abs(delta / target) * 100.0 + "% that is"
+				+ delta + " but tolerance was " + percent + "%, that is "
+				+ percent / 100.0 * Math.abs(target);
 	}
 
 	protected static Matrix matrixOrFail(final String string) {

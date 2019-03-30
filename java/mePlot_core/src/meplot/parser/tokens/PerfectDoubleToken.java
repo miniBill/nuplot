@@ -86,7 +86,7 @@ public final class PerfectDoubleToken extends Token {
 	}
 
 	public String toString() {
-		return Integer.toString(intPart) + '.' + Integer.toString(decPart) + '@' + Integer.toString(infPart);
+		return Integer.toString(intPart) + '.' + decPart + '@' + infPart;
 	}
 
 	public Expression toExpression() {

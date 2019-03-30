@@ -21,8 +21,6 @@ public final class DrawMode{
 		if(!(obj instanceof DrawMode))
 			return false;
 		final DrawMode other = (DrawMode)obj;
-		if(value != other.value)
-			return false;
-		return true;
+		return value == other.value;
 	}
 }

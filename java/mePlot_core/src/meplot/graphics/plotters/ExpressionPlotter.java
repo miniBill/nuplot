@@ -11,6 +11,6 @@ public abstract class ExpressionPlotter extends NormalPlotter{
 		plot(graph.getExpression(), graphics, delta, controller);
 	}
 
-	public abstract void plot(Expression expr, IGraphics graphics, int delta,
-			IDrawController controller) throws DrawException;
+	protected abstract void plot(Expression expr, IGraphics graphics, int delta,
+                                 IDrawController controller) throws DrawException;
 }
