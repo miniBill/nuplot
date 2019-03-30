@@ -202,9 +202,7 @@ public final class FunctionToken extends Token {
 				return index;
 		}
 
-		final IIterator<UserFunction> iterator = userFunctions.getIterator();
-		while (iterator.hasNext()) {
-			final UserFunction uff = iterator.next();
+		for (UserFunction uff : userFunctions) {
 			final int index = name.indexOf(uff.getName());
 			if (index >= 0)
 				return index;

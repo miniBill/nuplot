@@ -53,12 +53,6 @@ public final class ExpressionTree {
 		}
 	}
 
-	private ExpressionTree getDeepFirstLeave() {
-		if (child == null)
-			return this;
-		return child.getDeepFirstLeave();
-	}
-
 	public IExpressionIterable getValue() {
 		return value;
 	}

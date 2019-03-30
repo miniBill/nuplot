@@ -1,7 +1,6 @@
 package platform.persistence;
 
 import platform.Platform;
-import platform.lists.IIterator;
 import platform.lists.List;
 import platform.persistence.listeners.BooleanSettingsListener;
 import platform.persistence.listeners.IntSettingsListener;
@@ -13,27 +12,18 @@ public final class Persistence {
 	private static final List<IntSettingsListener> INTLISTENERS = new List<IntSettingsListener>();
 
 	public static void changedSetting(final String name, final boolean arg) {
-		final IIterator<BooleanSettingsListener> iterator = BOOLEANLISTENERS.getIterator();
-		while (iterator.hasNext()) {
-			final BooleanSettingsListener next = iterator.next();
-			next.changedSetting(name, arg);
-		}
+		for (BooleanSettingsListener curr : BOOLEANLISTENERS)
+			curr.changedSetting(name, arg);
 	}
 
 	public static void changedSetting(final String name, final int arg) {
-		final IIterator<IntSettingsListener> iterator = INTLISTENERS.getIterator();
-		while (iterator.hasNext()) {
-			final IntSettingsListener next = iterator.next();
-			next.changedSetting(name, arg);
-		}
+		for (IntSettingsListener curr : INTLISTENERS)
+			curr.changedSetting(name, arg);
 	}
 
 	public static void changedSetting(final String name, final String arg) {
-		final IIterator<StringSettingsListener> iterator = STRINGLISTENERS.getIterator();
-		while (iterator.hasNext()) {
-			final StringSettingsListener next = iterator.next();
-			next.changedSetting(name, arg);
-		}
+		for (StringSettingsListener curr : STRINGLISTENERS)
+			curr.changedSetting(name, arg);
 	}
 
 	private static SettingsBackend getBackend() {

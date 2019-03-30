@@ -9,7 +9,6 @@ import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.IReal;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.IExpressionMonicFunctionVisitor;
-import platform.lists.IIterator;
 
 public abstract class ComplexFunction extends AbstractComplexFunction {
 	protected ComplexFunction(final Expression value) {

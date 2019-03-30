@@ -13,24 +13,24 @@ import meplot.solver.AbstractSolver;
 
 import org.junit.Test;
 
-public final class LambdaTest extends TestUtils{
-	private static Lambda lambdaOrFail(final String string){
+public final class LambdaTest extends TestUtils {
+	private static Lambda lambdaOrFail(final String string) {
 		final Object candidate = parseOrFail(string);
-		if(candidate instanceof Lambda)
-			return (Lambda)candidate;
+		if (candidate instanceof Lambda)
+			return (Lambda) candidate;
 		fail(string + " did not parse to Lambda");
 		return null;
 	}
 
 	@Test
-	public void testParse(){
+	public void testParse() {
 		final Lambda toInverse = lambdaOrFail("x=>(1/x)");
 		final Expression applied = toInverse.multiply(new Letter('a'));
 		assertSimplify(applied, "1/a");
 	}
 
 	@Test
-	public void testCompose(){
+	public void testCompose() {
 		final Lambda toInverse = lambdaOrFail("x=>(1/x)");
 		final Lambda toMirror = lambdaOrFail("z=>(1-z)");
 		final Expression compose1 = toInverse.multiply(toMirror);
@@ -38,15 +38,15 @@ public final class LambdaTest extends TestUtils{
 		final Expression compose2 = toMirror.multiply(toInverse);
 		assertSimplify(compose2, "z=>((-1+z)/z)");
 		final Object scon2 = SimplificationHelper.simplify(compose2);
-		if(!(scon2 instanceof Lambda))
+		if (!(scon2 instanceof Lambda))
 			fail("compose2 wasn't lambda");
-		final Lambda lcom2 = (Lambda)scon2;
+		final Lambda lcom2 = (Lambda) scon2;
 		final Lambda brother = new Lambda('x', parseOrFail("(x-1)/x"));
 		assertTrue("Changing variable doesn't make equal", lcom2.equals(brother));
 	}
 
 	@Test
-	public void testSum(){
+	public void testSum() {
 		final Lambda toInverse = lambdaOrFail("x=>(1/x)");
 		final Lambda toMirror = lambdaOrFail("z=>(1-z)");
 		final ICalculable compose = toMirror.multiply(toInverse);
@@ -55,11 +55,12 @@ public final class LambdaTest extends TestUtils{
 	}
 
 	@Test
-	public void testSpan(){
+	public void testSpan() {
 		final Expression span = parseOrFail("span(z=>(1/z))");
 		final Expression sym = SimplificationHelper.simplify(span);
 		assertEquals("Aww :(", "{z=>1/z,z=>z}", sym.toString());
-		assertEquals("Aww2 :(", "{z=>1/z,z=>z}", SimplificationHelper.stepSimplify(sym).getLast().toString());
+		assertEquals("Aww2 :(", "{z=>1/z,z=>z}",
+				SimplificationHelper.stepSimplify(sym).getIterator().getLast().toString());
 
 		final Expression span2 = parseOrFail("span(z=>(1-z),z=>(1/z))");
 		AbstractSolver.activateCross();
@@ -67,7 +68,7 @@ public final class LambdaTest extends TestUtils{
 		final Expression res = SimplificationHelper.simplify(span2);
 		setLogToFail();
 		AbstractSolver.deactivateCross();
-		assertEquals("Ou?", "{z=>(1-z),z=>1/z,z=>z,z=>(z-1)/z,z=>z/(z-1),"
-				+ "z=>1/(1-z),z=>(-z)/(1-z)}", Cleaner.clean(res.toString()));
+		assertEquals("Ou?", "{z=>(1-z),z=>1/z,z=>z,z=>(z-1)/z,z=>z/(z-1)," + "z=>1/(1-z),z=>(-z)/(1-z)}",
+				Cleaner.clean(res.toString()));
 	}
 }

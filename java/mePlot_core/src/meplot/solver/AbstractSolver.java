@@ -54,7 +54,7 @@ public abstract class AbstractSolver implements ISolver {
 		final IIterator<Expression>[] chains = new IIterator[root.length()];
 		final IIterator<Expression> iterator = root.getIterator();
 		for (int i = 0; i < chains.length; i++)
-			chains[i] = SimplificationHelper.stepSimplify(iterator.next());
+			chains[i] = SimplificationHelper.stepSimplify(iterator.next()).getIterator();
 		while (true) {
 			final ExpressionList current = new ExpressionList();
 			boolean done = true;
@@ -141,9 +141,8 @@ public abstract class AbstractSolver implements ISolver {
 	}
 
 	private static boolean hasLetter(final IExpressionIterable equations, final char letter) {
-		final IIterator<Expression> iterator = equations.getIterator();
-		while (iterator.hasNext())
-			if (iterator.next().hasLetter(letter))
+		for (Expression curr : equations)
+			if (curr.hasLetter(letter))
 				return true;
 		return false;
 	}

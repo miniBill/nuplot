@@ -3,7 +3,7 @@ package meplot.expressions.visitors.simplification;
 import meplot.expressions.Expression;
 import meplot.expressions.IOutputtable;
 import meplot.expressions.list.ExpressionList;
-import platform.lists.IIterator;
+import platform.lists.IIterable;
 import meplot.expressions.list.SimplifyList;
 import meplot.expressions.numbers.Int;
 import platform.log.Log;
@@ -43,12 +43,12 @@ public final class SimplificationHelper {
 		return next;
 	}
 
-	public static IIterator<Expression> stepSimplify(final Expression arg) {
+	public static IIterable<Expression> stepSimplify(final Expression arg) {
 		if (arg.isSimplified())
-			return new ExpressionList(arg).getIterator();
+			return new ExpressionList(arg);
 		String argstring = arg.toString();
 		if ("0".equals(argstring))// otherwise it could FAIL
-			return new ExpressionList(Int.ZERO).getIterator();
+			return new ExpressionList(Int.ZERO);
 		Expression current = Int.ZERO;
 		Expression next = arg;
 		final int max = argstring.length() > 25 ? 10 : 100;
@@ -78,7 +78,7 @@ public final class SimplificationHelper {
 				break;
 		}
 		checkIdentical(current, next, "Next is null in stepSimplify()");
-		return toret.getIterator();
+		return toret;
 	}
 
 	private static void checkIdentical(final IOutputtable current, final IOutputtable next, final String error) {
