@@ -21,7 +21,7 @@ public class PlotterTest extends TestUtils {
 		final AbstractGraphics graphics = new StringGraphics();
 		final Expression expr = parseOrFail("ode(1-xx,0,0)");
 		final OdeGraph graph = new OdeGraph(expr, 0xFF0000);
-		final List<Graph> graphList = new List<Graph>();
+		final List<Graph> graphList = new List<>();
 		graphList.add(graph);
 		try {
 			controller.doPaint(graphics, graphList, 100, 100).join();
@@ -63,7 +63,7 @@ public class PlotterTest extends TestUtils {
 		final AbstractGraphics graphics = new StringGraphics();
 		final ISubstitutible expr = parseOrFail(function);
 		final NormalGraph graph = new NormalGraph(expr, 0xFF0000);
-		final List<Graph> graphList = new List<Graph>();
+		final List<Graph> graphList = new List<>();
 		graphList.add(graph);
 		try {
 			controller.doPaint(graphics, graphList, 10, 10).join();

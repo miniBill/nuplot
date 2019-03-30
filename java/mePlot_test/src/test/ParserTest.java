@@ -442,7 +442,7 @@ public final class ParserTest extends TestUtils {
 		} catch (final ParserException e) {
 			fail(e.toString());
 		}
-		FunctionToken.setUserFunctions(new List<UserFunction>(ball));
+		FunctionToken.setUserFunctions(new List<>(ball));
 		assertSimplify("ball(r,2,x,y)", "sqrt(x^2+y^2)<r");
 		// clean up
 		FunctionToken.setUserFunctions(new List<UserFunction>());
