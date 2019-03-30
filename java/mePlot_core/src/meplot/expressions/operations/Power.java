@@ -177,7 +177,7 @@ public final class Power extends AbstractExpression implements IPower {
 		}
 		if (expr instanceof Multiplication) {
 			final Multiplication mexpr = (Multiplication) expr;
-			inner = mexpr.getFactors();
+			inner = mexpr.getIterator();
 		}
 		if (expr instanceof Sqrt)
 			return isSortOfNumber(((Sqrt) expr).getArgument());
@@ -293,7 +293,7 @@ public final class Power extends AbstractExpression implements IPower {
 				return new Cos(Int.ONE).add(Letter.I.multiply(new Sin(Int.ONE)));
 			if (exp instanceof Multiplication) {
 				final Multiplication mulexp = (Multiplication) exp;
-				if (mulexp.getFactors().contains(Letter.I)) {
+				if (mulexp.getIterator().contains(Letter.I)) {
 					final Expression arg = mulexp.divide(Letter.I);
 					return new Cos(arg).add(Letter.I.multiply(new Sin(arg)));
 				}
@@ -304,7 +304,7 @@ public final class Power extends AbstractExpression implements IPower {
 
 	private static Expression finishSimplificationMultiplication(final Multiplication base, final Expression exp) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = base.getFactors();
+		final IIterator<Expression> iterator = base.getIterator();
 		while (iterator.hasNext())
 			toret.add(new Power(iterator.next(), exp));
 		return new Multiplication(toret);

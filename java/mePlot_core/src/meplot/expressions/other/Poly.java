@@ -57,7 +57,7 @@ public final class Poly extends Sum {
 		if (next instanceof Monomial)
 			return true;
 		if (next instanceof Multiplication) {
-			final IIterator<Expression> iterator = ((Multiplication) next).getFactors();
+			final IIterator<Expression> iterator = ((Multiplication) next).getIterator();
 			while (iterator.hasNext())
 				if (!isMonomial(iterator.next(), var))
 					return false;
@@ -113,7 +113,7 @@ public final class Poly extends Sum {
 		if (expr instanceof INumber)
 			return expr;
 		if (expr instanceof Multiplication) {
-			final IIterator<Expression> iterator = ((Multiplication) expr).getFactors();
+			final IIterator<Expression> iterator = ((Multiplication) expr).getIterator();
 			Expression toret = Int.ONE;
 			while (iterator.hasNext()) {
 				final Expression curr = iterator.next();
@@ -357,7 +357,7 @@ public final class Poly extends Sum {
 		if (expr instanceof INumber)
 			return 0;
 		if (expr instanceof Multiplication) {
-			final IIterator<Expression> iterator = ((Multiplication) expr).getFactors();
+			final IIterator<Expression> iterator = ((Multiplication) expr).getIterator();
 			int toret = 0;
 			while (iterator.hasNext()) {
 				final Expression curr = iterator.next();

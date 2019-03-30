@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "java"
+		},
+		{
+			"path": "elm"
+		}
+	],
+	"settings": {
+		"java.dependency.packagePresentation": "flat",
+		"maven.view": "flat"
+	}
+}

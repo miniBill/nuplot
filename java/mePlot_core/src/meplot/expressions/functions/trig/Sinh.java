@@ -12,33 +12,33 @@ import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Multiplication;
 import meplot.expressions.visitors.IExpressionMonicFunctionVisitor;
 
-public final class Sinh extends NonsymbolicMonicFunction{
-	public Sinh(final Expression expression){
+public final class Sinh extends NonsymbolicMonicFunction {
+	public Sinh(final Expression expression) {
 		super(expression);
 	}
 
-	public IFunction fill(final Expression expr){
+	public IFunction fill(final Expression expr) {
 		return new Sinh(expr);
 	}
 
-	public INumber value(final INumber arg){
+	public INumber value(final INumber arg) {
 		return TrigMath.sinh(arg);
 	}
 
-	public double dvalue(final INumber arg){
+	public double dvalue(final INumber arg) {
 		return TrigMath.dsinh(arg);
 	}
 
-	public String getName(){
+	public String getName() {
 		return "sinh";
 	}
 
-	public Expression innerSimplify(final Expression val){
-		if(val.isZero())
+	public Expression innerSimplify(final Expression val) {
+		if (val.isZero())
 			return Int.ZERO;
-		if(val instanceof Multiplication){
-			final Multiplication mval = (Multiplication)val;
-			if(mval.getFactors().contains(Letter.I))
+		if (val instanceof Multiplication) {
+			final Multiplication mval = (Multiplication) val;
+			if (mval.getIterator().contains(Letter.I))
 				return new Sin(val.divide(Letter.I)).multiply(Letter.I);
 		}
 		final ICalculable left = new Exp(val);
@@ -46,15 +46,15 @@ public final class Sinh extends NonsymbolicMonicFunction{
 		return left.add(right).divide(Int.TWO);
 	}
 
-	public String getCategory(){
+	public String getCategory() {
 		return FunctionCategory.TRIGONOMETRY;
 	}
 
-	protected double fdvalue(final double arg){
+	protected double fdvalue(final double arg) {
 		return TrigMath.sinh(arg);
 	}
 
-	public Expression accept(final IExpressionMonicFunctionVisitor visitor){
+	public Expression accept(final IExpressionMonicFunctionVisitor visitor) {
 		return visitor.visit(this);
 	}
 }

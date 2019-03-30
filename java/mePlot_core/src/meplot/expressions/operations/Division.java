@@ -30,7 +30,7 @@ public final class Division extends AbstractExpression implements IDivision, Int
 			this.arg = arg;
 		}
 
-		public IIterator<Expression> getFactors() {
+		public IIterator<Expression> getIterator() {
 			return new ExpressionList(arg).getIterator();
 		}
 
@@ -38,6 +38,11 @@ public final class Division extends AbstractExpression implements IDivision, Int
 			if (arg instanceof INumber)
 				return (INumber) arg;
 			return Int.ONE;
+		}
+
+		@Override
+		public boolean contains(Expression arg, int start) {
+			return start == 0 && this.arg.equals(arg);
 		}
 	}
 
@@ -167,11 +172,11 @@ public final class Division extends AbstractExpression implements IDivision, Int
 
 	private static Expression crossSimplify(final IMultiplication numerator, final IMultiplication denominator) {
 		final IExpressionList newNumList = new ExpressionList();
-		final IIterator<Expression> nFactorsIt = numerator.getFactors();
+		final IIterator<Expression> nFactorsIt = numerator.getIterator();
 		while (nFactorsIt.hasNext()) {
 			final Expression currentN = nFactorsIt.next();
 			final IExpressionList newDenList = new ExpressionList();
-			final IIterator<Expression> dFactorsIt = denominator.getFactors();
+			final IIterator<Expression> dFactorsIt = denominator.getIterator();
 			while (dFactorsIt.hasNext()) {
 				final Expression currentD = dFactorsIt.next();
 				if (currentN.compatible(currentD, Operation.DIVISION)) {
@@ -189,16 +194,16 @@ public final class Division extends AbstractExpression implements IDivision, Int
 		}
 
 		final Expression nnum;
-		if (numerator.getFactors().length() == 1)
-			nnum = numerator.getFactors().next();
+		if (numerator.length() == 1)
+			nnum = numerator.getFirst();
 		else if (numerator instanceof Expression)
 			nnum = (Expression) numerator;
 		else
 			throw new CalcException("Awfully wrong numerator in Division#crossSimplify");
 
 		final Expression nden;
-		if (denominator.getFactors().length() == 1)
-			nden = denominator.getFactors().next();
+		if (denominator.length() == 1)
+			nden = denominator.getFirst();
 		else if (denominator instanceof Expression)
 			nden = (Expression) denominator;
 		else

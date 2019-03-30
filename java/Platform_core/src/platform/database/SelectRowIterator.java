@@ -23,12 +23,12 @@ public class SelectRowIterator implements IIterator<Row> {
 
 	@Override
 	public int length() {
-		throw new RuntimeException("NIE");
+		return iterator.length();
 	}
 
 	@Override
 	public boolean isEmpty() {
-		throw new RuntimeException("NIE");
+		return iterator.isEmpty();
 	}
 
 	@Override

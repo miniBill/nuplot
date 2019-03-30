@@ -33,7 +33,7 @@ public final class Im extends ComplexFunction {
 		if (arg instanceof Sum)
 			return expandSum((Sum) arg);
 		if (arg instanceof Multiplication) {
-			final IIterator<Expression> iterator = ((Multiplication) arg).getFactors();
+			final IIterator<Expression> iterator = ((Multiplication) arg).getIterator();
 			if (!iterator.hasNext())
 				return Int.ZERO;
 			final Expression first = iterator.next();

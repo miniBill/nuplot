@@ -93,7 +93,7 @@ public final class PolynomialMath {
 	}
 
 	private static IExpressionList divisors(final Multiplication expr) {
-		final IIterator<Expression> factors = expr.getFactors();
+		final IIterator<Expression> factors = expr.getIterator();
 		final IExpressionList[] gens = new IExpressionList[factors.length()];
 		gen(factors, gens);
 		final int[] indexes = new int[gens.length];

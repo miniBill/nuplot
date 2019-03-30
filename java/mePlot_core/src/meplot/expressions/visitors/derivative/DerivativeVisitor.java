@@ -63,9 +63,9 @@ public class DerivativeVisitor implements IExpressionVisitor {
 	}
 
 	public Expression visit(final IMultiplication multiplication) {
-		final IIterator<Expression> factors = multiplication.getFactors();
-		if (factors.isEmpty())
+		if (multiplication.isEmpty())
 			return Int.ZERO;
+		final IIterator<Expression> factors = multiplication.getIterator();
 		final Expression first = factors.next();
 		if (!factors.hasNext())
 			return genvisit(first);

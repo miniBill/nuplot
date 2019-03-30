@@ -36,7 +36,7 @@ public final class Cos extends NonsymbolicMonicFunction {
 			return Int.ONE;
 		if (val instanceof Multiplication) {
 			final Multiplication mval = (Multiplication) val;
-			if (mval.getFactors().contains(Int.MINUSONE))
+			if (mval.getIterator().contains(Int.MINUSONE))
 				return fill(val.opposite());
 		}
 		if (val instanceof Letter && ((Letter) val).getLetter() == 'p')
