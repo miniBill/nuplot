@@ -8,7 +8,6 @@ import meplot.expressions.Letter;
 import meplot.expressions.other.Poly;
 import meplot.expressions.tree.ExpressionTree;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
-import meplot.solver.AbstractSolver;
 
 import org.junit.Test;
 

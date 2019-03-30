@@ -3,7 +3,7 @@ package meplot.expressions.functions.complex;
 import meplot.expressions.Expression;
 import meplot.expressions.ICalculable;
 import meplot.expressions.functions.IFunction;
-import meplot.expressions.list.IExpressionIterator;
+import platform.lists.IIterator;
 import meplot.expressions.numbers.IComplex;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.IReal;
@@ -12,29 +12,29 @@ import meplot.expressions.operations.Multiplication;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.IExpressionComplexFunctionVisitor;
 
-public final class Re extends ComplexFunction{
-	public Re(final Expression value){
+public final class Re extends ComplexFunction {
+	public Re(final Expression value) {
 		super(value);
 	}
 
-	public IReal value(final IComplex arg){
+	public IReal value(final IComplex arg) {
 		return arg.real();
 	}
 
-	public IFunction fill(final Expression expr){
+	public IFunction fill(final Expression expr) {
 		return new Re(expr);
 	}
 
-	public String getName(){
+	public String getName() {
 		return "re";
 	}
 
-	protected Expression innerSimplify(final Expression arg){
-		if(arg instanceof Sum)
-			return expandSum((Sum)arg);
-		if(arg instanceof Multiplication){
-			final IExpressionIterator iterator = ((Multiplication)arg).getFactors();
-			if(!iterator.hasNext())
+	protected Expression innerSimplify(final Expression arg) {
+		if (arg instanceof Sum)
+			return expandSum((Sum) arg);
+		if (arg instanceof Multiplication) {
+			final IIterator<Expression> iterator = ((Multiplication) arg).getFactors();
+			if (!iterator.hasNext())
 				return Int.ZERO;
 			final Expression first = iterator.next();
 			final Expression rest = new Multiplication(iterator);
@@ -42,20 +42,20 @@ public final class Re extends ComplexFunction{
 			final ICalculable right = new Im(first).multiply(new Im(rest));
 			return left.add(right.multiply(Int.MINUSONE));
 		}
-		if(arg instanceof INumber)
-			return ((INumber)arg).real();
+		if (arg instanceof INumber)
+			return ((INumber) arg).real();
 		return fill(arg);
 	}
 
-	protected double fdvalue(final double arg){
+	protected double fdvalue(final double arg) {
 		return arg;
 	}
 
-	protected double dvalue(final IComplex arg){
+	protected double dvalue(final IComplex arg) {
 		return arg.real().toDouble();
 	}
 
-	public Expression accept(final IExpressionComplexFunctionVisitor visitor){
+	public Expression accept(final IExpressionComplexFunctionVisitor visitor) {
 		return visitor.visit(this);
 	}
 }

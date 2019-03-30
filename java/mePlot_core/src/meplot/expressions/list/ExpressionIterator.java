@@ -1,50 +1,51 @@
 package meplot.expressions.list;
 
 import meplot.expressions.Expression;
-import platform.lists.IEquatableIterable;
+import platform.lists.IIterable;
+import platform.lists.IIterator;
 import platform.lists.IToString;
 import platform.lists.ToStringIterator;
 
-public class ExpressionIterator extends ToStringIterator implements IExpressionIterator{
+public class ExpressionIterator extends ToStringIterator<Expression> implements IIterator<Expression> {
 	private final IExpressionIterable inner;
 
-	public ExpressionIterator(final IExpressionIterable iterable){
+	public ExpressionIterator(final IExpressionIterable iterable) {
 		inner = iterable;
 	}
 
-	public ExpressionIterator(final IExpressionIterable iterable, final int start){
+	public ExpressionIterator(final IExpressionIterable iterable, final int start) {
 		super(start);
 		inner = iterable;
 	}
 
-	public Expression next(){
+	public Expression next() {
 		return inner.elementAt(index++);
 	}
 
-	public IExpressionIterator subIterator(){
+	public IIterator<Expression> subIterator() {
 		return new ExpressionIterator(inner, index);
 	}
 
-	public IToString tnext(){
+	public IToString tnext() {
 		return next();
 	}
 
-	public Expression[] toArray(){
+	public Expression[] toArray() {
 		final Expression[] toret = new Expression[length()];
-		for(int i = index; i < inner.length(); i++)
+		for (int i = index; i < inner.length(); i++)
 			toret[i] = inner.elementAt(i);
 		return toret;
 	}
 
-	public Expression getCurrent(){
+	public Expression getCurrent() {
 		return inner.elementAt(index);
 	}
 
-	protected IEquatableIterable egetInner(){
+	public IIterable<Expression> getInner() {
 		return inner;
 	}
 
-	public Expression getLast(){
+	public Expression getLast() {
 		return inner.elementAt(inner.length() - 1);
 	}
 }

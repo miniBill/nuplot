@@ -2,13 +2,14 @@ package meplot.expressions.list;
 
 import meplot.expressions.Expression;
 import platform.lists.IIterable;
+import platform.lists.IIterator;
 
-public interface IValueList extends IIterable{
+public interface IValueList extends IIterable<IValueNode> {
 	void add(char letter, Expression value);
 
 	void add(IValueNode value);
 
-	IValueListIterator getIterator();
+	IIterator<IValueNode> getIterator();
 
 	void set(char letter, Expression value);
 

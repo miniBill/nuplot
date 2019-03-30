@@ -1,7 +1,7 @@
 package meplot.expressions.list;
 
-import platform.lists.IEquatableIterable;
+import platform.lists.IIterable;
 
-public interface IToStringIterable extends IEquatableIterable{
+public interface IToStringIterable<T> extends IIterable<T> {
 	void toString(StringBuffer buffer);
 }

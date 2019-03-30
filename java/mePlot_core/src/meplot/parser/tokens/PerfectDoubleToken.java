@@ -4,7 +4,7 @@ import meplot.expressions.Expression;
 import meplot.expressions.numbers.Fou;
 import meplot.parser.ParserException;
 
-public final class PerfectDoubleToken extends Token{
+public final class PerfectDoubleToken extends Token {
 	private final int intPart;
 	private final int decPart;
 	private final int decLen;
@@ -12,21 +12,21 @@ public final class PerfectDoubleToken extends Token{
 	private final int infLen;
 	private final String input;
 
-	public PerfectDoubleToken(final ITokenList temp) throws ParserException{
+	public PerfectDoubleToken(final ITokenList temp) throws ParserException {
 		final StringBuffer buffer = new StringBuffer();
-		final TokenIterator iterator = temp.getIterator();
-		while(iterator.hasNext())
+		final TokenIterator iterator = temp.tgetIterator();
+		while (iterator.hasNext())
 			buffer.append(iterator.next());
 		input = buffer.toString();
 
 		final int coma = input.indexOf('.');
 		final int bang = input.indexOf('@');
-		if(coma < 0){
-			if(bang < 0)
+		if (coma < 0) {
+			if (bang < 0)
 				throw new ParserException();
-			if(bang == 0)
+			if (bang == 0)
 				intPart = 0;
-			else{
+			else {
 				final String intString = input.substring(0, bang);
 				intPart = tryParse(intString);
 			}
@@ -35,29 +35,26 @@ public final class PerfectDoubleToken extends Token{
 			decLen = 0;
 
 			final String infString = input.substring(bang + 1);
-			if(infString.length() > 0){
+			if (infString.length() > 0) {
 				infPart = tryParse(infString);
 				infLen = infString.length();
-			}
-			else{
+			} else {
 				infPart = 0;
 				infLen = 0;
 			}
-		}
-		else{
-			if(coma == 0)
+		} else {
+			if (coma == 0)
 				intPart = 0;
-			else{
+			else {
 				final String intString = input.substring(0, coma);
 				intPart = tryParse(intString);
 			}
-			if(bang >= 0){
-				if(coma + 1 < bang){
+			if (bang >= 0) {
+				if (coma + 1 < bang) {
 					final String decString = input.substring(coma + 1, bang);
 					decPart = tryParse(decString);
 					decLen = decString.length();
-				}
-				else{
+				} else {
 					decPart = 0;
 					decLen = 0;
 				}
@@ -65,14 +62,12 @@ public final class PerfectDoubleToken extends Token{
 				final String infString = input.substring(bang + 1);
 				infPart = tryParse(infString);
 				infLen = infString.length();
-			}
-			else{
+			} else {
 				final String decString = input.substring(coma + 1);
-				if(decString.length() > 0){
+				if (decString.length() > 0) {
 					decPart = tryParse(decString);
 					decLen = decString.length();
-				}
-				else{
+				} else {
 					decPart = 0;
 					decLen = 0;
 				}
@@ -82,25 +77,23 @@ public final class PerfectDoubleToken extends Token{
 		}
 	}
 
-	private int tryParse(final String infString) throws ParserException{
-		try{
+	private int tryParse(final String infString) throws ParserException {
+		try {
 			return Integer.parseInt(infString);
-		}
-		catch(final NumberFormatException e){
+		} catch (final NumberFormatException e) {
 			throw new ParserException("Failed parsing " + input, e);
 		}
 	}
 
-	public String toString(){
-		return Integer.toString(intPart) + '.' + Integer.toString(decPart) + '@'
-				+ Integer.toString(infPart);
+	public String toString() {
+		return Integer.toString(intPart) + '.' + Integer.toString(decPart) + '@' + Integer.toString(infPart);
 	}
 
-	public Expression toExpression(){
+	public Expression toExpression() {
 		return new Fou(intPart, decPart, decLen, infPart, infLen, input);
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuffer buffer) {
 		buffer.append(intPart);
 		buffer.append('.');
 		buffer.append(decPart);

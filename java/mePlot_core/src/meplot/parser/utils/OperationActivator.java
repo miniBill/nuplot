@@ -10,67 +10,67 @@ import meplot.parser.tokens.OperationToken;
 import meplot.parser.tokens.Token;
 import meplot.parser.tokens.TokenIterator;
 import meplot.parser.tokens.TokenList;
+import platform.lists.IIterator;
 import platform.log.Log;
 import platform.log.LogLevel;
 
-public final class OperationActivator{
-	private OperationActivator(){
+public final class OperationActivator {
+	private OperationActivator() {
 	}
 
-	public static TokenIterator activateOperations(final TokenIterator iterator) throws ParserException{
+	public static TokenIterator activateOperations(final TokenIterator iterator) throws ParserException {
 		final ITokenList ttl = activateOperation(iterator, Operation.POWER);
-		TokenIterator it2 = ttl.getIterator();
-		for(int op = 0; op < Operation.OPERATIONS.length; op++)
-			if(Operation.OPERATIONS[op] != Operation.POWER){
+		TokenIterator it2 = ttl.tgetIterator();
+		for (int op = 0; op < Operation.OPERATIONS.length; op++)
+			if (Operation.OPERATIONS[op] != Operation.POWER) {
 				final ITokenList tokenList = activateOperation(it2, Operation.OPERATIONS[op]);
 				Log.log(LogLevel.PARSER, "After activating " + Operation.OPERATIONS[op] + ':', tokenList.toString());
-				it2 = tokenList.getIterator();
+				it2 = tokenList.tgetIterator();
 			}
 		return it2;
 	}
 
-	private static ITokenList activateOperation(final TokenIterator iterator, final char operation)
-			throws ParserException{
+	private static ITokenList activateOperation(final IIterator<IToken> iterator, final char operation)
+			throws ParserException {
 		TokenList temp = new TokenList();
-		while(iterator.hasNext()){
+		while (iterator.hasNext()) {
 			IToken curr = iterator.next();
-			if(curr instanceof AbstractTokenList)
+			if (curr instanceof AbstractTokenList)
 				temp.add(activateToken(curr, operation));
-			else{
-				if(curr instanceof OperationToken)
-					if(((OperationToken)curr).getVal() == operation){
-						final OperationToken opcurr = (OperationToken)curr;
-						if(iterator.isSecond()){
-							if(opcurr.getVal() == Operation.ADDITION)
+			else {
+				if (curr instanceof OperationToken)
+					if (((OperationToken) curr).getVal() == operation) {
+						final OperationToken opcurr = (OperationToken) curr;
+						if (iterator.isSecond()) {
+							if (opcurr.getVal() == Operation.ADDITION)
 								continue;
 							throw new ParserException();
 						}
-						if(opcurr.getVal() == Operation.ADDITION){
+						if (opcurr.getVal() == Operation.ADDITION) {
 							final IToken last = temp.getLast();
-							if(last instanceof OperationToken && ((OperationToken)last).getVal() != Operation.POWER)
+							if (last instanceof OperationToken && ((OperationToken) last).getVal() != Operation.POWER)
 								continue;
 						}
-						if(!iterator.hasNext())
+						if (!iterator.hasNext())
 							throw new ParserException();
 						final IToken left;
-						if(operation == Operation.POWER)
+						if (operation == Operation.POWER)
 							left = temp.pop();
-						else{
+						else {
 							left = temp;
 							temp = new TokenList();
 						}
 
 						final IToken right;
-						if(operation == Operation.DIVISION || operation == Operation.POWER)
+						if (operation == Operation.DIVISION || operation == Operation.POWER)
 							right = activateToken(iterator.next(), operation);
 						else
 							right = activateOperation(iterator, operation);
 						opcurr.setLeft(left);
 						opcurr.setRight(right);
-					}
-					else
+					} else
 						curr = activateToken(curr, operation);
-				if(curr instanceof FunctionToken)
+				if (curr instanceof FunctionToken)
 					curr = activateToken(curr, operation);
 				temp.add(curr);
 			}
@@ -79,7 +79,7 @@ public final class OperationActivator{
 	}
 
 	private static Token activateOperationToken(final OperationToken token, final char operation)
-			throws ParserException{
+			throws ParserException {
 		IToken left = token.getLeft();
 		left = activateToken(left, operation);
 		token.setLeft(left);
@@ -91,25 +91,23 @@ public final class OperationActivator{
 		return token;
 	}
 
-	private static IToken activateToken(final IToken token, final char operation) throws ParserException{
-		if(token instanceof AbstractTokenList)
-			return activateOperation(((AbstractTokenList)token).getIterator(), operation);
-		else
-			if(token instanceof OperationToken)
-				return activateOperationToken((OperationToken)token, operation);
-			else
-				if(token instanceof FunctionToken)
-					return activateOperationOnFunction((FunctionToken)token, operation);
+	private static IToken activateToken(final IToken token, final char operation) throws ParserException {
+		if (token instanceof AbstractTokenList)
+			return activateOperation(((AbstractTokenList) token).getIterator(), operation);
+		else if (token instanceof OperationToken)
+			return activateOperationToken((OperationToken) token, operation);
+		else if (token instanceof FunctionToken)
+			return activateOperationOnFunction((FunctionToken) token, operation);
 		return token;
 	}
 
 	private static IToken activateOperationOnFunction(final FunctionToken token, final char operation)
-			throws ParserException{
-		if(token.getValues() == null)
+			throws ParserException {
+		if (token.getValues() == null)
 			return token;
 		final IToken[] args = token.getValues();
 		final IToken[] newargs = new IToken[args.length];
-		for(int c = 0; c < args.length; c++)
+		for (int c = 0; c < args.length; c++)
 			newargs[c] = activateToken(args[c], operation);
 		return token.fill(newargs);
 	}

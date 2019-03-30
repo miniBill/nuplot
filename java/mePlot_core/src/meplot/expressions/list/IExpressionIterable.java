@@ -2,9 +2,7 @@ package meplot.expressions.list;
 
 import meplot.expressions.Expression;
 
-public interface IExpressionIterable extends IToStringIterable{
-	IExpressionIterator getIterator();
-
+public interface IExpressionIterable extends IToStringIterable<Expression> {
 	Expression elementAt(int index);
 
 	Expression getFirst();

@@ -6,7 +6,7 @@ import meplot.expressions.Letter;
 import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionIterable;
-import meplot.expressions.list.IExpressionIterator;
+import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.operations.BooleanOp;
 import meplot.expressions.operations.Operation;
@@ -18,26 +18,26 @@ import meplot.solver.SolveException;
 import platform.log.Log;
 import platform.log.LogLevel;
 
-class ForwardSubState extends SystemSolverState{
+class ForwardSubState extends SystemSolverState {
 	private final int index;
 	private char firstVar = '?';
 
-	ForwardSubState(final ExpressionTree leave, final ISolver solver){
+	ForwardSubState(final ExpressionTree leave, final ISolver solver) {
 		super(leave, solver);
 		index = 0;
 	}
 
-	private ForwardSubState(final ExpressionTree leave, final int index, final char firstVar, final ISolver solver){
+	private ForwardSubState(final ExpressionTree leave, final int index, final char firstVar, final ISolver solver) {
 		super(leave, solver);
 		this.index = index;
 		this.firstVar = firstVar;
 	}
 
-	public void execute(){
-		if(firstVar == '?')
+	public void execute() {
+		if (firstVar == '?')
 			firstVar = AbstractSolver.getFirstVar(getLeaf().getValue());
 		ExpressionTree leaf = getLeaf();
-		if(index >= getLeaf().getValue().length()){
+		if (index >= getLeaf().getValue().length()) {
 			final IExpressionIterable equations = removeNullAndZero(getLeaf().getValue());
 			leaf = leaf.addChild(equations);
 			// TODO: leaf is incorrect
@@ -48,30 +48,29 @@ class ForwardSubState extends SystemSolverState{
 		}
 		final Expression[] equations = getLeaf().getValue().toArray();
 		final Expression curr = equations[index];
-		if(curr == null){
+		if (curr == null) {
 			Log.log(LogLevel.DEBUG, "Null equation");
 			return;
 		}
-		if(curr.equals(Letter.NOTEXISTS)){
+		if (curr.equals(Letter.NOTEXISTS)) {
 			leaf.addChild(curr);
 			return;
 		}
-		if(curr.isZero()){
+		if (curr.isZero()) {
 			QUEUE.add(new ForwardSubState(leaf, index + 1, firstVar, getSolver()));
 			return;
 		}
 		final char first = getFirstVar(firstVar, curr);
-		if(first == '?'){
+		if (first == '?') {
 			leaf.addChild(equations);
 			QUEUE.add(new ForwardSubState(leaf, index + 1, firstVar, getSolver()));
 			return;
 		}
 
-		try{
+		try {
 			final ExpressionTree local = getSolver().explicate(curr, first);
 			addSteps(leaf, local, index, index);
-		}
-		catch(CalcException ce){
+		} catch (CalcException ce) {
 			leaf.addChild(Letter.UNKNOWN);
 		}
 
@@ -79,61 +78,60 @@ class ForwardSubState extends SystemSolverState{
 	}
 
 	private static void addSteps(final ExpressionTree leaf, final ExpressionTree steps, final int startindex,
-			final int endindex){
+			final int endindex) {
 		final IExpressionIterable value = leaf.getValue();
-		final IExpressionIterator iterator = value.getIterator();
+		final IIterator<Expression> iterator = value.getIterator();
 		final IExpressionList current = new ExpressionList();
 		final IExpressionIterable stepValue = steps.getValue();
 		int newlength = 0;
-		for(int i = 0; i < value.length(); i++)
-			if(i < startindex || i > endindex)
+		for (int i = 0; i < value.length(); i++)
+			if (i < startindex || i > endindex)
 				current.add(iterator.next());
-			else{
+			else {
 				iterator.next(); // Ignores it
-				if(i == startindex){
-					IExpressionIterator toAdd = stepValue.getIterator();
+				if (i == startindex) {
+					IIterator<Expression> toAdd = stepValue.getIterator();
 					newlength = toAdd.length();
 					current.addRange(toAdd);
 				}
 			}
 		final ExpressionTree child = leaf.addChild(current);
-		if(steps.hasChild())
+		if (steps.hasChild())
 			addSteps(child, steps.getChild(), startindex, startindex + newlength - 1);
-		if(steps.hasBrother())
+		if (steps.hasBrother())
 			addSteps(leaf, steps.getBrother(), startindex, startindex + newlength - 1);
 	}
 
-	private void doSubstitution(final char first){
+	private void doSubstitution(final char first) {
 		final ExpressionTreeIterator iterator = getLeaf().getLeaves();
-		while(iterator.hasNext()){
+		while (iterator.hasNext()) {
 			ExpressionTree leaf = iterator.next();
 
 			final Expression[] equations = leaf.getValue().toArray();
-			if(index >= equations.length)
+			if (index >= equations.length)
 				continue;
 			final Expression boo = equations[index];
-			if(!(boo instanceof BooleanOp)){
-				if(!boo.equals(Letter.FORALL) && !boo.equals(Letter.NOTEXISTS) && !boo.equals(Letter.UNKNOWN)
+			if (!(boo instanceof BooleanOp)) {
+				if (!boo.equals(Letter.FORALL) && !boo.equals(Letter.NOTEXISTS) && !boo.equals(Letter.UNKNOWN)
 						&& boo.toFullString().length() != -1)
-					throw new SolveException("boo is not a BooleanOp, nor Letter.FORALL, nor Letter.NOTEXISTS, but "
-							+ boo.toString());
-			}
-			else{
-				final BooleanOp sub = (BooleanOp)boo;
-				if(sub.getBool() == Operation.EQUALS){
+					throw new SolveException(
+							"boo is not a BooleanOp, nor Letter.FORALL, nor Letter.NOTEXISTS, but " + boo.toString());
+			} else {
+				final BooleanOp sub = (BooleanOp) boo;
+				if (sub.getBool() == Operation.EQUALS) {
 					final Expression tosub = sub.getRight();
 
 					final char var = getFirstVar(first, sub.getLeft());
 
-					for(int d = index + 1; d < equations.length; d++){
+					for (int d = index + 1; d < equations.length; d++) {
 						final ISubstitutible currEq = equations[d];
-						if(currEq == null){
+						if (currEq == null) {
 							Log.log(LogLevel.WARNING, "NULLINNER");
 							leaf.addChild(Letter.UNKNOWN);
 							return;
 						}
 						final Expression subbed = currEq.partialSubstitute(var, tosub);
-						if(subbed == null){
+						if (subbed == null) {
 							Log.log(LogLevel.WARNING, "NULLSUBBED");
 							leaf.addChild(Letter.UNKNOWN);
 							return;
@@ -149,7 +147,7 @@ class ForwardSubState extends SystemSolverState{
 		}
 	}
 
-	public ISystemSolverState fill(final ExpressionTree child){
+	public ISystemSolverState fill(final ExpressionTree child) {
 		return new ForwardSubState(child, index, firstVar, getSolver());
 	}
 }

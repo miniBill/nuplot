@@ -1,31 +1,32 @@
 package platform.database;
 
-abstract class OperationQueryble implements IQueryble{
+import platform.lists.IIterator;
+
+abstract class OperationQueryble implements IQueryble {
 	private final IQueryble inner;
 
-	protected OperationQueryble(final IQueryble inner){
+	protected OperationQueryble(final IQueryble inner) {
 		this.inner = inner;
 	}
 
-	public final String getName(){
+	public final String getName() {
 		return inner.getName();
 	}
 
 	public abstract Query getQuery();
 
-	public long getRowCount(){
+	public long getRowCount() {
 		long count = 0;
-		for(final RowIterator iterator = getQuery().execute(); iterator
-				.hasNext(); iterator.next())
+		for (final IIterator<Row> iterator = getQuery().execute(); iterator.hasNext(); iterator.next())
 			count++;
 		return count;
 	}
 
-	public final RowIterator execute(){
+	public final IIterator<Row> execute() {
 		return getQuery().execute();
 	}
 
-	public IQueryble getInner(){
+	public IQueryble getInner() {
 		return inner;
 	}
 }

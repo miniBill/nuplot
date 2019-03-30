@@ -1,11 +1,12 @@
 package meplot.expressions.list;
 
 import meplot.expressions.Expression;
+import platform.lists.IIterator;
 
-public interface IExpressionList extends IExpressionIterable{
+public interface IExpressionList extends IExpressionIterable {
 	void add(Expression expand);
 
-	void addRange(IExpressionIterator iterator);
+	void addRange(IIterator<Expression> iterator);
 
 	IExpressionList fold();
 
@@ -18,8 +19,4 @@ public interface IExpressionList extends IExpressionIterable{
 	Expression getLast();
 
 	Expression[] toArray();
-
-	Expression elementAt(int index);
-
-	Expression getFirst();
 }

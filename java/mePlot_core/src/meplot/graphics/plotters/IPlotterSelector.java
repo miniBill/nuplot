@@ -1,10 +1,10 @@
 package meplot.graphics.plotters;
 
 import meplot.graphics.graphs.Graph;
-import meplot.graphics.graphs.GraphIterator;
-import meplot.graphics.graphs.GraphList;
+import platform.lists.IIterator;
+import platform.lists.List;
 
-public interface IPlotterSelector{
+public interface IPlotterSelector {
 	void setCleanContour(boolean clean);
 
 	int[][] getZBuffer();
@@ -15,9 +15,9 @@ public interface IPlotterSelector{
 
 	void previous3DMode();
 
-	void setMode(GraphList graphList);
+	void setMode(List<Graph> graphList);
 
-	boolean isAxisFirstMode(GraphIterator subIterator);
+	boolean isAxisFirstMode(IIterator<Graph> subIterator);
 
 	Plotter selectPlotter(Graph graph);
 

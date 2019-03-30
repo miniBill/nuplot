@@ -1,8 +1,9 @@
 package platform.persistence.disk;
 
+import platform.lists.IIterator;
 
-public interface Directory{
+public interface Directory {
 	Directory getSubdirectory(String string);
 
-	FileIterator getFiles();
+	IIterator<File> getFiles();
 }

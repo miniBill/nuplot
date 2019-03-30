@@ -1,20 +1,68 @@
 package platform.database;
 
-public class SelectRowIterator implements RowIterator{
-	private final RowIterator iterator;
+import platform.lists.IIterator;
+import platform.lists.List;
+
+public class SelectRowIterator implements IIterator<Row> {
+	private final IIterator<Row> iterator;
 	private final String column;
 
-	public SelectRowIterator(final String column, final RowIterator iterator){
+	public SelectRowIterator(final String column, final IIterator<Row> iterator) {
 		this.iterator = iterator;
 		this.column = column;
 	}
 
-	public Row next(){
+	public Row next() {
 		final Row curr = iterator.next();
 		return new StringsRow(curr.get(column), column);
 	}
 
-	public boolean hasNext(){
+	public boolean hasNext() {
 		return iterator.hasNext();
+	}
+
+	@Override
+	public int length() {
+		throw new RuntimeException("NIE");
+	}
+
+	@Override
+	public boolean isEmpty() {
+		throw new RuntimeException("NIE");
+	}
+
+	@Override
+	public boolean isSingle() {
+		throw new RuntimeException("NIE");
+	}
+
+	@Override
+	public boolean isSecond() {
+		throw new RuntimeException("NIE");
+	}
+
+	@Override
+	public IIterator<Row> subIterator() {
+		throw new RuntimeException("NIE");
+	}
+
+	@Override
+	public boolean contains(Row value) {
+		throw new RuntimeException("NIE");
+	}
+
+	@Override
+	public Row getLast() {
+		throw new RuntimeException("NIE");
+	}
+
+	@Override
+	public Row getCurrent() {
+		throw new RuntimeException("NIE");
+	}
+
+	@Override
+	public List<Row> until(String string) {
+		throw new RuntimeException("NIE");
 	}
 }

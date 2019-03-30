@@ -17,9 +17,9 @@ import meplot.expressions.visitors.simplification.SimplificationHelper;
 import meplot.parser.Parser;
 import meplot.parser.ParserException;
 import meplot.parser.tokens.FunctionToken;
-import meplot.parser.tokens.UserFunctionList;
 import meplot.parser.utils.Cleaner;
 import meplot.solver.AbstractSolver;
+import platform.lists.List;
 
 import org.junit.Test;
 
@@ -442,10 +442,10 @@ public final class ParserTest extends TestUtils {
 		} catch (final ParserException e) {
 			fail(e.toString());
 		}
-		FunctionToken.setUserFunctions(new UserFunctionList(ball));
+		FunctionToken.setUserFunctions(new List<UserFunction>(ball));
 		assertSimplify("ball(r,2,x,y)", "sqrt(x^2+y^2)<r");
 		// clean up
-		FunctionToken.setUserFunctions(new UserFunctionList());
+		FunctionToken.setUserFunctions(new List<UserFunction>());
 	}
 
 	@Test

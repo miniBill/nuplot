@@ -6,7 +6,7 @@ import meplot.expressions.Letter;
 import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.exceptions.SimplificationException;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionIterator;
+import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Fraction;
 import meplot.expressions.numbers.INumber;
@@ -19,233 +19,233 @@ import meplot.expressions.visitors.simplification.SimplificationHelper;
 import platform.log.Log;
 import platform.log.LogLevel;
 
-public final class Poly extends Sum{
+public final class Poly extends Sum {
 	private final char var;
 	private final Letter varLetter;
 
-	public Poly(final Sum original, final char var){
+	public Poly(final Sum original, final char var) {
 		super(original.getAddends());
 		this.var = var;
 		varLetter = new Letter(var);
 	}
 
-	public Poly(final Expression expr, final char var){
+	public Poly(final Expression expr, final char var) {
 		super(expr);
 		this.var = var;
 		varLetter = new Letter(var);
 	}
 
-	private Poly(final IExpressionList addends, final char var){
+	private Poly(final IExpressionList addends, final char var) {
 		super(addends);
 		this.var = var;
 		varLetter = new Letter(var);
 	}
 
-	public static boolean isPoly(final Sum poly, final char var){
-		final IExpressionIterator iterator = poly.getAddends();
-		while(iterator.hasNext())
-			if(!isMonomial(iterator.next(), var))
+	public static boolean isPoly(final Sum poly, final char var) {
+		final IIterator<Expression> iterator = poly.getAddends();
+		while (iterator.hasNext())
+			if (!isMonomial(iterator.next(), var))
 				return false;
 		return true;
 	}
 
-	private static boolean isMonomial(final Expression next, final char var){
-		if(isSimple(next))
+	private static boolean isMonomial(final Expression next, final char var) {
+		if (isSimple(next))
 			return true;
-		if(!next.hasLetter(var))
+		if (!next.hasLetter(var))
 			return true;
-		if(next instanceof Monomial)
+		if (next instanceof Monomial)
 			return true;
-		if(next instanceof Multiplication){
-			final IExpressionIterator iterator = ((Multiplication)next).getFactors();
-			while(iterator.hasNext())
-				if(!isMonomial(iterator.next(), var))
+		if (next instanceof Multiplication) {
+			final IIterator<Expression> iterator = ((Multiplication) next).getFactors();
+			while (iterator.hasNext())
+				if (!isMonomial(iterator.next(), var))
 					return false;
 			return true;
 		}
-		if(next instanceof Power){
-			final Power power = (Power)next;
+		if (next instanceof Power) {
+			final Power power = (Power) next;
 			return power.getBase() instanceof Letter && power.getExponent() instanceof Int;
 		}
-		if(next instanceof Sum){
-			final IExpressionIterator iterator = ((Sum)next).getAddends();
-			while(iterator.hasNext())
-				if(!isMonomial(iterator.next(), var))
+		if (next instanceof Sum) {
+			final IIterator<Expression> iterator = ((Sum) next).getAddends();
+			while (iterator.hasNext())
+				if (!isMonomial(iterator.next(), var))
 					return false;
 			return true;
 		}
 		return false;
 	}
 
-	private static boolean isSimple(final Expression next){
+	private static boolean isSimple(final Expression next) {
 		return next instanceof Int || next instanceof Fraction || next instanceof Letter || isPower(next);
 	}
 
-	private static boolean isPower(final Expression next){
-		if(next instanceof Power){
-			final Power power = (Power)next;
-			if(power.getExponent() instanceof Int && power.getBase() instanceof Letter)
+	private static boolean isPower(final Expression next) {
+		if (next instanceof Power) {
+			final Power power = (Power) next;
+			if (power.getExponent() instanceof Int && power.getBase() instanceof Letter)
 				return true;
 		}
 		return false;
 	}
 
-	public Expression getLeadingCoeff(){
+	public Expression getLeadingCoeff() {
 		return getCoefficent(getDegree());
 	}
 
 	private int degree = -1;
 
-	public int getDegree(){
-		if(degree < 0){
+	public int getDegree() {
+		if (degree < 0) {
 			degree = 0;
-			final IExpressionIterator iterator = getAddends();
-			while(iterator.hasNext()){
+			final IIterator<Expression> iterator = getAddends();
+			while (iterator.hasNext()) {
 				final int exp = getExponent(iterator.next());
-				if(exp > degree)
+				if (exp > degree)
 					degree = exp;
 			}
 		}
 		return degree;
 	}
 
-	public static Expression getCoefficent(final Expression expr, final char var){
-		if(expr instanceof INumber)
+	public static Expression getCoefficent(final Expression expr, final char var) {
+		if (expr instanceof INumber)
 			return expr;
-		if(expr instanceof Multiplication){
-			final IExpressionIterator iterator = ((Multiplication)expr).getFactors();
+		if (expr instanceof Multiplication) {
+			final IIterator<Expression> iterator = ((Multiplication) expr).getFactors();
 			Expression toret = Int.ONE;
-			while(iterator.hasNext()){
+			while (iterator.hasNext()) {
 				final Expression curr = iterator.next();
 				toret = toret.multiply(getCoefficent(curr, var));
 			}
 			return toret;
 		}
-		if(expr instanceof Power){
-			final Power power = (Power)expr;
-			if(power.getBase() instanceof Letter){
-				if(((Letter)power.getBase()).getLetter() == var)
+		if (expr instanceof Power) {
+			final Power power = (Power) expr;
+			if (power.getBase() instanceof Letter) {
+				if (((Letter) power.getBase()).getLetter() == var)
 					return Int.ONE;
 				return expr;
 			}
 		}
-		if(expr instanceof Letter){
-			if(((Letter)expr).getLetter() == var)
+		if (expr instanceof Letter) {
+			if (((Letter) expr).getLetter() == var)
 				return Int.ONE;
 			return expr;
 		}
 
-		if(expr instanceof Division){
-			final Division div = (Division)expr;
+		if (expr instanceof Division) {
+			final Division div = (Division) expr;
 			final Expression num = div.getNumerator();
 			final Expression den = div.getDenominator();
 			return getCoefficent(num, var).divide(getCoefficent(den, var));
 		}
 
-		if(expr instanceof Monomial)
-			return ((Monomial)expr).getCoefficent();
+		if (expr instanceof Monomial)
+			return ((Monomial) expr).getCoefficent();
 
-		if(expr instanceof Sum){
-			final Sum sexpr = (Sum)expr;
-			final IExpressionIterator iterator = sexpr.getAddends();
+		if (expr instanceof Sum) {
+			final Sum sexpr = (Sum) expr;
+			final IIterator<Expression> iterator = sexpr.getAddends();
 			Expression toret = Int.ZERO;
-			while(iterator.hasNext()){
+			while (iterator.hasNext()) {
 				final Expression curr = iterator.next();
-				if(curr.hasLetter(var))
+				if (curr.hasLetter(var))
 					toret = toret.add(getCoefficent(curr, var));
 			}
 			return toret;
 		}
 
-		if(expr.hasLetter(var))
+		if (expr.hasLetter(var))
 			Log.log(LogLevel.WARNING, "Returning expr from getCoefficent of " + expr.toString() + " var was " + var);
 
 		return expr;
 	}
 
-	private int getExponent(final Expression expr){
+	private int getExponent(final Expression expr) {
 		return getExponent(expr, var);
 	}
 
-	private static int extractExponent(final Power expr, final char var){
-		if(expr.getBase() instanceof Letter){
-			if(((Letter)expr.getBase()).getLetter() != var)
+	private static int extractExponent(final Power expr, final char var) {
+		if (expr.getBase() instanceof Letter) {
+			if (((Letter) expr.getBase()).getLetter() != var)
 				return 0;
-			if(expr.getExponent() instanceof Int)
-				return ((Int)expr.getExponent()).getValue();
+			if (expr.getExponent() instanceof Int)
+				return ((Int) expr.getExponent()).getValue();
 		}
 		return -1;
 	}
 
-	public Expression getTrailingCoeff(){
+	public Expression getTrailingCoeff() {
 		return getCoefficent(0);
 	}
 
-	public Expression getCoefficent(final int deg){
-		final IExpressionIterator iterator = getAddends();
+	public Expression getCoefficent(final int deg) {
+		final IIterator<Expression> iterator = getAddends();
 		Expression toret = Int.ZERO;
-		while(iterator.hasNext()){
+		while (iterator.hasNext()) {
 			final Expression curr = iterator.next();
 			final int exp = getExponent(curr);
-			if(exp == deg)
+			if (exp == deg)
 				toret = toret.add(getCoefficent(curr, var));
 		}
 		return toret;
 	}
 
-	public static boolean isPoly(final Expression arg, final char var){
-		if(arg instanceof Sum)
-			return isPoly((Sum)arg, var);
+	public static boolean isPoly(final Expression arg, final char var) {
+		if (arg instanceof Sum)
+			return isPoly((Sum) arg, var);
 		return isPoly(new Sum(arg), var);
 	}
 
-	public IExpressionIterator getCoefficents(){
+	public IIterator<Expression> getCoefficents() {
 		final int deg = getDegree();
 		final IExpressionList toret = new ExpressionList();
-		for(int n = 0; n <= deg; n++)
+		for (int n = 0; n <= deg; n++)
 			toret.add(getCoefficent(n));
 		return toret.getIterator();
 	}
 
-	public Letter getLetter(){
+	public Letter getLetter() {
 		return varLetter;
 	}
 
-	public Expression pdivide(final Poly arg){
-		if(equals(arg))
+	public Expression pdivide(final Poly arg) {
+		if (equals(arg))
 			return Int.ONE;
 		Poly temp = this;
 		Poly toret = new Poly(Int.ZERO, var);
 		final int divdeg = arg.getDegree();
-		if(divdeg == 0 && arg.getAddends().length() == 1){
+		if (divdeg == 0 && arg.getAddends().length() == 1) {
 			final Expression single = arg.getAddends().getCurrent();
-			if(single instanceof INumber){
+			if (single instanceof INumber) {
 				final IExpressionList results = new ExpressionList();
-				final IExpressionIterator iterator = getAddends();
-				while(iterator.hasNext())
+				final IIterator<Expression> iterator = getAddends();
+				while (iterator.hasNext())
 					results.add(iterator.next().divide(single));
 				return new Sum(results);
 			}
 		}
 		final Monomial olead = arg.getLeadingTerm();
 		temp = temp.psimplify();
-		while(!temp.isZero() && temp.getDegree() >= divdeg){
+		while (!temp.isZero() && temp.getDegree() >= divdeg) {
 			final Monomial lead = temp.getLeadingTerm();
 			final Monomial div = lead.divide(olead).msimplify();
 			toret = toret.add(div);
-			if(toret == null)
+			if (toret == null)
 				throw new CalcException("Something went wrong in pdivide, toret");
 			final Poly tosub = arg.multiply(div).ppartialSimplify();
-			if(tosub == null)
+			if (tosub == null)
 				throw new CalcException("Something went wrong in pdivide, tosub");
 			final Poly subbed = temp.add(tosub.popposite()).ppartialSimplify();
-			if(subbed == null)
+			if (subbed == null)
 				throw new CalcException("Something went wrong in pdivide, sub");
 			final Poly sim = subbed.psimplify();
-			if(sim.getDegree() >= temp.getDegree() && sim.getDegree() > 0){
+			if (sim.getDegree() >= temp.getDegree() && sim.getDegree() > 0) {
 				subbed.psimplify();
 				final Poly debug = arg.multiply(div);
-				if(debug != null){
+				if (debug != null) {
 					final Poly par = debug.ppartialSimplify();
 					par.toString();
 				}
@@ -257,70 +257,69 @@ public final class Poly extends Sum{
 		return toret;
 	}
 
-	private Poly ppartialSimplify(){
+	private Poly ppartialSimplify() {
 		final Expression sim = partialSimplify();
-		if(!isPoly(sim, var))
+		if (!isPoly(sim, var))
 			throw new SimplificationException("partialSimplify went wrong in Poly");
-		if(sim instanceof Poly)
-			return (Poly)sim;
+		if (sim instanceof Poly)
+			return (Poly) sim;
 		return new Poly(sim, var);
 	}
 
-	public Poly psimplify(){
+	public Poly psimplify() {
 		final Expression sim = SimplificationHelper.simplify(this);
-		if(sim instanceof Poly)
-			return (Poly)sim;
-		if(!isPoly(sim, var)){
+		if (sim instanceof Poly)
+			return (Poly) sim;
+		if (!isPoly(sim, var)) {
 			SimplificationHelper.simplify(sim);
 			throw new CalcException("Simplified poly isn't poly");
 		}
 		return new Poly(sim, var);
 	}
 
-	private Poly popposite(){
+	private Poly popposite() {
 		final IExpressionList after = new ExpressionList();
-		final IExpressionIterator iterator = getAddends();
+		final IIterator<Expression> iterator = getAddends();
 
-		while(iterator.hasNext()){
+		while (iterator.hasNext()) {
 			final ICalculable curr = iterator.next();
 			final Expression currs = curr.opposite();
-			if(currs.isZero())
+			if (currs.isZero())
 				continue;
-			if(currs instanceof Sum){
-				final Sum scls = (Sum)currs;
+			if (currs instanceof Sum) {
+				final Sum scls = (Sum) currs;
 				after.addRange(scls.getAddends());
-			}
-			else
+			} else
 				after.add(currs);
 		}
 		return new Poly(after, var);
 	}
 
-	private Poly add(final Poly arg){
+	private Poly add(final Poly arg) {
 		return new Poly(new ExpressionList(getAddends(), arg.getAddends()), var);
 	}
 
-	private Poly multiply(final Monomial arg){
+	private Poly multiply(final Monomial arg) {
 		final IExpressionList toret = new ExpressionList();
-		final IExpressionIterator iterator = getAddends();
-		while(iterator.hasNext())
+		final IIterator<Expression> iterator = getAddends();
+		while (iterator.hasNext())
 			toret.add(iterator.next().multiply(arg));
 		return new Poly(toret, var);
 	}
 
-	public Poly mod(final Poly arg){
+	public Poly mod(final Poly arg) {
 		Poly temp = this;
 		final int divdeg = arg.getDegree();
 		final Monomial olead = arg.getLeadingTerm();
-		while(temp.getDegree() >= divdeg){
+		while (temp.getDegree() >= divdeg) {
 			final Monomial lead = temp.getLeadingTerm();
 			final Monomial div = lead.divide(olead).mopposite();
 			final Poly tosub = arg.multiply(div);
 			final Poly subbed = temp.add(tosub);
 			final Poly sim = subbed.psimplify();
-			if(sim.getDegree() == 0)
+			if (sim.getDegree() == 0)
 				return new Poly(sim, temp.var);
-			if(sim.getDegree() == temp.getDegree()){
+			if (sim.getDegree() == temp.getDegree()) {
 				final Expression stupid = sim.psimplify();
 				throw new CalcException("Mod didn't reduce degree of poly, stupid:" + stupid.toString());
 			}
@@ -329,70 +328,69 @@ public final class Poly extends Sum{
 		return temp;
 	}
 
-	public Monomial getLeadingTerm(){
+	public Monomial getLeadingTerm() {
 		return getTerm(getDegree());
 	}
 
-	private Monomial getTerm(final int deg){
-		final IExpressionIterator iterator = getAddends();
+	private Monomial getTerm(final int deg) {
+		final IIterator<Expression> iterator = getAddends();
 		Monomial toret = new Monomial(Int.ZERO, var);
-		while(iterator.hasNext()){
+		while (iterator.hasNext()) {
 			final Expression curr = iterator.next();
 			final int exp = getExponent(curr);
-			if(exp == deg)
+			if (exp == deg)
 				toret = toret.add(new Monomial(curr, var));
 		}
 		return toret;
 	}
 
-	private Poly add(final Monomial arg){
+	private Poly add(final Monomial arg) {
 		final Expression result = super.add(arg);
-		if(result instanceof Poly)
-			return (Poly)result;
-		if(isPoly(result, var))
+		if (result instanceof Poly)
+			return (Poly) result;
+		if (isPoly(result, var))
 			return new Poly(result, var);
 		throw new CalcException("Trying to add poly with nonpoly");
 	}
 
-	public static int getExponent(final Expression expr, final char var){
-		if(expr instanceof INumber)
+	public static int getExponent(final Expression expr, final char var) {
+		if (expr instanceof INumber)
 			return 0;
-		if(expr instanceof Multiplication){
-			final IExpressionIterator iterator = ((Multiplication)expr).getFactors();
+		if (expr instanceof Multiplication) {
+			final IIterator<Expression> iterator = ((Multiplication) expr).getFactors();
 			int toret = 0;
-			while(iterator.hasNext()){
+			while (iterator.hasNext()) {
 				final Expression curr = iterator.next();
 				toret += getExponent(curr, var);
 			}
 			return toret;
 		}
-		if(expr instanceof Monomial)
-			return ((Monomial)expr).getExponent();
-		if(expr instanceof Power)
-			return extractExponent((Power)expr, var);
-		if(expr instanceof Letter && ((Letter)expr).getLetter() == var)
+		if (expr instanceof Monomial)
+			return ((Monomial) expr).getExponent();
+		if (expr instanceof Power)
+			return extractExponent((Power) expr, var);
+		if (expr instanceof Letter && ((Letter) expr).getLetter() == var)
 			return 1;
 		return 0;
 	}
 
-	public char getVar(){
+	public char getVar() {
 		return var;
 	}
 
-	public Poly sumExpand(){
-		final IExpressionIterator iterator = getAddends();
+	public Poly sumExpand() {
+		final IIterator<Expression> iterator = getAddends();
 		final ExpressionList toret = new ExpressionList();
 		boolean same = true;
-		while(iterator.hasNext()){
+		while (iterator.hasNext()) {
 			final Expression curr = iterator.next();
-			if(curr instanceof Sum){
+			if (curr instanceof Sum) {
 				same = false;
-				toret.addRange(((Sum)curr).getAddends());
-			}
-			else
+				toret.addRange(((Sum) curr).getAddends());
+			} else
 				toret.add(curr);
 		}
-		if(same)
+		if (same)
 			return this;
 		return new Poly(toret, var);
 	}

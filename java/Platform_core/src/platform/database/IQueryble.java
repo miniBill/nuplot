@@ -1,11 +1,13 @@
 package platform.database;
 
-public interface IQueryble{
+import platform.lists.IIterator;
+
+public interface IQueryble {
 	long getRowCount();
 
 	String getName();
 
 	Query getQuery();
 
-	RowIterator execute();
+	IIterator<Row> execute();
 }

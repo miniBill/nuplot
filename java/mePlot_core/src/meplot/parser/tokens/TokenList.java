@@ -6,62 +6,62 @@ import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Multiplication;
 import meplot.parser.ParserException;
+import platform.lists.IIterable;
+import platform.lists.IIterator;
 
-public class TokenList extends AbstractTokenList{
+public class TokenList extends AbstractTokenList {
 	/**
 	 * Creates an empty list.
 	 */
-	public TokenList(){
+	public TokenList() {
 		// Creates an empty list.
 	}
 
-	public TokenList(final IToken next){
+	public TokenList(IIterable<IToken> other) {
+		addRange(other);
+	}
+
+	public TokenList(final IToken next) {
 		add(next);
 	}
 
-	public final String toString(){
+	public final String toString() {
 		final StringBuffer toret = new StringBuffer("{");
 		cString(toret);
 		toret.append('}');
 		return toret.toString();
 	}
 
-	public final void addRange(final ITokenList root){
-		final TokenIterator iterator = root.getIterator();
-		addRange(iterator);
-	}
-
-	public final void addRange(final TokenIterator iterator){
-		while(iterator.hasNext())
+	public final void addRange(final IIterator<IToken> iterator) {
+		while (iterator.hasNext())
 			add(iterator.next());
 	}
 
-	public final IToken pop(){
+	public final IToken pop() {
 		final IToken toret = getLast();
 		super.removeAt(length() - 1);
 		return toret;
 	}
 
-	public final IToken[] toArray(){
+	public final IToken[] toArray() {
 		final IToken[] toret = new IToken[length()];
-		for(int i = 0; i < toret.length; i++)
+		for (int i = 0; i < toret.length; i++)
 			toret[i] = elementAt(i);
 		return toret;
 	}
 
-	public Expression toExpression(final int index) throws ParserException{
-		if(isEmpty())
+	public Expression toExpression(final int index) throws ParserException {
+		if (isEmpty())
 			return Int.ONE;
-		if(isSingle()){
-			if(index == 0)
+		if (isSingle()) {
+			if (index == 0)
 				return getLast().toExpression();
-			throw new ParserException(
-					"index out of bound in TokenList.toExpression(I)",
+			throw new ParserException("index out of bound in TokenList.toExpression(I)",
 					new ArrayIndexOutOfBoundsException(index));
 		}
 		final IExpressionList toret = new ExpressionList();
-		final TokenIterator iterator = getIterator(index);
-		while(iterator.hasNext())
+		final TokenIterator iterator = tgetIterator(index);
+		while (iterator.hasNext())
 			toret.add(iterator.next().toExpression());
 		return new Multiplication(toret);
 	}

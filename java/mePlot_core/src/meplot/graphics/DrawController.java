@@ -1,8 +1,6 @@
 package meplot.graphics;
 
 import meplot.graphics.graphs.Graph;
-import meplot.graphics.graphs.GraphIterator;
-import meplot.graphics.graphs.GraphList;
 import meplot.graphics.plotters.AxisPlotter;
 import meplot.graphics.plotters.IDrawController;
 import meplot.graphics.plotters.IPlotterSelector;
@@ -14,12 +12,14 @@ import meplot.graphics.plotters.three.ThreePlotter;
 import meplot.graphics.plotters.three.ThreeScanner;
 import meplot.persistence.Settings;
 import platform.Platform;
+import platform.lists.IIterator;
+import platform.lists.List;
 import platform.log.Log;
 import platform.log.LogLevel;
 import platform.persistence.Persistence;
 import platform.persistence.listeners.IntSettingsListener;
 
-public final class DrawController implements IDrawController, Runnable, IntSettingsListener{
+public final class DrawController implements IDrawController, Runnable, IntSettingsListener {
 	private static final String COMA = ",";
 
 	/**
@@ -28,7 +28,7 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 	 */
 	public static final int MAGIC_DELTA = 16;
 
-	private static void drawEndline(final IGraphics graphics){
+	private static void drawEndline(final IGraphics graphics) {
 		graphics.setColor(0xFF0000);
 		graphics.drawLine(1, 1, 1, 1);
 		graphics.setColor(0x00FF00);
@@ -75,8 +75,8 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 	private int phi = -30;
 	private double scale = 1.0;
 
-	private static IPlotterSelectorFactory selectorFactory = new IPlotterSelectorFactory(){
-		public IPlotterSelector getPlotterSelector(){
+	private static IPlotterSelectorFactory selectorFactory = new IPlotterSelectorFactory() {
+		public IPlotterSelector getPlotterSelector() {
 			return new PlotterSelector();
 		}
 	};
@@ -86,7 +86,7 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 
 	private int width;
 
-	public DrawController(){
+	public DrawController() {
 		Persistence.registerListener(this);
 		final int arg = Persistence.loadInt(Settings.INVERTCONTROLS);
 		invertLR = arg % 2 == 1;
@@ -97,23 +97,23 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		PlotterUtil.setTheta(theta);
 	}
 
-	public void changedSetting(final String name, final int arg){
-		if(name.equals(Settings.INVERTCONTROLS)){
+	public void changedSetting(final String name, final int arg) {
+		if (name.equals(Settings.INVERTCONTROLS)) {
 			invertLR = arg % 2 == 1;
 			invertUD = arg > 1;
 		}
-		if(name.equals(Settings.CLEANCONTOUR))
+		if (name.equals(Settings.CLEANCONTOUR))
 			selector.setCleanContour(arg != 0);
 	}
 
-	public Thread doPaint(final IGraphics graphics, final GraphList graphList, final int width, final int height){
+	public Thread doPaint(final IGraphics graphics, final List<Graph> graphList, final int width, final int height) {
 		reinit(width, height, graphList);
 
-		final GraphIterator iterator = graphList.getIterator();
+		final IIterator<Graph> iterator = graphList.getIterator();
 		return plot(graphics, iterator);
 	}
 
-	public String getBoundingBoxInfo(){
+	public String getBoundingBoxInfo() {
 		final double deltaX = (scale - 1) * (maxx - minx) / 2;
 		final double deltaY = (scale - 1) * (maxy - miny) / 2;
 		return scale + "\n" + minx + COMA + maxx + COMA + miny + COMA + maxy + "\n" + deltaX + COMA + deltaY + "\n"
@@ -121,92 +121,91 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 				+ (maxy + movey + deltaY);
 	}
 
-	public DrawingInfo getDrawingInfo(){
+	public DrawingInfo getDrawingInfo() {
 		return drawingInfo;
 	}
 
-	public double getMaxx(){
+	public double getMaxx() {
 		final double deltaX = (scale - 1) * (maxx - minx) / 2;
 		return maxx + movex + deltaX;
 	}
 
-	public double getMaxy(){
+	public double getMaxy() {
 		final double deltaY = (scale - 1) * (maxy - miny) / 2;
 		return maxy + movey + deltaY;
 	}
 
-	public double getMaxz(){
+	public double getMaxz() {
 		return maxz;
 	}
 
-	public double getMinx(){
+	public double getMinx() {
 		final double deltaX = (scale - 1) * (maxx - minx) / 2;
 		return minx + movex - deltaX;
 	}
 
-	public double getMiny(){
+	public double getMiny() {
 		final double deltaY = (scale - 1) * (maxy - miny) / 2;
 		return miny + movey - deltaY;
 	}
 
-	public double getMinz(){
+	public double getMinz() {
 		return minz;
 	}
 
-	public int getProgress(){
+	public int getProgress() {
 		return currentPlotter == null ? 0 : currentPlotter.getProgress();
 	}
 
-	public int[][] getZBuffer(){
+	public int[][] getZBuffer() {
 		return selector.getZBuffer();
 	}
 
-	public void goDown(){
+	public void goDown() {
 		final double sdy = (maxy - miny) / 4.0;
 		miny += sdy;
 		maxy += sdy;
 	}
 
-	public void goLeft(){
+	public void goLeft() {
 		final double ady = (maxy - miny) / 4.0;
 		minx -= ady;
 		maxx -= ady;
 	}
 
-	public void goRight(){
+	public void goRight() {
 		final double ddy = (maxy - miny) / 4.0;
 		minx += ddy;
 		maxx += ddy;
 	}
 
-	public void goUp(){
+	public void goUp() {
 		final double wdy = (maxy - miny) / 4.0;
 		miny -= wdy;
 		maxy -= wdy;
 	}
 
-	public boolean isDrawing(){
+	public boolean isDrawing() {
 		return drawing;
 	}
 
-	public boolean isFreeroam(){
+	public boolean isFreeroam() {
 		return freeroam && isFreeroamMode();
 	}
 
-	public boolean isFreeroamMode(){
+	public boolean isFreeroamMode() {
 		return selector.isFreeroamMode();
 	}
 
-	public void move(final float startx, final float endx, final float starty, final float endy){
+	public void move(final float startx, final float endx, final float starty, final float endy) {
 		tempMove(startx, endx, starty, endy);
-		if(lastDrawingWas3D){
+		if (lastDrawingWas3D) {
 			phi += movephi;
 			theta += movetheta;
 
 			movephi = 0;
 			movetheta = 0;
-		}
-		else{
+		} else {
 			minx += movex;
 			maxx += movex;
 
@@ -218,8 +217,8 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		}
 	}
 
-	public void tempMove(final float startx, final float currx, final float starty, final float curry){
-		if(lastDrawingWas3D){
+	public void tempMove(final float startx, final float currx, final float starty, final float curry) {
+		if (lastDrawingWas3D) {
 			final double nstartx = 2.0 * startx / width - 0.5;
 			final double ncurrx = 2.0 * currx / width - 0.5;
 
@@ -229,8 +228,7 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 			final double ncurry = 2.0 * curry / height - 0.5;
 
 			movephi = 100 * (nstarty - ncurry);
-		}
-		else{
+		} else {
 			final float deltax = startx - currx;
 			movex = deltax * (maxx - minx) / width;
 			final float deltay = starty - curry;
@@ -238,11 +236,11 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		}
 	}
 
-	public void next3DMode(){
+	public void next3DMode() {
 		selector.next3DMode();
 	}
 
-	private Thread plot(final IGraphics graphics, final GraphIterator iterator){
+	private Thread plot(final IGraphics graphics, final IIterator<Graph> iterator) {
 		drawingInfo.setGraphics(graphics);
 		drawingInfo.setIterator(iterator);
 		drawingInfo.setThread(new Thread(this));
@@ -252,12 +250,12 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		return drawingInfo.getThread();
 	}
 
-	public void previous3DMode(){
+	public void previous3DMode() {
 		selector.previous3DMode();
 	}
 
-	private void reinit(final int width, final int height, final GraphList graphList){
-		if(width != this.width || height != this.height){
+	private void reinit(final int width, final int height, final List<Graph> graphList) {
+		if (width != this.width || height != this.height) {
 			this.width = width;
 			this.height = height;
 			setOptimalRangeValues();
@@ -272,7 +270,7 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		PlotterUtil.setTheta(theta + movetheta);
 	}
 
-	public void resetPosition(){
+	public void resetPosition() {
 		minx = -5;
 		maxx = 5;
 		maxy = 5;
@@ -282,69 +280,69 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		setOptimalRangeValues();
 	}
 
-	private void rotateClockwise(){
+	private void rotateClockwise() {
 		theta += 15;
-		if(theta == 360)
+		if (theta == 360)
 			theta = 0;
 	}
 
-	private void rotateCounterClockwise(){
-		if(theta == 0)
+	private void rotateCounterClockwise() {
+		if (theta == 0)
 			theta = 345;
 		else
 			theta -= 15;
 	}
 
-	public void rotateDown(){
-		if(invertUD)
+	public void rotateDown() {
+		if (invertUD)
 			rotateUpwards();
 		else
 			rotateDownwards();
 	}
 
-	private void rotateDownwards(){
-		if(phi < 90)
+	private void rotateDownwards() {
+		if (phi < 90)
 			phi += 15;
 	}
 
-	public void rotateLeft(){
-		if(invertLR)
+	public void rotateLeft() {
+		if (invertLR)
 			rotateCounterClockwise();
 		else
 			rotateClockwise();
 	}
 
-	public void rotateRight(){
-		if(invertLR)
+	public void rotateRight() {
+		if (invertLR)
 			rotateClockwise();
 		else
 			rotateCounterClockwise();
 	}
 
-	public void rotateUp(){
-		if(invertUD)
+	public void rotateUp() {
+		if (invertUD)
 			rotateDownwards();
 		else
 			rotateUpwards();
 	}
 
-	private void rotateUpwards(){
-		if(phi > -90)
+	private void rotateUpwards() {
+		if (phi > -90)
 			phi -= 15;
 	}
 
-	public void run(){
+	public void run() {
 		final IGraphics graphics = drawingInfo.getGraphics();
 
-		if(width * height > 0)
-			for(int dt = initialDt; drawing && dt >= minDt && dt > 0; dt >>= 1){
+		if (width * height > 0)
+			for (int dt = initialDt; drawing && dt >= minDt && dt > 0; dt >>= 1) {
 				graphics.setColor(0);
 				graphics.fillRect(0, 0, width, height);
-				if(selector.isAxisFirstMode(drawingInfo.getIterator().subIterator()))
+				if (selector.isAxisFirstMode(drawingInfo.getIterator().subIterator()))
 					AxisPlotter.drawAxis(graphics, this);
-				final GraphIterator iterator = drawingInfo.getIterator().subIterator();
+				final IIterator<Graph> iterator = drawingInfo.getIterator().subIterator();
 
-				while(drawing && iterator.hasNext()){
+				while (drawing && iterator.hasNext()) {
 					final Graph graph = iterator.next();
 
 					final int color = graph.getColor();
@@ -353,44 +351,42 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 					currentPlotter = plotter;
 
 					lastDrawingWas3D = plotter instanceof ThreePlotter || plotter instanceof ThreeScanner;
-					try{
-						if(initialDt == MAGIC_DELTA && lastDrawingWas3D)
+					try {
+						if (initialDt == MAGIC_DELTA && lastDrawingWas3D)
 							plotter.plot(graph, graphics, 4 * dt, this);
 						else
 							plotter.plot(graph, graphics, dt, this);
-					}
-					catch(final DrawException e){
+					} catch (final DrawException e) {
 						dt = minDt;
 						break;
 					}
 				}
-				if(selector.isAxisLaterMode())
+				if (selector.isAxisLaterMode())
 					AxisPlotter.drawAxis(graphics, this);
 
-				if(dt == minDt){
+				if (dt == minDt) {
 					drawEndline(graphics);
 					graphics.flushGraphics(true);
-				}
-				else
+				} else
 					graphics.flushGraphics();
 			}
 
-		if(Platform.isJ2ME())
+		if (Platform.isJ2ME())
 			selector.disposePlotters();
 
 		Log.log(LogLevel.DEBUG, "Drawing done");
 
-		if(!drawing)
+		if (!drawing)
 			return;
 
 		drawing = false;
 		currentPlotter = null;
 	}
 
-	public void scale(final double scale){
+	public void scale(final double scale) {
 		Log.log(LogLevel.INFO, "Scaling: " + Double.toString(scale));
 		this.scale = 1;
-		if(scale < 0){
+		if (scale < 0) {
 			Log.log(LogLevel.INFO, "Scaling went negative");
 			return;
 		}
@@ -412,11 +408,11 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		maxz += deltaZ;
 	}
 
-	public void set3Ode(final boolean value){
+	public void set3Ode(final boolean value) {
 		selector.set3Ode(value);
 	}
 
-	public void setCenter(final double centerX, final double centerY){
+	public void setCenter(final double centerX, final double centerY) {
 		final double deltaHalfx = (maxx - minx) / 2.0;
 		maxx = centerX + deltaHalfx;
 		minx = centerX - deltaHalfx;
@@ -426,46 +422,45 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		miny = centerY - deltaHalfy;
 	}
 
-	public void setMaxx(final double nmaxx){
+	public void setMaxx(final double nmaxx) {
 		maxx = nmaxx;
 	}
 
-	public void setMaxy(final double nmaxy){
+	public void setMaxy(final double nmaxy) {
 		maxy = nmaxy;
 	}
 
-	public void setMaxz(final double nmaxz){
+	public void setMaxz(final double nmaxz) {
 		maxz = nmaxz;
 	}
 
-	public void setMinx(final double nminx){
+	public void setMinx(final double nminx) {
 		minx = nminx;
 	}
 
-	public void setMiny(final double nminy){
+	public void setMiny(final double nminy) {
 		miny = nminy;
 	}
 
-	public void setMinz(final double nminz){
+	public void setMinz(final double nminz) {
 		minz = nminz;
 	}
 
-	private void setOptimalRangeValues(){
-		if(height * width == 0)
+	private void setOptimalRangeValues() {
+		if (height * width == 0)
 			return;
 		final double halfDeltax = (maxx - minx) / 2.0;
 		final double halfDeltay = (maxy - miny) / 2.0;
 		final double hdmax = halfDeltax > halfDeltay ? halfDeltax : halfDeltay;
 		final double centerX = (maxx + minx) / 2.0;
 		final double centerY = (maxy + miny) / 2.0;
-		if(height > width){
+		if (height > width) {
 			final double hdmin = hdmax * width / height;
 			minx = centerX - hdmin;
 			maxx = centerX + hdmin;
 			miny = centerY - hdmax;
 			maxy = centerY + hdmax;
-		}
-		else{
+		} else {
 			final double hdmin = hdmax * height / width;
 			minx = centerX - hdmax;
 			maxx = centerX + hdmax;
@@ -474,59 +469,57 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		}
 	}
 
-	public void stopDrawing(){
+	public void stopDrawing() {
 		drawing = false;
 	}
 
-	public void stopDrawingAndJoin(){
+	public void stopDrawingAndJoin() {
 		drawing = false;
 
-		if(last != null)
-			try{
+		if (last != null)
+			try {
 				last.join();
-			}
-			catch(final InterruptedException e){
+			} catch (final InterruptedException e) {
 			}
 	}
 
-	public void syncroPaint(final IGraphics graphics, final GraphList graphList, final int width, final int height,
-			final int precision){
-		if(precision > 0){
+	public void syncroPaint(final IGraphics graphics, final List<Graph> graphList, final int width, final int height,
+			final int precision) {
+		if (precision > 0) {
 			initialDt = precision;
 			minDt = precision;
-		}
-		else{
+		} else {
 			initialDt = -precision;
 			minDt = 1;
 		}
 
-		if(graphList == null)
+		if (graphList == null)
 			return;
 
 		reinit(width, height, graphList);
 
-		final GraphIterator iterator = graphList.getIterator();
+		final IIterator<Graph> iterator = graphList.getIterator();
 		syncroPlot(graphics, iterator);
 	}
 
-	private void syncroPlot(final IGraphics graphics, final GraphIterator iterator){
+	private void syncroPlot(final IGraphics graphics, final IIterator<Graph> iterator) {
 		drawingInfo.setGraphics(graphics);
 		drawingInfo.setIterator(iterator);
 		drawing = true;
 		run();
 	}
 
-	public void tempScale(final double scale){
-		if(scale < 0)
+	public void tempScale(final double scale) {
+		if (scale < 0)
 			return;
 		this.scale = scale;
 	}
 
-	public void toggleFreeRoam(){
+	public void toggleFreeRoam() {
 		freeroam ^= true;
 	}
 
-	public void zoomIn(){
+	public void zoomIn() {
 		final double qdx = (maxx - minx) / 4.0;
 		minx += qdx;
 		maxx -= qdx;
@@ -538,7 +531,7 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		maxz -= qdz;
 	}
 
-	public void zoomOut(){
+	public void zoomOut() {
 		final double originalMinx = minx;
 		final double originalMaxx = maxx;
 		minx = (3.0 * originalMinx - originalMaxx) / 2.0;
@@ -553,11 +546,11 @@ public final class DrawController implements IDrawController, Runnable, IntSetti
 		maxz = (3.0 * originalMaxz - originalMinz) / 2.0;
 	}
 
-	public static void setPlotterSelectorFactory(IPlotterSelectorFactory newSelectorFactory){
+	public static void setPlotterSelectorFactory(IPlotterSelectorFactory newSelectorFactory) {
 		selectorFactory = newSelectorFactory;
 	}
 
-	public boolean wasLastDrawing3D(){
+	public boolean wasLastDrawing3D() {
 		return lastDrawingWas3D;
 	}
 }

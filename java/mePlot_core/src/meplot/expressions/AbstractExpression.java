@@ -1,7 +1,6 @@
 package meplot.expressions;
 
 import meplot.expressions.geometry.ITensor;
-import meplot.expressions.list.IExpressionIterator;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.list.ValueList;
 import meplot.expressions.numbers.Dou;
@@ -14,9 +13,10 @@ import meplot.expressions.operations.Operation;
 import meplot.expressions.operations.Power;
 import meplot.expressions.operations.Sum;
 import meplot.parser.utils.Cleaner;
+import platform.lists.IIterator;
 
-public abstract class AbstractExpression implements Expression{
-	public boolean toStringStartsWith(char prefix){
+public abstract class AbstractExpression implements Expression {
+	public boolean toStringStartsWith(char prefix) {
 		// TODO: Fix
 		return toString().indexOf(prefix) == 0;
 	}
@@ -27,156 +27,156 @@ public abstract class AbstractExpression implements Expression{
 
 	private String string;
 
-	public final void toWrappedHtml(final StringBuffer buffer){
+	public final void toWrappedHtml(final StringBuffer buffer) {
 		buffer.append('{');
 		toHtml(buffer);
 		buffer.append('}');
 	}
 
-	public static boolean areIdentical(final Expression[] arg0, final Expression[] arg1){
-		if(arg0.length != arg1.length)
+	public static boolean areIdentical(final Expression[] arg0, final Expression[] arg1) {
+		if (arg0.length != arg1.length)
 			return false;
-		for(int i = 0; i < arg0.length; i++)
-			if(!arg0[i].isIdentical(arg1[i]))
+		for (int i = 0; i < arg0.length; i++)
+			if (!arg0[i].isIdentical(arg1[i]))
 				return false;
 		return true;
 	}
 
-	public Expression add(final Expression other){
-		if(isZero())
+	public Expression add(final Expression other) {
+		if (isZero())
 			return other;
-		if(other.isZero())
+		if (other.isZero())
 			return this;
 
 		return new Sum(this, other);
 	}
 
-	public final Expression applyConstants(){
+	public final Expression applyConstants() {
 		return partialSubstitute('e', Math.E).partialSubstitute('p', Math.PI);
 	}
 
-	public boolean compatible(final Expression elementAt, final char operation){
-		if(operation != Operation.POWER && equals(elementAt))
+	public boolean compatible(final Expression elementAt, final char operation) {
+		if (operation != Operation.POWER && equals(elementAt))
 			return true;
 
-		if(operation == Operation.ADDITION || operation == Operation.DIVISION)
+		if (operation == Operation.ADDITION || operation == Operation.DIVISION)
 			return isOpposite(elementAt);
 
 		return false;
 	}
 
-	public boolean containsMatrix(){
+	public boolean containsMatrix() {
 		return false;
 	}
 
-	public Expression divide(final Expression divisor){
-		if(divisor.isOne())
+	public Expression divide(final Expression divisor) {
+		if (divisor.isOne())
 			return this;
-		if(equals(divisor))
+		if (equals(divisor))
 			return Int.ONE;
-		if(isOpposite(divisor))
+		if (isOpposite(divisor))
 			return Int.MINUSONE;
 		return new Division(this, divisor);
 	}
 
-	public final IDou idouvalue(final IValueList valueList){
+	public final IDou idouvalue(final IValueList valueList) {
 		return new Dou(dvalue(valueList));
 	}
 
-	public final IDou idouvalue(final char letter, final double value){
+	public final IDou idouvalue(final char letter, final double value) {
 		return new Dou(dvalue(letter, value));
 	}
 
-	public final double dvalue(){
+	public final double dvalue() {
 		return dvalue('.', 0);
 	}
 
-	public double dvalue(final char var, final double value){
+	public double dvalue(final char var, final double value) {
 		return value(var, value).toDouble();
 	}
 
-	private double dvalue(final IValueList valueList){
+	private double dvalue(final IValueList valueList) {
 		return value(valueList).toDouble();
 	}
 
-	public boolean equals(final Object obj){
-		if(obj == null)
+	public boolean equals(final Object obj) {
+		if (obj == null)
 			return false;
 		return toString().equals(obj.toString());
 	}
 
-	public Expression expand(){
+	public Expression expand() {
 		return this;
 	}
 
-	public double fdvalue(final char letter, final double value){
+	public double fdvalue(final char letter, final double value) {
 		return dvalue(letter, value);
 	}
 
-	public int hashCode(){
+	public int hashCode() {
 		return toFullString().hashCode();
 	}
 
 	public abstract boolean hasLetter(char letter);
 
-	public Expression innerSimplify(){
+	public Expression innerSimplify() {
 		return this;
 	}
 
-	public Expression innerStepSimplify(){
+	public Expression innerStepSimplify() {
 		return innerSimplify();
 	}
 
-	public Expression inverse(){
+	public Expression inverse() {
 		return new Division(Int.ONE, this);
 	}
 
-	public boolean isFullDouble(){
+	public boolean isFullDouble() {
 		return false;
 	}
 
-	public boolean isOne(){
+	public boolean isOne() {
 		return false;
 	}
 
-	public final boolean isOpposite(final Expression other){
+	public final boolean isOpposite(final Expression other) {
 		final Expression othop = other.opposite();
 		final Expression opp = opposite();
 		return equals(othop) || other.equals(opp);
 	}
 
-	public final boolean isSimplified(){
+	public final boolean isSimplified() {
 		return simplified;
 	}
 
-	public boolean isZero(){
+	public boolean isZero() {
 		return false;
 	}
 
-	public ITensor matrixDvalue(final IValueList valueList){
+	public ITensor matrixDvalue(final IValueList valueList) {
 		return new Dou(dvalue(valueList));
 	}
 
-	public ITensor matrixDvalue(final char letter, final double value){
+	public ITensor matrixDvalue(final char letter, final double value) {
 		return matrixDvalue(new ValueList(letter, new Dou(value)));
 	}
 
-	public Expression multiply(final Expression other){
-		if(isOne())
+	public Expression multiply(final Expression other) {
+		if (isOne())
 			return other;
-		if(other.isOne())
+		if (other.isOne())
 			return this;
 
 		// a*0=0;
-		if(isZero())
+		if (isZero())
 			return this;
-		if(other.isZero())
+		if (other.isZero())
 			return other;
 
-		if(equals(other))
+		if (equals(other))
 			return new Power(this, Int.TWO);
 
-		if(other.compatible(this, Operation.MULTIPLICATION))
+		if (other.compatible(this, Operation.MULTIPLICATION))
 			return other.multiply(this);
 
 		return new Multiplication(this, other);
@@ -188,42 +188,41 @@ public abstract class AbstractExpression implements Expression{
 	 * 
 	 * @return Whether the expression needs parenthesis.
 	 */
-	public boolean needParenthesis(){
+	public boolean needParenthesis() {
 		return false;
 	}
 
-	public Expression opposite(){
+	public Expression opposite() {
 		return Int.MINUSONE.multiply(this);
 	}
 
-	public final Expression partialSimplify(){
-		if(simplified)
+	public final Expression partialSimplify() {
+		if (simplified)
 			return this;
 		final Expression inner = innerSimplify();
-		if(isIdentical(inner)){
+		if (isIdentical(inner)) {
 			simplified = true;
 			return this;
 		}
 		return inner;
 	}
 
-	public Expression square(){
+	public Expression square() {
 		return multiply(this);
 	}
 
-	public final String toCleanString(){
+	public final String toCleanString() {
 		return Cleaner.clean(toString());
 	}
 
 	/**
-	 * Returns a String that describes the object in a completely unambiguous
-	 * way. Possibly use RPN
+	 * Returns a String that describes the object in a completely unambiguous way.
+	 * Possibly use RPN
 	 * 
-	 * @return A String that describes the object in a completely unambiguous
-	 *         way.
+	 * @return A String that describes the object in a completely unambiguous way.
 	 */
-	public final String toFullString(){
-		if(fullString == null){
+	public final String toFullString() {
+		if (fullString == null) {
 			final StringBuffer buffer = new StringBuffer();
 			toFullString(buffer);
 			fullString = buffer.toString();
@@ -233,16 +232,16 @@ public abstract class AbstractExpression implements Expression{
 
 	public abstract void toFullString(final StringBuffer buffer);
 
-	public void toPString(final StringBuffer buffer){
-		if(needParenthesis())
+	public void toPString(final StringBuffer buffer) {
+		if (needParenthesis())
 			buffer.append('(');
 		toString(buffer);
-		if(needParenthesis())
+		if (needParenthesis())
 			buffer.append(')');
 	}
 
-	public final String toString(){
-		if(string == null){
+	public final String toString() {
+		if (string == null) {
 			final StringBuffer buffer = new StringBuffer();
 			toString(buffer);
 			string = buffer.toString();
@@ -252,19 +251,19 @@ public abstract class AbstractExpression implements Expression{
 
 	public abstract void toString(final StringBuffer buffer);
 
-	public final INumber value(){
+	public final INumber value() {
 		return value(ValueList.EMPTY);
 	}
 
-	public INumber value(final char var, final double value){
+	public INumber value(final char var, final double value) {
 		return value(new ValueList(var, new Dou(value)));
 	}
 
 	public abstract INumber value(IValueList letters);
 
-	public static boolean areIdentical(final IExpressionIterator arg0, final IExpressionIterator arg1){
-		while(arg0.hasNext() && arg1.hasNext())
-			if(!arg0.next().isIdentical(arg1.next()))
+	public static boolean areIdentical(final IIterator<Expression> arg0, final IIterator<Expression> arg1) {
+		while (arg0.hasNext() && arg1.hasNext())
+			if (!arg0.next().isIdentical(arg1.next()))
 				return false;
 		return !arg0.hasNext() && !arg1.hasNext();
 	}

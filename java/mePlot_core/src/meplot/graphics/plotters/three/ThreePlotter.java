@@ -19,11 +19,11 @@ import meplot.persistence.Settings;
 import platform.persistence.Persistence;
 import platform.persistence.listeners.BooleanSettingsListener;
 
-public final class ThreePlotter extends ExpressionPlotter implements BooleanSettingsListener, IDisposable{
+public final class ThreePlotter extends ExpressionPlotter implements BooleanSettingsListener, IDisposable {
 
 	private static final int[][] EMPTY_ZBUFFER = new int[1][1];
 
-	public ThreePlotter(){
+	public ThreePlotter() {
 		Persistence.registerListener(this);
 		autoscale = Persistence.loadBoolean(Settings.AUTOSCALE);
 	}
@@ -38,20 +38,19 @@ public final class ThreePlotter extends ExpressionPlotter implements BooleanSett
 	private double minv;
 	private double maxv;
 	private int y;
-	private WeakReference zbufferWeakRef = new WeakReference(EMPTY_ZBUFFER);
+	private WeakReference<int[][]> zbufferWeakRef = new WeakReference<int[][]>(EMPTY_ZBUFFER);
 
 	public void plot(final Expression expr, final IGraphics graphics, final int delta, final IDrawController controller)
-			throws DrawException{
+			throws DrawException {
 		rccache = rccacheCache.getStrong();
 		iccache = iccacheCache.getStrong();
 		bcache = bcacheCache.getStrong(PlotterUtil.getWidth(), PlotterUtil.getHeight());
 
 		Filler.contourFillCache(expr, delta, rccache, iccache, bcache, controller);
-		if(autoscale || PlotterUtil.getMinv() == PlotterUtil.getMaxv()){
+		if (autoscale || PlotterUtil.getMinv() == PlotterUtil.getMaxv()) {
 			minv = PlotterUtil.getMinv();
 			maxv = PlotterUtil.getMaxv();
-		}
-		else{
+		} else {
 			minv = controller.getMinz();
 			maxv = controller.getMaxz();
 		}
@@ -61,11 +60,11 @@ public final class ThreePlotter extends ExpressionPlotter implements BooleanSett
 
 		final Point3 zpoint = new Point3();
 		final Point3 zminusx = new Point3();
-		for(int x = delta; controller.isDrawing() && x < rccache.length; x += delta){
+		for (int x = delta; controller.isDrawing() && x < rccache.length; x += delta) {
 			getPoint3(zpoint, x, 0);
-			if(inBound(zpoint)){
+			if (inBound(zpoint)) {
 				getPoint3(zminusx, x - delta, 0);
-				if(inBound(zminusx)){
+				if (inBound(zminusx)) {
 					setColor(graphics, delta, x, delta);
 					graphics.drawLine(zpoint, zminusx, zbuffer);
 				}
@@ -76,38 +75,38 @@ public final class ThreePlotter extends ExpressionPlotter implements BooleanSett
 		final Point3 minusx = new Point3();
 		final Point3 minusy = new Point3();
 		final Point3 point = new Point3();
-		for(y = delta; y < rccache[0].length; y += delta){
+		for (y = delta; y < rccache[0].length; y += delta) {
 			getPoint3(zpoint, 0, y);
-			if(inBound(zpoint)){
+			if (inBound(zpoint)) {
 				getPoint3(zminusy, 0, y - delta);
-				if(inBound(zminusy)){
+				if (inBound(zminusy)) {
 					setColor(graphics, delta, delta, y);
 					graphics.drawLine(zpoint, zminusy, zbuffer);
 				}
 			}
-			for(int x = delta; controller.isDrawing() && x < rccache.length; x += delta){
+			for (int x = delta; controller.isDrawing() && x < rccache.length; x += delta) {
 				getPoint3(point, x, y);
-				if(inBound(point) && point.z < zbuffer[point.x][point.y]){
+				if (inBound(point) && point.z < zbuffer[point.x][point.y]) {
 					setColor(graphics, delta, x, y);
 
 					getPoint3(minusx, x - delta, y);
-					if(inBound(minusx))
+					if (inBound(minusx))
 						graphics.drawLine(point, minusx, zbuffer);
 
 					getPoint3(minusy, x, y - delta);
-					if(inBound(minusy))
+					if (inBound(minusy))
 						graphics.drawLine(point, minusy, zbuffer);
 				}
 			}
 		}
 	}
 
-	private void setColor(final IGraphics graphics, final int delta, final int x, final int y){
-		if(delta == 1){
+	private void setColor(final IGraphics graphics, final int delta, final int x, final int y) {
+		if (delta == 1) {
 			final boolean sign = bcache[x][y];
 			final boolean left = sign ^ bcache[x - delta][y];
 			final boolean right = sign ^ bcache[x][y - delta];
-			if(left || right){
+			if (left || right) {
 				graphics.setColor(0);
 				return;
 			}
@@ -115,28 +114,27 @@ public final class ThreePlotter extends ExpressionPlotter implements BooleanSett
 		graphics.setColor(DrawUtils.getColor(rccache[x][y], iccache[x][y], minv, maxv));
 	}
 
-	public void dispose(){
+	public void dispose() {
 		rccache = FloatCache.EMPTY;
 		iccache = FloatCache.EMPTY;
 		bcache = BooleanCache.EMPTY;
 	}
 
-	private static boolean inBound(final Point3 arg){
+	private static boolean inBound(final Point3 arg) {
 		return arg.x > 0 && arg.y > 0 && arg.x < PlotterUtil.getWidth() && arg.y < PlotterUtil.getHeight();
 	}
 
 	/**
-	 * Sets out to the projected point, or to {@link Point3#ZERO} on invalid
-	 * input.
+	 * Sets out to the projected point, or to {@link Point3#ZERO} on invalid input.
 	 * 
 	 * @param out
 	 * @param pointx
 	 * @param pointy
 	 */
-	private void getPoint3(Point3 out, final int pointx, final int pointy){
+	private void getPoint3(Point3 out, final int pointx, final int pointy) {
 		final float rval = rccache[pointx][pointy];
 		final float ival = iccache[pointx][pointy];
-		if(Double.isNaN(rval) || Double.isInfinite(rval) || Double.isNaN(ival) || Double.isInfinite(ival)){
+		if (Double.isNaN(rval) || Double.isInfinite(rval) || Double.isNaN(ival) || Double.isInfinite(ival)) {
 			out.x = out.y = out.z = 0;
 		}
 		final Complex current = new Complex(rval, ival);
@@ -146,42 +144,40 @@ public final class ThreePlotter extends ExpressionPlotter implements BooleanSett
 		PlotterUtil.project(out, pointx, pointy, scaledvalue);
 	}
 
-	private static WeakReference cleanZBufferWeak = new WeakReference(null);
+	private static WeakReference<int[][]> cleanZBufferWeak = new WeakReference<int[][]>(null);
 
-	public int[][] getZBuffer(){
-		final Object old = zbufferWeakRef.get();
-		int[][] toret = old == null ? null : (int[][])old;
+	public int[][] getZBuffer() {
+		int[][] toret = zbufferWeakRef.get();
 
-		final Object oldclean = cleanZBufferWeak.get();
-		int[][] clean = oldclean == null ? null : (int[][])oldclean;
+		int[][] clean = cleanZBufferWeak.get();
 
 		final int height = PlotterUtil.getHeight();
 		final int width = PlotterUtil.getWidth();
-		if(toret == null || toret.length != width || toret.length == 0 || toret[0].length != height){
+		if (toret == null || toret.length != width || toret.length == 0 || toret[0].length != height) {
 			toret = new int[width][height];
-			zbufferWeakRef = new WeakReference(toret);
+			zbufferWeakRef = new WeakReference<int[][]>(toret);
 		}
 
-		if(clean == null || clean.length != width || clean.length == 0 || clean[0].length != height){
+		if (clean == null || clean.length != width || clean.length == 0 || clean[0].length != height) {
 			clean = new int[width][height];
-			for(int xz = 0; xz < width; xz++)
-				for(int yz = 0; yz < height; yz++)
+			for (int xz = 0; xz < width; xz++)
+				for (int yz = 0; yz < height; yz++)
 					clean[xz][yz] = Integer.MAX_VALUE;
-			cleanZBufferWeak = new WeakReference(clean);
+			cleanZBufferWeak = new WeakReference<int[][]>(clean);
 		}
 
-		for(int i = 0; i < width; i++)
+		for (int i = 0; i < width; i++)
 			System.arraycopy(clean[i], 0, toret[i], 0, height);
 
 		return toret;
 	}
 
-	public void changedSetting(final String name, final boolean arg){
-		if(name.equals(Settings.AUTOSCALE))
+	public void changedSetting(final String name, final boolean arg) {
+		if (name.equals(Settings.AUTOSCALE))
 			autoscale = arg;
 	}
 
-	public int getProgress(){
+	public int getProgress() {
 		return 100 * y / PlotterUtil.getHeight();
 	}
 }

@@ -46,8 +46,10 @@ import meplot.expressions.numbers.Int;
 import meplot.numerical.QRDecompose;
 import meplot.numerical.SVDecompose;
 import meplot.parser.ParserException;
+import platform.lists.IIterator;
+import platform.lists.List;
 
-public final class FunctionToken extends Token{
+public final class FunctionToken extends Token {
 	/**
 	 * Magic function: M(x) means -x.
 	 */
@@ -55,19 +57,19 @@ public final class FunctionToken extends Token{
 	private final String val;
 	private final IToken[] args;
 
-	public FunctionToken(final String name, final IToken[] tokens){
+	public FunctionToken(final String name, final IToken[] tokens) {
 		val = name;
 		args = tokens;
 	}
 
 	// Functions requiring special attention
-	private static final String[] OTHERS = new String[] {MAGIC_FUNCTION};
+	private static final String[] OTHERS = new String[] { MAGIC_FUNCTION };
 
 	// Empty array, avoids multiple creations
 	private static final Expression[] NARR = new Expression[0];
 
 	// Add here new functions
-	private static final IFunctor[] DEFAULT_FUNCTIONS = new IFunctor[] {new Sinh(Int.ZERO), new Cosh(Int.ZERO),
+	private static final IFunctor[] DEFAULT_FUNCTIONS = new IFunctor[] { new Sinh(Int.ZERO), new Cosh(Int.ZERO),
 			new Asin(Int.ZERO), new Sin(Int.ZERO), new Cos(Int.ZERO), new Atan(Int.ZERO), new Tan(Int.ZERO),
 			new Abs(Int.ZERO), new Floor(Int.ZERO), new Ln(Int.ZERO), new Exp(Int.ZERO), new Sqrt(Int.ZERO),
 			new Arg(Int.ZERO), new Re(Int.ZERO), new Im(Int.ZERO), new Sign(Int.ZERO), new Log10(Int.ZERO),
@@ -75,184 +77,182 @@ public final class FunctionToken extends Token{
 			new SVDecompose(Int.ZERO), new Hold(Int.ZERO), new Cbrt(Int.ZERO), new Gradient(Int.ZERO),
 			new QRDecompose(Int.ZERO), new MaxNorm(NARR), new PNorm(NARR), new Piecewise(NARR), new Max(NARR),
 			new Min(NARR), new Mandelbrot(NARR), new Mod(NARR), new Derivative(NARR), new Integral(NARR),
-			new Ackermann(NARR), new Span(NARR), new GenericOde(NARR), new Ode(NARR), new Gcd(NARR)};
+			new Ackermann(NARR), new Span(NARR), new GenericOde(NARR), new Ode(NARR), new Gcd(NARR) };
 
-	private static UserFunctionList userFunctions = new UserFunctionList();
+	private static List<UserFunction> userFunctions = new List<UserFunction>();
 
-	public Expression toExpression() throws ParserException{
+	public Expression toExpression() throws ParserException {
 		final Expression[] eargs = getArgs();
 
 		final int len = DEFAULT_FUNCTIONS.length;
-		for(int c = 0; c < len; c++)
-			if(DEFAULT_FUNCTIONS[c].getName().equals(val))
+		for (int c = 0; c < len; c++)
+			if (DEFAULT_FUNCTIONS[c].getName().equals(val))
 				return DEFAULT_FUNCTIONS[c].gfill(eargs);
 
-		final UserFunctionIterator iterator = userFunctions.getIterator();
-		while(iterator.hasNext()){
+		final IIterator<UserFunction> iterator = userFunctions.getIterator();
+		while (iterator.hasNext()) {
 			final UserFunction uff = iterator.next();
-			if(uff.getName().equals(val))
+			if (uff.getName().equals(val))
 				return uff.fill(eargs);
 		}
-		if(MAGIC_FUNCTION.equals(val))
+		if (MAGIC_FUNCTION.equals(val))
 			return eargs[0].opposite();
 
 		throw new ParserException("toExpression of unknown function");
 	}
 
-	private Expression[] getArgs() throws ParserException{
+	private Expression[] getArgs() throws ParserException {
 		final Expression[] eargs;
-		if(args == null)
+		if (args == null)
 			eargs = new Expression[0];
-		else{
+		else {
 			eargs = new Expression[args.length];
-			for(int c = 0; c < args.length; c++)
+			for (int c = 0; c < args.length; c++)
 				eargs[c] = args[c] == null ? Letter.I : args[c].toExpression();
 		}
 		return eargs;
 	}
 
-	public String toString(){
+	public String toString() {
 		final StringBuffer toret = new StringBuffer(val);
 		toString(toret);
 		return toret.toString();
 	}
 
-	public void toString(final StringBuffer toret){
-		if(args == null){
+	public void toString(final StringBuffer toret) {
+		if (args == null) {
 			toret.append(val);
 			toret.append("(?)");
 			return;
 		}
 		toret.append('(');
-		for(int c = 0; c < args.length - 1; c++){
+		for (int c = 0; c < args.length - 1; c++) {
 			toret.append(stringize(args[c]));
 			toret.append(',');
 		}
-		if(args.length > 0)
+		if (args.length > 0)
 			toret.append(stringize(args[args.length - 1]));
 		toret.append(')');
 	}
 
-	private static String stringize(final IToken args2){
+	private static String stringize(final IToken args2) {
 		return args2 == null ? "?" : args2.toString();
 	}
 
-	public IToken[] getValues(){
+	public IToken[] getValues() {
 		return args;
 	}
 
-	public static ITokenList parse(final String input){
+	public static ITokenList parse(final String input) {
 		final TokenList toret = new TokenList();
 		final int start = firstF(input);
-		if(start >= 0){
+		if (start >= 0) {
 			final int end = firstFe(input);
-			if(start > 0){
+			if (start > 0) {
 				final ITokenList tokenList = parse(input.substring(0, start));
 				toret.addRange(tokenList);
 			}
 			final String substring = input.substring(start, end);
 			final FunctionToken token = new FunctionToken(substring, new Token[0]);
 			toret.add(token);
-			if(input.length() > end){
+			if (input.length() > end) {
 				final String remains = input.substring(end);
 				final ITokenList parsedRemains = parse(remains);
 				toret.addRange(parsedRemains);
 			}
-		}
-		else
+		} else
 			toret.add(new CharList(input));
 		return toret;
 	}
 
-	private static int firstFe(final String name){
-		for(int c = 0; c < DEFAULT_FUNCTIONS.length; c++){
+	private static int firstFe(final String name) {
+		for (int c = 0; c < DEFAULT_FUNCTIONS.length; c++) {
 			final int index = name.indexOf(DEFAULT_FUNCTIONS[c].getName());
-			if(index >= 0)
+			if (index >= 0)
 				return index + DEFAULT_FUNCTIONS[c].getName().length();
 		}
 
-		for(int c = 0; c < OTHERS.length; c++){
+		for (int c = 0; c < OTHERS.length; c++) {
 			final int index = name.indexOf(OTHERS[c]);
-			if(index >= 0)
+			if (index >= 0)
 				return index + OTHERS[c].length();
 		}
 
-		final UserFunctionIterator iterator = userFunctions.getIterator();
-		while(iterator.hasNext()){
+		final IIterator<UserFunction> iterator = userFunctions.getIterator();
+		while (iterator.hasNext()) {
 			final UserFunction uff = iterator.next();
 			final int index = name.indexOf(uff.getName());
-			if(index >= 0)
+			if (index >= 0)
 				return index + uff.getName().length();
 		}
 
 		return -1;
 	}
 
-	private static int firstF(final String name){
-		for(int c = 0; c < DEFAULT_FUNCTIONS.length; c++){
+	private static int firstF(final String name) {
+		for (int c = 0; c < DEFAULT_FUNCTIONS.length; c++) {
 			final int index = name.indexOf(DEFAULT_FUNCTIONS[c].getName());
-			if(index >= 0)
+			if (index >= 0)
 				return index;
 		}
 
-		for(int d = 0; d < OTHERS.length; d++){
+		for (int d = 0; d < OTHERS.length; d++) {
 			final int index = name.indexOf(OTHERS[d]);
-			if(index >= 0)
+			if (index >= 0)
 				return index;
 		}
 
-		final UserFunctionIterator iterator = userFunctions.getIterator();
-		while(iterator.hasNext()){
+		final IIterator<UserFunction> iterator = userFunctions.getIterator();
+		while (iterator.hasNext()) {
 			final UserFunction uff = iterator.next();
 			final int index = name.indexOf(uff.getName());
-			if(index >= 0)
+			if (index >= 0)
 				return index;
 		}
 
 		return -1;
 	}
 
-	public Token fill(final IToken[] args){
+	public Token fill(final IToken[] args) {
 		return new FunctionToken(val, args);
 	}
 
-	public int needs(){
-		try{
+	public int needs() {
+		try {
 			return match().needs();
-		}
-		catch(final ParserException e){
+		} catch (final ParserException e) {
 			return -1;
 		}
 	}
 
-	private IFunctor match() throws ParserException{
+	private IFunctor match() throws ParserException {
 		return match(val);
 	}
 
-	public static IFunctor match(final String value) throws ParserException{
-		for(int c = 0; c < DEFAULT_FUNCTIONS.length; c++)
-			if(DEFAULT_FUNCTIONS[c].getName().equals(value))
+	public static IFunctor match(final String value) throws ParserException {
+		for (int c = 0; c < DEFAULT_FUNCTIONS.length; c++)
+			if (DEFAULT_FUNCTIONS[c].getName().equals(value))
 				return DEFAULT_FUNCTIONS[c];
 
-		final UserFunctionIterator iterator = userFunctions.getIterator();
-		while(iterator.hasNext()){
+		final IIterator<UserFunction> iterator = userFunctions.getIterator();
+		while (iterator.hasNext()) {
 			final UserFunction uff = iterator.next();
-			if(uff.getName().equals(value))
+			if (uff.getName().equals(value))
 				return uff;
 		}
 
-		if(MAGIC_FUNCTION.equals(value))
+		if (MAGIC_FUNCTION.equals(value))
 			return new FakeFunction(1);
 
 		throw new ParserException("Match of unknown function");
 	}
 
-	public static void setUserFunctions(final UserFunctionList toadd){
-		userFunctions = new UserFunctionList();
+	public static void setUserFunctions(final List<UserFunction> toadd) {
+		userFunctions = new List<UserFunction>();
 		userFunctions.addRange(toadd);
 	}
 
-	public static IFunctor[] getDefaultFunctions(){
+	public static IFunctor[] getDefaultFunctions() {
 		return DEFAULT_FUNCTIONS;
 	}
 }

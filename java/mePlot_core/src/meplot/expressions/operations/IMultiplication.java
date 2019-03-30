@@ -1,10 +1,11 @@
 package meplot.expressions.operations;
 
-import meplot.expressions.list.IExpressionIterator;
+import meplot.expressions.Expression;
 import meplot.expressions.numbers.INumber;
+import platform.lists.IIterator;
 
-public interface IMultiplication{
-	IExpressionIterator getFactors();
+public interface IMultiplication {
+	IIterator<Expression> getFactors();
 
 	INumber coefficent();
 }

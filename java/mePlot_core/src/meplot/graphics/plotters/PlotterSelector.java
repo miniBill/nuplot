@@ -3,8 +3,6 @@ package meplot.graphics.plotters;
 import meplot.graphics.DrawMode;
 import meplot.graphics.IDisposable;
 import meplot.graphics.graphs.Graph;
-import meplot.graphics.graphs.GraphIterator;
-import meplot.graphics.graphs.GraphList;
 import meplot.graphics.graphs.NormalGraph;
 import meplot.graphics.graphs.OdeGraph;
 import meplot.graphics.graphs.ParametricGraph;
@@ -16,10 +14,12 @@ import meplot.graphics.plotters.three.OdePlotter;
 import meplot.graphics.plotters.three.ThreeParametricPlotter;
 import meplot.graphics.plotters.three.ThreePlotter;
 import meplot.graphics.plotters.three.ThreeScanner;
+import platform.lists.IIterator;
+import platform.lists.List;
 import platform.log.Log;
 import platform.log.LogLevel;
 
-public class PlotterSelector implements IPlotterSelector{
+public class PlotterSelector implements IPlotterSelector {
 	private static final int THREED = 0;
 	public static final int CONTOUR = 1;
 	public static final int GRAYCONTOUR = 2;
@@ -27,18 +27,18 @@ public class PlotterSelector implements IPlotterSelector{
 	private static final int COMPLEX = 4;
 	private static final int MAXMODE = 4;
 
-	protected static DrawMode getMode(final Graph graph){
-		if(graph == null)
+	protected static DrawMode getMode(final Graph graph) {
+		if (graph == null)
 			return DrawMode.MODE2D;
 
-		if(graph instanceof OdeGraph)
+		if (graph instanceof OdeGraph)
 			return DrawMode.MODEODE;
 
-		if(graph instanceof ThreeParametricGraph)
+		if (graph instanceof ThreeParametricGraph)
 			return DrawMode.MODE3PARAM;
 
-		if(graph.is3D()){
-			if(graph.isImplicit())
+		if (graph.is3D()) {
+			if (graph.isImplicit())
 				return DrawMode.MODE3IMPLICIT;
 			return DrawMode.MODE3D;
 		}
@@ -65,18 +65,18 @@ public class PlotterSelector implements IPlotterSelector{
 	private final ThreeScanner threeScanner = new ThreeScanner();
 	protected final Plotter xyScanner = new XyScanner();
 
-	public final void disposePlotters(){
-		if(plotters != null)
-			for(int c = 0; c < plotters.length; c++)
-				if(plotters[c] instanceof IDisposable)
-					((IDisposable)plotters[c]).dispose();
+	public final void disposePlotters() {
+		if (plotters != null)
+			for (int c = 0; c < plotters.length; c++)
+				if (plotters[c] instanceof IDisposable)
+					((IDisposable) plotters[c]).dispose();
 	}
 
-	public int[][] getZBuffer(){
+	public int[][] getZBuffer() {
 		return threePlotter.getZBuffer();
 	}
 
-	private void initPlotters(){
+	private void initPlotters() {
 		plotters = new Plotter[MAXMODE + 1];
 		plotters[GRAYCONTOUR] = contourPlotter;
 		plotters[CONTOUR] = contourPlotter;
@@ -85,73 +85,72 @@ public class PlotterSelector implements IPlotterSelector{
 		plotters[COMPLEX] = complexPlotter;
 	}
 
-	public final boolean isAxisFirstMode(final GraphIterator iterator){
+	public final boolean isAxisFirstMode(final IIterator<Graph> iterator) {
 		return mode.equals(DrawMode.MODE2D)
-				|| mode.equals(DrawMode.MODE3D)
-				&& (threeDMode == FIELD || threeDMode == COMPLEX || cleanContour
-						&& (threeDMode == CONTOUR || threeDMode == GRAYCONTOUR)) || mode.equals(DrawMode.MODEODE)
-				&& !iterator.next().is3D();
+				|| mode.equals(DrawMode.MODE3D) && (threeDMode == FIELD || threeDMode == COMPLEX
+						|| cleanContour && (threeDMode == CONTOUR || threeDMode == GRAYCONTOUR))
+				|| mode.equals(DrawMode.MODEODE) && !iterator.next().is3D();
 	}
 
-	public boolean isAxisLaterMode(){
+	public boolean isAxisLaterMode() {
 		return mode.equals(DrawMode.MODE3D) && (threeDMode == GRAYCONTOUR || threeDMode == CONTOUR);
 	}
 
-	public boolean isFreeroamMode(){
+	public boolean isFreeroamMode() {
 		return mode.equals(DrawMode.MODE3D) && threeDMode == THREED || mode.equals(DrawMode.MODE3PARAM)
 				|| mode.equals(DrawMode.MODE3IMPLICIT) || is3Ode;
 	}
 
-	public final void next3DMode(){
+	public final void next3DMode() {
 		threeDMode++;
-		if(threeDMode > MAXMODE)
+		if (threeDMode > MAXMODE)
 			threeDMode = 0;
 	}
 
-	public final void previous3DMode(){
+	public final void previous3DMode() {
 		threeDMode--;
-		if(threeDMode < 0)
+		if (threeDMode < 0)
 			threeDMode = MAXMODE;
 	}
 
-	public final Plotter selectPlotter(final Graph graph){
-		if(plotters.length == 0)
+	public final Plotter selectPlotter(final Graph graph) {
+		if (plotters.length == 0)
 			initPlotters();
 
 		return innerSelectPlotter(graph);
 	}
 
-	protected Plotter innerSelectPlotter(final Graph graph){
-		if(graph instanceof ParametricGraph){
-			if(graph instanceof ThreeParametricGraph)
+	protected Plotter innerSelectPlotter(final Graph graph) {
+		if (graph instanceof ParametricGraph) {
+			if (graph instanceof ThreeParametricGraph)
 				return threeParamPlotter;
 			return parametricPlotter;
 		}
 
 		// should always be true, but it's better to be robust
-		if(graph instanceof NormalGraph){
+		if (graph instanceof NormalGraph) {
 
-			if(graph instanceof OdeGraph)
+			if (graph instanceof OdeGraph)
 				return odePlotter;
 
-			if(graph.isRadial())
+			if (graph.isRadial())
 				return radialPlotter;
 
 			final DrawMode gmode = getMode(graph);
 
-			if(gmode.equals(DrawMode.MODE2D)){
-				if(graph.isImplicit())
+			if (gmode.equals(DrawMode.MODE2D)) {
+				if (graph.isImplicit())
 					return xyScanner;
 				return singleScanner;
 			}
 
-			if(gmode.equals(DrawMode.MODE3IMPLICIT))
+			if (gmode.equals(DrawMode.MODE3IMPLICIT))
 				return threeScanner;
 
-			if(threeDMode == CONTOUR || threeDMode == GRAYCONTOUR)
+			if (threeDMode == CONTOUR || threeDMode == GRAYCONTOUR)
 				contourPlotter.setMode(threeDMode, cleanContour);
 
-			if(threeDMode < plotters.length)
+			if (threeDMode < plotters.length)
 				return plotters[threeDMode];
 		}
 
@@ -159,20 +158,20 @@ public class PlotterSelector implements IPlotterSelector{
 		return singleScanner;
 	}
 
-	public final void set3Ode(final boolean value){
+	public final void set3Ode(final boolean value) {
 		is3Ode = value;
 	}
 
-	public void setCleanContour(final boolean value){
+	public void setCleanContour(final boolean value) {
 		cleanContour = value;
 	}
 
-	public void setMode(final GraphList graphList){
-		if(graphList == null)
+	public void setMode(final List<Graph> graphList) {
+		if (graphList == null)
 			return;
-		if(graphList.isEmpty())
+		if (graphList.isEmpty())
 			mode = DrawMode.MODE2D;
-		else{
+		else {
 			final Graph graph = graphList.getFirst();
 			mode = getMode(graph);
 		}

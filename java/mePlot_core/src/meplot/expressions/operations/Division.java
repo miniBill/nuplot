@@ -7,7 +7,7 @@ import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.functions.FunctionsMath;
 import meplot.expressions.functions.exp.Sqrt;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionIterator;
+import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.Fraction;
@@ -22,21 +22,21 @@ import meplot.persistence.Settings;
 import platform.log.Log;
 import platform.persistence.listeners.IntSettingsListener;
 
-public final class Division extends AbstractExpression implements IDivision, IntSettingsListener{
-	private static class FakeMultiplication implements IMultiplication{
+public final class Division extends AbstractExpression implements IDivision, IntSettingsListener {
+	private static class FakeMultiplication implements IMultiplication {
 		private final Expression arg;
 
-		FakeMultiplication(final Expression arg){
+		FakeMultiplication(final Expression arg) {
 			this.arg = arg;
 		}
 
-		public IExpressionIterator getFactors(){
+		public IIterator<Expression> getFactors() {
 			return new ExpressionList(arg).getIterator();
 		}
 
-		public INumber coefficent(){
-			if(arg instanceof INumber)
-				return (INumber)arg;
+		public INumber coefficent() {
+			if (arg instanceof INumber)
+				return (INumber) arg;
 			return Int.ONE;
 		}
 	}
@@ -46,113 +46,113 @@ public final class Division extends AbstractExpression implements IDivision, Int
 	private final Expression numerator;
 	private final Expression denominator;
 
-	public Division(final Expression num, final Expression den){
+	public Division(final Expression num, final Expression den) {
 		numerator = num;
 		denominator = den;
 	}
 
-	public Expression innerSimplify(){
+	public Expression innerSimplify() {
 		final Expression numeratorS = numerator.partialSimplify();
 		final Expression denominatorS = denominator.partialSimplify();
 		return finishSimplification(numeratorS, denominatorS);
 	}
 
-	private static Expression finishSimplification(final Expression numeratorS, final Expression denominatorS){
-		if(numeratorS instanceof IReal && denominatorS instanceof IReal){
-			IReal rnumerator = (IReal)numeratorS;
-			IReal rdenominator = (IReal)denominatorS;
+	private static Expression finishSimplification(final Expression numeratorS, final Expression denominatorS) {
+		if (numeratorS instanceof IReal && denominatorS instanceof IReal) {
+			IReal rnumerator = (IReal) numeratorS;
+			IReal rdenominator = (IReal) denominatorS;
 			return rnumerator.divide(rdenominator);
 		}
-		if(numeratorS.compatible(denominatorS, Operation.DIVISION))
+		if (numeratorS.compatible(denominatorS, Operation.DIVISION))
 			return numeratorS.divide(denominatorS);
-		if(denominatorS.isOne())
+		if (denominatorS.isOne())
 			return numeratorS;
-		if(numeratorS.isZero())
+		if (numeratorS.isZero())
 			return Int.ZERO;
-		if(numeratorS instanceof IReal && ((IReal)numeratorS).isNegative() && denominatorS instanceof Sum)
-			return new Division(((IReal)numeratorS).iropposite(), denominatorS.opposite());
-		if(numeratorS.equals(SimplificationHelper.simplify(denominatorS.opposite()))
+		if (numeratorS instanceof IReal && ((IReal) numeratorS).isNegative() && denominatorS instanceof Sum)
+			return new Division(((IReal) numeratorS).iropposite(), denominatorS.opposite());
+		if (numeratorS.equals(SimplificationHelper.simplify(denominatorS.opposite()))
 				|| SimplificationHelper.simplify(numeratorS.opposite()).equals(denominatorS))
 			return Int.MINUSONE;
-		if(denominatorS instanceof IReal && ((IReal)denominatorS).isNegative())
-			return new Division(numeratorS.opposite(), ((IReal)denominatorS).iropposite());
-		if(denominatorS instanceof IMultiplication && ((IMultiplication)denominatorS).coefficent().real().isNegative())
+		if (denominatorS instanceof IReal && ((IReal) denominatorS).isNegative())
+			return new Division(numeratorS.opposite(), ((IReal) denominatorS).iropposite());
+		if (denominatorS instanceof IMultiplication
+				&& ((IMultiplication) denominatorS).coefficent().real().isNegative())
 			return new Division(numeratorS.opposite(), denominatorS.opposite());
-		if(denominatorS instanceof IComplex)
-			return ((IComplex)denominatorS).invdivide(numeratorS);
-		if(numeratorS instanceof IDivision)
-			return finishSimplificationNumDivision((IDivision)numeratorS, denominatorS);
-		if(denominatorS instanceof IDivision)
-			return finishSimplificationDenDivision(numeratorS, (IDivision)denominatorS);
-		if(numeratorS instanceof Sum && denominatorS instanceof Sum)
-			return simplifyRoots((Sum)numeratorS, (Sum)denominatorS);
-		if(numeratorS instanceof IMultiplication)
-			return finishSimplificationNumIMultiplication((IMultiplication)numeratorS, denominatorS);
-		if(denominatorS instanceof Power)
-			return finishSimplificationDenPower(numeratorS, (Power)denominatorS);
-		if(denominatorS instanceof IMultiplication)
-			return finishSimplificationDenIMultiplication(numeratorS, (IMultiplication)denominatorS);
-		if(denominatorS instanceof Sqrt)
+		if (denominatorS instanceof IComplex)
+			return ((IComplex) denominatorS).invdivide(numeratorS);
+		if (numeratorS instanceof IDivision)
+			return finishSimplificationNumDivision((IDivision) numeratorS, denominatorS);
+		if (denominatorS instanceof IDivision)
+			return finishSimplificationDenDivision(numeratorS, (IDivision) denominatorS);
+		if (numeratorS instanceof Sum && denominatorS instanceof Sum)
+			return simplifyRoots((Sum) numeratorS, (Sum) denominatorS);
+		if (numeratorS instanceof IMultiplication)
+			return finishSimplificationNumIMultiplication((IMultiplication) numeratorS, denominatorS);
+		if (denominatorS instanceof Power)
+			return finishSimplificationDenPower(numeratorS, (Power) denominatorS);
+		if (denominatorS instanceof IMultiplication)
+			return finishSimplificationDenIMultiplication(numeratorS, (IMultiplication) denominatorS);
+		if (denominatorS instanceof Sqrt)
 			return new Division(numeratorS.multiply(denominatorS), denominatorS.square());
 		return new Division(numeratorS, denominatorS);
 	}
 
-	private static Expression finishSimplificationDenPower(final Expression numeratorS, final Power pds){
-		if(pds.getBase().equals(numeratorS))
+	private static Expression finishSimplificationDenPower(final Expression numeratorS, final Power pds) {
+		if (pds.getBase().equals(numeratorS))
 			return new Power(numeratorS, pds.getExponent().add(Int.MINUSONE));
 		return new Division(numeratorS, pds);
 	}
 
 	private static Expression finishSimplificationNumDivision(final IDivision divNumerator,
-			final Expression denominatorS){
+			final Expression denominatorS) {
 		return new Division(divNumerator.getNumerator(), divNumerator.getDenominator().multiply(denominatorS));
 	}
 
 	private static Expression finishSimplificationDenDivision(final ICalculable numeratorS,
-			final IDivision divDenominator){
+			final IDivision divDenominator) {
 		return new Division(numeratorS.multiply(divDenominator.getDenominator()), divDenominator.getNumerator());
 	}
 
-	public Expression innerStepSimplify(){
+	public Expression innerStepSimplify() {
 		final Expression numeratorS = numerator.innerStepSimplify();
 		final Expression denominatorS = denominator.innerStepSimplify();
-		if(!numeratorS.equals(numerator) || !denominatorS.equals(denominator))
+		if (!numeratorS.equals(numerator) || !denominatorS.equals(denominator))
 			return new Division(numeratorS, denominatorS);
 		return finishSimplification(numeratorS, denominatorS);
 	}
 
 	private static Expression finishSimplificationNumIMultiplication(final IMultiplication numeratorS,
-			final Expression denominatorS){
-		if(denominatorS instanceof IMultiplication)
-			return crossSimplify(numeratorS, (IMultiplication)denominatorS);
+			final Expression denominatorS) {
+		if (denominatorS instanceof IMultiplication)
+			return crossSimplify(numeratorS, (IMultiplication) denominatorS);
 		return crossSimplify(numeratorS, new FakeMultiplication(denominatorS));
 	}
 
 	private static boolean tryCross;
 
-	private static Expression simplifyRoots(final Sum nums, final Sum dens){
-		if(!tryCross)
+	private static Expression simplifyRoots(final Sum nums, final Sum dens) {
+		if (!tryCross)
 			return new Division(nums, dens);
-		for(char variable = 'a'; variable <= 'z'; variable++)
-			if(nums.hasLetter(variable) && dens.hasLetter(variable) && Poly.isPoly(nums, variable)
-					&& Poly.isPoly(dens, variable)){
+		for (char variable = 'a'; variable <= 'z'; variable++)
+			if (nums.hasLetter(variable) && dens.hasLetter(variable) && Poly.isPoly(nums, variable)
+					&& Poly.isPoly(dens, variable)) {
 				final Poly pnum = new Poly(nums, variable);
 				final Poly pden = new Poly(dens, variable);
 				final Poly gcd = FunctionsMath.gcd(pnum, pden);
-				if(!gcd.isOne()){
+				if (!gcd.isOne()) {
 					Expression ndiv = nums;
 					Expression ddiv = dens;
-					try{
+					try {
 						ndiv = pnum.pdivide(gcd);
 						ndiv = SimplificationHelper.simplify(ndiv);
 						ddiv = pden.pdivide(gcd);
 						ddiv = SimplificationHelper.simplify(ddiv);
 						return new Division(ndiv, ddiv);
-					}
-					catch(final CalcException e){
+					} catch (final CalcException e) {
 						Log.log(e);
 					}
-					if(ndiv instanceof Division || ddiv instanceof Division)
+					if (ndiv instanceof Division || ddiv instanceof Division)
 						throw new CalcException("Something went wrong in simplifyRoots");
 					return new Division(nums, dens);
 				}
@@ -161,22 +161,22 @@ public final class Division extends AbstractExpression implements IDivision, Int
 	}
 
 	private static Expression finishSimplificationDenIMultiplication(final Expression numerator,
-			final IMultiplication denominator){
+			final IMultiplication denominator) {
 		return crossSimplify(new Multiplication(numerator), denominator);
 	}
 
-	private static Expression crossSimplify(final IMultiplication numerator, final IMultiplication denominator){
+	private static Expression crossSimplify(final IMultiplication numerator, final IMultiplication denominator) {
 		final IExpressionList newNumList = new ExpressionList();
-		final IExpressionIterator nFactorsIt = numerator.getFactors();
-		while(nFactorsIt.hasNext()){
+		final IIterator<Expression> nFactorsIt = numerator.getFactors();
+		while (nFactorsIt.hasNext()) {
 			final Expression currentN = nFactorsIt.next();
 			final IExpressionList newDenList = new ExpressionList();
-			final IExpressionIterator dFactorsIt = denominator.getFactors();
-			while(dFactorsIt.hasNext()){
+			final IIterator<Expression> dFactorsIt = denominator.getFactors();
+			while (dFactorsIt.hasNext()) {
 				final Expression currentD = dFactorsIt.next();
-				if(currentN.compatible(currentD, Operation.DIVISION)){
+				if (currentN.compatible(currentD, Operation.DIVISION)) {
 					final Expression test = currentN.divide(currentD);
-					if(!(test instanceof Fraction)){
+					if (!(test instanceof Fraction)) {
 						newNumList.add(test);
 						newNumList.addRange(nFactorsIt);
 						newDenList.addRange(dFactorsIt);
@@ -189,33 +189,31 @@ public final class Division extends AbstractExpression implements IDivision, Int
 		}
 
 		final Expression nnum;
-		if(numerator.getFactors().length() == 1)
+		if (numerator.getFactors().length() == 1)
 			nnum = numerator.getFactors().next();
+		else if (numerator instanceof Expression)
+			nnum = (Expression) numerator;
 		else
-			if(numerator instanceof Expression)
-				nnum = (Expression)numerator;
-			else
-				throw new CalcException("Awfully wrong numerator in Division#crossSimplify");
+			throw new CalcException("Awfully wrong numerator in Division#crossSimplify");
 
 		final Expression nden;
-		if(denominator.getFactors().length() == 1)
+		if (denominator.getFactors().length() == 1)
 			nden = denominator.getFactors().next();
+		else if (denominator instanceof Expression)
+			nden = (Expression) denominator;
 		else
-			if(denominator instanceof Expression)
-				nden = (Expression)denominator;
-			else
-				throw new CalcException("Awfully wrong numerator in Division#crossSimplify");
+			throw new CalcException("Awfully wrong numerator in Division#crossSimplify");
 		return new Division(nnum, nden);
 	}
 
-	public boolean compatible(final Expression elementAt, final char operation){
+	public boolean compatible(final Expression elementAt, final char operation) {
 		return true;
 	}
 
-	public Expression add(final Expression other){
-		if(other instanceof IDivision){
-			final IDivision otherd = (IDivision)other;
-			if(otherd.getDenominator().equals(denominator))
+	public Expression add(final Expression other) {
+		if (other instanceof IDivision) {
+			final IDivision otherd = (IDivision) other;
+			if (otherd.getDenominator().equals(denominator))
 				return new Division(numerator.add(otherd.getNumerator()), denominator);
 			final Expression lcm = FunctionsMath.lcm(denominator, otherd.getDenominator());
 			final Expression thisMul = SimplificationHelper.simplify(lcm.divide(denominator));
@@ -225,51 +223,51 @@ public final class Division extends AbstractExpression implements IDivision, Int
 		return new Division(numerator.add(denominator.multiply(other)), denominator);
 	}
 
-	public Expression multiply(final Expression other){
+	public Expression multiply(final Expression other) {
 		return new Division(numerator.multiply(other), denominator);
 	}
 
-	public Expression divide(final Expression other){
+	public Expression divide(final Expression other) {
 		return new Division(numerator, denominator.multiply(other));
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuffer buffer) {
 		numerator.toPString(buffer);
 		buffer.append(Operation.DIVISION);
-		if(denominator instanceof Division)
+		if (denominator instanceof Division)
 			buffer.append('(');
 		denominator.toPString(buffer);
-		if(denominator instanceof Division)
+		if (denominator instanceof Division)
 			buffer.append(')');
 	}
 
-	public INumber value(final IValueList arg){
+	public INumber value(final IValueList arg) {
 		final INumber nval = numerator.value(arg);
 		final INumber dval = denominator.value(arg);
 		return nval.divide(dval);
 	}
 
-	public Expression partialSubstitute(final IValueList valueList){
+	public Expression partialSubstitute(final IValueList valueList) {
 		return new Division(numerator.partialSubstitute(valueList), denominator.partialSubstitute(valueList));
 	}
 
-	public Expression partialSubstitute(final char letter, final double value){
+	public Expression partialSubstitute(final char letter, final double value) {
 		return new Division(numerator.partialSubstitute(letter, value), denominator.partialSubstitute(letter, value));
 	}
 
-	public Expression partialSubstitute(final char letter, final Expression value){
+	public Expression partialSubstitute(final char letter, final Expression value) {
 		return new Division(numerator.partialSubstitute(letter, value), denominator.partialSubstitute(letter, value));
 	}
 
-	public boolean hasLetter(final char letter){
+	public boolean hasLetter(final char letter) {
 		return numerator.hasLetter(letter) || denominator.hasLetter(letter);
 	}
 
-	public boolean containsMatrix(){
+	public boolean containsMatrix() {
 		return numerator.containsMatrix() || denominator.containsMatrix();
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuffer buffer) {
 		buffer.append("/(");
 		numerator.toFullString(buffer);
 		buffer.append(',');
@@ -277,22 +275,22 @@ public final class Division extends AbstractExpression implements IDivision, Int
 		buffer.append(')');
 	}
 
-	public Expression getDenominator(){
+	public Expression getDenominator() {
 		return denominator;
 	}
 
-	public Expression getNumerator(){
+	public Expression getNumerator() {
 		return numerator;
 	}
 
-	public void changedSetting(final String name, final int arg){
-		if(name.equals(Settings.TRYCROSS))
+	public void changedSetting(final String name, final int arg) {
+		if (name.equals(Settings.TRYCROSS))
 			tryCross = arg == 1;
 	}
 
-	public boolean equals(final Object obj){
-		if(obj instanceof Division){
-			final Division other = (Division)obj;
+	public boolean equals(final Object obj) {
+		if (obj instanceof Division) {
+			final Division other = (Division) obj;
 			final Expression nod = numerator.multiply(other.getDenominator());
 			final Expression don = other.numerator.multiply(denominator);
 			return nod.equals(don);
@@ -300,30 +298,30 @@ public final class Division extends AbstractExpression implements IDivision, Int
 		return super.equals(obj);
 	}
 
-	public Expression expand(){
+	public Expression expand() {
 		return new Division(numerator.expand(), denominator.expand());
 	}
 
-	public double fdvalue(final char letter, final double value){
+	public double fdvalue(final char letter, final double value) {
 		return numerator.fdvalue(letter, value) / denominator.fdvalue(letter, value);
 	}
 
-	public boolean isFullDouble(){
+	public boolean isFullDouble() {
 		return numerator.isFullDouble() && denominator.isFullDouble();
 	}
 
-	public boolean isIdentical(final Expression other){
-		if(!(other instanceof Division))
+	public boolean isIdentical(final Expression other) {
+		if (!(other instanceof Division))
 			return false;
-		final Division oth = (Division)other;
+		final Division oth = (Division) other;
 		return numerator.isIdentical(oth.numerator) && denominator.isIdentical(oth.denominator);
 	}
 
-	public Expression accept(final IExpressionVisitor visitor){
+	public Expression accept(final IExpressionVisitor visitor) {
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuffer buffer) {
 		numerator.toWrappedHtml(buffer);
 		buffer.append('/');
 		denominator.toWrappedHtml(buffer);

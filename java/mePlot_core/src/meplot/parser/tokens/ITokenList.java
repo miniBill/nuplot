@@ -2,12 +2,12 @@ package meplot.parser.tokens;
 
 import meplot.expressions.Expression;
 import meplot.parser.ParserException;
-import platform.lists.IEquatableIterable;
+import platform.lists.IIterable;
 
-public interface ITokenList extends IEquatableIterable, IToken{
+public interface ITokenList extends IIterable<IToken>, IToken {
 	void add(final IToken token);
 
-	TokenIterator getIterator();
+	TokenIterator tgetIterator();
 
 	Expression toExpression(final int index) throws ParserException;
 
