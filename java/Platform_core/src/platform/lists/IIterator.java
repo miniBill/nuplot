@@ -1,10 +1,6 @@
 package platform.lists;
 
-public interface IIterator<T> {
-	T next();
-
-	boolean hasNext();
-
+public interface IIterator<T> extends java.util.Iterator<T> {
 	int length();
 
 	boolean isEmpty();

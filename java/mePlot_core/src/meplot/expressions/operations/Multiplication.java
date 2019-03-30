@@ -77,7 +77,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 			if (curr instanceof Sum) {
 				temp.addRange(iterator);
 				final ICalculable mul = new Multiplication(temp);
-				final IIterator<Expression> add = ((Sum) curr).getAddends();
+				final IIterator<Expression> add = ((Sum) curr).getIterator();
 				final IExpressionList toret = new ExpressionList();
 				while (add.hasNext())
 					toret.add(mul.multiply(add.next()));

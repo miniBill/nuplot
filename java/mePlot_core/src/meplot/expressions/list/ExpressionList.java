@@ -87,9 +87,7 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 	 */
 	public IExpressionList fold() {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final Expression current = iterator.next();
+		for (Expression current : this) {
 			if (!toret.contains(current))
 				toret.add(current);
 		}

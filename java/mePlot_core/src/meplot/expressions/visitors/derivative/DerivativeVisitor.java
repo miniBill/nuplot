@@ -109,7 +109,7 @@ public class DerivativeVisitor implements IExpressionVisitor {
 	}
 
 	public Expression visit(final Sum sum) {
-		final IIterator<Expression> addends = sum.getAddends();
+		final IIterator<Expression> addends = sum.getIterator();
 		if (addends.isSingle())
 			return genvisit(addends.next());
 		Expression toret = Int.ZERO;

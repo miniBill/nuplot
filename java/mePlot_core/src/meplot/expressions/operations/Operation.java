@@ -2,7 +2,7 @@ package meplot.expressions.operations;
 
 import meplot.parser.ParserException;
 
-public final class Operation{
+public final class Operation {
 	public static final char ADDITION = '+';
 	private static final String ADDITION_PARSE = "+";
 	public static final char DIVISION = '/';
@@ -29,17 +29,17 @@ public final class Operation{
 	private static final String POWER_PARSE = "^";
 	public static final char UNKNOWN = '?';
 
-	public static final char[] OPERATIONS = new char[] {LEQ, GEQ, NEQ, LESS, LAMBDA, GREATER, EQUALS, ADDITION,
-			MULTIPLICATION, DIVISION, POWER, MOD};
-	private static final String[] PARSE_MAPPING = new String[] {LEQ_PARSE, GEQ_PARSE, NEQ_PARSE, LESS_PARSE,
+	public static final char[] OPERATIONS = new char[] { LEQ, GEQ, NEQ, LESS, LAMBDA, GREATER, EQUALS, ADDITION,
+			MULTIPLICATION, DIVISION, POWER, MOD };
+	private static final String[] PARSE_MAPPING = new String[] { LEQ_PARSE, GEQ_PARSE, NEQ_PARSE, LESS_PARSE,
 			LAMBDA_PARSE, GREATER_PARSE, EQUALS_PARSE, ADDITION_PARSE, MULTIPLICATION_PARSE, DIVISION_PARSE,
-			POWER_PARSE, MOD_PARSE};
+			POWER_PARSE, MOD_PARSE };
 
-	private Operation(){
+	private Operation() {
 	}
 
-	public static String parseMapsTo(int val) throws ParserException{
-		if(val < 0 || val > 11)
+	public static String parseMapsTo(int val) throws ParserException {
+		if (val < 0 || val > 11)
 			throw new ParserException("Asked for unknown operation number");
 		return PARSE_MAPPING[val];
 	}

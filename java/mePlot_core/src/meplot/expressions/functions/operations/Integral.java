@@ -7,7 +7,6 @@ import meplot.expressions.functions.Function;
 import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.list.ExpressionList;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Dou;
 import meplot.expressions.numbers.INumber;
@@ -88,10 +87,9 @@ public final class Integral extends Function {
 
 	private static Expression sumIntegrate(final Sum function, final Letter differential, final Expression lower,
 			final Expression upper) {
-		final IIterator<Expression> iterator = function.getAddends();
 		final IExpressionList exprList = new ExpressionList();
-		while (iterator.hasNext())
-			exprList.add(new Integral(iterator.next(), differential, lower, upper));
+		for (Expression curr : function)
+			exprList.add(new Integral(curr, differential, lower, upper));
 		return new Sum(exprList);
 	}
 

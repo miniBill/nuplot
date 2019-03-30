@@ -24,7 +24,7 @@ public final class Poly extends Sum {
 	private final Letter varLetter;
 
 	public Poly(final Sum original, final char var) {
-		super(original.getAddends());
+		super(original.getIterator());
 		this.var = var;
 		varLetter = new Letter(var);
 	}
@@ -42,7 +42,7 @@ public final class Poly extends Sum {
 	}
 
 	public static boolean isPoly(final Sum poly, final char var) {
-		final IIterator<Expression> iterator = poly.getAddends();
+		final IIterator<Expression> iterator = poly.getIterator();
 		while (iterator.hasNext())
 			if (!isMonomial(iterator.next(), var))
 				return false;
@@ -68,7 +68,7 @@ public final class Poly extends Sum {
 			return power.getBase() instanceof Letter && power.getExponent() instanceof Int;
 		}
 		if (next instanceof Sum) {
-			final IIterator<Expression> iterator = ((Sum) next).getAddends();
+			final IIterator<Expression> iterator = ((Sum) next).getIterator();
 			while (iterator.hasNext())
 				if (!isMonomial(iterator.next(), var))
 					return false;
@@ -98,7 +98,7 @@ public final class Poly extends Sum {
 	public int getDegree() {
 		if (degree < 0) {
 			degree = 0;
-			final IIterator<Expression> iterator = getAddends();
+			final IIterator<Expression> iterator = getIterator();
 			while (iterator.hasNext()) {
 				final int exp = getExponent(iterator.next());
 				if (exp > degree)
@@ -146,7 +146,7 @@ public final class Poly extends Sum {
 
 		if (expr instanceof Sum) {
 			final Sum sexpr = (Sum) expr;
-			final IIterator<Expression> iterator = sexpr.getAddends();
+			final IIterator<Expression> iterator = sexpr.getIterator();
 			Expression toret = Int.ZERO;
 			while (iterator.hasNext()) {
 				final Expression curr = iterator.next();
@@ -181,7 +181,7 @@ public final class Poly extends Sum {
 	}
 
 	public Expression getCoefficent(final int deg) {
-		final IIterator<Expression> iterator = getAddends();
+		final IIterator<Expression> iterator = getIterator();
 		Expression toret = Int.ZERO;
 		while (iterator.hasNext()) {
 			final Expression curr = iterator.next();
@@ -216,11 +216,11 @@ public final class Poly extends Sum {
 		Poly temp = this;
 		Poly toret = new Poly(Int.ZERO, var);
 		final int divdeg = arg.getDegree();
-		if (divdeg == 0 && arg.getAddends().length() == 1) {
-			final Expression single = arg.getAddends().getCurrent();
+		if (divdeg == 0 && arg.getIterator().length() == 1) {
+			final Expression single = arg.getIterator().getCurrent();
 			if (single instanceof INumber) {
 				final IExpressionList results = new ExpressionList();
-				final IIterator<Expression> iterator = getAddends();
+				final IIterator<Expression> iterator = getIterator();
 				while (iterator.hasNext())
 					results.add(iterator.next().divide(single));
 				return new Sum(results);
@@ -278,7 +278,7 @@ public final class Poly extends Sum {
 
 	private Poly popposite() {
 		final IExpressionList after = new ExpressionList();
-		final IIterator<Expression> iterator = getAddends();
+		final IIterator<Expression> iterator = getIterator();
 
 		while (iterator.hasNext()) {
 			final ICalculable curr = iterator.next();
@@ -287,7 +287,7 @@ public final class Poly extends Sum {
 				continue;
 			if (currs instanceof Sum) {
 				final Sum scls = (Sum) currs;
-				after.addRange(scls.getAddends());
+				after.addRange(scls.getIterator());
 			} else
 				after.add(currs);
 		}
@@ -295,12 +295,12 @@ public final class Poly extends Sum {
 	}
 
 	private Poly add(final Poly arg) {
-		return new Poly(new ExpressionList(getAddends(), arg.getAddends()), var);
+		return new Poly(new ExpressionList(getIterator(), arg.getIterator()), var);
 	}
 
 	private Poly multiply(final Monomial arg) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = getAddends();
+		final IIterator<Expression> iterator = getIterator();
 		while (iterator.hasNext())
 			toret.add(iterator.next().multiply(arg));
 		return new Poly(toret, var);
@@ -332,7 +332,7 @@ public final class Poly extends Sum {
 	}
 
 	private Monomial getTerm(final int deg) {
-		final IIterator<Expression> iterator = getAddends();
+		final IIterator<Expression> iterator = getIterator();
 		Monomial toret = new Monomial(Int.ZERO, var);
 		while (iterator.hasNext()) {
 			final Expression curr = iterator.next();
@@ -378,14 +378,14 @@ public final class Poly extends Sum {
 	}
 
 	public Poly sumExpand() {
-		final IIterator<Expression> iterator = getAddends();
+		final IIterator<Expression> iterator = getIterator();
 		final ExpressionList toret = new ExpressionList();
 		boolean same = true;
 		while (iterator.hasNext()) {
 			final Expression curr = iterator.next();
 			if (curr instanceof Sum) {
 				same = false;
-				toret.addRange(((Sum) curr).getAddends());
+				toret.addRange(((Sum) curr).getIterator());
 			} else
 				toret.add(curr);
 		}

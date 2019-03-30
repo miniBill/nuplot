@@ -173,7 +173,7 @@ public final class Power extends AbstractExpression implements IPower {
 		IIterator<Expression> inner = null;
 		if (expr instanceof Sum) {
 			final Sum sexpr = (Sum) expr;
-			inner = sexpr.getAddends();
+			inner = sexpr.getIterator();
 		}
 		if (expr instanceof Multiplication) {
 			final Multiplication mexpr = (Multiplication) expr;
@@ -388,7 +388,7 @@ public final class Power extends AbstractExpression implements IPower {
 
 			final Sum sbase = (Sum) base;
 
-			final IIterator<Expression> ita = sbase.getAddends();
+			final IIterator<Expression> ita = sbase.getIterator();
 
 			if (ita.length() == 2) {
 				final Expression a = ita.next();
@@ -399,7 +399,7 @@ public final class Power extends AbstractExpression implements IPower {
 			} else
 				while (ita.hasNext()) {
 					final ICalculable curr = ita.next();
-					final IIterator<Expression> itb = sbase.getAddends();
+					final IIterator<Expression> itb = sbase.getIterator();
 					while (itb.hasNext())
 						toret.add(curr.multiply(itb.next()));
 				}

@@ -33,10 +33,9 @@ public abstract class ComplexFunction extends AbstractComplexFunction {
 	}
 
 	protected final Expression expandSum(final Sum sarg) {
-		final IIterator<Expression> iterator = sarg.getAddends();
 		final IExpressionList toret = new ExpressionList();
-		while (iterator.hasNext())
-			toret.add(fill(iterator.next()));
+		for (Expression curr : sarg)
+			toret.add(fill(curr));
 		return new Sum(toret);
 	}
 

@@ -141,14 +141,10 @@ public final class PolynomialMath {
 		final IInt den = frac.fgetDenominator();
 		final IExpressionList numDiv = divisors(num);
 		final IExpressionList denDiv = divisors(den);
-		final IIterator<Expression> denIter = denDiv.getIterator();
 		final IExpressionList toret = new ExpressionList();
-		while (denIter.hasNext()) {
-			final Expression denCurr = denIter.next();
-			final IIterator<Expression> numIter = numDiv.getIterator();
-			while (numIter.hasNext())
-				toret.add(SimplificationHelper.simplify(numIter.next().divide(denCurr)));
-		}
+		for (Expression denCurr : denDiv)
+			for (Expression numCurr : numDiv)
+				toret.add(SimplificationHelper.simplify(numCurr.divide(denCurr)));
 		return toret.fold();
 	}
 

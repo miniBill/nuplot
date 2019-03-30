@@ -166,7 +166,7 @@ public abstract class TestUtils {
 				safety += 0;
 		}
 		// ESCA-JAVA0285:
-		if (current.equals(next) && next.toString().equals(current.toString())
+		if (current.equals(next) && next != null && next.toString().equals(current.toString())
 				&& !current.toFullString().equals(next.toFullString())) {
 			final String currString = current.toString();
 			final String currFullString = current.toFullString();
@@ -205,20 +205,17 @@ public abstract class TestUtils {
 	protected static void checkPrecision(final double val, final double target, final double percent) {
 		final double delta = val - target;
 		if (percent == 0)
-			assertEquals(
-					"Too low precision, expected " + target + " got " + val
-							+ ", so error was " + delta + " but tolerance was 0",
-					delta, 0, Double.MIN_VALUE);
+			assertEquals("Too low precision, expected " + target + " got " + val + ", so error was " + delta
+					+ " but tolerance was 0", delta, 0, Double.MIN_VALUE);
 		assertTrue(getPrecisionErrorMessage(target, val, percent, delta),
 				Math.abs(delta) <= percent / 100.0 * Math.abs(target));
 	}
 
 	private static String getPrecisionErrorMessage(final double target, final double val, final double percent,
 			final double delta) {
-		return "Too low precision, expected " + target + " got " + val
-				+ ", so error was " + Math.abs(delta / target) * 100.0 + "% that is"
-				+ delta + " but tolerance was " + percent + "%, that is "
-				+ percent / 100.0 * Math.abs(target);
+		return "Too low precision, expected " + target + " got " + val + ", so error was "
+				+ Math.abs(delta / target) * 100.0 + "% that is" + delta + " but tolerance was " + percent
+				+ "%, that is " + percent / 100.0 * Math.abs(target);
 	}
 
 	protected static Matrix matrixOrFail(final String string) {

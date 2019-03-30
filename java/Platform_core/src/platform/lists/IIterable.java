@@ -3,11 +3,8 @@ package platform.lists;
 public interface IIterable<T> extends Iterable<T> {
     default int length() {
         int result = 0;
-        IIterator<T> iterator = getIterator();
-        while (iterator.hasNext()) {
+        for (T curr : this)
             result++;
-            iterator.next();
-        }
         return result;
     }
 
@@ -27,12 +24,15 @@ public interface IIterable<T> extends Iterable<T> {
         return getIterator().next();
     }
 
+    default java.util.Iterator<T> iterator() {
+        return getIterator();
+    }
+
     IIterator<T> getIterator();
 
     default boolean checkContains(IIterable<T> other) {
-        final IIterator<T> it = getIterator();
-        while (it.hasNext())
-            if (!contains(it.next()))
+        for (T curr : this)
+            if (!contains(curr))
                 return false;
         return true;
 
@@ -42,5 +42,13 @@ public interface IIterable<T> extends Iterable<T> {
         return contains(arg, 0);
     }
 
-    boolean contains(T arg, int start);
+    default boolean contains(T arg, int start) {
+        int i = 0;
+        for (T curr : this) {
+            if (i >= start && curr.equals(arg))
+                return true;
+            i++;
+        }
+        return false;
+    }
 }
