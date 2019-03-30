@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Localizator/Localizator.iml" filepath="$PROJECT_DIR$/Localizator/Localizator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Platform_core/Platform_core.iml" filepath="$PROJECT_DIR$/Platform_core/Platform_core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mePlot_core/mePlot_core.iml" filepath="$PROJECT_DIR$/mePlot_core/mePlot_core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mePlot_test/mePlot_test.iml" filepath="$PROJECT_DIR$/mePlot_test/mePlot_test.iml" />
+    </modules>
+  </component>
+</project>
