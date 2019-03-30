@@ -9,7 +9,6 @@ import meplot.expressions.list.ValueList;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.visitors.IExpressionVisitor;
 import platform.NotImplementedException;
-import platform.lists.IIterator;
 
 public final class Lambda extends AbstractExpression {
     private final Expression right;
@@ -29,12 +28,9 @@ public final class Lambda extends AbstractExpression {
 
     public Expression partialSubstitute(final IValueList valueList) {
         final IValueList newList = new ValueList();
-        final IIterator<IValueNode> iterator = valueList.getIterator();
-        while (iterator.hasNext()) {
-            final IValueNode curr = iterator.next();
+        for (IValueNode curr : valueList)
             if (curr.getLetter() != left)
                 newList.add(curr);
-        }
         if (newList.length() > 0)
             return new Lambda(left, right.partialSubstitute(newList));
         return this;

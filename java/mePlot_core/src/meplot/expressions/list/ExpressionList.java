@@ -99,11 +99,13 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 	}
 
 	public void toCleanString(final char separator, final StringBuffer buffer) {
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			buffer.append(Cleaner.dematrix(iterator.next().toCleanString()));
-			if (iterator.hasNext())
+		boolean first = true;
+		for (Expression curr : this) {
+			if (first)
+				first = false;
+			else
 				buffer.append(separator);
+			buffer.append(Cleaner.dematrix(curr.toCleanString()));
 		}
 	}
 

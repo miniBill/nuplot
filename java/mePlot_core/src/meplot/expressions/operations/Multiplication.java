@@ -161,10 +161,8 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	private boolean isMinusOneOdd() {
-		final IIterator<Expression> iterator = getIterator();
 		boolean odd = false;
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : this) {
 			if (curr == null)
 				continue;
 			if (isMinusOne(curr))

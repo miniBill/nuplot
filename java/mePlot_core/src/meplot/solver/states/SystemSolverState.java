@@ -52,9 +52,7 @@ abstract class SystemSolverState implements ISystemSolverState {
 
 	protected static IExpressionIterable removeNullAndZero(final IExpressionIterable equations) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = equations.getIterator();
-		while (iterator.hasNext()) {
-			final Expression expression = iterator.next();
+		for (Expression expression : equations) {
 			if (expression != null)
 				if (expression instanceof Letter) {
 					if (expression.isIdentical(Letter.NOTEXISTS))
