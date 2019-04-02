@@ -6,9 +6,8 @@ import meplot.expressions.numbers.Dou;
 import meplot.expressions.numbers.IComplex;
 import meplot.expressions.numbers.IReal;
 import meplot.expressions.visitors.IExpressionComplexFunctionVisitor;
-import meplot.help.IHelpFunction;
 
-public final class Arg extends ComplexFunction implements IHelpFunction{
+public final class Arg extends ComplexFunction implements IFunction {
 	public Arg(final Expression value){
 		super(value);
 	}
@@ -31,18 +30,6 @@ public final class Arg extends ComplexFunction implements IHelpFunction{
 
 	protected double fdvalue(final double arg){
 		return arg > 0 ? 0 : Math.PI;
-	}
-
-	public String argumentName(final int index){
-		return null;
-	}
-
-	public String argumentDescription(final int index){
-		return null;
-	}
-
-	public String getDescription(){
-		return "Returns the argument of the complex number x";
 	}
 
 	public Expression accept(final IExpressionComplexFunctionVisitor visitor){

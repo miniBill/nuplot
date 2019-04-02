@@ -33,8 +33,8 @@ public abstract class Function extends Functor implements IFunction{
 	 * {@inheritDoc}
 	 */
 	public final boolean containsMatrix(){
-		for(int c = 0; c < args.length; c++)
-			if(args[c].containsMatrix())
+		for (Expression arg : args)
+			if (arg.containsMatrix())
 				return true;
 		return false;
 	}
@@ -68,8 +68,8 @@ public abstract class Function extends Functor implements IFunction{
 	 * {@inheritDoc}
 	 */
 	public final boolean hasLetter(final char letter){
-		for(int c = 0; c < args.length; c++)
-			if(args[c].hasLetter(letter))
+		for (Expression arg : args)
+			if (arg.hasLetter(letter))
 				return true;
 		return false;
 	}
@@ -107,8 +107,8 @@ public abstract class Function extends Functor implements IFunction{
 	 * {@inheritDoc}
 	 */
 	public boolean isFullDouble(){
-		for(int c = 0; c < args.length; c++)
-			if(!args[c].isFullDouble())
+		for (Expression arg : args)
+			if (!arg.isFullDouble())
 				return false;
 		return true;
 	}

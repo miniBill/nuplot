@@ -4,9 +4,8 @@ import meplot.expressions.Expression;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.visitors.IExpressionMonicFunctionVisitor;
-import meplot.help.IHelpFunction;
 
-public class Hold extends NonsymbolicMonicFunction implements IHelpFunction{
+public class Hold extends NonsymbolicMonicFunction implements IFunction {
 	public Hold(final Expression value){
 		super(value);
 		simplified = true;
@@ -30,18 +29,6 @@ public class Hold extends NonsymbolicMonicFunction implements IHelpFunction{
 
 	protected double fdvalue(final double arg){
 		return arg;
-	}
-
-	public String argumentName(final int index){
-		return "expr";
-	}
-
-	public String argumentDescription(final int index){
-		return "The expression to hold";
-	}
-
-	public String getDescription(){
-		return "Prevents simplification of the argument";
 	}
 
 	public Expression accept(final IExpressionMonicFunctionVisitor visitor){

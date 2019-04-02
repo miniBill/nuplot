@@ -115,8 +115,7 @@ public final class Parser {
 	private static TokenList tokenize(final String string) {
 		final TokenList root = new TokenList();
 		final char[] arr = string.toCharArray();
-		for (int c = 0; c < arr.length; c++) {
-			final char current = arr[c];
+		for (final char current : arr) {
 			if (current != ' ')
 				root.add(new CharToken(current));
 		}

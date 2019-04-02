@@ -29,7 +29,5 @@ public interface INumber extends ITensor{
 
 	INumber insquare();
 
-	float toFloat();
-
 	double norm();
 }

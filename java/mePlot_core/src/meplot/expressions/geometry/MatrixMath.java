@@ -5,7 +5,6 @@ import meplot.expressions.ICalculable;
 import meplot.expressions.exceptions.InversionException;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
-import platform.NotImplementedException;
 
 public final class MatrixMath{
 	private MatrixMath(){

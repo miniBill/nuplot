@@ -51,11 +51,7 @@ public abstract class AbstractExpression implements Expression {
 		return new Sum(this, other);
 	}
 
-	public final Expression applyConstants() {
-		return partialSubstitute('e', Math.E).partialSubstitute('p', Math.PI);
-	}
-
-	public boolean compatible(final Expression elementAt, final char operation) {
+    public boolean compatible(final Expression elementAt, final char operation) {
 		if (operation != Operation.POWER && equals(elementAt))
 			return true;
 

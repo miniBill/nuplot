@@ -28,7 +28,7 @@ public final class CharList extends AbstractTokenList {
 	}
 
 	private String toSmallString() {
-		final StringBuffer toret = new StringBuffer();
+		final StringBuilder toret = new StringBuilder();
 		final IIterator<IToken> iterator = getIterator();
 		while (iterator.hasNext())
 			toret.append(iterator.next());

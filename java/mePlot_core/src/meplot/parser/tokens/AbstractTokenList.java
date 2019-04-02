@@ -25,7 +25,7 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 	}
 
 	public final String toSString() {
-		final StringBuffer toret = new StringBuffer("{");
+		final StringBuilder toret = new StringBuilder("{");
 		final IIterator<IToken> iterator = getIterator();
 		while (iterator.hasNext()) {
 			final IToken curr = iterator.next();

@@ -12,7 +12,7 @@ public final class IntToken extends Token {
 	}
 
 	public IntToken(final ITokenList temp) throws ParserException {
-		final StringBuffer toret = new StringBuffer();
+		final StringBuilder toret = new StringBuilder();
 		final TokenIterator iterator = temp.tgetIterator();
 		while (iterator.hasNext())
 			toret.append(iterator.next());

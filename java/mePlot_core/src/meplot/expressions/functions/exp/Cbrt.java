@@ -11,9 +11,8 @@ import meplot.expressions.operations.Division;
 import meplot.expressions.operations.Operation;
 import meplot.expressions.operations.Power;
 import meplot.expressions.visitors.IExpressionMonicFunctionVisitor;
-import meplot.help.IHelpFunction;
 
-public final class Cbrt extends NonsymbolicMonicFunction implements IHelpFunction{
+public final class Cbrt extends NonsymbolicMonicFunction implements IFunction {
 	public Cbrt(final Expression value){
 		super(value);
 	}
@@ -108,18 +107,6 @@ public final class Cbrt extends NonsymbolicMonicFunction implements IHelpFunctio
 
 	protected double fdvalue(final double arg){
 		return ExpMath.cbrt(arg);
-	}
-
-	public String argumentName(final int index){
-		return null;
-	}
-
-	public String argumentDescription(final int index){
-		return null;
-	}
-
-	public String getDescription(){
-		return "Returns the cubic root of x";
 	}
 
 	public Expression accept(final IExpressionMonicFunctionVisitor visitor){

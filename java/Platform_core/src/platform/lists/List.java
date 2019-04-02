@@ -3,7 +3,7 @@ package platform.lists;
 import java.util.Vector;
 
 public class List<T> implements IIterable<T> {
-	private final Vector<T> container = new Vector<T>();
+	private final Vector<T> container = new Vector<>();
 
 	public List() {
 	}
@@ -14,11 +14,11 @@ public class List<T> implements IIterable<T> {
 	}
 
 	public final IIterator<T> getIterator() {
-		return new ListIterator<T>(this);
+		return new ListIterator<>(this);
 	}
 
 	public final IIterator<T> getIterator(int index) {
-		return new ListIterator<T>(this, index);
+		return new ListIterator<>(this, index);
 	}
 
 	public final boolean contains(final T exp) {
@@ -49,10 +49,6 @@ public class List<T> implements IIterable<T> {
 
 	public final boolean contains(final T arg, final int start) {
 		return container.indexOf(arg, start) >= 0;
-	}
-
-	public final int indexOf(final T arg) {
-		return container.indexOf(arg);
 	}
 
 	public final T getLast() {

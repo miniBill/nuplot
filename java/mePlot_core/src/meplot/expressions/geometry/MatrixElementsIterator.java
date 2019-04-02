@@ -39,15 +39,6 @@ public class MatrixElementsIterator implements IIterator<Expression> {
 		return matrix.get(row, col);
 	}
 
-	public Expression[] toArray() {
-		final Expression[] toret = new Expression[length() - row * matrix.getCols() - col];
-		int i = 0;
-		for (int r = row; r < matrix.getRows(); r++)
-			for (int c = (r == row ? col : 0); c < matrix.getCols(); c++)
-				toret[i++] = matrix.get(r, c);
-		return toret;
-	}
-
 	public Expression getLast() {
 		return matrix.get(matrix.getRows() - 1, matrix.getCols() - 1);
 	}

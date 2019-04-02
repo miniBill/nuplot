@@ -4,7 +4,6 @@ import meplot.expressions.Expression;
 import meplot.expressions.Letter;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionIterable;
-import platform.lists.IIterator;
 import platform.lists.List;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.tree.ExpressionTree;
@@ -19,7 +18,7 @@ abstract class SystemSolverState implements ISystemSolverState {
 	}
 
 	// TODO: nonstatic
-	protected static final List<ISystemSolverState> QUEUE = new List<ISystemSolverState>();
+	protected static final List<ISystemSolverState> QUEUE = new List<>();
 
 	protected SystemSolverState(final ExpressionTree leave, final ISolver solver) {
 		this.leave = leave;

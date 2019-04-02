@@ -27,9 +27,4 @@ public final class Ode extends GenericOde{
 		return 3;
 	}
 
-	public String getDescription(){
-		return "Can only be used at top level, "
-				+ "to enable the drawing of a solution to the Cauchy problem: "
-				+ "<ol><li>dy/dt = f(x,t)</li><li>y(x0)=t0</li></ol>.";
-	}
 }

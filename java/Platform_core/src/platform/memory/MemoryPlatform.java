@@ -2,7 +2,6 @@ package platform.memory;
 
 import platform.IPlatform;
 import platform.log.MyLogger;
-import platform.persistence.SettingsBackend;
 
 public class MemoryPlatform extends IPlatform{
 

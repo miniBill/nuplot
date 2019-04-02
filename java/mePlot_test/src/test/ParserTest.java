@@ -445,7 +445,7 @@ public final class ParserTest extends TestUtils {
 		FunctionToken.setUserFunctions(new List<>(ball));
 		assertSimplify("ball(r,2,x,y)", "sqrt(x^2+y^2)<r");
 		// clean up
-		FunctionToken.setUserFunctions(new List<UserFunction>());
+		FunctionToken.setUserFunctions(new List<>());
 	}
 
 	@Test

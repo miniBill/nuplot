@@ -1,5 +1,7 @@
 package platform.lists;
 
+import com.sun.istack.internal.NotNull;
+
 public interface IIterable<T> extends Iterable<T> {
     default int length() {
         int result = 0;
@@ -24,6 +26,7 @@ public interface IIterable<T> extends Iterable<T> {
         return getIterator().next();
     }
 
+    @NotNull
     default java.util.Iterator<T> iterator() {
         return getIterator();
     }

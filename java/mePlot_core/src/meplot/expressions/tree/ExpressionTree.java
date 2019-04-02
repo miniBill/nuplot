@@ -1,7 +1,5 @@
 package meplot.expressions.tree;
 
-import java.util.Iterator;
-
 import meplot.expressions.Expression;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
@@ -68,12 +66,7 @@ public final class ExpressionTree {
 			brother.stringFold();
 
 		final String cString = value.toCleanString(',');
-		Iterable<ExpressionTree> iterable = new Iterable<ExpressionTree>() {
-			@Override
-			public Iterator<ExpressionTree> iterator() {
-				return getAllChildren();
-			}
-		};
+		Iterable<ExpressionTree> iterable = this::getAllChildren;
 		for (ExpressionTree curr : iterable) {
 			if (curr != this && cString.equals(curr.value.toCleanString(','))) {
 				child = curr.child;

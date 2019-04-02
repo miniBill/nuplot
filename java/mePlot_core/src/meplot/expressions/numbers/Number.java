@@ -105,10 +105,6 @@ public abstract class Number extends Tensor implements INumber{
 
 	public abstract double toDouble();
 
-	public final float toFloat(){
-		return (float)toDouble();
-	}
-
 	public final double fdvalue(final char letter, final double value){
 		return toDouble();
 	}

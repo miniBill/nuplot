@@ -13,7 +13,7 @@ public final class PerfectDoubleToken extends Token {
 	private final String input;
 
 	public PerfectDoubleToken(final ITokenList temp) throws ParserException {
-		final StringBuffer buffer = new StringBuffer();
+		final StringBuilder buffer = new StringBuilder();
 		final TokenIterator iterator = temp.tgetIterator();
 		while (iterator.hasNext())
 			buffer.append(iterator.next());

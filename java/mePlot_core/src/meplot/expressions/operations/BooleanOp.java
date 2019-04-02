@@ -274,10 +274,6 @@ public final class BooleanOp extends AbstractExpression{
 		right.toWrappedHtml(buffer);
 	}
 
-	public boolean isDisequation(){
-		return boole != Operation.EQUALS && boole != Operation.NEQ;
-	}
-
 	public boolean toStringStartsWith(char prefix){
 		return left.toStringStartsWith(prefix);
 	}

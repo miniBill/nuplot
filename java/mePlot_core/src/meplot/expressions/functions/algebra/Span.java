@@ -19,9 +19,9 @@ public final class Span extends ArbitraryFunction{
 
 	protected Expression innerStepSimplify(final Expression[] vals){
 		final IExpressionList toret = new ExpressionList();
-		for(int j = 0; j < vals.length; j++)
-			if(!toret.contains(vals[j]))
-				toret.add(vals[j]);
+		for (Expression val : vals)
+			if (!toret.contains(val))
+				toret.add(val);
 		for(int c = 0; c < vals.length; c++)
 			if(vals[c].isSimplified())
 				for(int d = c; d < vals.length; d++)
@@ -39,8 +39,8 @@ public final class Span extends ArbitraryFunction{
 	}
 
 	private static boolean areSimplified(final ISimplifiable[] vals){
-		for(int c = 0; c < vals.length; c++)
-			if(!vals[c].isSimplified())
+		for (ISimplifiable val : vals)
+			if (!val.isSimplified())
 				return false;
 		return true;
 	}

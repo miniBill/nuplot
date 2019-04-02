@@ -4,7 +4,6 @@ import meplot.expressions.AbstractExpression;
 import meplot.expressions.Expression;
 import meplot.expressions.ICalculable;
 import meplot.expressions.ISimplifiable;
-import meplot.expressions.ISortable;
 import meplot.expressions.geometry.ITensor;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionList;
@@ -16,7 +15,7 @@ import meplot.expressions.visitors.simplification.SimplificationHelper;
 import platform.lists.IIterable;
 import platform.lists.IIterator;
 
-public class Sum extends AbstractExpression implements ISortable, IIterable<Expression> {
+public class Sum extends AbstractExpression implements IIterable<Expression>, Expression {
 	private static Expression finishInner(final IExpressionList after, final Expression first, final Expression second,
 			final Expression initial) {
 		final IIterator<Expression> iterator = after.getIterator();
@@ -410,7 +409,7 @@ public class Sum extends AbstractExpression implements ISortable, IIterable<Expr
 		return new Sum(after);
 	}
 
-	public Expression order() {
+	private Expression order() {
 		final IIterator<Expression> iterator = getIterator();
 		final Expression toret = order(iterator);
 		if (toret == null)

@@ -75,11 +75,4 @@ public final class RungeKutta{
 		return toret;
 	}
 
-	public double getT(){
-		return currt;
-	}
-
-	public double getStep(){
-		return step;
-	}
 }

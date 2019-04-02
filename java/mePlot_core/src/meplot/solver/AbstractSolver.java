@@ -24,8 +24,6 @@ import meplot.expressions.visitors.simplification.SimplificationHelper;
 import meplot.persistence.Settings;
 import meplot.solver.states.HeadSolverState;
 import meplot.solver.states.ISystemSolverState;
-import platform.log.Log;
-import platform.log.LogLevel;
 
 public abstract class AbstractSolver implements ISolver {
 	protected static final char EQUALS = '=';
@@ -50,19 +48,18 @@ public abstract class AbstractSolver implements ISolver {
 		while (true) {
 			final ExpressionList current = new ExpressionList();
 			boolean done = true;
-			for (int j = 0; j < chains.length; j++)
-				if (chains[j].length() > 1) {
-					current.add(chains[j].next());
+			for (IIterator<Expression> chain : chains)
+				if (chain.length() > 1) {
+					current.add(chain.next());
 					done = false;
 				} else
-					current.add(chains[j].getCurrent());
+					current.add(chain.getCurrent());
 			leaf = leaf.addChild(current);
 			if (done)
 				break;
 		}
 		final IExpressionList last = new ExpressionList();
-		for (int j = 0; j < chains.length; j++)
-			last.add(SimplificationHelper.simplify(chains[j].next()));
+		for (IIterator<Expression> chain : chains) last.add(SimplificationHelper.simplify(chain.next()));
 		return leaf.addChild(last);
 	}
 
@@ -223,8 +220,8 @@ public abstract class AbstractSolver implements ISolver {
 			explicate(child, evar);
 			return;
 		}
-		throw new CalcException("Failed to explicate wrt " + evar + ", left was " + left.toString() + ", right was "
-				+ right.toString());
+		throw new CalcException("Failed to explicate wrt " + evar + ", left was " + left + ", right was "
+				+ right);
 	}
 
 	private void explicate(final ExpressionTree toret, final char var) {
@@ -235,7 +232,7 @@ public abstract class AbstractSolver implements ISolver {
 			return;
 		} else if (last.equals(Letter.FORALL) || last.equals(Letter.NOTEXISTS) || last.equals(Letter.UNKNOWN))
 			return;
-		throw new CalcException("Failed to explicate, last was " + last.toString());
+		throw new CalcException("Failed to explicate, last was " + last);
 	}
 
 	private Expression getEquivalent(final Expression equation) {

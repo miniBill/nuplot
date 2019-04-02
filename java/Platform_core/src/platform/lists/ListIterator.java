@@ -24,7 +24,7 @@ public final class ListIterator<T> extends Iterator<T> {
 
     @Override
     public IIterator<T> subIterator() {
-        return new ListIterator<T>(inner, index);
+        return new ListIterator<>(inner, index);
     }
 
     @Override

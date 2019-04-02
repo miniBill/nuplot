@@ -9,10 +9,6 @@ public final class Platform{
 	private Platform(){
 	}
 
-	public static IPlatform getPlatform(){
-		return platform;
-	}
-
 	public static MyLogger getLogger(){
 		return platform.getLogger();
 	}

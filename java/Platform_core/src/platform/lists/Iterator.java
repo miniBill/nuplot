@@ -44,7 +44,7 @@ public abstract class Iterator<T> extends AbstractIterator<T> {
 		if (!(inner instanceof List<?>))
 			return "";
 		List<T> list = (List<T>) inner;
-		final StringBuffer toret = new StringBuffer();
+		final StringBuilder toret = new StringBuilder();
 		for (int tindex = index; tindex < inner.length(); tindex++) {
 			toret.append(list.elementAt(tindex));
 			if (tindex < length() - 1)
@@ -54,7 +54,7 @@ public abstract class Iterator<T> extends AbstractIterator<T> {
 	}
 
 	public final List<T> until(String string) {
-		final List<T> toret = new List<T>();
+		final List<T> toret = new List<>();
 		while (hasNext()) {
 			final T curr = next();
 			if (curr.toString().equals(string))

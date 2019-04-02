@@ -7,9 +7,8 @@ import meplot.expressions.numbers.Dou;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.IExpressionNonsymbolicFunctionVisitor;
-import meplot.help.IHelpFunction;
 
-public final class Mod extends NonsymbolicFunction implements IHelpFunction{
+public final class Mod extends NonsymbolicFunction implements IFunction {
 	public Mod(final Expression[] expr){
 		super(expr);
 	}
@@ -54,18 +53,6 @@ public final class Mod extends NonsymbolicFunction implements IHelpFunction{
 
 	public int needs(){
 		return 2;
-	}
-
-	public String argumentName(final int index){
-		return null;
-	}
-
-	public String argumentDescription(final int index){
-		return null;
-	}
-
-	public String getDescription(){
-		return "Returns the remainder of x/y";
 	}
 
 	public Expression accept(final IExpressionNonsymbolicFunctionVisitor visitor){
