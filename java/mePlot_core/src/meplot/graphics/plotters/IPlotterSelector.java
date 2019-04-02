@@ -7,8 +7,6 @@ import platform.lists.List;
 public interface IPlotterSelector {
 	void setCleanContour(boolean clean);
 
-	int[][] getZBuffer();
-
 	boolean isFreeroamMode();
 
 	void next3DMode();
@@ -19,11 +17,7 @@ public interface IPlotterSelector {
 
 	boolean isAxisFirstMode(IIterator<Graph> subIterator);
 
-	Plotter selectPlotter(Graph graph);
-
-	boolean isAxisLaterMode();
-
-	void disposePlotters();
+    boolean isAxisLaterMode();
 
 	void set3Ode(boolean value);
 }

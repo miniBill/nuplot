@@ -3,7 +3,6 @@ package meplot.expressions.functions.trig;
 import meplot.expressions.Expression;
 import meplot.expressions.ICalculable;
 import meplot.expressions.Letter;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.exp.Exp;
 import meplot.expressions.functions.other.NonsymbolicMonicFunction;
@@ -46,11 +45,7 @@ public final class Sinh extends NonsymbolicMonicFunction {
 		return left.add(right).divide(Int.TWO);
 	}
 
-	public String getCategory() {
-		return FunctionCategory.TRIGONOMETRY;
-	}
-
-	protected double fdvalue(final double arg) {
+    protected double fdvalue(final double arg) {
 		return TrigMath.sinh(arg);
 	}
 

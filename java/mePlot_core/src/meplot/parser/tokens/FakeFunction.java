@@ -41,11 +41,7 @@ public final class FakeFunction extends Function{
 		return num;
 	}
 
-	public String getCategory(){
-		return "Hide";
-	}
-
-	protected double fdvalue(final double[] arg, final char letter, final double value){
+    protected double fdvalue(final double[] arg, final char letter, final double value){
 		throw new FakeException("Fakefunction fdvalue");
 	}
 

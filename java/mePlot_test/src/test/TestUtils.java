@@ -8,6 +8,7 @@ import meplot.expressions.IOutputtable;
 import meplot.expressions.exceptions.DerivationException;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
@@ -23,7 +24,7 @@ import platform.log.Log;
 import platform.log.LogLevel;
 
 public abstract class TestUtils {
-
+	@NotNull
 	public static Expression parseOrFail(final String arg) {
 		try {
 			return Parser.parse(arg);
@@ -219,6 +220,7 @@ public abstract class TestUtils {
 				+ "%, that is " + percent / 100.0 * Math.abs(target);
 	}
 
+	@NotNull
 	protected static Matrix matrixOrFail(final String string) {
 		final Object candidate = parseOrFail(string);
 		if (candidate instanceof Matrix)

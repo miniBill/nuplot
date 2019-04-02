@@ -1,7 +1,6 @@
 package meplot.expressions.functions.piecewise;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.other.NonsymbolicFunction;
 import meplot.expressions.numbers.INumber;
@@ -37,10 +36,6 @@ public final class Min extends NonsymbolicFunction{
 
 	public Expression accept(final IExpressionNonsymbolicFunctionVisitor visitor){
 		return visitor.visit(this);
-	}
-
-	public String getCategory(){
-		return FunctionCategory.PIECEWISE;
 	}
 
 	protected Expression innerSimplify(final Expression[] vals){

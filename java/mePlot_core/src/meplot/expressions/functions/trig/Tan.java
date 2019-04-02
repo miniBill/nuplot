@@ -1,7 +1,6 @@
 package meplot.expressions.functions.trig;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.other.NonsymbolicMonicFunction;
 import meplot.expressions.numbers.INumber;
@@ -36,11 +35,7 @@ public final class Tan extends NonsymbolicMonicFunction{
 		return new Division(new Sin(val), new Cos(val));
 	}
 
-	public String getCategory(){
-		return FunctionCategory.TRIGONOMETRY;
-	}
-
-	protected double fdvalue(final double arg){
+    protected double fdvalue(final double arg){
 		return Math.tan(arg);
 	}
 

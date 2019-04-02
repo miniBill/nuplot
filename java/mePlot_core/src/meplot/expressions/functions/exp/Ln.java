@@ -2,7 +2,6 @@ package meplot.expressions.functions.exp;
 
 import meplot.expressions.Expression;
 import meplot.expressions.Letter;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.other.NonsymbolicMonicFunction;
 import meplot.expressions.numbers.Dou;
@@ -57,10 +56,6 @@ public final class Ln extends NonsymbolicMonicFunction{
 
 	public String getName(){
 		return "ln";
-	}
-
-	public String getCategory(){
-		return FunctionCategory.POWER;
 	}
 
 	protected double fdvalue(final double arg){

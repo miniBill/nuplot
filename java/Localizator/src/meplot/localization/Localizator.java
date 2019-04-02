@@ -15,9 +15,8 @@ public final class Localizator {
 	}
 
 	public static void main(final String[] args) {
-		final String language = "it";
 
-		final List<String> text = new Vector<String>();
+		final List<String> text = new Vector<>();
 
 		try {
 			final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
@@ -28,17 +27,14 @@ public final class Localizator {
 			}
 
 			// write it for easy reading in J2ME
-			final OutputStream out = new FileOutputStream(language + ".res");
-			final DataOutputStream dout = new DataOutputStream(out);
-			try {
+			final OutputStream out = new FileOutputStream("it.res");
+			try (DataOutputStream dout = new DataOutputStream(out)) {
 				// first item is the number of strings
 				dout.writeShort(text.size());
 				// then the string themselves
 				for (String s : text)
 					if (s != null)
 						dout.writeUTF(s);
-			} finally {
-				dout.close();
 			}
 		} catch (final IOException e) {
 			// ESCA-JAVA0265:

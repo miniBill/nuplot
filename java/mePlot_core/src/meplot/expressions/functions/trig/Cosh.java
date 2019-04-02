@@ -2,7 +2,6 @@ package meplot.expressions.functions.trig;
 
 import meplot.expressions.Expression;
 import meplot.expressions.Letter;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.exp.Exp;
 import meplot.expressions.functions.other.NonsymbolicMonicFunction;
@@ -43,11 +42,7 @@ public final class Cosh extends NonsymbolicMonicFunction {
 		return new Exp(val).add(new Exp(val.opposite())).divide(Int.TWO);
 	}
 
-	public String getCategory() {
-		return FunctionCategory.TRIGONOMETRY;
-	}
-
-	protected double fdvalue(final double arg) {
+    protected double fdvalue(final double arg) {
 		return TrigMath.cosh(arg);
 	}
 

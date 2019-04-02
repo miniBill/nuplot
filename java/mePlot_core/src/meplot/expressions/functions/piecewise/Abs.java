@@ -1,7 +1,6 @@
 package meplot.expressions.functions.piecewise;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.FunctionsMath;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.complex.AbstractComplexFunction;
@@ -52,11 +51,7 @@ public final class Abs extends AbstractComplexFunction{
 		return "abs";
 	}
 
-	public String getCategory(){
-		return FunctionCategory.PIECEWISE;
-	}
-
-	protected double fdvalue(final double arg){
+    protected double fdvalue(final double arg){
 		return Math.abs(arg);
 	}
 

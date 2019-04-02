@@ -3,7 +3,6 @@ package meplot.expressions.functions.algebra;
 import meplot.expressions.Expression;
 import meplot.expressions.ISimplifiable;
 import meplot.expressions.functions.ArbitraryFunction;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
@@ -54,11 +53,7 @@ public final class Span extends ArbitraryFunction{
 		return new Span(args);
 	}
 
-	public String getCategory(){
-		return FunctionCategory.ALGEBRA;
-	}
-
-	public String getName(){
+    public String getName(){
 		return "span";
 	}
 

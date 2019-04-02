@@ -2,7 +2,6 @@ package meplot.expressions.functions.ode;
 
 import meplot.expressions.Expression;
 import meplot.expressions.functions.Function;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
@@ -19,11 +18,7 @@ public class GenericOde extends Function implements IHelpFunction{
 		return new GenericOde(args);
 	}
 
-	public final String getCategory(){
-		return FunctionCategory.OTHER;
-	}
-
-	public String getName(){
+    public String getName(){
 		return "gode";
 	}
 

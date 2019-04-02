@@ -3,7 +3,6 @@ package meplot.expressions.functions.operations;
 import meplot.expressions.Expression;
 import meplot.expressions.Letter;
 import meplot.expressions.functions.ExpandFunction;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.INumber;
@@ -34,11 +33,7 @@ public final class Derivative extends ExpandFunction{
 		return new Derivative(args);
 	}
 
-	public String getCategory(){
-		return FunctionCategory.OPERATIONS;
-	}
-
-	public String getName(){
+    public String getName(){
 		return "dd";
 	}
 

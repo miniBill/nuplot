@@ -26,7 +26,6 @@ import meplot.solver.states.HeadSolverState;
 import meplot.solver.states.ISystemSolverState;
 import platform.log.Log;
 import platform.log.LogLevel;
-import platform.persistence.Persistence;
 
 public abstract class AbstractSolver implements ISolver {
 	protected static final char EQUALS = '=';
@@ -37,13 +36,6 @@ public abstract class AbstractSolver implements ISolver {
 	 * @return Previous value for the setting.
 	 */
 	public static boolean activateCross() {
-		// ESCA-JAVA0166:
-		try {
-			if (Persistence.loadInt(Settings.TRYCROSS) != 0)
-				return false;
-		} catch (final Error e) {
-			Log.log(LogLevel.DEBUG, "Error while loading old cross setting.");
-		}
 		Division.EMPTY.changedSetting(Settings.TRYCROSS, 1);
 		return true;
 	}

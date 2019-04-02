@@ -20,9 +20,8 @@ import meplot.expressions.visitors.IExpressionVisitor;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import meplot.persistence.Settings;
 import platform.log.Log;
-import platform.persistence.listeners.IntSettingsListener;
 
-public final class Division extends AbstractExpression implements IDivision, IntSettingsListener {
+public final class Division extends AbstractExpression implements IDivision {
 	private static class FakeMultiplication implements IMultiplication {
 		private final Expression arg;
 

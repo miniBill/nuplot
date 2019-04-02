@@ -28,15 +28,7 @@ public interface IFunctor extends Expression{
 	 */
 	String getName();
 
-	/**
-	 * Returns the category of the function.
-	 *
-	 * @see FunctionCategory
-	 * @return The category of the function.
-	 */
-	String getCategory();
-
-	Expression[] getArguments();
+    Expression[] getArguments();
 
 	Expression accept(IExpressionFunctorVisitor visitor);
 }

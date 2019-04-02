@@ -1,7 +1,6 @@
 package meplot.expressions.functions.matrix;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.Functor;
 import meplot.expressions.functions.IFunctor;
 import meplot.expressions.geometry.Matrix;
@@ -36,10 +35,6 @@ public abstract class MatrixFunction extends Functor{
 
 	public final IFunctor gfill(final Expression[] args){
 		return fill(args[0]);
-	}
-
-	public final String getCategory(){
-		return FunctionCategory.MATRIX;
 	}
 
 	public abstract String getName();

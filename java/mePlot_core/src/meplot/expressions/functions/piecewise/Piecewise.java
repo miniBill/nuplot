@@ -1,7 +1,6 @@
 package meplot.expressions.functions.piecewise;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.other.NonsymbolicFunction;
 import meplot.expressions.numbers.INumber;
@@ -46,11 +45,7 @@ public final class Piecewise extends NonsymbolicFunction{
 		return 3;
 	}
 
-	public String getCategory(){
-		return FunctionCategory.PIECEWISE;
-	}
-
-	protected Expression innerSimplify(final Expression[] vals){
+    protected Expression innerSimplify(final Expression[] vals){
 		final Expression simif = vals[1];
 		final Expression simifnot = vals[2];
 		if(simif.equals(simifnot))

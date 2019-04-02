@@ -1,7 +1,6 @@
 package meplot.expressions.functions.exp;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.other.NonsymbolicMonicFunction;
 import meplot.expressions.numbers.Fraction;
@@ -105,10 +104,6 @@ public final class Cbrt extends NonsymbolicMonicFunction implements IHelpFunctio
 
 	public String getName(){
 		return "cbrt";
-	}
-
-	public String getCategory(){
-		return FunctionCategory.POWER;
 	}
 
 	protected double fdvalue(final double arg){

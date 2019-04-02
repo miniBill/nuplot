@@ -10,8 +10,4 @@ public class MemoryPlatform extends IPlatform{
 		return new MemoryLogger();
 	}
 
-	protected SettingsBackend getSettingsBackendInternal(){
-		return new MemoryPersistence();
-	}
-
 }

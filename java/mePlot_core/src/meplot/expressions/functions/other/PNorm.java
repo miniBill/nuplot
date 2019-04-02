@@ -1,7 +1,6 @@
 package meplot.expressions.functions.other;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.FunctionsMath;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.piecewise.Abs;
@@ -51,11 +50,7 @@ public final class PNorm extends NonsymbolicExpandFunction{
 		return 3;
 	}
 
-	public String getCategory(){
-		return FunctionCategory.OTHER;
-	}
-
-	protected Expression expand(final Expression[] args){
+    protected Expression expand(final Expression[] args){
 		final Expression num = args[0];
 		final Expression absa = new Abs(args[1]);
 		final Expression absb = new Abs(args[2]);

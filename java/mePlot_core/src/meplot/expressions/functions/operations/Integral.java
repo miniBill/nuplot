@@ -4,7 +4,6 @@ import meplot.expressions.Expression;
 import meplot.expressions.IValue;
 import meplot.expressions.Letter;
 import meplot.expressions.functions.Function;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionList;
@@ -95,10 +94,6 @@ public final class Integral extends Function {
 
 	public IFunction fill(final Expression[] args) {
 		return new Integral(args);
-	}
-
-	public String getCategory() {
-		return FunctionCategory.OPERATIONS;
 	}
 
 	public String getName() {

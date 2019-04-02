@@ -1,23 +1,11 @@
 package meplot.graphics.plotters;
 
 import meplot.graphics.DrawMode;
-import meplot.graphics.IDisposable;
 import meplot.graphics.graphs.Graph;
-import meplot.graphics.graphs.NormalGraph;
 import meplot.graphics.graphs.OdeGraph;
-import meplot.graphics.graphs.ParametricGraph;
 import meplot.graphics.graphs.ThreeParametricGraph;
-import meplot.graphics.plotters.three.ComplexPlotter;
-import meplot.graphics.plotters.three.ContourPlotter;
-import meplot.graphics.plotters.three.FieldPlotter;
-import meplot.graphics.plotters.three.OdePlotter;
-import meplot.graphics.plotters.three.ThreeParametricPlotter;
-import meplot.graphics.plotters.three.ThreePlotter;
-import meplot.graphics.plotters.three.ThreeScanner;
 import platform.lists.IIterator;
 import platform.lists.List;
-import platform.log.Log;
-import platform.log.LogLevel;
 
 public class PlotterSelector implements IPlotterSelector {
 	private static final int THREED = 0;
@@ -51,40 +39,6 @@ public class PlotterSelector implements IPlotterSelector {
 	private boolean is3Ode;
 	private boolean cleanContour;
 
-	private Plotter[] plotters = new Plotter[0];
-
-	private final Plotter complexPlotter = new ComplexPlotter();
-	protected final ContourPlotter contourPlotter = new ContourPlotter();
-	private final Plotter fieldPlotter = new FieldPlotter();
-	private final Plotter odePlotter = new OdePlotter();
-	private final Plotter parametricPlotter = new ParametricPlotter();
-	private final Plotter radialPlotter = new RadialPlotter();
-	protected final SingleScanner singleScanner = new SingleScanner();
-	private final Plotter threeParamPlotter = new ThreeParametricPlotter();
-	private final ThreePlotter threePlotter = new ThreePlotter();
-	private final ThreeScanner threeScanner = new ThreeScanner();
-	protected final Plotter xyScanner = new XyScanner();
-
-	public final void disposePlotters() {
-		if (plotters != null)
-			for (Plotter plotter : plotters)
-				if (plotter instanceof IDisposable)
-					((IDisposable) plotter).dispose();
-	}
-
-	public int[][] getZBuffer() {
-		return threePlotter.getZBuffer();
-	}
-
-	private void initPlotters() {
-		plotters = new Plotter[MAXMODE + 1];
-		plotters[GRAYCONTOUR] = contourPlotter;
-		plotters[CONTOUR] = contourPlotter;
-		plotters[THREED] = threePlotter;
-		plotters[FIELD] = fieldPlotter;
-		plotters[COMPLEX] = complexPlotter;
-	}
-
 	public final boolean isAxisFirstMode(final IIterator<Graph> iterator) {
 		return mode.equals(DrawMode.MODE2D)
 				|| mode.equals(DrawMode.MODE3D) && (threeDMode == FIELD || threeDMode == COMPLEX
@@ -111,51 +65,6 @@ public class PlotterSelector implements IPlotterSelector {
 		threeDMode--;
 		if (threeDMode < 0)
 			threeDMode = MAXMODE;
-	}
-
-	public final Plotter selectPlotter(final Graph graph) {
-		if (plotters.length == 0)
-			initPlotters();
-
-		return innerSelectPlotter(graph);
-	}
-
-	protected Plotter innerSelectPlotter(final Graph graph) {
-		if (graph instanceof ParametricGraph) {
-			if (graph instanceof ThreeParametricGraph)
-				return threeParamPlotter;
-			return parametricPlotter;
-		}
-
-		// should always be true, but it's better to be robust
-		if (graph instanceof NormalGraph) {
-
-			if (graph instanceof OdeGraph)
-				return odePlotter;
-
-			if (graph.isRadial())
-				return radialPlotter;
-
-			final DrawMode gmode = getMode(graph);
-
-			if (gmode.equals(DrawMode.MODE2D)) {
-				if (graph.isImplicit())
-					return xyScanner;
-				return singleScanner;
-			}
-
-			if (gmode.equals(DrawMode.MODE3IMPLICIT))
-				return threeScanner;
-
-			if (threeDMode == CONTOUR || threeDMode == GRAYCONTOUR)
-				contourPlotter.setMode(threeDMode, cleanContour);
-
-			if (threeDMode < plotters.length)
-				return plotters[threeDMode];
-		}
-
-		Log.log(LogLevel.ERROR, "Couldn't select plotter! Falling back to default.");
-		return singleScanner;
 	}
 
 	public final void set3Ode(final boolean value) {

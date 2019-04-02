@@ -1,7 +1,6 @@
 package meplot.expressions.functions.operations;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.other.NonsymbolicFunction;
 import meplot.expressions.numbers.Dou;
@@ -55,10 +54,6 @@ public final class Mod extends NonsymbolicFunction implements IHelpFunction{
 
 	public int needs(){
 		return 2;
-	}
-
-	public String getCategory(){
-		return FunctionCategory.OPERATIONS;
 	}
 
 	public String argumentName(final int index){

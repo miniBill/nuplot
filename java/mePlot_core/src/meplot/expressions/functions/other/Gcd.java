@@ -1,7 +1,6 @@
 package meplot.expressions.functions.other;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.FunctionsMath;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.numbers.INumber;
@@ -20,11 +19,7 @@ public final class Gcd extends NonsymbolicFunction{
 		return "gcd";
 	}
 
-	public String getCategory(){
-		return FunctionCategory.OTHER;
-	}
-
-	protected double fdvalue(final double[] arg){
+    protected double fdvalue(final double[] arg){
 		return FunctionsMath.gcd(arg[0], arg[1]);
 	}
 

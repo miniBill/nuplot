@@ -1,7 +1,6 @@
 package meplot.expressions.functions.other;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.visitors.IExpressionMonicFunctionVisitor;
@@ -17,11 +16,7 @@ public class Hold extends NonsymbolicMonicFunction implements IHelpFunction{
 		return "hld";
 	}
 
-	public String getCategory(){
-		return FunctionCategory.OTHER;
-	}
-
-	protected double dvalue(final INumber arg){
+    protected double dvalue(final INumber arg){
 		return arg.toDouble();
 	}
 

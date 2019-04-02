@@ -55,11 +55,7 @@ public final class UserFunction extends ExpandFunction{
 		return expr.value(valueList);
 	}
 
-	public String getCategory(){
-		return FunctionCategory.USER_DEFINED;
-	}
-
-	protected Expression expand(final Expression[] args){
+    protected Expression expand(final Expression[] args){
 		final IValueList valueList = new ValueList();
 		for(int i = 0; i < vars.length; i++)
 			valueList.add(vars[i], args[i]);

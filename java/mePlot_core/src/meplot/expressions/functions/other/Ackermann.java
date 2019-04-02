@@ -1,7 +1,6 @@
 package meplot.expressions.functions.other;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
@@ -14,10 +13,6 @@ public final class Ackermann extends NonsymbolicFunction{
 
 	public IFunction fill(final Expression[] args){
 		return new Ackermann(args);
-	}
-
-	public String getCategory(){
-		return FunctionCategory.OTHER;
 	}
 
 	protected double dvalue(final INumber[] arg){

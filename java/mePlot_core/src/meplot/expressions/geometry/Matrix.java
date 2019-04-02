@@ -3,6 +3,7 @@ package meplot.expressions.geometry;
 import meplot.expressions.Expression;
 import meplot.expressions.ICalculable;
 import meplot.expressions.exceptions.CalcException;
+import org.jetbrains.annotations.NotNull;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
@@ -295,6 +296,7 @@ public class Matrix extends Tensor {
 		return doMultiply(expr);
 	}
 
+	@NotNull
 	public final Matrix multiply(final Matrix other) {
 		if (getCols() != other.getRows()) {
 			Log.log(LogLevel.ERROR, "Wrong dimensions in Matrix multiply");

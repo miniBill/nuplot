@@ -1,7 +1,6 @@
 package meplot.expressions.functions.complex;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.IComplex;
@@ -27,11 +26,7 @@ public abstract class ComplexFunction extends AbstractComplexFunction {
 
 	protected abstract IReal value(IComplex arg);
 
-	public final String getCategory() {
-		return FunctionCategory.COMPLEX;
-	}
-
-	protected final Expression expandSum(final Sum sarg) {
+    protected final Expression expandSum(final Sum sarg) {
 		final IExpressionList toret = new ExpressionList();
 		for (Expression curr : sarg)
 			toret.add(fill(curr));

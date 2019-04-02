@@ -1,7 +1,6 @@
 package meplot.expressions.functions.exp;
 
 import meplot.expressions.Expression;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.other.NonsymbolicMonicFunction;
 import meplot.expressions.numbers.INumber;
@@ -55,11 +54,7 @@ public final class Log10 extends NonsymbolicMonicFunction{
 		return "log";
 	}
 
-	public String getCategory(){
-		return FunctionCategory.POWER;
-	}
-
-	protected double fdvalue(final double arg){
+    protected double fdvalue(final double arg){
 		return ExpMath.log(arg);
 	}
 

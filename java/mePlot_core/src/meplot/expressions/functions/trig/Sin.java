@@ -2,7 +2,6 @@ package meplot.expressions.functions.trig;
 
 import meplot.expressions.Expression;
 import meplot.expressions.Letter;
-import meplot.expressions.functions.FunctionCategory;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.functions.other.NonsymbolicMonicFunction;
 import meplot.expressions.numbers.INumber;
@@ -44,11 +43,7 @@ public final class Sin extends NonsymbolicMonicFunction {
 		return fill(val);
 	}
 
-	public String getCategory() {
-		return FunctionCategory.TRIGONOMETRY;
-	}
-
-	protected double fdvalue(final double arg) {
+    protected double fdvalue(final double arg) {
 		return Math.sin(arg);
 	}
 
