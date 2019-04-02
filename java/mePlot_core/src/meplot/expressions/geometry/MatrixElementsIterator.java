@@ -68,11 +68,7 @@ public class MatrixElementsIterator implements IIterator<Expression> {
 		return false;
 	}
 
-	public boolean isEmpty() {
-		return length() == 0;
-	}
-
-	public boolean isSingle() {
+    public boolean isSingle() {
 		return length() == 1;
 	}
 

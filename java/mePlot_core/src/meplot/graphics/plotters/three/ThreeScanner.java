@@ -117,7 +117,7 @@ public final class ThreeScanner extends ExpressionPlotter implements IDisposable
 
 	private void drawTethra(final int delta, final int pointx, final int pointy,
 			final int pointz, final boolean curr, final boolean last,
-			final boolean[] lastline) throws DrawException{
+			final boolean[] lastline) {
 		final Point3 base = PlotterUtil.project(pointx, pointy, pointz);
 		final Point3 minusx = PlotterUtil.project(pointx - delta, pointy, pointz);
 		final Point3 minusy = PlotterUtil.project(pointx, pointy - delta, pointz);
@@ -147,7 +147,7 @@ public final class ThreeScanner extends ExpressionPlotter implements IDisposable
 
 	private void tethraedon(final Point3 arg01, final boolean arg02, final Point3 arg11,
 			final boolean arg12, final Point3 arg21, final boolean arg22,
-			final Point3 arg31, final boolean arg32) throws DrawException{
+			final Point3 arg31, final boolean arg32) {
 		final boolean l01 = arg02 ^ arg12;
 		final boolean l02 = arg02 ^ arg22;
 		final boolean l03 = arg02 ^ arg32;
@@ -181,7 +181,7 @@ public final class ThreeScanner extends ExpressionPlotter implements IDisposable
 	}
 
 	private void tethraline(final Point3 arg0, final Point3 arg1, final Point3 arg2,
-			final Point3 arg3) throws DrawException{
+			final Point3 arg3) {
 		final int fromx = (arg0.x + arg1.x) / 2;
 		final int fromy = (arg0.y + arg1.y) / 2;
 		final int fromz = (arg0.z + arg1.z) / 2;

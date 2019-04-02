@@ -198,14 +198,6 @@ public final class Poly extends Sum {
 		return isPoly(new Sum(arg), var);
 	}
 
-	public IIterator<Expression> getCoefficents() {
-		final int deg = getDegree();
-		final IExpressionList toret = new ExpressionList();
-		for (int n = 0; n <= deg; n++)
-			toret.add(getCoefficent(n));
-		return toret.getIterator();
-	}
-
 	public Letter getLetter() {
 		return varLetter;
 	}
@@ -243,12 +235,6 @@ public final class Poly extends Sum {
 			final Poly sim = subbed.psimplify();
 			if (sim.getDegree() >= temp.getDegree() && sim.getDegree() > 0) {
 				subbed.psimplify();
-				final Poly debug = arg.multiply(div);
-				if (debug != null) {
-					final Poly par = debug.ppartialSimplify();
-					par.toString();
-				}
-				sim.toString();
 				throw new CalcException("Something went wrong in pdivide");
 			}
 			temp = sim.psimplify();

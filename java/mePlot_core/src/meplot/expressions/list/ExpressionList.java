@@ -34,8 +34,8 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 	}
 
 	public ExpressionList(final Expression[] expressionList) {
-		for (int c = 0; c < expressionList.length; c++)
-			add(expressionList[c]);
+		for (Expression expression : expressionList)
+			add(expression);
 	}
 
 	public ExpressionList(final IIterator<Expression> iterator1, final IIterator<Expression> iterator2) {
@@ -92,10 +92,6 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 				toret.add(current);
 		}
 		return toret;
-	}
-
-	public IIterator<Expression> egetIterator(final int index) {
-		return new ExpressionIterator(this, index);
 	}
 
 	public void toCleanString(final char separator, final StringBuffer buffer) {

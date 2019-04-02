@@ -3,7 +3,7 @@ package meplot.expressions.tree;
 import java.util.Stack;
 
 class ExpressionTreeIteratorImpl extends ExpressionTreeIterator {
-	private final Stack<ExpressionTree> stack = new Stack<ExpressionTree>();
+	private final Stack<ExpressionTree> stack = new Stack<>();
 
 	ExpressionTreeIteratorImpl(final ExpressionTree head) {
 		stack.push(head);
@@ -22,7 +22,7 @@ class ExpressionTreeIteratorImpl extends ExpressionTreeIterator {
 	}
 
 	private ExpressionTree pop() {
-		return (ExpressionTree) stack.pop();
+		return stack.pop();
 	}
 
 	public boolean hasNext() {
@@ -30,10 +30,10 @@ class ExpressionTreeIteratorImpl extends ExpressionTreeIterator {
 	}
 
 	public ExpressionTree peek() {
-		return (ExpressionTree) stack.peek();
+		return stack.peek();
 	}
 
 	public ExpressionTreeIterator subIterator() {
-		return new ExpressionTreeIteratorImpl((ExpressionTree) stack.peek());
+		return new ExpressionTreeIteratorImpl(stack.peek());
 	}
 }

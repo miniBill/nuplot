@@ -67,9 +67,9 @@ public class PlotterSelector implements IPlotterSelector {
 
 	public final void disposePlotters() {
 		if (plotters != null)
-			for (int c = 0; c < plotters.length; c++)
-				if (plotters[c] instanceof IDisposable)
-					((IDisposable) plotters[c]).dispose();
+			for (Plotter plotter : plotters)
+				if (plotter instanceof IDisposable)
+					((IDisposable) plotter).dispose();
 	}
 
 	public int[][] getZBuffer() {

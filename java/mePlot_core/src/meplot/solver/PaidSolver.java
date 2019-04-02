@@ -15,7 +15,6 @@ import meplot.expressions.operations.Power;
 import meplot.expressions.other.Poly;
 import meplot.expressions.tree.ExpressionTree;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
-import meplot.solver.AbstractSolver;
 
 public final class PaidSolver extends AbstractSolver {
 	private static char getNewKind(final char kind, final Expression coeff) {
@@ -222,7 +221,7 @@ public final class PaidSolver extends AbstractSolver {
 			return;
 		default:
 			toret.addChild(Letter.UNKNOWN);
-			return;
+			break;
 		}
 	}
 
@@ -296,7 +295,7 @@ public final class PaidSolver extends AbstractSolver {
 			return;
 		default:
 			toret.addChild(Letter.UNKNOWN);
-			return;
+			break;
 		}
 	}
 }

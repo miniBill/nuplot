@@ -4,16 +4,10 @@ import meplot.expressions.Expression;
 import meplot.parser.ParserException;
 import platform.lists.IIterable;
 import platform.lists.IIterator;
-import platform.lists.IToString;
 import platform.lists.ToStringIterator;
 
 public final class TokenIterator extends ToStringIterator<IToken> {
 	private final ITokenList inner;
-
-	public TokenIterator(final ITokenList head) {
-		inner = head;
-		start = 0;
-	}
 
 	public TokenIterator(final ITokenList head, final int index) {
 		super(index);
@@ -31,10 +25,6 @@ public final class TokenIterator extends ToStringIterator<IToken> {
 
 	public IToken peek() {
 		return inner.elementAt(index);
-	}
-
-	public IToString tnext() {
-		return next();
 	}
 
 	protected IIterable<IToken> getInner() {

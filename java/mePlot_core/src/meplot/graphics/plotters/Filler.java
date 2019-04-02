@@ -99,7 +99,7 @@ public final class Filler{
 				final double projy = -PlotterUtil.projectY(y, controller);
 				final INumber finalValue = complexPartialF(partialValue, projy);
 				final double real = finalValue.isReal() ? finalValue.toDouble()
-						: ((Complex)finalValue).norm();
+						: finalValue.norm();
 				if(real > maxv)
 					maxv = real;
 				if(real < minv)
@@ -172,7 +172,7 @@ public final class Filler{
 				final double projy = -PlotterUtil.projectY(y, controller);
 				final INumber finalValue = complexPartialF(partialValue, projy);
 				final double real = finalValue.isReal() ? finalValue.toDouble()
-						: ((Complex)finalValue).norm();
+						: finalValue.norm();
 				if(real > maxv)
 					maxv = real;
 				if(real < minv)

@@ -79,7 +79,7 @@ public final class ComplexPlotter extends ExpressionPlotter implements BooleanSe
 		}
 	}
 
-	private boolean drawOriginal = true;
+	private boolean drawOriginal;
 
 	public void changedSetting(final String name, final boolean arg){
 		if(name.equals(Settings.ORIGINAL))

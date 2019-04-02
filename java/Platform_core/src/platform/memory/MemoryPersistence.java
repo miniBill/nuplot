@@ -42,8 +42,7 @@ class MemoryPersistence implements SettingsBackend{
 		int index = indexof(booleannames, name);
 		if(index < 0){
 			final boolean[] newbooleans= new boolean[booleans.length + 1];
-			for(int j = 0; j < booleans.length; j++)
-				newbooleans[j] = booleans[j];
+			System.arraycopy(booleans, 0, newbooleans, 0, booleans.length);
 			index = booleans.length;
 			booleans = newbooleans;
 		}
@@ -54,8 +53,7 @@ class MemoryPersistence implements SettingsBackend{
 		int index = indexof(intnames, name);
 		if(index < 0){
 			final int[] newints = new int[ints.length + 1];
-			for(int j = 0; j < ints.length; j++)
-				newints[j] = ints[j];
+			System.arraycopy(ints, 0, newints, 0, ints.length);
 			index = ints.length;
 			ints = newints;
 		}
@@ -66,8 +64,7 @@ class MemoryPersistence implements SettingsBackend{
 		int index = indexof(stringnames, name);
 		if(index < 0){
 			final String[] newstrings = new String[strings.length + 1];
-			for(int j = 0; j < strings.length; j++)
-				newstrings[j] = strings[j];
+			System.arraycopy(strings, 0, newstrings, 0, strings.length);
 			index = strings.length;
 			strings = newstrings;
 		}

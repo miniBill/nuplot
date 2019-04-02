@@ -42,13 +42,13 @@ public final class PlotterUtil {
 		return rccache;
 	}
 
-	public static void draw3DAxis(final IGraphics graphics, final int[][] zbuffer) throws DrawException {
+	public static void draw3DAxis(final IGraphics graphics, final int[][] zbuffer) {
 		drawXAxis(graphics, zbuffer);
 		drawYAxis(graphics, zbuffer);
 		drawZAxis(graphics, zbuffer);
 	}
 
-	private static void drawXAxis(final IGraphics graphics, final int[][] zbuffer) throws DrawException {
+	private static void drawXAxis(final IGraphics graphics, final int[][] zbuffer) {
 		final Point3 pPoint = new Point3();
 		final Point3 pOther = new Point3();
 		toRotatedScreenSpace(pPoint, AXLENGTH, 0, 0);
@@ -66,7 +66,7 @@ public final class PlotterUtil {
 		graphics.drawLine(pOther, pPoint, zbuffer);
 	}
 
-	private static void drawYAxis(final IGraphics graphics, final int[][] zbuffer) throws DrawException {
+	private static void drawYAxis(final IGraphics graphics, final int[][] zbuffer) {
 		final Point3 pPoint = new Point3();
 		final Point3 pOther = new Point3();
 		toRotatedScreenSpace(pPoint, 0, AXLENGTH, 0);
@@ -84,7 +84,7 @@ public final class PlotterUtil {
 		graphics.drawLine(pOther, pPoint, zbuffer);
 	}
 
-	private static void drawZAxis(final IGraphics graphics, final int[][] zbuffer) throws DrawException {
+	private static void drawZAxis(final IGraphics graphics, final int[][] zbuffer) {
 		final Point3 pPoint = new Point3();
 		final Point3 pOther = new Point3();
 		toRotatedScreenSpace(pPoint, 0, 0, AXLENGTH);

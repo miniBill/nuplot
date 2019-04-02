@@ -26,7 +26,7 @@ public final class ThreeParametricPlotter extends AbstractParametricPlotter impl
 	private int cycle;
 
 	private void plot(final ThreeParametricGraph graph, final IGraphics graphics, final int delta,
-			final IDrawController controller) throws DrawException{
+			final IDrawController controller) {
 		zbuffer = controller.getZBuffer();
 		PlotterUtil.draw3DAxis(graphics, zbuffer);
 
@@ -41,7 +41,7 @@ public final class ThreeParametricPlotter extends AbstractParametricPlotter impl
 	}
 
 	private void fullPlot(final IGraphics graphics, final int delta, final IValue funx, final IValue funy,
-			final IValue funz, final IDrawController controller) throws DrawException{
+			final IValue funz, final IDrawController controller) {
 		Point3 curr = new Point3();
 		Point3 last = new Point3();
 		Point3 swap = null;
@@ -67,7 +67,7 @@ public final class ThreeParametricPlotter extends AbstractParametricPlotter impl
 	}
 
 	private void noFullPlot(final IGraphics graphics, final int delta, final IValue funx, final IValue funy,
-			final IValue funz, final IDrawController controller) throws DrawException{
+			final IValue funz, final IDrawController controller) {
 		Point3 curr = new Point3();
 		Point3 last = new Point3();
 		Point3 swap = null;

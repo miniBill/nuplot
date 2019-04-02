@@ -14,9 +14,7 @@ public final class Solution{
 	}
 
 	public String toString(){
-		final StringBuffer buffer = new StringBuffer("Passaggi:\n");
-		buffer.append(steps.stringFold().toCleanString('\n'));
-		return buffer.toString();
+		return "Passaggi:\n" + steps.stringFold().toCleanString('\n');
 	}
 
 	public void toHtml(final StringBuffer buffer){

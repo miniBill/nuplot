@@ -43,8 +43,6 @@ import meplot.expressions.functions.trig.Sin;
 import meplot.expressions.functions.trig.Sinh;
 import meplot.expressions.functions.trig.Tan;
 import meplot.expressions.numbers.Int;
-import meplot.numerical.QRDecompose;
-import meplot.numerical.SVDecompose;
 import meplot.parser.ParserException;
 import platform.lists.IIterator;
 import platform.lists.List;
@@ -74,20 +72,19 @@ public final class FunctionToken extends Token {
 			new Abs(Int.ZERO), new Floor(Int.ZERO), new Ln(Int.ZERO), new Exp(Int.ZERO), new Sqrt(Int.ZERO),
 			new Arg(Int.ZERO), new Re(Int.ZERO), new Im(Int.ZERO), new Sign(Int.ZERO), new Log10(Int.ZERO),
 			new Det(Int.ZERO), new Transpose(Int.ZERO), new Rank(Int.ZERO), new Len(Int.ZERO),
-			new SVDecompose(Int.ZERO), new Hold(Int.ZERO), new Cbrt(Int.ZERO), new Gradient(Int.ZERO),
-			new QRDecompose(Int.ZERO), new MaxNorm(NARR), new PNorm(NARR), new Piecewise(NARR), new Max(NARR),
+			new Hold(Int.ZERO), new Cbrt(Int.ZERO), new Gradient(Int.ZERO),
+			new MaxNorm(NARR), new PNorm(NARR), new Piecewise(NARR), new Max(NARR),
 			new Min(NARR), new Mandelbrot(NARR), new Mod(NARR), new Derivative(NARR), new Integral(NARR),
 			new Ackermann(NARR), new Span(NARR), new GenericOde(NARR), new Ode(NARR), new Gcd(NARR) };
 
-	private static List<UserFunction> userFunctions = new List<UserFunction>();
+	private static List<UserFunction> userFunctions = new List<>();
 
 	public Expression toExpression() throws ParserException {
 		final Expression[] eargs = getArgs();
 
-		final int len = DEFAULT_FUNCTIONS.length;
-		for (int c = 0; c < len; c++)
-			if (DEFAULT_FUNCTIONS[c].getName().equals(val))
-				return DEFAULT_FUNCTIONS[c].gfill(eargs);
+		for (IFunctor defaultFunction : DEFAULT_FUNCTIONS)
+			if (defaultFunction.getName().equals(val))
+				return defaultFunction.gfill(eargs);
 
 		final IIterator<UserFunction> iterator = userFunctions.getIterator();
 		while (iterator.hasNext()) {
@@ -166,16 +163,16 @@ public final class FunctionToken extends Token {
 	}
 
 	private static int firstFe(final String name) {
-		for (int c = 0; c < DEFAULT_FUNCTIONS.length; c++) {
-			final int index = name.indexOf(DEFAULT_FUNCTIONS[c].getName());
+		for (IFunctor defaultFunction : DEFAULT_FUNCTIONS) {
+			final int index = name.indexOf(defaultFunction.getName());
 			if (index >= 0)
-				return index + DEFAULT_FUNCTIONS[c].getName().length();
+				return index + defaultFunction.getName().length();
 		}
 
-		for (int c = 0; c < OTHERS.length; c++) {
-			final int index = name.indexOf(OTHERS[c]);
+		for (String other : OTHERS) {
+			final int index = name.indexOf(other);
 			if (index >= 0)
-				return index + OTHERS[c].length();
+				return index + other.length();
 		}
 
 		final IIterator<UserFunction> iterator = userFunctions.getIterator();
@@ -190,14 +187,14 @@ public final class FunctionToken extends Token {
 	}
 
 	private static int firstF(final String name) {
-		for (int c = 0; c < DEFAULT_FUNCTIONS.length; c++) {
-			final int index = name.indexOf(DEFAULT_FUNCTIONS[c].getName());
+		for (IFunctor defaultFunction : DEFAULT_FUNCTIONS) {
+			final int index = name.indexOf(defaultFunction.getName());
 			if (index >= 0)
 				return index;
 		}
 
-		for (int d = 0; d < OTHERS.length; d++) {
-			final int index = name.indexOf(OTHERS[d]);
+		for (String other : OTHERS) {
+			final int index = name.indexOf(other);
 			if (index >= 0)
 				return index;
 		}
@@ -228,9 +225,9 @@ public final class FunctionToken extends Token {
 	}
 
 	public static IFunctor match(final String value) throws ParserException {
-		for (int c = 0; c < DEFAULT_FUNCTIONS.length; c++)
-			if (DEFAULT_FUNCTIONS[c].getName().equals(value))
-				return DEFAULT_FUNCTIONS[c];
+		for (IFunctor defaultFunction : DEFAULT_FUNCTIONS)
+			if (defaultFunction.getName().equals(value))
+				return defaultFunction;
 
 		final IIterator<UserFunction> iterator = userFunctions.getIterator();
 		while (iterator.hasNext()) {
@@ -246,11 +243,8 @@ public final class FunctionToken extends Token {
 	}
 
 	public static void setUserFunctions(final List<UserFunction> toadd) {
-		userFunctions = new List<UserFunction>();
+		userFunctions = new List<>();
 		userFunctions.addRange(toadd);
 	}
 
-	public static IFunctor[] getDefaultFunctions() {
-		return DEFAULT_FUNCTIONS;
-	}
 }

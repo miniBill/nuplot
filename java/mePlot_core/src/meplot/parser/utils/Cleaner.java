@@ -40,7 +40,7 @@ public final class Cleaner{
 
 	private static String cut(final String string, final String search, final String replace){
 		String toret = string;
-		while(toret.indexOf(search) >= 0)
+		while(toret.contains(search))
 			toret = Cleaner.replace(toret, search, replace);
 		return toret;
 	}
@@ -67,7 +67,7 @@ public final class Cleaner{
 	 */
 	private static String replace(final String text, final String searchStr, final String replacementStr){
 		// String buffer to store str
-		final StringBuffer sbuffer = new StringBuffer();
+		final StringBuilder sbuffer = new StringBuilder();
 
 		// Search for search
 		int searchStringPos = text.indexOf(searchStr);
@@ -75,13 +75,13 @@ public final class Cleaner{
 
 		// Iterate to add string
 		while(searchStringPos != -1){
-			sbuffer.append(text.substring(startPos, searchStringPos)).append(replacementStr);
+			sbuffer.append(text, startPos, searchStringPos).append(replacementStr);
 			startPos = searchStringPos + searchStr.length();
 			searchStringPos = text.indexOf(searchStr, startPos);
 		}
 
 		// Create string
-		sbuffer.append(text.substring(startPos, text.length()));
+		sbuffer.append(text.substring(startPos));
 
 		return sbuffer.toString();
 	}

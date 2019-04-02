@@ -51,7 +51,7 @@ class StringGraphics extends AbstractGraphics{
 	}
 
 	@Override
-	public void flushGraphics(final boolean done){
+	public void flushGraphics(){
 		result.append("F()");
 	}
 

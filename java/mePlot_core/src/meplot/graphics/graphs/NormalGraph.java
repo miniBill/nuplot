@@ -77,7 +77,4 @@ public class NormalGraph extends AbstractGraph{
 		return expr instanceof BooleanOp && expr.hasLetter('y') && !isYEquals() || expr.hasLetter('z') && !isZEquals();
 	}
 
-	public final boolean isDisequation(){
-		return expr instanceof BooleanOp && ((BooleanOp) expr).isDisequation();
-	}
 }

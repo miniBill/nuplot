@@ -43,12 +43,7 @@ public class FilterRowIterator implements IIterator<Row> {
 		throw new RuntimeException("NIE");
 	}
 
-	@Override
-	public boolean isEmpty() {
-		throw new RuntimeException("NIE");
-	}
-
-	@Override
+    @Override
 	public boolean isSingle() {
 		throw new RuntimeException("NIE");
 	}

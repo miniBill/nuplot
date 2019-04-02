@@ -47,8 +47,7 @@ public class Matrix extends Tensor {
 		final IIterator<Expression> iterator = exprList.getIterator();
 		Matrix mat = (Matrix) iterator.next();
 		for (int y = 0; y < getRows(); y++) {
-			for (int x = 0; x < getCols(); x++)
-				vals[y][x] = mat.vals[0][x];
+			if (getCols() >= 0) System.arraycopy(mat.vals[0], 0, vals[y], 0, getCols());
 			if (iterator.hasNext())
 				mat = (Matrix) iterator.next();
 			else
@@ -104,8 +103,7 @@ public class Matrix extends Tensor {
 	public final Expression[][] deepCopy() {
 		final Expression[][] toret = new Expression[getRows()][getCols()];
 		for (int x = 0; x < vals.length; x++)
-			for (int y = 0; y < vals[0].length; y++)
-				toret[x][y] = vals[x][y];
+			System.arraycopy(vals[x], 0, toret[x], 0, vals[0].length);
 		return toret;
 	}
 
@@ -176,16 +174,6 @@ public class Matrix extends Tensor {
 		return new MatrixElementsIterator(this);
 	}
 
-	public final int getNonZeroRows() {
-		int toret = getRows() - 1;
-		while (toret > -1) {
-			if (isNonZeroRow(toret))
-				return toret + 1;
-			toret--;
-		}
-		return 0;
-	}
-
 	public final int getRows() {
 		return vals.length;
 	}
@@ -236,9 +224,9 @@ public class Matrix extends Tensor {
 	}
 
 	public final boolean isFullDouble() {
-		for (int x = 0; x < vals.length; x++)
+		for (Expression[] val : vals)
 			for (int y = 0; y < vals[0].length; y++)
-				if (!vals[x][y].isFullDouble())
+				if (!val[y].isFullDouble())
 					return false;
 		return true;
 	}
@@ -254,13 +242,6 @@ public class Matrix extends Tensor {
 				if (!vals[x][y].isIdentical(oth.vals[x][y]))
 					return false;
 		return true;
-	}
-
-	private boolean isNonZeroRow(final int toret) {
-		for (int c = 0; c < vals[0].length; c++)
-			if (!vals[toret][c].isZero())
-				return true;
-		return false;
 	}
 
 	public final boolean isOne() {
@@ -373,8 +354,7 @@ public class Matrix extends Tensor {
 
 	private void set(final Expression[][] values) {
 		for (int y = 0; y < getRows(); y++)
-			for (int x = 0; x < getCols(); x++)
-				vals[y][x] = values[y][x];
+			if (getCols() >= 0) System.arraycopy(values[y], 0, vals[y], 0, getCols());
 	}
 
 	public final void toFullString(final StringBuffer buffer) {

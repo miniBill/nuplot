@@ -8,6 +8,7 @@ import meplot.expressions.IOutputtable;
 import meplot.expressions.exceptions.DerivationException;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
+import org.junit.Assert;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
@@ -27,7 +28,7 @@ public abstract class TestUtils {
 		try {
 			return Parser.parse(arg);
 		} catch (final ParserException e) {
-			fail("Failed parsing " + arg);
+			Assert.fail("Failed parsing " + arg);
 			return null;
 		}
 	}

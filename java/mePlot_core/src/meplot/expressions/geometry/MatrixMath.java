@@ -41,8 +41,7 @@ public final class MatrixMath{
 	private static Matrix rightMatrix(final Expression[][] vals, final int columns){
 		final Expression[][] toret = new Expression[vals.length][columns];
 		for(int y = 0; y < vals.length; y++)
-			for(int x = 0; x < columns; x++)
-				toret[y][x] = vals[y][vals[0].length - columns + x];
+			if (columns >= 0) System.arraycopy(vals[y], vals[0].length - columns, toret[y], 0, columns);
 		return new Matrix(toret);
 	}
 
@@ -150,13 +149,4 @@ public final class MatrixMath{
 		return new Int(mat.getCols());
 	}
 
-	// ESCA-JAVA0173:
-	public static Expression svdDecompose(final Matrix mat){
-		throw new NotImplementedException();
-	}
-
-	// ESCA-JAVA0173:
-	public static Expression qrDecompose(final Matrix mat){
-		throw new NotImplementedException();
-	}
 }

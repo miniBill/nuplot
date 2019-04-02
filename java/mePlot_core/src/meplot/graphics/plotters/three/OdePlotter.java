@@ -82,8 +82,7 @@ public final class OdePlotter extends NormalPlotter{
 		}
 	}
 
-	private void plot3d(final IGraphics graphics, final RungeKutta rungeKutta, final IDrawController controller)
-			throws DrawException{
+	private void plot3d(final IGraphics graphics, final RungeKutta rungeKutta, final IDrawController controller) {
 		final int[][] zbuffer = controller.getZBuffer();
 		PlotterUtil.draw3DAxis(graphics, zbuffer);
 		controller.set3Ode(true);

@@ -40,8 +40,7 @@ public final class ThreePlotter extends ExpressionPlotter implements BooleanSett
 	private int y;
 	private WeakReference<int[][]> zbufferWeakRef = new WeakReference<int[][]>(EMPTY_ZBUFFER);
 
-	public void plot(final Expression expr, final IGraphics graphics, final int delta, final IDrawController controller)
-			throws DrawException {
+	public void plot(final Expression expr, final IGraphics graphics, final int delta, final IDrawController controller) {
 		rccache = rccacheCache.getStrong();
 		iccache = iccacheCache.getStrong();
 		bcache = bcacheCache.getStrong(PlotterUtil.getWidth(), PlotterUtil.getHeight());

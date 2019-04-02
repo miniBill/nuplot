@@ -26,12 +26,7 @@ public class SelectRowIterator implements IIterator<Row> {
 		return iterator.length();
 	}
 
-	@Override
-	public boolean isEmpty() {
-		return iterator.isEmpty();
-	}
-
-	@Override
+    @Override
 	public boolean isSingle() {
 		throw new RuntimeException("NIE");
 	}

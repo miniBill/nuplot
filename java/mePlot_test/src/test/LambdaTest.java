@@ -42,7 +42,7 @@ public final class LambdaTest extends TestUtils {
 			fail("compose2 wasn't lambda");
 		final Lambda lcom2 = (Lambda) scon2;
 		final Lambda brother = new Lambda('x', parseOrFail("(x-1)/x"));
-		assertTrue("Changing variable doesn't make equal", lcom2.equals(brother));
+		assertEquals("Changing variable doesn't make equal", lcom2, brother);
 	}
 
 	@Test

@@ -3,10 +3,10 @@ package meplot.graphics;
 public interface IGraphics{
 	void setColor(int color);
 
-	void drawLine(Point3 start, Point3 end, int[][] zbuffer) throws DrawException;
+	void drawLine(Point3 start, Point3 end, int[][] zbuffer);
 
 	void drawLine(final int startx, final int starty, final int startz, final int tox,
-			final int toy, final int toz, int[][] zbuffer) throws DrawException;
+			final int toy, final int toz, int[][] zbuffer);
 
 	void drawLine(int startx, int starty, int end, int endy);
 
@@ -21,8 +21,6 @@ public interface IGraphics{
 	void setFontHAlign(int align);
 
 	void fillRect(int left, int top, int width, int height);
-
-	void flushGraphics(boolean done);
 
 	void flushGraphics();
 }

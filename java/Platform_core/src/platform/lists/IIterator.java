@@ -3,8 +3,6 @@ package platform.lists;
 public interface IIterator<T> extends java.util.Iterator<T> {
 	int length();
 
-	boolean isEmpty();
-
 	boolean isSingle();
 
 	boolean isSecond();
