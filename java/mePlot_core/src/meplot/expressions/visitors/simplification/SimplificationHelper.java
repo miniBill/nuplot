@@ -72,7 +72,7 @@ public final class SimplificationHelper {
 					curr.toFullString(lastString);
 				}
 				Log.log(LogLevel.WARNING, "Exceeded " + MAX_SIMPLIFY_ITERATIONS + " iterations in Simplify(), last "
-						+ togot + " where:" + lastString.toString());
+						+ togot + " where:" + lastString);
 			}
 			if (current.isIdentical(next))
 				break;

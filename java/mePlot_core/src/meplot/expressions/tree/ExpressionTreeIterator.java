@@ -14,7 +14,7 @@ public abstract class ExpressionTreeIterator implements java.util.Iterator<Expre
 		final StringBuilder buffer = new StringBuilder();
 		while (clone.hasNext()) {
 			// HACK: was .toCleanString
-			buffer.append(clone.next().getValue().toString());
+			buffer.append(clone.next().getValue());
 			if (clone.hasNext())
 				buffer.append(',');
 		}

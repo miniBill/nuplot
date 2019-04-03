@@ -278,7 +278,7 @@ public final class Parser {
 		try {
 			return parse(test);
 		} catch (final ParserException e) {
-			Log.log(LogLevel.WARNING, "Parse error: " + e.getMessage() + " | " + e.toString());
+			Log.log(LogLevel.WARNING, "Parse error: " + e.getMessage() + " | " + e);
 			return zero;
 		}
 	}

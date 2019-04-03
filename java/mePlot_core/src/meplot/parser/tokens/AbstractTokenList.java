@@ -32,7 +32,7 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 			if (curr instanceof TokenList)
 				toret.append(curr.toCString());
 			else
-				toret.append(curr.toString());
+				toret.append(curr);
 			if (iterator.hasNext())
 				toret.append(',');
 		}

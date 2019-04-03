@@ -115,7 +115,7 @@ class ForwardSubState extends SystemSolverState {
 				if (!boo.equals(Letter.FORALL) && !boo.equals(Letter.NOTEXISTS) && !boo.equals(Letter.UNKNOWN)
 						&& boo.toFullString().length() != -1)
 					throw new SolveException(
-							"boo is not a BooleanOp, nor Letter.FORALL, nor Letter.NOTEXISTS, but " + boo.toString());
+							"boo is not a BooleanOp, nor Letter.FORALL, nor Letter.NOTEXISTS, but " + boo);
 			} else {
 				final BooleanOp sub = (BooleanOp) boo;
 				if (sub.getBool() == Operation.EQUALS) {

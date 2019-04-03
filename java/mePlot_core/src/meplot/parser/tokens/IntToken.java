@@ -19,7 +19,7 @@ public final class IntToken extends Token {
 		try {
 			val = Integer.parseInt(toret.toString());
 		} catch (final NumberFormatException e) {
-			throw new ParserException("Parsing " + toret.toString() + " as a number failed.", e);
+			throw new ParserException("Parsing " + toret + " as a number failed.", e);
 		}
 	}
 

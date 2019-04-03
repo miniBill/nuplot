@@ -157,7 +157,7 @@ public final class Poly extends Sum {
 		}
 
 		if (expr.hasLetter(var))
-			Log.log(LogLevel.WARNING, "Returning expr from getCoefficent of " + expr.toString() + " var was " + var);
+			Log.log(LogLevel.WARNING, "Returning expr from getCoefficent of " + expr + " var was " + var);
 
 		return expr;
 	}
@@ -306,7 +306,7 @@ public final class Poly extends Sum {
 				return new Poly(sim, temp.var);
 			if (sim.getDegree() == temp.getDegree()) {
 				final Expression stupid = sim.psimplify();
-				throw new CalcException("Mod didn't reduce degree of poly, stupid:" + stupid.toString());
+				throw new CalcException("Mod didn't reduce degree of poly, stupid:" + stupid);
 			}
 			temp = sim;
 		}

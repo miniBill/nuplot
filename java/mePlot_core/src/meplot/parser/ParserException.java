@@ -30,6 +30,6 @@ public final class ParserException extends Exception {
 	public String toString() {
 		if (inner == null)
 			return PARSE_FAILED + msg;
-		return PARSE_FAILED + msg + '[' + inner.toString() + "].";
+		return PARSE_FAILED + msg + '[' + inner + "].";
 	}
 }
