@@ -17,8 +17,6 @@ public final class MatrixDivider {
 	private MatrixDivider() {
 	}
 
-	private static SymbolListener listener;
-
 	public static Divided divideMatrices(final ITokenList root) throws ParserException {
 		final Divided toret = new Divided();
 		final TokenIterator iterator = root.tgetIterator();
@@ -40,8 +38,6 @@ public final class MatrixDivider {
 				} else {
 					curr = processRow(iterator);
 					final Expression expr = curr.toExpression();
-					if (listener != null)
-						listener.addMatrix(expr.toString());
 					toret.add(name, expr);
 					toret.rest().add(new CharToken(name++));
 				}
@@ -89,7 +85,4 @@ public final class MatrixDivider {
 		return toret;
 	}
 
-	public static void setListener(final SymbolListener newlistener) {
-		MatrixDivider.listener = newlistener;
-	}
 }

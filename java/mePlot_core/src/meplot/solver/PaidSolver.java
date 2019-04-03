@@ -169,32 +169,43 @@ public final class PaidSolver extends AbstractSolver {
 		final Expression neg;
 		final Expression minussol = SimplificationHelper.simplify(sol.opposite());
 		final BooleanOp standard = new BooleanOp(poly.getLetter(), nkind, sol);
+		char invop;
+		switch (nkind) {
+			case EQUALS:
+				invop = Operation.EQUALS;
+				break;
+			case Operation.GEQ:
+				invop = Operation.LEQ;
+				break;
+			case Operation.GREATER:
+				invop = Operation.LESS;
+				break;
+			default:
+				invop = ' ';
+				break;
+		}
 		switch (nkind) {
 		case EQUALS:
-			pos = standard;
-			neg = new BooleanOp(poly.getLetter(), nkind, minussol);
-			break;
 		case Operation.GEQ:
-			pos = standard;
-			neg = new BooleanOp(poly.getLetter(), Operation.LEQ, minussol);
-			break;
 		case Operation.GREATER:
 			pos = standard;
-			neg = new BooleanOp(poly.getLetter(), Operation.LESS, minussol);
+			neg = new BooleanOp(poly.getLetter(), invop, minussol);
+			if (pos.toCleanString().equals(neg.toCleanString())) {
+				secLeaf.addChild(pos);
+			} else {
+				secLeaf.addChild(pos).addBrother(neg);
+			}
 			break;
 		case Operation.LEQ:
 		case Operation.LESS:
 			final Expression min = new BooleanOp(minussol, nkind, poly.getLetter());
 			secLeaf.addChild(new Expression[] { min, standard });
-			return;
+			break;
 		default:
 			pos = new BooleanOp(poly.getLetter(), Operation.UNKNOWN, sol);
-			neg = null;
+			secLeaf.addChild(pos);
 			break;
 		}
-		final ExpressionTree ptree = secLeaf.addChild(pos);
-		if (neg != null && !pos.toCleanString().equals(neg.toCleanString()))
-			ptree.addBrother(neg);
 	}
 
 	protected void solveAbsZero(char evar, Abs abs, char kind, ExpressionTree toret) {

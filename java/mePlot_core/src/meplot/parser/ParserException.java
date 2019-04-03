@@ -1,5 +1,7 @@
 package meplot.parser;
 
+import org.jetbrains.annotations.Nullable;
+
 public final class ParserException extends Exception {
 	private static final long serialVersionUID = -3510673627227450060L;
 
@@ -11,7 +13,8 @@ public final class ParserException extends Exception {
 		msg = "";
 	}
 
-	private final/* @Nullable */Exception inner;
+	@Nullable
+	private final Exception inner;
 
 	private final String msg;
 

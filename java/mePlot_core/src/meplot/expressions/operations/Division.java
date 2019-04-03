@@ -7,21 +7,24 @@ import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.functions.FunctionsMath;
 import meplot.expressions.functions.exp.Sqrt;
 import meplot.expressions.list.ExpressionList;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
-import meplot.expressions.numbers.Fraction;
-import meplot.expressions.numbers.IComplex;
-import meplot.expressions.numbers.INumber;
-import meplot.expressions.numbers.IReal;
-import meplot.expressions.numbers.Int;
+import meplot.expressions.numbers.*;
 import meplot.expressions.other.Poly;
 import meplot.expressions.visitors.IExpressionVisitor;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
-import meplot.persistence.Settings;
+import platform.lists.IIterator;
 import platform.log.Log;
 
 public final class Division extends AbstractExpression implements IDivision {
+	public static void activateCross() {
+		tryCross = true;
+	}
+
+	public static void deactivateCross() {
+		tryCross = false;
+	}
+
 	private static class FakeMultiplication implements IMultiplication {
 		private final Expression arg;
 
@@ -44,8 +47,6 @@ public final class Division extends AbstractExpression implements IDivision {
 			return start == 0 && this.arg.equals(arg);
 		}
 	}
-
-	public static final Division EMPTY = new Division(Int.ZERO, Int.ZERO);
 
 	private final Expression numerator;
 	private final Expression denominator;
@@ -285,11 +286,6 @@ public final class Division extends AbstractExpression implements IDivision {
 
 	public Expression getNumerator() {
 		return numerator;
-	}
-
-	public void changedSetting(final String name, final int arg) {
-		if (name.equals(Settings.TRYCROSS))
-			tryCross = arg == 1;
 	}
 
 	public boolean equals(final Object obj) {

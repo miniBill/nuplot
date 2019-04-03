@@ -21,7 +21,6 @@ import meplot.expressions.operations.Operation;
 import meplot.expressions.other.Poly;
 import meplot.expressions.tree.ExpressionTree;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
-import meplot.persistence.Settings;
 import meplot.solver.states.HeadSolverState;
 import meplot.solver.states.ISystemSolverState;
 
@@ -34,7 +33,7 @@ public abstract class AbstractSolver implements ISolver {
 	 * @return Previous value for the setting.
 	 */
 	public static boolean activateCross() {
-		Division.EMPTY.changedSetting(Settings.TRYCROSS, 1);
+		Division.activateCross();
 		return true;
 	}
 
@@ -77,7 +76,7 @@ public abstract class AbstractSolver implements ISolver {
 	}
 
 	public static void deactivateCross() {
-		Division.EMPTY.changedSetting(Settings.TRYCROSS, 0);
+		Division.deactivateCross();
 	}
 
 	private static char getFirstVar(final Expression expr) {

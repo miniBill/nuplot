@@ -40,10 +40,6 @@ public final class Log{
 		log(LogLevel.WARNING, exc);
 	}
 
-	public static void log(final Error err){
-		log(LogLevel.WARNING, err);
-	}
-
 	public static void setLogger(final MyLogger val){
 		istance = val;
 	}
@@ -52,19 +48,4 @@ public final class Log{
 		log(level, "Exception: " + exc.getMessage());
 	}
 
-	private static void log(final LogLevel level, final Error err){
-		log(level, "Error: " + err.getMessage());
-	}
-
-	public static void log(final LogLevel level, final float float1,
-			final float float2, final float float3, final float float4){
-		log(level, float1);
-		log(level, float2);
-		log(level, float3);
-		log(level, float4);
-	}
-
-	private static void log(final LogLevel level, final float arg){
-		log(level, Float.toString(arg));
-	}
 }
