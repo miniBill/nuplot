@@ -37,11 +37,6 @@ public final class TokenIterator extends ToStringIterator<IToken> {
 	}
 
 	@Override
-	public IToken getLast() {
-		throw new RuntimeException("NIE");
-	}
-
-	@Override
 	public IToken getCurrent() {
 		throw new RuntimeException("NIE");
 	}

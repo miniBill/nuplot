@@ -7,8 +7,6 @@ public interface IIterator<T> extends java.util.Iterator<T>, java.lang.Iterable<
 
 	boolean contains(T value);
 
-	T getLast();
-
 	T getCurrent();
 
 	List<T> until(String string);

@@ -35,11 +35,19 @@ public interface IIterable<T> extends Iterable<T> {
         return getIterator().next();
     }
 
+    default T getLast() {
+        T result = null;
+        for (T curr : this)
+            result = curr;
+        return result;
+    }
+
     @NotNull
     default java.util.Iterator<T> iterator() {
         return getIterator();
     }
 
+    @NotNull
     IIterator<T> getIterator();
 
     default boolean checkContains(IIterable<T> other) {

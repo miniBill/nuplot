@@ -70,7 +70,7 @@ public final class OperationActivator {
 						opcurr.setRight(right);
 					} else
 						curr = activateToken(curr, operation);
-				if (curr instanceof FunctionToken)
+				else if (curr instanceof FunctionToken)
 					curr = activateToken(curr, operation);
 				temp.add(curr);
 			}

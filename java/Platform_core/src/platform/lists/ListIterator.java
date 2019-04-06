@@ -32,8 +32,4 @@ public final class ListIterator<T> extends Iterator<T> {
         return inner.elementAt(index);
     }
 
-    @Override
-    public T getLast() {
-        return inner.elementAt(inner.length() - 1);
-    }
 }

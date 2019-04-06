@@ -10,6 +10,7 @@ import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
@@ -121,7 +122,7 @@ public abstract class TestUtils {
 		final IOutputtable simplified = SimplificationHelper.simplify(input);
 		final String simplifiedClean = simplified.toCleanString();
 
-		final IIterator<Expression> step = SimplificationHelper.stepSimplify(input).getIterator();
+		final IIterable<Expression> step = SimplificationHelper.stepSimplify(input);
 		final String stepClean = step.getLast().toCleanString();
 
 		final Expression expectedParsed = parseOrFail(expected);

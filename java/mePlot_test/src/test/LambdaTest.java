@@ -59,7 +59,7 @@ public final class LambdaTest extends TestUtils {
 		final Expression sym = SimplificationHelper.simplify(span);
 		assertEquals("Aww :(", "{z=>1/z,z=>z}", sym.toString());
 		assertEquals("Aww2 :(", "{z=>1/z,z=>z}",
-				SimplificationHelper.stepSimplify(sym).getIterator().getLast().toString());
+				SimplificationHelper.stepSimplify(sym).getLast().toString());
 
 		final Expression span2 = parseOrFail("span(z=>(1-z),z=>(1/z))");
 		AbstractSolver.activateCross();

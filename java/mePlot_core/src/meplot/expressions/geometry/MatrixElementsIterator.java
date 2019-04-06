@@ -40,10 +40,6 @@ public class MatrixElementsIterator implements IIterator<Expression> {
 		return matrix.get(row, col);
 	}
 
-	public Expression getLast() {
-		return matrix.get(matrix.getRows() - 1, matrix.getCols() - 1);
-	}
-
 	public boolean hasNext() {
 		return row != matrix.getRows();
 	}
