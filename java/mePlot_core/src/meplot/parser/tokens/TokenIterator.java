@@ -32,7 +32,7 @@ public final class TokenIterator extends ToStringIterator<IToken> {
 	}
 
 	@Override
-	public IIterator<IToken> subIterator() {
+	public IIterator<IToken> iterator() {
 		throw new RuntimeException("NIE");
 	}
 

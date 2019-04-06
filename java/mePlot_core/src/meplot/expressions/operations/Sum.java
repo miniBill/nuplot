@@ -268,10 +268,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 			return binomialSquare;
 		while (iterator.hasNext()) {
 			final Expression first = iterator.next();
-			final IIterator<Expression> sub = iterator.subIterator();
-			while (sub.hasNext()) {
-				final Expression second = sub.next();
-
+			for (Expression second : iterator) {
 				if (first.isZero()) {
 					return finishInner(after, first, second, second);
 				}

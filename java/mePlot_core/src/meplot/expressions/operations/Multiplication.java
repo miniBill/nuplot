@@ -21,6 +21,8 @@ import meplot.expressions.visitors.IExpressionVisitor;
 import platform.log.Log;
 import platform.log.LogLevel;
 
+import java.util.Iterator;
+
 public final class Multiplication extends AbstractExpression implements IMultiplication {
 	private final IExpressionList factors;
 
@@ -298,9 +300,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	private static Expression innerMultiply(final Multiplication after, final IIterator<Expression> iterator) {
 		final Expression first = iterator.next();
-		final IIterator<Expression> sub = iterator.subIterator();
-		while (sub.hasNext()) {
-			final Expression second = sub.next();
+		for (Expression second : iterator) {
 			if (first.compatible(second, Operation.MULTIPLICATION)) {
 				final Expression toret = first.multiply(second);
 				return finishInner(after, first, second, toret);

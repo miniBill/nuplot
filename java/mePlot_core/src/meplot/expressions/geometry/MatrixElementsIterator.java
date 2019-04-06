@@ -29,7 +29,8 @@ public class MatrixElementsIterator implements IIterator<Expression> {
 		return toret;
 	}
 
-	public IIterator<Expression> subIterator() {
+	@Override
+	public IIterator<Expression> iterator() {
 		return new MatrixElementsIterator(matrix, row, col);
 	}
 

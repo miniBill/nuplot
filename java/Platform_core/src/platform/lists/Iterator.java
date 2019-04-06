@@ -30,25 +30,20 @@ public abstract class Iterator<T> extends AbstractIterator<T> {
 	}
 
 	public final boolean contains(T value) {
-		IIterator<T> clone = subIterator();
-		while (clone.hasNext()) {
-			T curr = clone.next();
+		for (T curr : this)
 			if (curr.equals(value))
 				return true;
-		}
 		return false;
 	}
 
 	public final String toString() {
-		IIterable<T> inner = getInner();
-		if (!(inner instanceof List<?>))
-			return "";
-		List<T> list = (List<T>) inner;
 		final StringBuilder toret = new StringBuilder();
-		for (int tindex = index; tindex < inner.length(); tindex++) {
-			toret.append(list.elementAt(tindex));
-			if (tindex < length() - 1)
+		boolean first = true;
+		for (T curr : this) {
+			if (!first)
 				toret.append(" > ");
+			first = false;
+			toret.append(curr);
 		}
 		return toret.toString();
 	}
