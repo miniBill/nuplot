@@ -38,7 +38,7 @@ class ForwardSubState extends SystemSolverState {
 		if (firstVar == '?')
 			firstVar = AbstractSolver.getFirstVar(getLeaf().getValue());
 		ExpressionTree leaf = getLeaf();
-		if (index >= getLeaf().getValue().length()) {
+		if (index >= IIterable.length(getLeaf().getValue())) {
 			final IExpressionIterable equations = removeNullAndZero(getLeaf().getValue());
 			leaf = leaf.addChild(equations);
 			// TODO: leaf is incorrect
@@ -85,14 +85,14 @@ class ForwardSubState extends SystemSolverState {
 		final IExpressionList current = new ExpressionList();
 		final IIterable<Expression> stepValue = steps.getValue();
 		int newlength = 0;
-		for (int i = 0; i < value.length(); i++)
+		for (int i = 0; i < IIterable.length(value); i++)
 			if (i < startindex || i > endindex)
 				current.add(iterator.next());
 			else {
 				iterator.next(); // Ignores it
 				if (i == startindex) {
 					IIterator<Expression> toAdd = stepValue.getIterator();
-					newlength = stepValue.length();
+					newlength = IIterable.length(stepValue);
 					current.addRange(toAdd);
 				}
 			}

@@ -13,6 +13,7 @@ import meplot.expressions.functions.trig.Cos;
 import meplot.expressions.functions.trig.Sin;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
@@ -390,7 +391,7 @@ public final class Power extends AbstractExpression implements IPower {
 
 			final IIterator<Expression> ita = sbase.getIterator();
 
-			if (sbase.length() == 2) {
+			if (IIterable.length(sbase) == 2) {
 				final Expression a = ita.next();
 				final Expression b = ita.next();
 				toret.add(a.square());

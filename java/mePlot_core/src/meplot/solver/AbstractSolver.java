@@ -8,7 +8,6 @@ import meplot.expressions.functions.exp.Sqrt;
 import meplot.expressions.functions.piecewise.Abs;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionIterable;
 import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
@@ -44,7 +43,7 @@ public abstract class AbstractSolver implements ISolver {
 	protected static ExpressionTree appendStepSimplifyChain(final ExpressionTree tree) {
 		ExpressionTree leaf = tree;
 		final IIterable<Expression> root = tree.getValue();
-		final IIterable<Expression>[] chains = new IIterable[root.length()];
+		final IIterable<Expression>[] chains = new IIterable[IIterable.length(root)];
 		final IIterator<Expression> iterator = root.getIterator();
 		for (int i = 0; i < chains.length; i++)
 			chains[i] = SimplificationHelper.stepSimplify(iterator.next());

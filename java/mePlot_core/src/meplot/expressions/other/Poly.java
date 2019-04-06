@@ -6,6 +6,7 @@ import meplot.expressions.Letter;
 import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.exceptions.SimplificationException;
 import meplot.expressions.list.ExpressionList;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Fraction;
@@ -208,7 +209,7 @@ public final class Poly extends Sum {
 		Poly temp = this;
 		Poly toret = new Poly(Int.ZERO, var);
 		final int divdeg = arg.getDegree();
-		if (divdeg == 0 && arg.length() == 1) {
+		if (divdeg == 0 && IIterable.length(arg) == 1) {
 			final Expression single = arg.getFirst();
 			if (single instanceof INumber) {
 				final IExpressionList results = new ExpressionList();

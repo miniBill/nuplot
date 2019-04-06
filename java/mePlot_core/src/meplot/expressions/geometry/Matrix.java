@@ -17,8 +17,6 @@ import meplot.expressions.visitors.derivative.DerivativeHelper;
 import platform.log.Log;
 import platform.log.LogLevel;
 
-import java.util.Iterator;
-
 public class Matrix extends Tensor {
 	private static final Matrix ZERO = new Matrix(Int.ZERO);
 	private Expression[][] vals;
@@ -47,7 +45,7 @@ public class Matrix extends Tensor {
 		if (!(exprList.getFirst() instanceof Matrix))
 			return;
 		final Matrix firstRow = (Matrix) exprList.getFirst();
-		vals = new Expression[exprList.length()][firstRow.vals[0].length];
+		vals = new Expression[IIterable.length(exprList)][firstRow.vals[0].length];
 		final IIterator<Expression> iterator = exprList.getIterator();
 		Matrix mat = (Matrix) iterator.next();
 		for (int y = 0; y < getRows(); y++) {
@@ -142,7 +140,7 @@ public class Matrix extends Tensor {
 	}
 
 	private void fillByList(final IIterable<Expression> iterable) {
-		vals = new Expression[1][iterable.length()];
+		vals = new Expression[1][IIterable.length(iterable)];
 		int c = 0;
 		for (Expression expression : iterable)
 			vals[0][c++] = expression;

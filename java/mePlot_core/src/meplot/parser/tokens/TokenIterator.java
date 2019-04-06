@@ -11,8 +11,12 @@ public final class TokenIterator extends ToStringIterator<IToken> {
 
 	public TokenIterator(final ITokenList head, final int index) {
 		super(index);
-		start = index;
 		inner = head;
+	}
+
+	@Override
+	public boolean hasNext() {
+		return index < IIterable.length(inner);
 	}
 
 	public IToken next() {
@@ -33,11 +37,11 @@ public final class TokenIterator extends ToStringIterator<IToken> {
 
 	@Override
 	public IIterator<IToken> iterator() {
-		throw new RuntimeException("NIE");
+		return new TokenIterator(inner, index);
 	}
 
 	@Override
 	public IToken getCurrent() {
-		throw new RuntimeException("NIE");
+		return inner.elementAt(index);
 	}
 }

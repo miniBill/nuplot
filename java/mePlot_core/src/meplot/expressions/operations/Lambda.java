@@ -9,6 +9,7 @@ import meplot.expressions.list.ValueList;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.visitors.IExpressionVisitor;
 import platform.NotImplementedException;
+import platform.lists.IIterable;
 
 public final class Lambda extends AbstractExpression {
     private final Expression right;
@@ -31,7 +32,7 @@ public final class Lambda extends AbstractExpression {
         for (IValueNode curr : valueList)
             if (curr.getLetter() != left)
                 newList.add(curr);
-        if (newList.length() > 0)
+        if (IIterable.length(newList) > 0)
             return new Lambda(left, right.partialSubstitute(newList));
         return this;
     }

@@ -11,6 +11,7 @@ import meplot.expressions.functions.IFunction;
 import meplot.expressions.geometry.ITensor;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
@@ -20,8 +21,6 @@ import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.IExpressionVisitor;
 import platform.log.Log;
 import platform.log.LogLevel;
-
-import java.util.Iterator;
 
 public final class Multiplication extends AbstractExpression implements IMultiplication {
 	private final IExpressionList factors;
@@ -396,7 +395,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	private static boolean nCheckContains(final IExpressionList small, final IExpressionList big) {
 		final IIterator<Expression> smallIt = small.getIterator();
-		final boolean[] usd = new boolean[big.length()];
+		final boolean[] usd = new boolean[IIterable.length(big)];
 		while (smallIt.hasNext()) {
 			final Expression curr = smallIt.next();
 			if (curr instanceof INumber)

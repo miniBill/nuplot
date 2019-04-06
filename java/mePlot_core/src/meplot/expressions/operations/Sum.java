@@ -15,8 +15,6 @@ import meplot.expressions.visitors.simplification.SimplificationHelper;
 import platform.lists.IIterable;
 import platform.lists.IIterator;
 
-import java.util.Iterator;
-
 public class Sum extends AbstractExpression implements IIterable<Expression>, Expression {
 	private static Expression finishInner(final IExpressionList after, final Expression first, final Expression second,
 			final Expression initial) {
@@ -497,7 +495,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	private Expression tryBinomialSquare() {
-		if (addends.length() != 3)
+		if (IIterable.length(addends) != 3)
 			return null;
 
 		final IIterator<Expression> iterator = getIterator();

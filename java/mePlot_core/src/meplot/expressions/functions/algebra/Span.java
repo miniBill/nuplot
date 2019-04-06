@@ -11,6 +11,7 @@ import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.IExpressionFunctorVisitor;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
+import platform.lists.IIterable;
 
 public final class Span extends ArbitraryFunction{
 	public Span(final Expression[] values){
@@ -29,11 +30,11 @@ public final class Span extends ArbitraryFunction{
 						final Expression mul = SimplificationHelper.simplify(vals[c].multiply(vals[d]));
 						if(!toret.contains(mul)){
 							toret.add(mul); // TODO: Fix
-							if(toret.length() > 10)
+                            if(IIterable.length(toret) > 10)
 								throw new RuntimeException();
 						}
 					}
-		if(toret.length() == vals.length && areSimplified(vals))
+        if(IIterable.length(toret) == vals.length && areSimplified(vals))
 			return new Matrix(vals);
 		return new Span(toret.toArray());
 	}

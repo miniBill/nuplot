@@ -187,7 +187,7 @@ public final class ExpressionTree {
 	}
 
 	private void outputValue(final StringBuffer buffer) {
-		if (value.length() > 1) {
+		if (IIterable.length(value) > 1) {
 			appendTable(buffer, value.getIterator());
 			return;
 		}
@@ -199,7 +199,7 @@ public final class ExpressionTree {
 			}
 		}
 		buffer.append('$');
-		if (value.length() > 0)
+		if (IIterable.length(value) > 0)
 			value.getFirst().toHtml(buffer);
 		/*
 		 * else buffer.append("∀");

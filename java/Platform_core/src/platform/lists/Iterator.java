@@ -13,10 +13,6 @@ public abstract class Iterator<T> extends AbstractIterator<T> {
 
 	protected abstract IIterable<T> getInner();
 
-	public final boolean hasNext() {
-		return length() > 0;
-	}
-
 	public final boolean isSecond() {
 		return index == start + 1;
 	}
@@ -25,7 +21,7 @@ public abstract class Iterator<T> extends AbstractIterator<T> {
 
 	public final int length() {
 		if (cached_length == -1)
-			cached_length = getInner().length();
+			cached_length = IIterable.length(getInner());
 		return cached_length - index;
 	}
 

@@ -13,6 +13,11 @@ public final class ListIterator<T> extends Iterator<T> {
     }
 
     @Override
+    public boolean hasNext() {
+        return index < inner.length();
+    }
+
+    @Override
     public T next() {
         return inner.elementAt(index++);
     }

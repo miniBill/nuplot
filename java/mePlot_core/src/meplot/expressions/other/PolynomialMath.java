@@ -4,6 +4,7 @@ import meplot.expressions.Expression;
 import meplot.expressions.Letter;
 import meplot.expressions.exceptions.DivisorException;
 import meplot.expressions.list.ExpressionList;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.ValueList;
@@ -93,7 +94,7 @@ public final class PolynomialMath {
 	}
 
 	private static IExpressionList divisors(final Multiplication expr) {
-		final IExpressionList[] gens = new IExpressionList[expr.length()];
+		final IExpressionList[] gens = new IExpressionList[IIterable.length(expr)];
 		final IIterator<Expression> factors = expr.getIterator();
 		gen(factors, gens);
 		final int[] indexes = new int[gens.length];
@@ -106,7 +107,7 @@ public final class PolynomialMath {
 
 			for (int j = 0; j < indexes.length; j++) {
 				indexes[j]++;
-				if (indexes[j] == gens[j].length()) {
+				if (indexes[j] == IIterable.length(gens[j])) {
 					if (j == indexes.length - 1)
 						return toret.fold();
 					indexes[j] = 0;

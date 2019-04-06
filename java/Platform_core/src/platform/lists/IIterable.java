@@ -5,16 +5,16 @@ import com.sun.istack.internal.NotNull;
 public interface IIterable<T> extends Iterable<T> {
     default T[] toArray()
     {
-        T[] result = (T[]) new Object[length()];
+        T[] result = (T[]) new Object[length(this)];
         int i = 0;
         for(T curr : this)
             result[i++] = curr;
         return result;
     }
 
-    default int length() {
+    static <T> int length(Iterable<T> input) {
         int result = 0;
-        for (T curr : this)
+        for (T ignored : input)
             result++;
         return result;
     }
