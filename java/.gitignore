@@ -11,3 +11,4 @@ res/it.res
 build.properties
 */gen
 out
+.idea/workspace.xml

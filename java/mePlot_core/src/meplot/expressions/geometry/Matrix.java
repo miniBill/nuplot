@@ -4,6 +4,7 @@ import meplot.expressions.Expression;
 import meplot.expressions.ICalculable;
 import meplot.expressions.exceptions.CalcException;
 import org.jetbrains.annotations.NotNull;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
@@ -15,6 +16,8 @@ import meplot.expressions.visitors.IExpressionTensorVisitor;
 import meplot.expressions.visitors.derivative.DerivativeHelper;
 import platform.log.Log;
 import platform.log.LogLevel;
+
+import java.util.Iterator;
 
 public class Matrix extends Tensor {
 	private static final Matrix ZERO = new Matrix(Int.ZERO);
@@ -38,7 +41,7 @@ public class Matrix extends Tensor {
 
 	public Matrix(final IExpressionList exprList, final boolean isVector) {
 		if (isVector) {
-			fillByList(exprList.getIterator());
+			fillByList(exprList);
 			return;
 		}
 		if (!(exprList.getFirst() instanceof Matrix))
@@ -138,10 +141,11 @@ public class Matrix extends Tensor {
 		return vals[0][0].fdvalue(letter, value);
 	}
 
-	private void fillByList(final IIterator<Expression> iterator) {
-		vals = new Expression[1][iterator.length()];
-		for (int c = 0; iterator.hasNext(); c++)
-			vals[0][c] = iterator.next();
+	private void fillByList(final IIterable<Expression> iterable) {
+		vals = new Expression[1][iterable.length()];
+		int c = 0;
+		for (Expression expression : iterable)
+			vals[0][c++] = expression;
 	}
 
 	public final Expression gadd(final Expression expr) {

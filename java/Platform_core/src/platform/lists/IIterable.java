@@ -3,6 +3,15 @@ package platform.lists;
 import com.sun.istack.internal.NotNull;
 
 public interface IIterable<T> extends Iterable<T> {
+    default T[] toArray()
+    {
+        T[] result = (T[]) new Object[length()];
+        int i = 0;
+        for(T curr : this)
+            result[i++] = curr;
+        return result;
+    }
+
     default int length() {
         int result = 0;
         for (T curr : this)

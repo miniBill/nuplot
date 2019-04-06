@@ -49,7 +49,7 @@ abstract class SystemSolverState implements ISystemSolverState {
 		return var;
 	}
 
-	protected static IExpressionIterable removeNullAndZero(final IExpressionIterable equations) {
+	protected static IExpressionIterable removeNullAndZero(final Iterable<Expression> equations) {
 		final IExpressionList toret = new ExpressionList();
 		for (Expression expression : equations) {
 			if (expression != null)

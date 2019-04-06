@@ -6,6 +6,7 @@ import meplot.expressions.Letter;
 import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionIterable;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.operations.BooleanOp;
@@ -79,10 +80,10 @@ class ForwardSubState extends SystemSolverState {
 
 	private static void addSteps(final ExpressionTree leaf, final ExpressionTree steps, final int startindex,
 			final int endindex) {
-		final IExpressionIterable value = leaf.getValue();
+		final IIterable<Expression> value = leaf.getValue();
 		final IIterator<Expression> iterator = value.getIterator();
 		final IExpressionList current = new ExpressionList();
-		final IExpressionIterable stepValue = steps.getValue();
+		final IIterable<Expression> stepValue = steps.getValue();
 		int newlength = 0;
 		for (int i = 0; i < value.length(); i++)
 			if (i < startindex || i > endindex)
@@ -91,7 +92,7 @@ class ForwardSubState extends SystemSolverState {
 				iterator.next(); // Ignores it
 				if (i == startindex) {
 					IIterator<Expression> toAdd = stepValue.getIterator();
-					newlength = toAdd.length();
+					newlength = stepValue.length();
 					current.addRange(toAdd);
 				}
 			}
@@ -112,10 +113,10 @@ class ForwardSubState extends SystemSolverState {
 				continue;
 			final Expression boo = equations[index];
 			if (!(boo instanceof BooleanOp)) {
-				if (!boo.equals(Letter.FORALL) && !boo.equals(Letter.NOTEXISTS) && !boo.equals(Letter.UNKNOWN)
-						&& boo.toFullString().length() != -1)
+				if (!boo.equals(Letter.FORALL) && !boo.equals(Letter.NOTEXISTS) && !boo.equals(Letter.UNKNOWN)) {
 					throw new SolveException(
 							"boo is not a BooleanOp, nor Letter.FORALL, nor Letter.NOTEXISTS, but " + boo);
+				}
 			} else {
 				final BooleanOp sub = (BooleanOp) boo;
 				if (sub.getBool() == Operation.EQUALS) {

@@ -15,6 +15,8 @@ import meplot.expressions.visitors.simplification.SimplificationHelper;
 import platform.lists.IIterable;
 import platform.lists.IIterator;
 
+import java.util.Iterator;
+
 public class Sum extends AbstractExpression implements IIterable<Expression>, Expression {
 	private static Expression finishInner(final IExpressionList after, final Expression first, final Expression second,
 			final Expression initial) {
@@ -40,28 +42,23 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 		return ((Sum) inner).order();
 	}
 
-	private static Expression order(final IIterator<Expression> iterator) {
-		final IExpressionList toret = new ExpressionList();
-		final IExpressionList temp = new ExpressionList();
-		if (!iterator.getCurrent().toString().startsWith("-"))
+	private static Expression order(final IIterable<Expression> iiterable) {
+		final IExpressionList rest = new ExpressionList();
+		if (!iiterable.getFirst().toString().startsWith("-"))
 			return null;
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
-			if (curr.toString().startsWith("-"))
-				temp.add(curr);
+		Expression found = null;
+		for (Expression curr : iiterable) {
+			if (found != null || curr.toString().startsWith("-"))
+				rest.add(curr);
 			else {
-				toret.add(curr);
-				final IExpressionList last = new ExpressionList(toret);
-				last.addRange(iterator);
-				last.addRange(temp);
-				return new Sum(last);
+				found = curr;
 			}
 		}
-		return null;
-	}
-
-	private static Expression order(final IExpressionList after) {
-		return order(after.getIterator());
+		if (found == null)
+			return null;
+		IExpressionList result = new ExpressionList(found);
+		result.addRange(rest);
+		return new Sum(result);
 	}
 
 	private static Expression trySquare(final Expression curr) {
@@ -410,8 +407,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	private Expression order() {
-		final IIterator<Expression> iterator = getIterator();
-		final Expression toret = order(iterator);
+		final Expression toret = order((IIterable<Expression>) this);
 		if (toret == null)
 			return this;
 		return toret;
@@ -489,11 +485,12 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public final void toString(final StringBuffer buffer) {
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			iterator.next().toString(buffer);
-			if (iterator.hasNext() && !iterator.getCurrent().toStringStartsWith('-'))
+		boolean first = true;
+		for (Expression curr : this) {
+			if (!first && !curr.toStringStartsWith('-'))
 				buffer.append('+');
+			curr.toString(buffer);
+			first = false;
 		}
 	}
 
@@ -563,11 +560,12 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public void toHtml(final StringBuffer buffer) {
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			iterator.next().toWrappedHtml(buffer);
-			if (iterator.hasNext() && !iterator.getCurrent().toString().startsWith("-"))
+		boolean first = true;
+		for (Expression curr : this) {
+			if (!first && !curr.toStringStartsWith('-'))
 				buffer.append('+');
+			curr.toWrappedHtml(buffer);
+			first = false;
 		}
 	}
 }

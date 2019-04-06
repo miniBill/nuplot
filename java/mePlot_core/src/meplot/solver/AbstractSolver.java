@@ -9,6 +9,7 @@ import meplot.expressions.functions.piecewise.Abs;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionIterable;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Fraction;
@@ -23,6 +24,9 @@ import meplot.expressions.tree.ExpressionTree;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import meplot.solver.states.HeadSolverState;
 import meplot.solver.states.ISystemSolverState;
+import platform.lists.List;
+
+import java.lang.reflect.Array;
 
 public abstract class AbstractSolver implements ISolver {
 	protected static final char EQUALS = '=';
@@ -39,27 +43,51 @@ public abstract class AbstractSolver implements ISolver {
 
 	protected static ExpressionTree appendStepSimplifyChain(final ExpressionTree tree) {
 		ExpressionTree leaf = tree;
-		final IExpressionIterable root = tree.getValue();
-		final IIterator<Expression>[] chains = new IIterator[root.length()];
+		final IIterable<Expression> root = tree.getValue();
+		final IIterable<Expression>[] chains = new IIterable[root.length()];
 		final IIterator<Expression> iterator = root.getIterator();
 		for (int i = 0; i < chains.length; i++)
-			chains[i] = SimplificationHelper.stepSimplify(iterator.next()).getIterator();
-		while (true) {
-			final ExpressionList current = new ExpressionList();
-			boolean done = true;
-			for (IIterator<Expression> chain : chains)
-				if (chain.length() > 1) {
-					current.add(chain.next());
-					done = false;
-				} else
-					current.add(chain.getCurrent());
-			leaf = leaf.addChild(current);
-			if (done)
-				break;
+			chains[i] = SimplificationHelper.stepSimplify(iterator.next());
+		List<Expression[]> zipped = AbstractSolver.zipLonger(Expression.class, chains);
+		for(Expression[] layer : zipped){
+			leaf = leaf.addChild(layer);
 		}
 		final IExpressionList last = new ExpressionList();
-		for (IIterator<Expression> chain : chains) last.add(SimplificationHelper.simplify(chain.next()));
+		for (Expression expression : leaf.getValue()) last.add(SimplificationHelper.simplify(expression));
 		return leaf.addChild(last);
+	}
+
+	/*
+	Takes a list of sequences: (a, b, c, ..., k)
+	And returns ((a_1, b_1, ..., k_1), ..., (a_m, b_m, k_m)) where m is the max length. Repeats elements if necessary.
+	 */
+	private static <T> List<T[]> zipLonger(Class<T> c, IIterable<T>[] chains) {
+		IIterator<T>[] status =  new IIterator[chains.length];
+		T[] curr = (T[]) Array.newInstance(c, chains.length);
+		List<T[]> result = new List<>();
+		for (int i = 0;i<chains.length;i++) {
+			status[i] = chains[i].getIterator();
+			if(!status[i].hasNext())
+				return new List<>();
+			curr[i]=status[i].next();
+		}
+		result.add(curr);
+		while(true){
+			boolean progress =false;
+			for(int i = 0 ; i<chains.length;i++)
+			{
+				if(status[i].hasNext())
+				{
+					if(!progress) // If it's the first time
+						curr = curr.clone();
+					curr[i]=status[i].next();
+					progress=true;
+				}
+			}
+			if(!progress)
+				return result;
+			result.add(curr);
+		}
 	}
 
 	private static Expression craftEquivalentEquation(final BooleanOp feq) {
@@ -97,7 +125,7 @@ public abstract class AbstractSolver implements ISolver {
 		return firstVar;
 	}
 
-	public static char getFirstVar(final IExpressionIterable equations) {
+	public static char getFirstVar(final Iterable<Expression> equations) {
 		char firstVar = 'x';
 		while (firstVar > 'a' && hasLetter(equations, (char) (firstVar - 1)))
 			firstVar--;
@@ -128,7 +156,7 @@ public abstract class AbstractSolver implements ISolver {
 		return toret;
 	}
 
-	private static boolean hasLetter(final IExpressionIterable equations, final char letter) {
+	private static boolean hasLetter(final Iterable<Expression> equations, final char letter) {
 		for (Expression curr : equations)
 			if (curr.hasLetter(letter))
 				return true;

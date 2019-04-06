@@ -7,8 +7,6 @@ public interface IExpressionIterable extends IToStringIterable<Expression> {
 
 	Expression getFirst();
 
-	Expression[] toArray();
-
 	void toCleanString(char separator, StringBuffer buffer);
 
 	String toCleanString(char separator);

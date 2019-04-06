@@ -2,6 +2,7 @@ package meplot.expressions.list;
 
 import meplot.expressions.Expression;
 import meplot.parser.utils.Cleaner;
+import org.jetbrains.annotations.NotNull;
 import platform.lists.IIterator;
 import platform.lists.ToStringList;
 
@@ -95,8 +96,12 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 	}
 
 	public void toCleanString(final char separator, final StringBuffer buffer) {
+		toCleanString(this, separator, buffer);
+	}
+
+	public static void toCleanString(Iterable<Expression> expressions, char separator, StringBuffer buffer) {
 		boolean first = true;
-		for (Expression curr : this) {
+		for (Expression curr : expressions) {
 			if (first)
 				first = false;
 			else
@@ -106,8 +111,13 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 	}
 
 	public String toCleanString(final char separator) {
+		return toCleanString(this, separator);
+	}
+
+	@NotNull
+	public static String toCleanString(Iterable<Expression> expressions, char separator) {
 		final StringBuffer toret = new StringBuffer();
-		toCleanString(separator, toret);
+		toCleanString(expressions, separator, toret);
 		return toret.toString();
 	}
 }

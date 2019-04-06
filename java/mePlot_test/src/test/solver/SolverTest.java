@@ -39,7 +39,7 @@ public final class SolverTest extends SolverUtils {
 	@Test
 	public void testBig() {
 		assertSimplify("c((bz)/c)-bz", "0");
-		checkLeaves("[a{{a,b},{c,d}};b{{x,y},{z,w}}]ab-ba=0", "y=(bz)/c,w=(cx+dz-az)/c");
+		checkLeaves("[a{{a,b},{c,d}};b{{x,y},{z,w}}]ab-ba=0", "y=(bz)/c,w=(cx-az+dz)/c");
 	}
 
 	@Test

@@ -390,7 +390,7 @@ public final class Power extends AbstractExpression implements IPower {
 
 			final IIterator<Expression> ita = sbase.getIterator();
 
-			if (ita.length() == 2) {
+			if (sbase.length() == 2) {
 				final Expression a = ita.next();
 				final Expression b = ita.next();
 				toret.add(a.square());

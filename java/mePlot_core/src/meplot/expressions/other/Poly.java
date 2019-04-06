@@ -208,8 +208,8 @@ public final class Poly extends Sum {
 		Poly temp = this;
 		Poly toret = new Poly(Int.ZERO, var);
 		final int divdeg = arg.getDegree();
-		if (divdeg == 0 && arg.getIterator().length() == 1) {
-			final Expression single = arg.getIterator().getCurrent();
+		if (divdeg == 0 && arg.length() == 1) {
+			final Expression single = arg.getFirst();
 			if (single instanceof INumber) {
 				final IExpressionList results = new ExpressionList();
 				final IIterator<Expression> iterator = getIterator();

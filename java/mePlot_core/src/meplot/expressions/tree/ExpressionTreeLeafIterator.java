@@ -1,6 +1,8 @@
 package meplot.expressions.tree;
 
 
+import platform.lists.ToStringList;
+
 final class ExpressionTreeLeafIterator extends ExpressionTreeIterator{
 	private final ExpressionTreeIterator iterator;
 
@@ -38,7 +40,7 @@ final class ExpressionTreeLeafIterator extends ExpressionTreeIterator{
 		final ExpressionTreeIterator clone = subIterator();
 		final StringBuffer buffer = new StringBuffer();
 		while(clone.hasNext()){
-			clone.next().getValue().toString(buffer);
+			ToStringList.toString(clone.next().getValue(), buffer);
 			if(clone.hasNext())
 				buffer.append(',');
 		}

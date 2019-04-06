@@ -3,16 +3,16 @@ package meplot.expressions.tree;
 import meplot.expressions.Expression;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionIterable;
-import platform.lists.IIterator;
 import meplot.expressions.operations.BooleanOp;
+import platform.lists.IIterable;
+import platform.lists.IIterator;
 
 public final class ExpressionTree {
 	private ExpressionTree child;
-	private final IExpressionIterable value;
+	private final IIterable<Expression> value;
 	private ExpressionTree brother;
 
-	private ExpressionTree(final IExpressionIterable list) {
+	private ExpressionTree(final IIterable<Expression> list) {
 		value = list;
 	}
 
@@ -51,11 +51,11 @@ public final class ExpressionTree {
 		}
 	}
 
-	public IExpressionIterable getValue() {
+	public IIterable<Expression> getValue() {
 		return value;
 	}
 
-	private ExpressionTree addBrother(final IExpressionIterable equations) {
+	private ExpressionTree addBrother(final IIterable<Expression> equations) {
 		return addBrother(new ExpressionTree(equations));
 	}
 
@@ -65,10 +65,10 @@ public final class ExpressionTree {
 		if (brother != null)
 			brother.stringFold();
 
-		final String cString = value.toCleanString(',');
+		final String cString = ExpressionList.toCleanString(value, ',');
 		Iterable<ExpressionTree> iterable = this::getAllChildren;
 		for (ExpressionTree curr : iterable) {
-			if (curr != this && cString.equals(curr.value.toCleanString(','))) {
+			if (curr != this && cString.equals(ExpressionList.toCleanString(curr.value, ','))) {
 				child = curr.child;
 				break;
 			}
@@ -88,7 +88,7 @@ public final class ExpressionTree {
 		return new ExpressionTreeIteratorImpl(this);
 	}
 
-	public ExpressionTree addChild(final IExpressionIterable equations) {
+	public ExpressionTree addChild(final IIterable<Expression> equations) {
 		if (child == null) {
 			child = new ExpressionTree(equations);
 			return child;
@@ -142,7 +142,7 @@ public final class ExpressionTree {
 		if (hasBrother()) {
 			appendTree(buffer, index);
 			buffer.append('°');
-			value.toCleanString(',', buffer);
+			ExpressionList.toCleanString(value, ',', buffer);
 			if (hasChild()) {
 				buffer.append(separator);
 				child.toTreeString(separator, buffer, index + 1);
@@ -150,7 +150,7 @@ public final class ExpressionTree {
 			buffer.append(separator);
 			appendTree(buffer, index);
 			buffer.append('°');
-			brother.value.toCleanString(',', buffer);
+			ExpressionList.toCleanString(brother.value, ',', buffer);
 			if (brother.hasChild()) {
 				buffer.append(separator);
 				brother.child.toTreeString(separator, buffer, index + 1);
@@ -158,7 +158,7 @@ public final class ExpressionTree {
 			return;
 		}
 		appendTree(buffer, index);
-		value.toCleanString(',', buffer);
+		ExpressionList.toCleanString(value, ',', buffer);
 		if (hasChild()) {
 			buffer.append(separator);
 			child.toTreeString(separator, buffer, index);

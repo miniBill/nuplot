@@ -12,15 +12,24 @@ public abstract class ToStringList<T extends IToString> extends List<T> {
 	}
 
 	public final void toString(final StringBuffer buffer) {
-		toString(buffer, ',');
+		toString(this, buffer);
+	}
+
+	public static <T extends IToString> void toString(Iterable<T> list, StringBuffer buffer) {
+		toString(list, buffer, ',');
 	}
 
 	public final void toString(final StringBuffer buffer, final char sep) {
-		final IIterator<T> iterator = getIterator(0);
-		while (iterator.hasNext()) {
-			iterator.next().toString(buffer);
-			if (iterator.hasNext())
+		toString(this, buffer, sep);
+	}
+
+	private static <T extends IToString> void toString(Iterable<T> list, StringBuffer buffer, char sep) {
+		boolean first = true;
+		for (T next : list) {
+			if (!first)
 				buffer.append(sep);
+			first = false;
+			next.toString(buffer);
 		}
 	}
 }

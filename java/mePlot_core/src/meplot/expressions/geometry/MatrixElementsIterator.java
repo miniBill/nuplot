@@ -59,10 +59,6 @@ public class MatrixElementsIterator implements IIterator<Expression> {
 		return false;
 	}
 
-    public boolean isSingle() {
-		return length() == 1;
-	}
-
 	@Override
 	public boolean isSecond() {
 		throw new RuntimeException("NIE");

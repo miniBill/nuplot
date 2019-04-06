@@ -4,6 +4,7 @@ import meplot.expressions.Expression;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionIterable;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
@@ -18,7 +19,7 @@ public class HeadSolverState extends SystemSolverState {
 	}
 
 	public void execute() {
-		final IExpressionIterable last = getLeaf().getValue();
+		final IIterable<Expression> last = getLeaf().getValue();
 		final ExpressionList toPass = new ExpressionList();
 		final IIterator<Expression> iterator = last.getIterator();
 		while (iterator.hasNext()) {
