@@ -1,16 +1,16 @@
 package platform;
 
 import platform.log.MyLogger;
-import platform.memory.MemoryPlatform;
+import platform.memory.MemoryLogger;
 
 public final class Platform{
-	private static final IPlatform platform = new MemoryPlatform();
+	private static final MyLogger logger= new MemoryLogger();
 
 	private Platform(){
 	}
 
 	public static MyLogger getLogger(){
-		return platform.getLogger();
+		return logger;
 	}
 
 }
