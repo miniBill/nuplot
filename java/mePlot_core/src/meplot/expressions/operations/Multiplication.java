@@ -177,7 +177,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public boolean isZero() {
-		if (factors.isEmpty())
+		if (IIterable.isEmpty(factors))
 			return false;
 		if (factors.isSingle()) {
 			final ICalculable value = factors.getFirst();
@@ -192,7 +192,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public boolean isOne() {
-		if (factors.isEmpty())
+		if (IIterable.isEmpty(factors))
 			return true;
 		if (factors.isSingle())
 			return factors.getFirst().isOne();

@@ -6,6 +6,7 @@ import meplot.parser.tokens.FunctionToken;
 import meplot.parser.tokens.IToken;
 import meplot.parser.tokens.ITokenList;
 import meplot.parser.tokens.TokenList;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 
 public final class FunctionActivator {
@@ -74,7 +75,7 @@ public final class FunctionActivator {
 			final IIterator<IToken> inner = asList.getIterator();
 			while (true) {
 				final ITokenList arg = new TokenList(inner.until(COMMA));
-				if (arg.isEmpty())
+				if (IIterable.isEmpty(arg))
 					break;
 				args.add(arg);
 			}
@@ -88,7 +89,7 @@ public final class FunctionActivator {
 			args.add(zero);
 			while (true) {
 				final ITokenList arg = new TokenList(iterator.until(COMMA));
-				if (arg.isEmpty())
+				if (IIterable.isEmpty(arg))
 					break;
 				args.add(activateFunctionsToken(arg, iterator));
 			}

@@ -47,7 +47,8 @@ class ForwardSubState extends SystemSolverState {
 			QUEUE.add(simplifyStep);
 			return;
 		}
-		final Expression[] equations = getLeaf().getValue().toArray();
+        IIterable<Expression> expressions = getLeaf().getValue();
+        final Expression[] equations = IIterable.toArray(Expression.class, expressions);
 		final Expression curr = equations[index];
 		if (curr == null) {
 			Log.log(LogLevel.DEBUG, "Null equation");
@@ -108,7 +109,8 @@ class ForwardSubState extends SystemSolverState {
 		while (iterator.hasNext()) {
 			ExpressionTree leaf = iterator.next();
 
-			final Expression[] equations = leaf.getValue().toArray();
+            IIterable<Expression> expressions = leaf.getValue();
+            final Expression[] equations = IIterable.toArray(Expression.class, expressions);
 			if (index >= equations.length)
 				continue;
 			final Expression boo = equations[index];

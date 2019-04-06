@@ -7,6 +7,7 @@ import meplot.expressions.functions.IFunctor;
 import meplot.expressions.functions.exp.Ln;
 import meplot.expressions.functions.piecewise.IPower;
 import meplot.expressions.geometry.ITensor;
+import platform.lists.IIterable;
 import platform.lists.IIterator;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.BooleanOp;
@@ -63,7 +64,7 @@ public class DerivativeVisitor implements IExpressionVisitor {
 	}
 
 	public Expression visit(final IMultiplication multiplication) {
-		if (multiplication.isEmpty())
+        if (IIterable.isEmpty(multiplication))
 			return Int.ZERO;
 		final IIterator<Expression> factors = multiplication.getIterator();
 		final Expression first = factors.next();

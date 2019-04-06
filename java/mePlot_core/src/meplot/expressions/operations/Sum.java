@@ -254,7 +254,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 
 		if (inner != null)
 			return orderOrDefault(inner);
-		if (after.isEmpty())
+		if (IIterable.isEmpty(after))
 			return Int.ZERO;
 
 		return orderOrDefault(after);
@@ -328,7 +328,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	 * {@inheritDoc}
 	 */
 	public final boolean isZero() {
-		return addends.isEmpty() || addends.isSingle() && addends.getFirst().isZero();
+		return IIterable.isEmpty(addends) || addends.isSingle() && addends.getFirst().isZero();
 	}
 
 	public final ITensor matrixDvalue(final char letter, final double value) {

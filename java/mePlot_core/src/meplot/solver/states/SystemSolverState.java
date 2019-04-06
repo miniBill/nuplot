@@ -4,6 +4,7 @@ import meplot.expressions.Expression;
 import meplot.expressions.Letter;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionIterable;
+import platform.lists.IIterable;
 import platform.lists.List;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.tree.ExpressionTree;
@@ -59,7 +60,7 @@ abstract class SystemSolverState implements ISystemSolverState {
 				} else if (!expression.isZero() && !expression.equals(Letter.FORALL))
 					toret.add(expression);
 		}
-		if (toret.isEmpty())
+        if (IIterable.isEmpty(toret))
 			return new ExpressionList(Letter.FORALL);
 		return toret;
 	}

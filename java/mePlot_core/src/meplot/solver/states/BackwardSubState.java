@@ -30,7 +30,8 @@ class BackwardSubState extends SystemSolverState {
 			nextStep();
 			return;
 		}
-		final Expression[] equations = getLeaf().getValue().toArray();
+        IIterable<Expression> expressions = getLeaf().getValue();
+        final Expression[] equations = IIterable.toArray(Expression.class, expressions);
 		if (index >= equations.length) {
 			QUEUE.add(new BackwardSubState(getLeaf(), equations.length - 1, getSolver()));
 			return;

@@ -2,12 +2,13 @@ package platform.lists;
 
 import com.sun.istack.internal.NotNull;
 
+import java.lang.reflect.Array;
+
 public interface IIterable<T> extends Iterable<T> {
-    default T[] toArray()
-    {
-        T[] result = (T[]) new Object[length(this)];
+    static <T> T[] toArray(Class<T> c, IIterable<T> input) {
+        T[] result = (T[]) Array.newInstance(c, length(input));
         int i = 0;
-        for(T curr : this)
+        for(T curr : input)
             result[i++] = curr;
         return result;
     }
@@ -19,8 +20,8 @@ public interface IIterable<T> extends Iterable<T> {
         return result;
     }
 
-    default boolean isEmpty() {
-        return !getIterator().hasNext();
+    static <T> boolean isEmpty(Iterable<T> iterable) {
+        return !iterable.iterator().hasNext();
     }
 
     default boolean isSingle() {
