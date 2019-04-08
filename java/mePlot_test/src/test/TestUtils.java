@@ -11,7 +11,6 @@ import meplot.expressions.list.ExpressionList;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import platform.lists.IIterable;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.other.PolynomialMath;
@@ -123,7 +122,7 @@ public abstract class TestUtils {
 		final String simplifiedClean = simplified.toCleanString();
 
 		final IIterable<Expression> step = SimplificationHelper.stepSimplify(input);
-		final String stepClean = step.getLast().toCleanString();
+		final String stepClean = IIterable.getLast(step).toCleanString();
 
 		final Expression expectedParsed = parseOrFail(expected);
 		final IOutputtable expectedSimplified = SimplificationHelper.simplify(expectedParsed);

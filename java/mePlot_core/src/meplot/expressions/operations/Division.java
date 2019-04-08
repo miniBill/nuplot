@@ -42,11 +42,6 @@ public final class Division extends AbstractExpression implements IDivision {
 				return (INumber) arg;
 			return Int.ONE;
 		}
-
-		@Override
-		public boolean contains(Expression arg, int start) {
-			return start == 0 && this.arg.equals(arg);
-		}
 	}
 
 	private final Expression numerator;
@@ -196,7 +191,7 @@ public final class Division extends AbstractExpression implements IDivision {
 
 		final Expression nnum;
 		if (IIterable.length(numerator) == 1)
-			nnum = numerator.getFirst();
+			nnum = IIterable.getFirst(numerator);
 		else if (numerator instanceof Expression)
 			nnum = (Expression) numerator;
 		else
@@ -204,7 +199,7 @@ public final class Division extends AbstractExpression implements IDivision {
 
 		final Expression nden;
 		if (IIterable.length(denominator) == 1)
-			nden = denominator.getFirst();
+			nden = IIterable.getFirst(denominator);
 		else if (denominator instanceof Expression)
 			nden = (Expression) denominator;
 		else

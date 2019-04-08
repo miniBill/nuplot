@@ -11,6 +11,7 @@ import meplot.parser.utils.Cleaner;
 import meplot.solver.AbstractSolver;
 
 import org.junit.Test;
+import platform.lists.IIterable;
 
 public final class LambdaTest extends TestUtils {
 	private static Lambda lambdaOrFail(final String string) {
@@ -59,7 +60,7 @@ public final class LambdaTest extends TestUtils {
 		final Expression sym = SimplificationHelper.simplify(span);
 		assertEquals("Aww :(", "{z=>1/z,z=>z}", sym.toString());
 		assertEquals("Aww2 :(", "{z=>1/z,z=>z}",
-				SimplificationHelper.stepSimplify(sym).getLast().toString());
+				IIterable.getLast(SimplificationHelper.stepSimplify(sym)).toString());
 
 		final Expression span2 = parseOrFail("span(z=>(1-z),z=>(1/z))");
 		AbstractSolver.activateCross();

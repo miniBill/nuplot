@@ -26,7 +26,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	private final IExpressionList factors;
 
 	public boolean contains(Expression expr, int start) {
-		return factors.contains(expr, start);
+		return IIterable.contains(factors, expr, start);
 	}
 
 	public Multiplication(final Expression left, final Expression right) {
@@ -97,7 +97,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		final IIterator<Expression> iterator = getIterator();
 		if (!iterator.hasNext())
 			return false;
-		if (factors.isSingle())
+		if (IIterable.isSingle(factors))
 			return factors.getFirst().toStringStartsWith(prefix);
 		if (isMinusOneOdd())
 			return prefix == '-';
@@ -119,7 +119,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		final IIterator<Expression> iterator = getIterator();
 		if (!iterator.hasNext())
 			return;
-		if (factors.isSingle()) {
+		if (IIterable.isSingle(factors)) {
 			factors.getFirst().toString(buffer);
 			return;
 		}
@@ -179,10 +179,10 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	public boolean isZero() {
 		if (IIterable.isEmpty(factors))
 			return false;
-		if (factors.isSingle()) {
+		if (IIterable.isSingle(factors)) {
 			final ICalculable value = factors.getFirst();
 			if (value == null) {
-				factors.isSingle();
+				IIterable.isSingle(factors);
 				Log.log(new NullPointerException("Multiplication.isZero"));
 				return false;
 			}
@@ -194,13 +194,13 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	public boolean isOne() {
 		if (IIterable.isEmpty(factors))
 			return true;
-		if (factors.isSingle())
+		if (IIterable.isSingle(factors))
 			return factors.getFirst().isOne();
 		return false;
 	}
 
 	public Expression innerSimplify() {
-		if (factors.isSingle())
+		if (IIterable.isSingle(factors))
 			return factors.getFirst().partialSimplify();
 
 		IIterator<Expression> iterator = getIterator();
@@ -228,7 +228,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public Expression innerStepSimplify() {
-		if (factors.isSingle())
+		if (IIterable.isSingle(factors))
 			return factors.getFirst().innerStepSimplify();
 		IIterator<Expression> iterator = getIterator();
 
@@ -420,7 +420,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public Expression add(final Expression arg) {
-		if (factors.isSingle())
+		if (IIterable.isSingle(factors))
 			return factors.getFirst().add(arg);
 
 		final Multiplication marg;
@@ -430,7 +430,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 			marg = new Multiplication(arg);
 
 		if (!nCompatible(marg)) {
-			if (factors.contains(arg))
+			if (IIterable.contains(factors, arg))
 				return new Sum(this, marg);
 			return super.add(arg);
 		}
@@ -551,7 +551,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public boolean needParenthesis() {
-		return !factors.isSingle();
+		return !IIterable.isSingle(factors);
 	}
 
 	public boolean hasLetter(final char arg) {
@@ -636,7 +636,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		final IIterator<Expression> iterator = getIterator();
 		if (!iterator.hasNext())
 			return;
-		if (factors.isSingle()) {
+		if (IIterable.isSingle(factors)) {
 			factors.getFirst().toHtml(buffer);
 			return;
 		}

@@ -191,8 +191,8 @@ public final class ExpressionTree {
 			appendTable(buffer, value.getIterator());
 			return;
 		}
-		if (value.isSingle() && value.getFirst() instanceof Matrix) {
-			Matrix mat = (Matrix) value.getFirst();
+		if (IIterable.isSingle(value) && IIterable.getFirst(value) instanceof Matrix) {
+			Matrix mat = (Matrix) IIterable.getFirst(value);
 			if (mat.getRows() * mat.getCols() > 0 && mat.get(0, 0) instanceof BooleanOp) {
 				appendTable(buffer, mat.getElements());
 				return;
@@ -200,7 +200,7 @@ public final class ExpressionTree {
 		}
 		buffer.append('$');
 		if (IIterable.length(value) > 0)
-			value.getFirst().toHtml(buffer);
+			IIterable.getFirst(value).toHtml(buffer);
 		/*
 		 * else buffer.append("∀");
 		 */

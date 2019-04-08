@@ -20,15 +20,15 @@ public final class Span extends ArbitraryFunction{
 
 	protected Expression innerStepSimplify(final Expression[] vals){
 		final IExpressionList toret = new ExpressionList();
-		for (Expression val : vals)
-			if (!toret.contains(val))
+        for (Expression val : vals)
+			if (!IIterable.contains(toret, val))
 				toret.add(val);
 		for(int c = 0; c < vals.length; c++)
 			if(vals[c].isSimplified())
 				for(int d = c; d < vals.length; d++)
 					if(vals[d].isSimplified()){
 						final Expression mul = SimplificationHelper.simplify(vals[c].multiply(vals[d]));
-						if(!toret.contains(mul)){
+                        if(!IIterable.contains(toret, mul)){
 							toret.add(mul); // TODO: Fix
                             if(IIterable.length(toret) > 10)
 								throw new RuntimeException();

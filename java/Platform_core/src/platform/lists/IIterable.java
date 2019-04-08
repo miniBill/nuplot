@@ -24,21 +24,21 @@ public interface IIterable<T> extends Iterable<T> {
         return !iterable.iterator().hasNext();
     }
 
-    default boolean isSingle() {
-        IIterator<T> iterator = getIterator();
+    static <T> boolean isSingle(Iterable<T> iterable) {
+        java.util.Iterator<T> iterator = iterable.iterator();
         if (!iterator.hasNext())
             return false;
         iterator.next();
         return !iterator.hasNext();
     }
 
-    default T getFirst() {
-        return getIterator().next();
+    static <T> T getFirst(Iterable<T> iterable) {
+        return iterable.iterator().next();
     }
 
-    default T getLast() {
+    static <T> T getLast(IIterable<T> iterable) {
         T result = null;
-        for (T curr : this)
+        for (T curr : iterable)
             result = curr;
         return result;
     }
@@ -51,21 +51,20 @@ public interface IIterable<T> extends Iterable<T> {
     @NotNull
     IIterator<T> getIterator();
 
-    default boolean checkContains(IIterable<T> other) {
-        for (T curr : this)
-            if (!contains(curr))
+    static <T> boolean checkContains(Iterable<T> iterable, Iterable<T> other) {
+        for (T curr : other)
+            if (!contains(iterable, curr))
                 return false;
         return true;
-
     }
 
-    default boolean contains(T arg) {
-        return contains(arg, 0);
+    static <T> boolean contains(Iterable<T> iterable, T arg) {
+        return contains(iterable, arg, 0);
     }
 
-    default boolean contains(T arg, int start) {
+    static <T> boolean contains(Iterable<T> iterable, T arg, int start) {
         int i = 0;
-        for (T curr : this) {
+        for (T curr : iterable) {
             if (i >= start && curr.equals(arg))
                 return true;
             i++;

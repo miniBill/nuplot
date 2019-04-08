@@ -251,7 +251,7 @@ public abstract class AbstractSolver implements ISolver {
 	}
 
 	private void explicate(final ExpressionTree toret, final char var) {
-		final Expression last = toret.getValue().getFirst();
+		final Expression last = IIterable.getFirst(toret.getValue());
 		if (last instanceof BooleanOp) {
 			final BooleanOp blast = (BooleanOp) last;
 			explicate(toret, blast, var);

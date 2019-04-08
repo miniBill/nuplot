@@ -42,7 +42,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 
 	private static Expression order(final IIterable<Expression> iiterable) {
 		final IExpressionList rest = new ExpressionList();
-		if (!iiterable.getFirst().toString().startsWith("-"))
+		if (!IIterable.getFirst(iiterable).toString().startsWith("-"))
 			return null;
 		Expression found = null;
 		for (Expression curr : iiterable) {
@@ -170,7 +170,8 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 		if (!(obj instanceof Sum))
 			return super.equals(obj);
 		final Sum sumobj = (Sum) obj;
-		return addends.checkContains(sumobj.addends) && sumobj.addends.checkContains(addends);
+		// TODO: Fix
+		return IIterable.checkContains(this, sumobj) && IIterable.checkContains(sumobj, this);
 	}
 
 	/**
@@ -216,7 +217,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public final Expression innerSimplify() {
-		if (addends.isSingle())
+		if (IIterable.isSingle(addends))
 			return addends.getFirst().partialSimplify();
 		final IExpressionList after = simplifyAddends();
 
@@ -224,7 +225,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public final Expression innerStepSimplify() {
-		if (addends.isSingle())
+		if (IIterable.isSingle(addends))
 			return addends.getFirst().innerStepSimplify();
 		final IExpressionList after = stepSimplifyAddends();
 
@@ -321,14 +322,14 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	 * {@inheritDoc}
 	 */
 	public final boolean isOne() {
-		return addends.isSingle() && addends.getFirst().isOne();
+		return IIterable.isSingle(addends) && addends.getFirst().isOne();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public final boolean isZero() {
-		return IIterable.isEmpty(addends) || addends.isSingle() && addends.getFirst().isZero();
+		return IIterable.isEmpty(addends) || IIterable.isSingle(addends) && addends.getFirst().isZero();
 	}
 
 	public final ITensor matrixDvalue(final char letter, final double value) {
@@ -379,7 +380,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public final boolean needParenthesis() {
-		return !addends.isSingle();
+		return !IIterable.isSingle(addends);
 	}
 
 	/**
