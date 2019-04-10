@@ -228,9 +228,8 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	public Expression innerStepSimplify() {
 		if (IIterable.isSingle(factors))
 			return factors.getFirst().innerStepSimplify();
-		Iterator<Expression> iterator = iterator();
 
-		final Expression after = stepSimplifyFactors(iterator);
+		final Expression after = stepSimplifyFactors(this);
 		if (after.isZero())
 			return Int.ZERO;
 
@@ -239,7 +238,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 			if (!afterM.factors.equals(factors))
 				return afterM.order();
 
-			iterator = afterM.iterator();
+			Iterator<Expression> iterator = afterM.iterator();
 
 			while (iterator.hasNext()) {
 				final Expression inner = innerMultiply(afterM, iterator);
@@ -274,10 +273,9 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		return new Multiplication(after);
 	}
 
-	private static Expression stepSimplifyFactors(final Iterator<Expression> iterator) {
+	private static Expression stepSimplifyFactors(final Iterable<Expression> iterable) {
 		final Multiplication after = new Multiplication();
-		while (iterator.hasNext()) {
-			final ISimplifiable curr = iterator.next();
+		for (ISimplifiable curr : iterable) {
 			final Expression currs = curr.innerStepSimplify();
 			/*
 			 * if(currs.isZero()) return Int.ZERO; if(currs.isOne()) continue;

@@ -2,7 +2,8 @@ package meplot.expressions.geometry;
 
 import meplot.expressions.Expression;
 import platform.lists.IIterator;
-import platform.lists.List;
+
+import java.util.Iterator;
 
 public class MatrixElementsIterator implements IIterator<Expression> {
 	private int row = 0;
@@ -30,7 +31,7 @@ public class MatrixElementsIterator implements IIterator<Expression> {
 	}
 
 	@Override
-	public IIterator<Expression> iterator() {
+	public Iterator<Expression> iterator() {
 		return new MatrixElementsIterator(matrix, row, col);
 	}
 

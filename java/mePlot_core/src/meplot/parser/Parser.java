@@ -66,7 +66,7 @@ public final class Parser {
 
 		// Log.log(LogLevel.PARSER, "After aggregateNumbers:", root.toString());
 
-		root = activateSyntax(root.iterator());
+		root = activateSyntax(root);
 
 		// Log.log(LogLevel.PARSER, "After activateSyntax:", root.toString());
 
@@ -80,7 +80,7 @@ public final class Parser {
 
 		// Log.log(LogLevel.PARSER, "After aggregateStrings:", root.toString());
 
-		root = unfoldStrings(root.iterator());
+		root = unfoldStrings(root);
 
 		// Log.log(LogLevel.PARSER, "After unfoldStrings:", root.toString());
 
@@ -121,12 +121,11 @@ public final class Parser {
 		return root;
 	}
 
-	private static TokenList unfoldStrings(final Iterator<IToken> iterator) {
+	private static TokenList unfoldStrings(final Iterable<IToken> iterable) {
 		final TokenList toret = new TokenList();
-		while (iterator.hasNext()) {
-			final IToken current = iterator.next();
+		for (IToken current : iterable) {
 			if (current instanceof TokenList)
-				toret.add(unfoldStrings(((TokenList) current).iterator()));
+				toret.add(unfoldStrings(((TokenList) current)));
 			else if (current instanceof CharList)
 				toret.addRange(((CharList) current).iterator());
 			else
@@ -221,11 +220,10 @@ public final class Parser {
 		return currChar >= '0' && currChar <= '9' || currChar == '.' || currChar == '@';
 	}
 
-	private static ITokenList activateSyntax(final Iterator<IToken> iterator) {
+	private static ITokenList activateSyntax(final Iterable<IToken> iterable) {
 		final ITokenList toret = new TokenList();
 		// third pass: activate operators and parenthesis
-		while (iterator.hasNext()) {
-			final IToken curr = iterator.next();
+		for (IToken curr : iterable) {
 			if (curr instanceof CharToken) {
 				final char val = curr.toString().charAt(0);
 				boolean found = false;
@@ -238,20 +236,20 @@ public final class Parser {
 					}
 				if (!found)
 					switch (val) {
-					case '(':
-						final ParToken par = new ParToken(true);
-						toret.add(par);
-						break;
-					case ')':
-						final ParToken cpar = new ParToken(false);
-						toret.add(cpar);
-						break;
-					case '-':
-						activateMinus(toret);
-						break;
-					default:
-						toret.add(curr);
-						break;
+						case '(':
+							final ParToken par = new ParToken(true);
+							toret.add(par);
+							break;
+						case ')':
+							final ParToken cpar = new ParToken(false);
+							toret.add(cpar);
+							break;
+						case '-':
+							activateMinus(toret);
+							break;
+						default:
+							toret.add(curr);
+							break;
 					}
 			} else
 				toret.add(curr);

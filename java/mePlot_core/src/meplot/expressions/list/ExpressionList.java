@@ -78,9 +78,9 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 
 	public Expression[] toArray() {
 		final Expression[] toret = new Expression[length()];
-		final IIterator<Expression> iterator = iterator();
-		for (int c = 0; iterator.hasNext(); c++)
-			toret[c] = iterator.next();
+		int c = 0;
+		for (Expression expression : this)
+			toret[c++] = expression;
 		return toret;
 	}
 

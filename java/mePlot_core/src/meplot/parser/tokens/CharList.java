@@ -5,7 +5,6 @@ import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.operations.Multiplication;
 import meplot.parser.ParserException;
-import platform.lists.IIterator;
 
 public final class CharList extends AbstractTokenList {
 	/**
@@ -29,9 +28,8 @@ public final class CharList extends AbstractTokenList {
 
 	private String toSmallString() {
 		final StringBuilder toret = new StringBuilder();
-		final IIterator<IToken> iterator = iterator();
-		while (iterator.hasNext())
-			toret.append(iterator.next());
+		for (IToken iToken : this)
+			toret.append(iToken);
 		return toret.toString();
 	}
 

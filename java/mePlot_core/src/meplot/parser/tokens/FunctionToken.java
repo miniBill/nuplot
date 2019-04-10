@@ -8,43 +8,18 @@ import meplot.expressions.functions.algebra.Span;
 import meplot.expressions.functions.complex.Arg;
 import meplot.expressions.functions.complex.Im;
 import meplot.expressions.functions.complex.Re;
-import meplot.expressions.functions.exp.Cbrt;
-import meplot.expressions.functions.exp.Exp;
-import meplot.expressions.functions.exp.Ln;
-import meplot.expressions.functions.exp.Log10;
-import meplot.expressions.functions.exp.Sqrt;
-import meplot.expressions.functions.matrix.Det;
-import meplot.expressions.functions.matrix.Gradient;
-import meplot.expressions.functions.matrix.Len;
-import meplot.expressions.functions.matrix.Rank;
-import meplot.expressions.functions.matrix.Transpose;
+import meplot.expressions.functions.exp.*;
+import meplot.expressions.functions.matrix.*;
 import meplot.expressions.functions.ode.GenericOde;
 import meplot.expressions.functions.ode.Ode;
 import meplot.expressions.functions.operations.Derivative;
 import meplot.expressions.functions.operations.Integral;
 import meplot.expressions.functions.operations.Mod;
-import meplot.expressions.functions.other.Ackermann;
-import meplot.expressions.functions.other.Floor;
-import meplot.expressions.functions.other.Gcd;
-import meplot.expressions.functions.other.Hold;
-import meplot.expressions.functions.other.Mandelbrot;
-import meplot.expressions.functions.other.MaxNorm;
-import meplot.expressions.functions.other.PNorm;
-import meplot.expressions.functions.piecewise.Abs;
-import meplot.expressions.functions.piecewise.Max;
-import meplot.expressions.functions.piecewise.Min;
-import meplot.expressions.functions.piecewise.Piecewise;
-import meplot.expressions.functions.piecewise.Sign;
-import meplot.expressions.functions.trig.Asin;
-import meplot.expressions.functions.trig.Atan;
-import meplot.expressions.functions.trig.Cos;
-import meplot.expressions.functions.trig.Cosh;
-import meplot.expressions.functions.trig.Sin;
-import meplot.expressions.functions.trig.Sinh;
-import meplot.expressions.functions.trig.Tan;
+import meplot.expressions.functions.other.*;
+import meplot.expressions.functions.piecewise.*;
+import meplot.expressions.functions.trig.*;
 import meplot.expressions.numbers.Int;
 import meplot.parser.ParserException;
-import platform.lists.IIterator;
 import platform.lists.List;
 
 public final class FunctionToken extends Token {
@@ -86,12 +61,9 @@ public final class FunctionToken extends Token {
 			if (defaultFunction.getName().equals(val))
 				return defaultFunction.gfill(eargs);
 
-		final IIterator<UserFunction> iterator = userFunctions.iterator();
-		while (iterator.hasNext()) {
-			final UserFunction uff = iterator.next();
+		for (UserFunction uff : userFunctions)
 			if (uff.getName().equals(val))
 				return uff.fill(eargs);
-		}
 		if (MAGIC_FUNCTION.equals(val))
 			return eargs[0].opposite();
 
@@ -175,9 +147,7 @@ public final class FunctionToken extends Token {
 				return index + other.length();
 		}
 
-		final IIterator<UserFunction> iterator = userFunctions.iterator();
-		while (iterator.hasNext()) {
-			final UserFunction uff = iterator.next();
+		for (UserFunction uff : userFunctions) {
 			final int index = name.indexOf(uff.getName());
 			if (index >= 0)
 				return index + uff.getName().length();
@@ -229,12 +199,9 @@ public final class FunctionToken extends Token {
 			if (defaultFunction.getName().equals(value))
 				return defaultFunction;
 
-		final IIterator<UserFunction> iterator = userFunctions.iterator();
-		while (iterator.hasNext()) {
-			final UserFunction uff = iterator.next();
+		for (UserFunction uff : userFunctions)
 			if (uff.getName().equals(value))
 				return uff;
-		}
 
 		if (MAGIC_FUNCTION.equals(value))
 			return new FakeFunction(1);

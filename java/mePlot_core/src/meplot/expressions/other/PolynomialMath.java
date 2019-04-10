@@ -4,8 +4,6 @@ import meplot.expressions.Expression;
 import meplot.expressions.Letter;
 import meplot.expressions.exceptions.DivisorException;
 import meplot.expressions.list.ExpressionList;
-import platform.lists.IIterable;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.ValueList;
 import meplot.expressions.numbers.Fraction;
@@ -16,6 +14,7 @@ import meplot.expressions.operations.Multiplication;
 import meplot.expressions.operations.Power;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
+import platform.lists.IIterable;
 
 import java.util.Iterator;
 
