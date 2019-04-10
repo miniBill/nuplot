@@ -9,5 +9,14 @@ public interface IIterator<T> extends java.util.Iterator<T>, java.lang.Iterable<
 
 	T getCurrent();
 
-	List<T> until(String string);
+	static <T> List<T> until(java.util.Iterator<T> iterator, String string) {
+		final List<T> toret = new List<>();
+		while (iterator.hasNext()) {
+			final T curr = iterator.next();
+			if (curr.toString().equals(string))
+				break;
+			toret.add(curr);
+		}
+		return toret;
+	}
 }

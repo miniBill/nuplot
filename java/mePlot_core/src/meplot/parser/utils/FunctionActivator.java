@@ -9,23 +9,25 @@ import meplot.parser.tokens.TokenList;
 import platform.lists.IIterable;
 import platform.lists.IIterator;
 
+import java.util.Iterator;
+
 public final class FunctionActivator {
 	private static final String COMMA = ",";
 
 	private FunctionActivator() {
 	}
 
-	public static ITokenList activateFunctions(final IIterator<IToken> iterator) throws ParserException {
+	public static ITokenList activateFunctions(final Iterator<IToken> iterator) throws ParserException {
 		final ITokenList toret = new TokenList();
 		while (iterator.hasNext())
 			toret.add(activateFunctionsToken(iterator.next(), iterator));
 		return toret;
 	}
 
-	private static IToken activateFunctionsToken(final IToken token, final IIterator<IToken> iterator)
+	private static IToken activateFunctionsToken(final IToken token, final Iterator<IToken> iterator)
 			throws ParserException {
 		if (token instanceof AbstractTokenList)
-			return activateFunctions(((AbstractTokenList) token).getIterator());
+			return activateFunctions(((AbstractTokenList) token).iterator());
 
 		if (token instanceof FunctionToken)
 			return activateFunctions((FunctionToken) token, iterator);
@@ -33,7 +35,7 @@ public final class FunctionActivator {
 		return token;
 	}
 
-	private static IToken activateFunctions(final FunctionToken funTok, final IIterator<IToken> iterator)
+	private static IToken activateFunctions(final FunctionToken funTok, final Iterator<IToken> iterator)
 			throws ParserException {
 		if (!iterator.hasNext())
 			throw new ParserException();
@@ -50,19 +52,19 @@ public final class FunctionActivator {
 				args[0] = next;
 			else if (next instanceof AbstractTokenList) {
 				final ITokenList asList = (ITokenList) next;
-				final IIterator<IToken> inner = asList.getIterator();
+				final Iterator<IToken> inner = asList.iterator();
 				for (int i = 0; i < needs; i++)
-					args[i] = new TokenList(inner.until(COMMA));
+					args[i] = new TokenList(IIterator.until(inner, COMMA));
 			} else {
 				final TokenList zero = new TokenList(next);
-				final IToken toadd = activateFunctionsToken(new TokenList(iterator.until(COMMA)), iterator);
+				final IToken toadd = activateFunctionsToken(new TokenList(IIterator.until(iterator, COMMA)), iterator);
 				if (toadd instanceof AbstractTokenList)
 					zero.addRange((AbstractTokenList) toadd);
 				else
 					zero.add(toadd);
 				args[0] = zero;
 				for (int i = 1; i < needs - 1; i++)
-					args[i] = activateFunctionsToken(new TokenList(iterator.until(COMMA)), iterator);
+					args[i] = activateFunctionsToken(new TokenList(IIterator.until(iterator, COMMA)), iterator);
 				if (!iterator.hasNext())
 					throw new ParserException();
 				args[needs - 1] = activateFunctionsToken(iterator.next(), iterator);
@@ -72,23 +74,23 @@ public final class FunctionActivator {
 		final TokenList args = new TokenList();
 		if (next instanceof ITokenList) {
 			final ITokenList asList = (ITokenList) next;
-			final IIterator<IToken> inner = asList.getIterator();
+			final Iterator<IToken> inner = asList.iterator();
 			while (true) {
-				final ITokenList arg = new TokenList(inner.until(COMMA));
+				final ITokenList arg = new TokenList(IIterator.until(inner, COMMA));
 				if (IIterable.isEmpty(arg))
 					break;
 				args.add(arg);
 			}
 		} else {
 			final TokenList zero = new TokenList(next);
-			final IToken toadd = activateFunctionsToken(new TokenList(iterator.until(COMMA)), iterator);
+			final IToken toadd = activateFunctionsToken(new TokenList(IIterator.until(iterator, COMMA)), iterator);
 			if (toadd instanceof ITokenList)
 				zero.addRange((ITokenList) toadd);
 			else
 				zero.add(toadd);
 			args.add(zero);
 			while (true) {
-				final ITokenList arg = new TokenList(iterator.until(COMMA));
+				final ITokenList arg = new TokenList(IIterator.until(iterator, COMMA));
 				if (IIterable.isEmpty(arg))
 					break;
 				args.add(activateFunctionsToken(arg, iterator));

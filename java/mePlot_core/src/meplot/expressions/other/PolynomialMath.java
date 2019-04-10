@@ -17,6 +17,8 @@ import meplot.expressions.operations.Power;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 
+import java.util.Iterator;
+
 public final class PolynomialMath {
 	private PolynomialMath() {
 	}
@@ -57,12 +59,8 @@ public final class PolynomialMath {
 		final Expression trail = poly.getTrailingCoeff();
 		final IExpressionList trailDiv = getDivisors(trail);
 		final ExpressionList toret = new ExpressionList();
-		final IIterator<Expression> leadIterator = leadDiv.getIterator();
-		while (leadIterator.hasNext()) {
-			final Expression leadCurr = leadIterator.next();
-			final IIterator<Expression> trailIterator = trailDiv.getIterator();
-			while (trailIterator.hasNext()) {
-				final Expression trailCurr = trailIterator.next();
+		for (Expression leadCurr : leadDiv) {
+			for (Expression trailCurr : trailDiv) {
 				final Expression possibleRoot = SimplificationHelper.simplify(trailCurr.divide(leadCurr));
 				if (isRoot(possibleRoot, poly, var))
 					toret.add(possibleRoot);
@@ -95,7 +93,7 @@ public final class PolynomialMath {
 
 	private static IExpressionList divisors(final Multiplication expr) {
 		final IExpressionList[] gens = new IExpressionList[IIterable.length(expr)];
-		final IIterator<Expression> factors = expr.getIterator();
+		final Iterator<Expression> factors = expr.iterator();
 		gen(factors, gens);
 		final int[] indexes = new int[gens.length];
 		final IExpressionList toret = new ExpressionList();
@@ -116,9 +114,9 @@ public final class PolynomialMath {
 		}
 	}
 
-	private static void gen(final IIterator<Expression> iterator, final IExpressionList[] gens) {
+	private static void gen(final Iterator<Expression> iterator, final IExpressionList[] gens) {
 		for (int i = 0; i < gens.length; i++)
-			gens[i] = new ExpressionList(Int.ONE, getDivisors(iterator.next()).getIterator()).fold();
+			gens[i] = new ExpressionList(Int.ONE, getDivisors(iterator.next()).iterator()).fold();
 	}
 
 	private static/* @Nullable */IExpressionList divisors(final Power power) {

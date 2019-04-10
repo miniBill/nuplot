@@ -10,11 +10,11 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 		return toExpression(0);
 	}
 
-	public final TokenIterator tgetIterator() {
-		return tgetIterator(0);
+	public final TokenIterator titerator() {
+		return titerator(0);
 	}
 
-	protected final TokenIterator tgetIterator(final int index) {
+	protected final TokenIterator titerator(final int index) {
 		return new TokenIterator(this, index);
 	}
 
@@ -26,7 +26,7 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 
 	public final String toSString() {
 		final StringBuilder toret = new StringBuilder("{");
-		final IIterator<IToken> iterator = getIterator();
+		final IIterator<IToken> iterator = iterator();
 		while (iterator.hasNext()) {
 			final IToken curr = iterator.next();
 			if (curr instanceof TokenList)
@@ -41,7 +41,7 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 	}
 
 	protected final void cString(final StringBuffer toret) {
-		final IIterator<IToken> iterator = getIterator();
+		final IIterator<IToken> iterator = iterator();
 		while (iterator.hasNext())
 			toret.append(iterator.next());
 	}

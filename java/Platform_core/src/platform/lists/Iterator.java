@@ -11,7 +11,7 @@ public abstract class Iterator<T> extends AbstractIterator<T> {
 		this.start = start;
 	}
 
-	protected abstract IIterable<T> getInner();
+	protected abstract Iterable<T> getInner();
 
 	public final boolean isSecond() {
 		return index == start + 1;
@@ -42,16 +42,5 @@ public abstract class Iterator<T> extends AbstractIterator<T> {
 			toret.append(curr);
 		}
 		return toret.toString();
-	}
-
-	public final List<T> until(String string) {
-		final List<T> toret = new List<>();
-		while (hasNext()) {
-			final T curr = next();
-			if (curr.toString().equals(string))
-				break;
-			toret.add(curr);
-		}
-		return toret;
 	}
 }

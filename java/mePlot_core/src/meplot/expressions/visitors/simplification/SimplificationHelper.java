@@ -3,7 +3,6 @@ package meplot.expressions.visitors.simplification;
 import meplot.expressions.Expression;
 import meplot.expressions.IOutputtable;
 import meplot.expressions.list.ExpressionList;
-import platform.lists.IIterable;
 import meplot.expressions.list.SimplifyList;
 import meplot.expressions.numbers.Int;
 import platform.log.Log;
@@ -43,7 +42,7 @@ public final class SimplificationHelper {
 		return next;
 	}
 
-	public static IIterable<Expression> stepSimplify(final Expression arg) {
+	public static Iterable<Expression> stepSimplify(final Expression arg) {
 		if (arg.isSimplified())
 			return new ExpressionList(arg);
 		String argstring = arg.toString();

@@ -19,6 +19,8 @@ import meplot.solver.SolveException;
 import platform.log.Log;
 import platform.log.LogLevel;
 
+import java.util.Iterator;
+
 class ForwardSubState extends SystemSolverState {
 	private final int index;
 	private char firstVar = '?';
@@ -47,7 +49,7 @@ class ForwardSubState extends SystemSolverState {
 			QUEUE.add(simplifyStep);
 			return;
 		}
-        IIterable<Expression> expressions = getLeaf().getValue();
+        Iterable<Expression> expressions = getLeaf().getValue();
         final Expression[] equations = IIterable.toArray(Expression.class, expressions);
 		final Expression curr = equations[index];
 		if (curr == null) {
@@ -81,10 +83,10 @@ class ForwardSubState extends SystemSolverState {
 
 	private static void addSteps(final ExpressionTree leaf, final ExpressionTree steps, final int startindex,
 			final int endindex) {
-		final IIterable<Expression> value = leaf.getValue();
-		final IIterator<Expression> iterator = value.getIterator();
+		final Iterable<Expression> value = leaf.getValue();
+		final Iterator<Expression> iterator = value.iterator();
 		final IExpressionList current = new ExpressionList();
-		final IIterable<Expression> stepValue = steps.getValue();
+		final Iterable<Expression> stepValue = steps.getValue();
 		int newlength = 0;
 		for (int i = 0; i < IIterable.length(value); i++)
 			if (i < startindex || i > endindex)
@@ -92,7 +94,7 @@ class ForwardSubState extends SystemSolverState {
 			else {
 				iterator.next(); // Ignores it
 				if (i == startindex) {
-					IIterator<Expression> toAdd = stepValue.getIterator();
+					Iterator<Expression> toAdd = stepValue.iterator();
 					newlength = IIterable.length(stepValue);
 					current.addRange(toAdd);
 				}
@@ -109,7 +111,7 @@ class ForwardSubState extends SystemSolverState {
 		while (iterator.hasNext()) {
 			ExpressionTree leaf = iterator.next();
 
-            IIterable<Expression> expressions = leaf.getValue();
+            Iterable<Expression> expressions = leaf.getValue();
             final Expression[] equations = IIterable.toArray(Expression.class, expressions);
 			if (index >= equations.length)
 				continue;

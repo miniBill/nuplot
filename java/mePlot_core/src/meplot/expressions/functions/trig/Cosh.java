@@ -9,6 +9,7 @@ import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Multiplication;
 import meplot.expressions.visitors.IExpressionMonicFunctionVisitor;
+import platform.lists.IIterable;
 
 public final class Cosh extends NonsymbolicMonicFunction {
 	public Cosh(final Expression expression) {
@@ -36,7 +37,7 @@ public final class Cosh extends NonsymbolicMonicFunction {
 			return Int.ONE;
 		if (val instanceof Multiplication) {
 			final Multiplication mval = (Multiplication) val;
-			if (mval.getIterator().contains(Letter.I))
+			if (IIterable.contains(mval, Letter.I))
 				return new Cos(val.divide(Letter.I));
 		}
 		return new Exp(val).add(new Exp(val.opposite())).divide(Int.TWO);

@@ -3,10 +3,12 @@ package meplot.expressions.list;
 import meplot.expressions.Expression;
 import platform.lists.IIterator;
 
+import java.util.Iterator;
+
 public interface IExpressionList extends IExpressionIterable {
 	void add(Expression expand);
 
-	void addRange(IIterator<Expression> iterator);
+	void addRange(Iterator<Expression> iterator);
 
 	IExpressionList fold();
 

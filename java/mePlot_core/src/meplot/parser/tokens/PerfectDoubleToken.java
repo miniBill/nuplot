@@ -14,7 +14,7 @@ public final class PerfectDoubleToken extends Token {
 
 	public PerfectDoubleToken(final ITokenList temp) throws ParserException {
 		final StringBuilder buffer = new StringBuilder();
-		final TokenIterator iterator = temp.tgetIterator();
+		final TokenIterator iterator = temp.titerator();
 		while (iterator.hasNext())
 			buffer.append(iterator.next());
 		input = buffer.toString();

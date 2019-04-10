@@ -9,7 +9,7 @@ public final class DoubleToken extends Token {
 
 	public DoubleToken(final ITokenList temp) throws ParserException {
 		final StringBuilder buffer = new StringBuilder();
-		final TokenIterator iterator = temp.tgetIterator();
+		final TokenIterator iterator = temp.titerator();
 		while (iterator.hasNext())
 			buffer.append(iterator.next());
 		final String res = buffer.toString();

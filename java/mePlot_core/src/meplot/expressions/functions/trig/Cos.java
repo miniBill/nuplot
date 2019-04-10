@@ -8,6 +8,7 @@ import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Multiplication;
 import meplot.expressions.visitors.IExpressionMonicFunctionVisitor;
+import platform.lists.IIterable;
 
 public final class Cos extends NonsymbolicMonicFunction {
 	public Cos(final Expression expression) {
@@ -35,7 +36,7 @@ public final class Cos extends NonsymbolicMonicFunction {
 			return Int.ONE;
 		if (val instanceof Multiplication) {
 			final Multiplication mval = (Multiplication) val;
-			if (mval.getIterator().contains(Int.MINUSONE))
+			if (IIterable.contains(mval, Int.MINUSONE))
 				return fill(val.opposite());
 		}
 		if (val instanceof Letter && ((Letter) val).getLetter() == 'p')

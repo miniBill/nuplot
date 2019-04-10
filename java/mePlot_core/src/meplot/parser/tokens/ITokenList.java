@@ -4,10 +4,10 @@ import meplot.expressions.Expression;
 import meplot.parser.ParserException;
 import platform.lists.IIterable;
 
-public interface ITokenList extends IIterable<IToken>, IToken {
+public interface ITokenList extends Iterable<IToken>, IToken {
 	void add(final IToken token);
 
-	TokenIterator tgetIterator();
+	TokenIterator titerator();
 
 	Expression toExpression(final int index) throws ParserException;
 

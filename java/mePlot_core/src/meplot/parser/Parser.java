@@ -27,6 +27,8 @@ import platform.lists.IIterator;
 import platform.log.Log;
 import platform.log.LogLevel;
 
+import java.util.Iterator;
+
 public final class Parser {
 	private Parser() {
 	}
@@ -60,34 +62,34 @@ public final class Parser {
 
 		// Log.log(LogLevel.PARSER, "After Tokenization:", root.toString());
 
-		root = aggregateNumbers(root.getIterator(), exact);
+		root = aggregateNumbers(root.iterator(), exact);
 
 		// Log.log(LogLevel.PARSER, "After aggregateNumbers:", root.toString());
 
-		root = activateSyntax(root.getIterator());
+		root = activateSyntax(root.iterator());
 
 		// Log.log(LogLevel.PARSER, "After activateSyntax:", root.toString());
 
 		// from this step onward the structure is no more linear
-		root = processParenthesis(root.getIterator());
+		root = processParenthesis(root.iterator());
 
 		// Log.log(LogLevel.PARSER, "After process Parenthesis:",
 		// root.toString());
 
-		root = aggregateStrings(root.getIterator());
+		root = aggregateStrings(root.iterator());
 
 		// Log.log(LogLevel.PARSER, "After aggregateStrings:", root.toString());
 
-		root = unfoldStrings(root.getIterator());
+		root = unfoldStrings(root.iterator());
 
 		// Log.log(LogLevel.PARSER, "After unfoldStrings:", root.toString());
 
-		root = FunctionActivator.activateFunctions(root.getIterator());
+		root = FunctionActivator.activateFunctions(root.iterator());
 
 		// Log.log(LogLevel.PARSER, "After activateFunctions:",
 		// root.toString());
 
-		TokenIterator iterator = root.tgetIterator();
+		TokenIterator iterator = root.titerator();
 
 		iterator = OperationActivator.activateOperations(iterator);
 
@@ -99,10 +101,7 @@ public final class Parser {
 		if (out == null)
 			throw new ParserException();
 
-		final IIterator<DividedNode> dit = divided.getIterator();
-
-		while (dit.hasNext()) {
-			final DividedNode node = dit.next();
+		for (DividedNode node : divided) {
 			final Expression expr = node.getValue();
 			out = out.partialSubstitute(node.getLetter(), expr);
 		}
@@ -122,26 +121,26 @@ public final class Parser {
 		return root;
 	}
 
-	private static TokenList unfoldStrings(final IIterator<IToken> iterator) {
+	private static TokenList unfoldStrings(final Iterator<IToken> iterator) {
 		final TokenList toret = new TokenList();
 		while (iterator.hasNext()) {
 			final IToken current = iterator.next();
 			if (current instanceof TokenList)
-				toret.add(unfoldStrings(((TokenList) current).getIterator()));
+				toret.add(unfoldStrings(((TokenList) current).iterator()));
 			else if (current instanceof CharList)
-				toret.addRange(((CharList) current).getIterator());
+				toret.addRange(((CharList) current).iterator());
 			else
 				toret.add(current);
 		}
 		return toret;
 	}
 
-	private static TokenList aggregateStrings(final IIterator<IToken> iterator) {
+	private static TokenList aggregateStrings(final Iterator<IToken> iterator) {
 		final TokenList toret = new TokenList();
 		while (iterator.hasNext()) {
 			IToken token = iterator.next();
 			if (token instanceof TokenList)
-				token = aggregateStrings(((AbstractTokenList) token).getIterator());
+				token = aggregateStrings(((AbstractTokenList) token).iterator());
 			if (token instanceof CharToken) {
 				final CharList charList = new CharList();
 				while (token instanceof CharToken) {
@@ -155,14 +154,14 @@ public final class Parser {
 				}
 				toret.addRange(charList.aggregate());
 				if (token instanceof TokenList)
-					token = aggregateStrings(((AbstractTokenList) token).getIterator());
+					token = aggregateStrings(((AbstractTokenList) token).iterator());
 			}
 			toret.add(token);
 		}
 		return toret;
 	}
 
-	private static ITokenList processParenthesis(final IIterator<IToken> iterator) throws ParserException {
+	private static ITokenList processParenthesis(final Iterator<IToken> iterator) throws ParserException {
 		final ITokenList toret = new TokenList();
 		while (iterator.hasNext()) {
 			final IToken curr = iterator.next();
@@ -181,7 +180,7 @@ public final class Parser {
 		return toret;
 	}
 
-	private static ITokenList aggregateNumbers(final IIterator<IToken> iterator, final boolean exact)
+	private static ITokenList aggregateNumbers(final Iterator<IToken> iterator, final boolean exact)
 			throws ParserException {
 		final ITokenList root = new TokenList();
 		while (iterator.hasNext()) {
@@ -222,7 +221,7 @@ public final class Parser {
 		return currChar >= '0' && currChar <= '9' || currChar == '.' || currChar == '@';
 	}
 
-	private static ITokenList activateSyntax(final IIterator<IToken> iterator) {
+	private static ITokenList activateSyntax(final Iterator<IToken> iterator) {
 		final ITokenList toret = new TokenList();
 		// third pass: activate operators and parenthesis
 		while (iterator.hasNext()) {

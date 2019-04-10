@@ -13,17 +13,16 @@ import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.IExpressionVisitor;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import platform.lists.IIterable;
-import platform.lists.IIterator;
 
-public class Sum extends AbstractExpression implements IIterable<Expression>, Expression {
+import java.util.Iterator;
+
+public class Sum extends AbstractExpression implements Iterable<Expression>, Expression {
 	private static Expression finishInner(final IExpressionList after, final Expression first, final Expression second,
 			final Expression initial) {
-		final IIterator<Expression> iterator = after.getIterator();
 		Expression toret = initial;
 		boolean jumpedFirst = false;
 		boolean jumpedSecond = false;
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : after) {
 			if ((jumpedFirst || curr != first) && (jumpedSecond || curr != second))
 				toret = toret.add(curr);
 			else if (!jumpedFirst && curr == first)
@@ -40,7 +39,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 		return ((Sum) inner).order();
 	}
 
-	private static Expression order(final IIterable<Expression> iiterable) {
+	private static Expression order(final Iterable<Expression> iiterable) {
 		final IExpressionList rest = new ExpressionList();
 		if (!IIterable.getFirst(iiterable).toString().startsWith("-"))
 			return null;
@@ -75,7 +74,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 
 	public Sum(final Expression left) {
 		if (left instanceof Sum)
-			addends.addRange(((Sum) left).getIterator());
+			addends.addRange(((Sum) left).iterator());
 		else
 			addends.add(left);
 	}
@@ -85,17 +84,17 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 		addends.add(right);
 	}
 
-	public Sum(final IIterator<Expression> iterator) {
+	public Sum(final Iterator<Expression> iterator) {
 		addends.addRange(iterator);
 	}
 
-	private Sum(final IIterator<Expression> list1, final IIterator<Expression> list2) {
+	private Sum(final Iterator<Expression> list1, final Iterator<Expression> list2) {
 		addends.addRange(list1);
 		addends.addRange(list2);
 	}
 
 	public Sum(final IExpressionList list) {
-		addends.addRange(list.getIterator());
+		addends.addRange(list.iterator());
 	}
 
 	/**
@@ -108,7 +107,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	private Sum add(final Sum arg) {
-		return new Sum(getIterator(), arg.getIterator());
+		return new Sum(iterator(), arg.iterator());
 	}
 
 	private boolean canDivide(final ICalculable base) {
@@ -129,9 +128,8 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public final boolean containsMatrix() {
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			if (iterator.next().containsMatrix())
+		for (Expression expression : this)
+			if (expression.containsMatrix())
 				return true;
 		return false;
 	}
@@ -146,9 +144,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 		}
 		if (isDivisible(arg)) {
 			final IExpressionList toret = new ExpressionList();
-			final IIterator<Expression> iterator = getIterator();
-			while (iterator.hasNext()) {
-				final ICalculable curr = iterator.next();
+			for (ICalculable curr : this) {
 				final ISimplifiable div = curr.divide(arg);
 				final Expression sim = div.partialSimplify();
 				toret.add(sim);
@@ -160,9 +156,8 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 
 	public final double dvalue(final char letter, final double value) {
 		double toret = 0;
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			toret += iterator.next().dvalue(letter, value);
+		for (Expression expression : this)
+			toret += expression.dvalue(letter, value);
 		return toret;
 	}
 
@@ -179,10 +174,8 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	 */
 	public final Expression expand() {
 		boolean changed = false;
-		final IIterator<Expression> iterator = getIterator();
 		final IExpressionList toret = new ExpressionList();
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : this) {
 			final Expression exp = curr.expand();
 			if (curr.equals(exp))
 				toret.add(curr);
@@ -197,15 +190,14 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public final double fdvalue(final char letter, final double value) {
-		final IIterator<Expression> iterator = getIterator();
 		double toret = 0;
-		while (iterator.hasNext())
-			toret += iterator.next().fdvalue(letter, value);
+		for (Expression expression : this)
+			toret += expression.fdvalue(letter, value);
 		return toret;
 	}
 
-	public final IIterator<Expression> getIterator() {
-		return addends.getIterator();
+	public final Iterator<Expression> iterator() {
+		return addends.iterator();
 	}
 
 	public final int hashCode() {
@@ -250,7 +242,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	private Expression finishSimplification(final IExpressionList after) {
-		final IIterator<Expression> iterator = after.getIterator();
+		final Iterator<Expression> iterator = after.iterator();
 		final Expression inner = innerSum(after, iterator);
 
 		if (inner != null)
@@ -261,13 +253,13 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 		return orderOrDefault(after);
 	}
 
-	private Expression innerSum(final IExpressionList after, final IIterator<Expression> iterator) {
+	private Expression innerSum(final IExpressionList after, final Iterator<Expression> iterator) {
 		final Expression binomialSquare = tryBinomialSquare();
 		if (binomialSquare != null)
 			return binomialSquare;
 		while (iterator.hasNext()) {
 			final Expression first = iterator.next();
-			for (Expression second : iterator) {
+			for (Expression second : IIterable.clone(iterator)) {
 				if (first.isZero()) {
 					return finishInner(after, first, second, second);
 				}
@@ -301,9 +293,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	private boolean isDivisible(final Expression elementAt) {
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final ICalculable curr = iterator.next();
+		for (ICalculable curr : this) {
 			if (!curr.compatible(elementAt, Operation.DIVISION))
 				return false;
 		}
@@ -311,9 +301,8 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public final boolean isFullDouble() {
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			if (!iterator.next().isFullDouble())
+		for (Expression expression : this)
+			if (!expression.isFullDouble())
 				return false;
 		return true;
 	}
@@ -333,20 +322,18 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public final ITensor matrixDvalue(final char letter, final double value) {
-		final IIterator<Expression> iterator = getIterator();
 		ITensor toret = Int.ZERO;
-		while (iterator.hasNext()) {
-			final ITensor dVal = iterator.next().matrixDvalue(letter, value);
+		for (Expression expression : this) {
+			final ITensor dVal = expression.matrixDvalue(letter, value);
 			toret = toret.add(dVal);
 		}
 		return toret;
 	}
 
 	public final ITensor matrixDvalue(final IValueList valueList) {
-		final IIterator<Expression> iterator = getIterator();
 		ITensor toret = Int.ZERO;
-		while (iterator.hasNext()) {
-			final ITensor dVal = iterator.next().matrixDvalue(valueList);
+		for (Expression expression : this) {
+			final ITensor dVal = expression.matrixDvalue(valueList);
 			toret = toret.add(dVal);
 		}
 		return toret;
@@ -359,21 +346,18 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 		if (equals(arg))
 			return super.multiply(arg);
 		if (arg instanceof Sum) {
+			Sum sumArg = (Sum) arg;
 			final IExpressionList toret = new ExpressionList();
-			final IIterator<Expression> iterator = getIterator();
-			while (iterator.hasNext()) {
-				final ICalculable current = iterator.next();
-				final IIterator<Expression> innerIterator = ((Sum) arg).getIterator();
-				while (innerIterator.hasNext())
-					toret.add(current.multiply(innerIterator.next()));
+			for (ICalculable current : this) {
+				for (Expression expression : sumArg)
+					toret.add(current.multiply(expression));
 			}
 			return new Sum(toret);
 		}
 		if (arg instanceof INumber) {
 			final IExpressionList toret = new ExpressionList();
-			final IIterator<Expression> iterator = getIterator();
-			while (iterator.hasNext())
-				toret.add(iterator.next().multiply(arg));
+			for (Expression expression : this)
+				toret.add(expression.multiply(arg));
 			return new Sum(toret);
 		}
 		return super.multiply(arg);
@@ -388,9 +372,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	 */
 	public final Expression opposite() {
 		final IExpressionList after = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final ICalculable curr = iterator.next();
+		for (ICalculable curr : this) {
 			final Expression currs = curr.opposite();
 			if (currs.isZero())
 				continue;
@@ -403,7 +385,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	private Expression order() {
-		final Expression toret = order((IIterable<Expression>) this);
+		final Expression toret = order((Iterable<Expression>) this);
 		if (toret == null)
 			return this;
 		return toret;
@@ -411,33 +393,27 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 
 	public final Expression partialSubstitute(final char letter, final double value) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			toret.add(iterator.next().partialSubstitute(letter, value));
+		for (Expression expression : this)
+			toret.add(expression.partialSubstitute(letter, value));
 		return new Sum(toret);
 	}
 
 	public final Expression partialSubstitute(final char letter, final Expression value) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			toret.add(iterator.next().partialSubstitute(letter, value));
+		for (Expression expression : this)
+			toret.add(expression.partialSubstitute(letter, value));
 		return new Sum(toret);
 	}
 
 	public final Expression partialSubstitute(final IValueList list) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			toret.add(iterator.next().partialSubstitute(list));
+		for (Expression expression : this) toret.add(expression.partialSubstitute(list));
 		return new Sum(toret);
 	}
 
 	private IExpressionList simplifyAddends() {
 		final IExpressionList after = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final ISimplifiable curr = iterator.next();
+		for (ISimplifiable curr : this) {
 			final Expression currs = curr.partialSimplify();
 			if (currs.isZero())
 				continue;
@@ -453,9 +429,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 
 	private IExpressionList stepSimplifyAddends() {
 		final IExpressionList after = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final ISimplifiable curr = iterator.next();
+		for (ISimplifiable curr : this) {
 			final Expression currs = curr.innerStepSimplify();
 			if (currs.isZero())
 				continue;
@@ -471,11 +445,12 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 
 	public final void toFullString(final StringBuffer buffer) {
 		buffer.append("+(");
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			iterator.next().toFullString(buffer);
-			if (iterator.hasNext())
+		boolean first = true;
+		for (Expression expression : this) {
+			if (!first)
 				buffer.append(',');
+			first = false;
+			expression.toFullString(buffer);
 		}
 		buffer.append(')');
 	}
@@ -491,7 +466,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public boolean toStringStartsWith(char prefix) {
-		final IIterator<Expression> iterator = getIterator();
+		final Iterator<Expression> iterator = iterator();
 		return iterator.hasNext() && iterator.next().toStringStartsWith('-');
 	}
 
@@ -499,10 +474,10 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 		if (IIterable.length(addends) != 3)
 			return null;
 
-		final IIterator<Expression> iterator = getIterator();
 		ICalculable remainder = null;
 		ICalculable left = null;
 		Expression right = null;
+		final Iterator<Expression> iterator = iterator();
 		while (iterator.hasNext()) {
 			final Expression curr = iterator.next();
 			final Expression root = trySquare(curr);
@@ -537,7 +512,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 	}
 
 	public final INumber value(final IValueList list) {
-		final IIterator<Expression> iterator = getIterator();
+		final Iterator<Expression> iterator = iterator();
 		INumber toret = Int.ZERO;
 		while (iterator.hasNext())
 			toret = toret.add(iterator.next().value(list));
@@ -548,7 +523,7 @@ public class Sum extends AbstractExpression implements IIterable<Expression>, Ex
 		if (!(other instanceof Sum))
 			return false;
 		final Sum oth = (Sum) other;
-		return areIdentical(getIterator(), oth.getIterator());
+		return areIdentical(iterator(), oth.iterator());
 	}
 
 	public Expression accept(final IExpressionVisitor visitor) {

@@ -29,7 +29,7 @@ public final class CharList extends AbstractTokenList {
 
 	private String toSmallString() {
 		final StringBuilder toret = new StringBuilder();
-		final IIterator<IToken> iterator = getIterator();
+		final IIterator<IToken> iterator = iterator();
 		while (iterator.hasNext())
 			toret.append(iterator.next());
 		return toret.toString();
@@ -48,7 +48,7 @@ public final class CharList extends AbstractTokenList {
 					new ArrayIndexOutOfBoundsException(index));
 		}
 		final IExpressionList list = new ExpressionList();
-		final TokenIterator iterator = tgetIterator(index);
+		final TokenIterator iterator = titerator(index);
 		while (iterator.hasNext())
 			list.add(iterator.next().toExpression());
 		return new Multiplication(list);

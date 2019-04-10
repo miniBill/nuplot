@@ -13,17 +13,13 @@ import meplot.expressions.functions.trig.Cos;
 import meplot.expressions.functions.trig.Sin;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
-import platform.lists.IIterable;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
-import meplot.expressions.numbers.Complex;
-import meplot.expressions.numbers.Fraction;
-import meplot.expressions.numbers.IInt;
-import meplot.expressions.numbers.INumber;
-import meplot.expressions.numbers.IReal;
-import meplot.expressions.numbers.Int;
+import meplot.expressions.numbers.*;
 import meplot.expressions.visitors.IExpressionVisitor;
+import platform.lists.IIterable;
+
+import java.util.Iterator;
 
 public final class Power extends AbstractExpression implements IPower {
 	private final Expression base;
@@ -171,14 +167,14 @@ public final class Power extends AbstractExpression implements IPower {
 	private static boolean isSortOfNumber(final Expression expr) {
 		if (expr instanceof INumber)
 			return true;
-		IIterator<Expression> inner = null;
+		Iterator<Expression> inner = null;
 		if (expr instanceof Sum) {
 			final Sum sexpr = (Sum) expr;
-			inner = sexpr.getIterator();
+			inner = sexpr.iterator();
 		}
 		if (expr instanceof Multiplication) {
 			final Multiplication mexpr = (Multiplication) expr;
-			inner = mexpr.getIterator();
+			inner = mexpr.iterator();
 		}
 		if (expr instanceof Sqrt)
 			return isSortOfNumber(((Sqrt) expr).getArgument());
@@ -235,22 +231,21 @@ public final class Power extends AbstractExpression implements IPower {
 	// We want to keep the result < 1 000 000
 	private static int maxBase(final int value) {
 		switch (value) {
-		case 0:
-			return Integer.MAX_VALUE;
-		case 1:
-			return Integer.MAX_VALUE;
-		case 2:
-			return 1000;
-		case 3:
-			return 100;
-		case 4:
-			return 50;
-		case 5:
-			return 25;
-		case 6:
-			return 12;
-		default:
-			return 1;
+			case 0:
+			case 1:
+				return Integer.MAX_VALUE;
+			case 2:
+				return 1000;
+			case 3:
+				return 100;
+			case 4:
+				return 50;
+			case 5:
+				return 25;
+			case 6:
+				return 12;
+			default:
+				return 1;
 		}
 	}
 
@@ -294,7 +289,7 @@ public final class Power extends AbstractExpression implements IPower {
 				return new Cos(Int.ONE).add(Letter.I.multiply(new Sin(Int.ONE)));
 			if (exp instanceof Multiplication) {
 				final Multiplication mulexp = (Multiplication) exp;
-				if (mulexp.getIterator().contains(Letter.I)) {
+				if (IIterable.contains(mulexp, Letter.I)) {
 					final Expression arg = mulexp.divide(Letter.I);
 					return new Cos(arg).add(Letter.I.multiply(new Sin(arg)));
 				}
@@ -305,9 +300,8 @@ public final class Power extends AbstractExpression implements IPower {
 
 	private static Expression finishSimplificationMultiplication(final Multiplication base, final Expression exp) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = base.getIterator();
-		while (iterator.hasNext())
-			toret.add(new Power(iterator.next(), exp));
+		for (Expression expression : base)
+			toret.add(new Power(expression, exp));
 		return new Multiplication(toret);
 	}
 
@@ -389,21 +383,17 @@ public final class Power extends AbstractExpression implements IPower {
 
 			final Sum sbase = (Sum) base;
 
-			final IIterator<Expression> ita = sbase.getIterator();
-
 			if (IIterable.length(sbase) == 2) {
+				final Iterator<Expression> ita = sbase.iterator();
 				final Expression a = ita.next();
 				final Expression b = ita.next();
 				toret.add(a.square());
 				toret.add(Int.TWO.multiply(a.multiply(b)));
 				toret.add(b.square());
 			} else
-				while (ita.hasNext()) {
-					final ICalculable curr = ita.next();
-					final IIterator<Expression> itb = sbase.getIterator();
-					while (itb.hasNext())
-						toret.add(curr.multiply(itb.next()));
-				}
+				for (ICalculable curr : sbase)
+					for (Expression expression : sbase)
+						toret.add(curr.multiply(expression));
 
 			return new Sum(toret);
 		}

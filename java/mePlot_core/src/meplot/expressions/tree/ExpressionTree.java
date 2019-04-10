@@ -7,12 +7,14 @@ import meplot.expressions.operations.BooleanOp;
 import platform.lists.IIterable;
 import platform.lists.IIterator;
 
+import java.util.Iterator;
+
 public final class ExpressionTree {
 	private ExpressionTree child;
-	private final IIterable<Expression> value;
+	private final Iterable<Expression> value;
 	private ExpressionTree brother;
 
-	private ExpressionTree(final IIterable<Expression> list) {
+	private ExpressionTree(final Iterable<Expression> list) {
 		value = list;
 	}
 
@@ -51,11 +53,11 @@ public final class ExpressionTree {
 		}
 	}
 
-	public IIterable<Expression> getValue() {
+	public Iterable<Expression> getValue() {
 		return value;
 	}
 
-	private ExpressionTree addBrother(final IIterable<Expression> equations) {
+	private ExpressionTree addBrother(final Iterable<Expression> equations) {
 		return addBrother(new ExpressionTree(equations));
 	}
 
@@ -88,7 +90,7 @@ public final class ExpressionTree {
 		return new ExpressionTreeIteratorImpl(this);
 	}
 
-	public ExpressionTree addChild(final IIterable<Expression> equations) {
+	public ExpressionTree addChild(final Iterable<Expression> equations) {
 		if (child == null) {
 			child = new ExpressionTree(equations);
 			return child;
@@ -188,7 +190,7 @@ public final class ExpressionTree {
 
 	private void outputValue(final StringBuffer buffer) {
 		if (IIterable.length(value) > 1) {
-			appendTable(buffer, value.getIterator());
+			appendTable(buffer, value.iterator());
 			return;
 		}
 		if (IIterable.isSingle(value) && IIterable.getFirst(value) instanceof Matrix) {
@@ -207,7 +209,7 @@ public final class ExpressionTree {
 		buffer.append('$');
 	}
 
-	private static void appendTable(final StringBuffer buffer, final IIterator<Expression> iterator) {
+	private static void appendTable(final StringBuffer buffer, final Iterator<Expression> iterator) {
 		buffer.append("$\\{\\table ");
 		while (iterator.hasNext()) {
 			iterator.next().toWrappedHtml(buffer);

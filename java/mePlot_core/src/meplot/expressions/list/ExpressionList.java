@@ -7,6 +7,8 @@ import platform.lists.IIterable;
 import platform.lists.IIterator;
 import platform.lists.ToStringList;
 
+import java.util.Iterator;
+
 public final class ExpressionList extends ToStringList<Expression> implements IExpressionList {
 	private static final IExpressionList EMPTY = new ExpressionList();
 
@@ -25,7 +27,7 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 		// Creates empty list
 	}
 
-	public ExpressionList(final Expression expr, final IIterator<Expression> expressionList) {
+	public ExpressionList(final Expression expr, final Iterator<Expression> expressionList) {
 		add(expr);
 		addRange(expressionList);
 	}
@@ -40,7 +42,7 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 			add(expression);
 	}
 
-	public ExpressionList(final IIterator<Expression> iterator1, final IIterator<Expression> iterator2) {
+	public ExpressionList(final Iterator<Expression> iterator1, final Iterator<Expression> iterator2) {
 		addRange(iterator1);
 		addRange(iterator2);
 	}
@@ -54,15 +56,15 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 		addRange(left);
 	}
 
-	public ExpressionList(final IIterator<Expression> iterator) {
+	public ExpressionList(final Iterator<Expression> iterator) {
 		addRange(iterator);
 	}
 
 	public void addRange(final IExpressionList range) {
-		addRange(range.getIterator());
+		addRange(range.iterator());
 	}
 
-	public void addRange(final IIterator<Expression> toAdd) {
+	public void addRange(final Iterator<Expression> toAdd) {
 		while (toAdd.hasNext())
 			add(toAdd.next());
 	}
@@ -76,7 +78,7 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 
 	public Expression[] toArray() {
 		final Expression[] toret = new Expression[length()];
-		final IIterator<Expression> iterator = getIterator();
+		final IIterator<Expression> iterator = iterator();
 		for (int c = 0; iterator.hasNext(); c++)
 			toret[c] = iterator.next();
 		return toret;

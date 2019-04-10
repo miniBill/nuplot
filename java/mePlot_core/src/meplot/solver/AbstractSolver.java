@@ -26,6 +26,7 @@ import meplot.solver.states.ISystemSolverState;
 import platform.lists.List;
 
 import java.lang.reflect.Array;
+import java.util.Iterator;
 
 public abstract class AbstractSolver implements ISolver {
 	protected static final char EQUALS = '=';
@@ -42,9 +43,9 @@ public abstract class AbstractSolver implements ISolver {
 
 	protected static ExpressionTree appendStepSimplifyChain(final ExpressionTree tree) {
 		ExpressionTree leaf = tree;
-		final IIterable<Expression> root = tree.getValue();
-		final IIterable<Expression>[] chains = new IIterable[IIterable.length(root)];
-		final IIterator<Expression> iterator = root.getIterator();
+		final Iterable<Expression> root = tree.getValue();
+		final Iterable<Expression>[] chains = new Iterable[IIterable.length(root)];
+		final Iterator<Expression> iterator = root.iterator();
 		for (int i = 0; i < chains.length; i++)
 			chains[i] = SimplificationHelper.stepSimplify(iterator.next());
 		List<Expression[]> zipped = AbstractSolver.zipLonger(Expression.class, chains);
@@ -60,12 +61,12 @@ public abstract class AbstractSolver implements ISolver {
 	Takes a list of sequences: (a, b, c, ..., k)
 	And returns ((a_1, b_1, ..., k_1), ..., (a_m, b_m, k_m)) where m is the max length. Repeats elements if necessary.
 	 */
-	private static <T> List<T[]> zipLonger(Class<T> c, IIterable<T>[] chains) {
-		IIterator<T>[] status =  new IIterator[chains.length];
+	private static <T> List<T[]> zipLonger(Class<T> c, Iterable<T>[] chains) {
+		Iterator<T>[] status =  new Iterator[chains.length];
 		T[] curr = (T[]) Array.newInstance(c, chains.length);
 		List<T[]> result = new List<>();
 		for (int i = 0;i<chains.length;i++) {
-			status[i] = chains[i].getIterator();
+			status[i] = chains[i].iterator();
 			if(!status[i].hasNext())
 				return new List<>();
 			curr[i]=status[i].next();

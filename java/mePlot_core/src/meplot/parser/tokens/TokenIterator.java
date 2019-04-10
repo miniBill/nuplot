@@ -31,7 +31,7 @@ public final class TokenIterator extends ToStringIterator<IToken> {
 		return inner.elementAt(index);
 	}
 
-	protected IIterable<IToken> getInner() {
+	protected Iterable<IToken> getInner() {
 		return inner;
 	}
 

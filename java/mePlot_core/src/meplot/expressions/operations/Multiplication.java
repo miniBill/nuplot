@@ -22,12 +22,10 @@ import meplot.expressions.visitors.IExpressionVisitor;
 import platform.log.Log;
 import platform.log.LogLevel;
 
+import java.util.Iterator;
+
 public final class Multiplication extends AbstractExpression implements IMultiplication {
 	private final IExpressionList factors;
-
-	public boolean contains(Expression expr, int start) {
-		return IIterable.contains(factors, expr, start);
-	}
 
 	public Multiplication(final Expression left, final Expression right) {
 		factors = new ExpressionList(left, right);
@@ -41,7 +39,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		factors = new ExpressionList(val);
 	}
 
-	public Multiplication(final IIterator<Expression> iterator) {
+	public Multiplication(final Iterator<Expression> iterator) {
 		factors = new ExpressionList(iterator);
 	}
 
@@ -72,13 +70,13 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	public Expression expand() {
 		final IExpressionList temp = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
+		final Iterator<Expression> iterator = iterator();
 		while (iterator.hasNext()) {
 			final Expression curr = iterator.next();
 			if (curr instanceof Sum) {
 				temp.addRange(iterator);
 				final ICalculable mul = new Multiplication(temp);
-				final IIterator<Expression> add = ((Sum) curr).getIterator();
+				final Iterator<Expression> add = ((Sum) curr).iterator();
 				final IExpressionList toret = new ExpressionList();
 				while (add.hasNext())
 					toret.add(mul.multiply(add.next()));
@@ -94,7 +92,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public boolean toStringStartsWith(char prefix) {
-		final IIterator<Expression> iterator = getIterator();
+		final Iterator<Expression> iterator = iterator();
 		if (!iterator.hasNext())
 			return false;
 		if (IIterable.isSingle(factors))
@@ -116,7 +114,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public void toString(final StringBuffer buffer) {
-		final IIterator<Expression> iterator = getIterator();
+		final Iterator<Expression> iterator = iterator();
 		if (!iterator.hasNext())
 			return;
 		if (IIterable.isSingle(factors)) {
@@ -203,7 +201,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		if (IIterable.isSingle(factors))
 			return factors.getFirst().partialSimplify();
 
-		IIterator<Expression> iterator = getIterator();
+		Iterator<Expression> iterator = iterator();
 
 		final Expression after = simplifyFactors(iterator);
 		if (after.isZero())
@@ -211,7 +209,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 		if (after instanceof Multiplication) {
 			final Multiplication afterM = (Multiplication) after;
-			iterator = afterM.getIterator();
+			iterator = afterM.iterator();
 
 			if (!iterator.hasNext())
 				return Int.ONE;
@@ -230,7 +228,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	public Expression innerStepSimplify() {
 		if (IIterable.isSingle(factors))
 			return factors.getFirst().innerStepSimplify();
-		IIterator<Expression> iterator = getIterator();
+		Iterator<Expression> iterator = iterator();
 
 		final Expression after = stepSimplifyFactors(iterator);
 		if (after.isZero())
@@ -241,7 +239,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 			if (!afterM.factors.equals(factors))
 				return afterM.order();
 
-			iterator = afterM.getIterator();
+			iterator = afterM.iterator();
 
 			while (iterator.hasNext()) {
 				final Expression inner = innerMultiply(afterM, iterator);
@@ -254,7 +252,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		return after;
 	}
 
-	private static Expression simplifyFactors(final IIterator<Expression> iterator) {
+	private static Expression simplifyFactors(final Iterator<Expression> iterator) {
 		final IExpressionList after = new ExpressionList();
 		while (iterator.hasNext()) {
 			final ISimplifiable curr = iterator.next();
@@ -276,7 +274,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		return new Multiplication(after);
 	}
 
-	private static Expression stepSimplifyFactors(final IIterator<Expression> iterator) {
+	private static Expression stepSimplifyFactors(final Iterator<Expression> iterator) {
 		final Multiplication after = new Multiplication();
 		while (iterator.hasNext()) {
 			final ISimplifiable curr = iterator.next();
@@ -297,9 +295,9 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		return after;
 	}
 
-	private static Expression innerMultiply(final Multiplication after, final IIterator<Expression> iterator) {
+	private static Expression innerMultiply(final Multiplication after, final Iterator<Expression> iterator) {
 		final Expression first = iterator.next();
-		for (Expression second : iterator) {
+		for (Expression second : IIterable.clone(iterator)) {
 			if (first.compatible(second, Operation.MULTIPLICATION)) {
 				final Expression toret = first.multiply(second);
 				return finishInner(after, first, second, toret);
@@ -314,12 +312,10 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	private static Expression finishInner(final Multiplication after, final Expression left, final Expression right,
 			final Expression initial) {
-		final IIterator<Expression> iterator = after.getIterator();
 		Expression toret = initial;
 		boolean jumpedLeft = false;
 		boolean jumpedRight = false;
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : after) {
 			if ((jumpedLeft || curr != left) && (jumpedRight || curr != right))
 				toret = toret.multiply(curr);
 			else if (!jumpedLeft && curr == left)
@@ -338,26 +334,16 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	private Multiplication order() {
 		final IExpressionList toret = new ExpressionList();
-		IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : this)
 			if (curr instanceof INumber)
 				toret.add(curr);
-		}
-		for (char t = 'a'; t <= 'z'; t++) {
-			iterator = getIterator();
-			while (iterator.hasNext()) {
-				final Expression curr = iterator.next();
+		for (char t = 'a'; t <= 'z'; t++)
+			for (Expression curr : this)
 				if (curr instanceof Letter && ((Letter) curr).getLetter() == t)
 					toret.add(curr);
-			}
-		}
-		iterator = getIterator();
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : this)
 			if (!(curr instanceof INumber || curr instanceof Letter))
 				toret.add(curr);
-		}
 		return new Multiplication(toret);
 	}
 
@@ -380,10 +366,8 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 			final Multiplication marg = (Multiplication) arg;
 			return nCheckContains(factors, marg.factors) && nCheckContains(marg.factors, factors);
 		}
-		final IIterator<Expression> iterator = factors.getIterator();
 		boolean usd = false;
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : factors) {
 			if (curr instanceof INumber)
 				continue;
 			if (usd || !curr.equals(arg))
@@ -394,13 +378,11 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	private static boolean nCheckContains(final IExpressionList small, final IExpressionList big) {
-		final IIterator<Expression> smallIt = small.getIterator();
 		final boolean[] usd = new boolean[IIterable.length(big)];
-		while (smallIt.hasNext()) {
-			final Expression curr = smallIt.next();
+		for (Expression curr : small) {
 			if (curr instanceof INumber)
 				continue;
-			final IIterator<Expression> bigIt = big.getIterator();
+			final Iterator<Expression> bigIt = big.iterator();
 			if (!nCheckContainsSearch(usd, curr, bigIt))
 				return false;
 		}
@@ -408,7 +390,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	private static boolean nCheckContainsSearch(final boolean[] usd, final Expression curr,
-			final IIterator<Expression> bigIt) {
+			final Iterator<Expression> bigIt) {
 		for (int i = 0; bigIt.hasNext(); i++) {
 			final Expression test = bigIt.next();
 			if (!usd[i] && test.equals(curr)) {
@@ -450,40 +432,31 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	private static INumber getCoefficent(final IExpressionList list) {
 		INumber toret = Int.ONE;
-		final IIterator<Expression> iterator = list.getIterator();
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : list)
 			if (curr instanceof INumber)
 				toret = toret.multiply((INumber) curr);
-		}
 		return toret;
 	}
 
 	private static IExpressionList extractNonINumbers(final IExpressionList list) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = list.getIterator();
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : list)
 			if (!(curr instanceof INumber))
 				toret.add(curr);
-		}
 		return toret;
 	}
 
 	private boolean isDivisible(final Expression elementAt) {
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final ICalculable curr = iterator.next();
+		for (ICalculable curr : this)
 			if (curr.compatible(elementAt, Operation.DIVISION))
 				return true;
-		}
 		return false;
 	}
 
 	public Expression divide(final Expression arg) {
 		if (compatible(arg, Operation.DIVISION)) {
 			final IExpressionList toret = new ExpressionList();
-			final IIterator<Expression> iterator = getIterator();
+			final Iterator<Expression> iterator = iterator();
 			while (iterator.hasNext()) {
 				final Expression curr = iterator.next();
 				if (curr.compatible(arg, Operation.DIVISION)) {
@@ -499,25 +472,21 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	public double dvalue(final char letter, final double value) {
 		INumber toret = Int.ONE;
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			toret = toret.multiply(iterator.next().value(letter, value));
+		for (Expression expression : this)
+			toret = toret.multiply(expression.value(letter, value));
 		return toret.dvalue();
 	}
 
 	public INumber value(final IValueList list) {
 		INumber toret = Int.ONE;
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			toret = toret.multiply(iterator.next().value(list));
+		for (Expression expression : this)
+			toret = toret.multiply(expression.value(list));
 		return toret;
 	}
 
 	public Expression partialSubstitute(final IValueList valueList) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final ISubstitutible curr = iterator.next();
+		for (ISubstitutible curr : this) {
 			final Expression par = curr.partialSubstitute(valueList);
 			toret.add(par);
 		}
@@ -526,9 +495,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	public Expression partialSubstitute(final char var, final double value) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final ISubstitutible curr = iterator.next();
+		for (ISubstitutible curr : this) {
 			final Expression par = curr.partialSubstitute(var, value);
 			toret.add(par);
 		}
@@ -537,17 +504,15 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	public Expression partialSubstitute(final char var, final Expression value) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final ISubstitutible curr = iterator.next();
+		for (ISubstitutible curr : this) {
 			final Expression par = curr.partialSubstitute(var, value);
 			toret.add(par);
 		}
 		return new Multiplication(toret);
 	}
 
-	public IIterator<Expression> getIterator() {
-		return factors.getIterator();
+	public Iterator<Expression> iterator() {
+		return factors.iterator();
 	}
 
 	public boolean needParenthesis() {
@@ -566,57 +531,52 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public boolean containsMatrix() {
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			if (iterator.next().containsMatrix())
+		for (Expression expression : this)
+			if (expression.containsMatrix())
 				return true;
 		return false;
 	}
 
 	public void toFullString(final StringBuffer buffer) {
 		buffer.append("*(");
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext()) {
-			final IOutputtable curr = iterator.next();
+		boolean first = true;
+		for (IOutputtable curr : this) {
+			if (!first)
+				buffer.append(',');
+			first = false;
 			if (curr == null) {
 				Log.log(LogLevel.ERROR, "WTHNULL in Multiplication.toFullString");
 				continue;
 			}
 			curr.toFullString(buffer);
-			if (iterator.hasNext())
-				buffer.append(',');
 		}
 		buffer.append(')');
 	}
 
 	public ITensor matrixDvalue(final IValueList valueList) {
 		ITensor toret = Int.ONE;
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			toret = toret.multiply(iterator.next().partialSubstitute(valueList).matrixDvalue(valueList));
+		for (Expression expression : this)
+			toret = toret.multiply(expression.partialSubstitute(valueList).matrixDvalue(valueList));
 		return toret;
 	}
 
 	public ITensor matrixDvalue(final char letter, final double value) {
 		ITensor toret = Int.ONE;
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			toret = toret.multiply(iterator.next().partialSubstitute(letter, value).matrixDvalue(letter, value));
+		for (Expression expression : this)
+			toret = toret.multiply(expression.partialSubstitute(letter, value).matrixDvalue(letter, value));
 		return toret;
 	}
 
 	public double fdvalue(final char letter, final double value) {
 		double toret = 1;
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			toret *= iterator.next().fdvalue(letter, value);
+		for (Expression expression : this)
+			toret *= expression.fdvalue(letter, value);
 		return toret;
 	}
 
 	public boolean isFullDouble() {
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			if (!iterator.next().isFullDouble())
+		for (Expression expression : this)
+			if (!expression.isFullDouble())
 				return false;
 		return true;
 	}
@@ -625,7 +585,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		if (!(other instanceof Multiplication))
 			return false;
 		final Multiplication oth = (Multiplication) other;
-		return areIdentical(factors.getIterator(), oth.factors.getIterator());
+		return areIdentical(factors.iterator(), oth.factors.iterator());
 	}
 
 	public Expression accept(final IExpressionVisitor visitor) {
@@ -633,7 +593,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public void toHtml(final StringBuffer buffer) {
-		final IIterator<Expression> iterator = getIterator();
+		final Iterator<Expression> iterator = iterator();
 		if (!iterator.hasNext())
 			return;
 		if (IIterable.isSingle(factors)) {

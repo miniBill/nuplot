@@ -15,6 +15,8 @@ import meplot.expressions.operations.Sum;
 import meplot.parser.utils.Cleaner;
 import platform.lists.IIterator;
 
+import java.util.Iterator;
+
 public abstract class AbstractExpression implements Expression {
 	public boolean toStringStartsWith(char prefix) {
 		// TODO: Fix
@@ -257,7 +259,7 @@ public abstract class AbstractExpression implements Expression {
 
 	public abstract INumber value(IValueList letters);
 
-	protected static boolean areIdentical(final IIterator<Expression> arg0, final IIterator<Expression> arg1) {
+	protected static boolean areIdentical(final Iterator<Expression> arg0, final Iterator<Expression> arg1) {
 		while (arg0.hasNext() && arg1.hasNext())
 			if (!arg0.next().isIdentical(arg1.next()))
 				return false;

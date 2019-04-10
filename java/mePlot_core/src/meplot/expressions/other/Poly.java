@@ -6,8 +6,6 @@ import meplot.expressions.Letter;
 import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.exceptions.SimplificationException;
 import meplot.expressions.list.ExpressionList;
-import platform.lists.IIterable;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Fraction;
 import meplot.expressions.numbers.INumber;
@@ -17,6 +15,7 @@ import meplot.expressions.operations.Multiplication;
 import meplot.expressions.operations.Power;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
+import platform.lists.IIterable;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -25,7 +24,7 @@ public final class Poly extends Sum {
 	private final Letter varLetter;
 
 	public Poly(final Sum original, final char var) {
-		super(original.getIterator());
+		super(original.iterator());
 		this.var = var;
 		varLetter = new Letter(var);
 	}
@@ -43,9 +42,8 @@ public final class Poly extends Sum {
 	}
 
 	public static boolean isPoly(final Sum poly, final char var) {
-		final IIterator<Expression> iterator = poly.getIterator();
-		while (iterator.hasNext())
-			if (!isMonomial(iterator.next(), var))
+		for (Expression expression : poly)
+			if (!isMonomial(expression, var))
 				return false;
 		return true;
 	}
@@ -58,9 +56,8 @@ public final class Poly extends Sum {
 		if (next instanceof Monomial)
 			return true;
 		if (next instanceof Multiplication) {
-			final IIterator<Expression> iterator = ((Multiplication) next).getIterator();
-			while (iterator.hasNext())
-				if (!isMonomial(iterator.next(), var))
+			for (Expression expression : ((Multiplication) next))
+				if (!isMonomial(expression, var))
 					return false;
 			return true;
 		}
@@ -69,9 +66,8 @@ public final class Poly extends Sum {
 			return power.getBase() instanceof Letter && power.getExponent() instanceof Int;
 		}
 		if (next instanceof Sum) {
-			final IIterator<Expression> iterator = ((Sum) next).getIterator();
-			while (iterator.hasNext())
-				if (!isMonomial(iterator.next(), var))
+			for (Expression expression : ((Sum) next))
+				if (!isMonomial(expression, var))
 					return false;
 			return true;
 		}
@@ -99,9 +95,8 @@ public final class Poly extends Sum {
 	public int getDegree() {
 		if (degree < 0) {
 			degree = 0;
-			final IIterator<Expression> iterator = getIterator();
-			while (iterator.hasNext()) {
-				final int exp = getExponent(iterator.next());
+			for (Expression expression : this) {
+				final int exp = getExponent(expression);
 				if (exp > degree)
 					degree = exp;
 			}
@@ -113,10 +108,8 @@ public final class Poly extends Sum {
 		if (expr instanceof INumber)
 			return expr;
 		if (expr instanceof Multiplication) {
-			final IIterator<Expression> iterator = ((Multiplication) expr).getIterator();
 			Expression toret = Int.ONE;
-			while (iterator.hasNext()) {
-				final Expression curr = iterator.next();
+			for (Expression curr : ((Multiplication) expr)) {
 				toret = toret.multiply(getCoefficent(curr, var));
 			}
 			return toret;
@@ -147,13 +140,10 @@ public final class Poly extends Sum {
 
 		if (expr instanceof Sum) {
 			final Sum sexpr = (Sum) expr;
-			final IIterator<Expression> iterator = sexpr.getIterator();
 			Expression toret = Int.ZERO;
-			while (iterator.hasNext()) {
-				final Expression curr = iterator.next();
+			for (Expression curr : sexpr)
 				if (curr.hasLetter(var))
 					toret = toret.add(getCoefficent(curr, var));
-			}
 			return toret;
 		}
 
@@ -182,10 +172,8 @@ public final class Poly extends Sum {
 	}
 
 	public Expression getCoefficent(final int deg) {
-		final IIterator<Expression> iterator = getIterator();
 		Expression toret = Int.ZERO;
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : this) {
 			final int exp = getExponent(curr);
 			if (exp == deg)
 				toret = toret.add(getCoefficent(curr, var));
@@ -213,9 +201,8 @@ public final class Poly extends Sum {
 			final Expression single = IIterable.getFirst(arg);
 			if (single instanceof INumber) {
 				final IExpressionList results = new ExpressionList();
-				final IIterator<Expression> iterator = getIterator();
-				while (iterator.hasNext())
-					results.add(iterator.next().divide(single));
+				for (Expression expression : this)
+					results.add(expression.divide(single));
 				return new Sum(results);
 			}
 		}
@@ -265,16 +252,14 @@ public final class Poly extends Sum {
 
 	private Poly popposite() {
 		final IExpressionList after = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
 
-		while (iterator.hasNext()) {
-			final ICalculable curr = iterator.next();
+		for (ICalculable curr : this) {
 			final Expression currs = curr.opposite();
 			if (currs.isZero())
 				continue;
 			if (currs instanceof Sum) {
 				final Sum scls = (Sum) currs;
-				after.addRange(scls.getIterator());
+				after.addRange(scls.iterator());
 			} else
 				after.add(currs);
 		}
@@ -282,14 +267,13 @@ public final class Poly extends Sum {
 	}
 
 	private Poly add(final Poly arg) {
-		return new Poly(new ExpressionList(getIterator(), arg.getIterator()), var);
+		return new Poly(new ExpressionList(iterator(), arg.iterator()), var);
 	}
 
 	private Poly multiply(final Monomial arg) {
 		final IExpressionList toret = new ExpressionList();
-		final IIterator<Expression> iterator = getIterator();
-		while (iterator.hasNext())
-			toret.add(iterator.next().multiply(arg));
+		for (Expression expression : this)
+			toret.add(expression.multiply(arg));
 		return new Poly(toret, var);
 	}
 
@@ -315,14 +299,13 @@ public final class Poly extends Sum {
 	}
 
 	public Monomial getLeadingTerm() {
-		return getTerm(getDegree());
+		Monomial term = getTerm(getDegree());
+		return term;
 	}
 
 	private Monomial getTerm(final int deg) {
-		final IIterator<Expression> iterator = getIterator();
 		Monomial toret = new Monomial(Int.ZERO, var);
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : this) {
 			final int exp = getExponent(curr);
 			if (exp == deg)
 				toret = toret.add(new Monomial(curr, var));
@@ -343,10 +326,8 @@ public final class Poly extends Sum {
 		if (expr instanceof INumber)
 			return 0;
 		if (expr instanceof Multiplication) {
-			final IIterator<Expression> iterator = ((Multiplication) expr).getIterator();
 			int toret = 0;
-			while (iterator.hasNext()) {
-				final Expression curr = iterator.next();
+			for (Expression curr : ((Multiplication) expr)) {
 				toret += getExponent(curr, var);
 			}
 			return toret;
@@ -365,14 +346,12 @@ public final class Poly extends Sum {
 	}
 
 	public Poly sumExpand() {
-		final IIterator<Expression> iterator = getIterator();
 		final ExpressionList toret = new ExpressionList();
 		boolean same = true;
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : this) {
 			if (curr instanceof Sum) {
 				same = false;
-				toret.addRange(((Sum) curr).getIterator());
+				toret.addRange(((Sum) curr).iterator());
 			} else
 				toret.add(curr);
 		}

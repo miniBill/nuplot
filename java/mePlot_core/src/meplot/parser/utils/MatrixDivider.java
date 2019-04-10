@@ -19,7 +19,7 @@ public final class MatrixDivider {
 
 	public static Divided divideMatrices(final ITokenList root) throws ParserException {
 		final Divided toret = new Divided();
-		final TokenIterator iterator = root.tgetIterator();
+		final TokenIterator iterator = root.titerator();
 		char name = 'A';
 		while (iterator.hasNext()) {
 			IToken curr = iterator.next();

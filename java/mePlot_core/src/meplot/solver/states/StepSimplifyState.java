@@ -32,7 +32,7 @@ public class StepSimplifyState extends SystemSolverState {
 				QUEUE.add(nextState.fill(child));
 			return;
 		}
-        IIterable<Expression> expressions = getLeaf().getValue();
+        Iterable<Expression> expressions = getLeaf().getValue();
         final Expression[] equations = IIterable.toArray(Expression.class, expressions);
 		final Expression curr = equations[index];
 		ExpressionTree leaf = getLeaf();

@@ -17,6 +17,8 @@ import platform.lists.IIterable;
 import platform.lists.IIterator;
 import platform.log.Log;
 
+import java.util.Iterator;
+
 public final class Division extends AbstractExpression implements IDivision {
 	public static void activateCross() {
 		tryCross = true;
@@ -33,8 +35,8 @@ public final class Division extends AbstractExpression implements IDivision {
 			this.arg = arg;
 		}
 
-		public IIterator<Expression> getIterator() {
-			return new ExpressionList(arg).getIterator();
+		public IIterator<Expression> iterator() {
+			return new ExpressionList(arg).iterator();
 		}
 
 		public INumber coefficent() {
@@ -168,11 +170,11 @@ public final class Division extends AbstractExpression implements IDivision {
 
 	private static Expression crossSimplify(final IMultiplication numerator, final IMultiplication denominator) {
 		final IExpressionList newNumList = new ExpressionList();
-		final IIterator<Expression> nFactorsIt = numerator.getIterator();
+		final Iterator<Expression> nFactorsIt = numerator.iterator();
 		while (nFactorsIt.hasNext()) {
 			final Expression currentN = nFactorsIt.next();
 			final IExpressionList newDenList = new ExpressionList();
-			final IIterator<Expression> dFactorsIt = denominator.getIterator();
+			final Iterator<Expression> dFactorsIt = denominator.iterator();
 			while (dFactorsIt.hasNext()) {
 				final Expression currentD = dFactorsIt.next();
 				if (currentN.compatible(currentD, Operation.DIVISION)) {

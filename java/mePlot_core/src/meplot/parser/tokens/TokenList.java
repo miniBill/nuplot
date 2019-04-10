@@ -17,7 +17,7 @@ public class TokenList extends AbstractTokenList {
 		// Creates an empty list.
 	}
 
-	public TokenList(IIterable<IToken> other) {
+	public TokenList(Iterable<IToken> other) {
 		addRange(other);
 	}
 
@@ -60,7 +60,7 @@ public class TokenList extends AbstractTokenList {
 					new ArrayIndexOutOfBoundsException(index));
 		}
 		final IExpressionList toret = new ExpressionList();
-		final TokenIterator iterator = tgetIterator(index);
+		final TokenIterator iterator = titerator(index);
 		while (iterator.hasNext())
 			toret.add(iterator.next().toExpression());
 		return new Multiplication(toret);

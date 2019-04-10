@@ -121,7 +121,7 @@ public abstract class TestUtils {
 		final IOutputtable simplified = SimplificationHelper.simplify(input);
 		final String simplifiedClean = simplified.toCleanString();
 
-		final IIterable<Expression> step = SimplificationHelper.stepSimplify(input);
+		final Iterable<Expression> step = SimplificationHelper.stepSimplify(input);
 		final String stepClean = IIterable.getLast(step).toCleanString();
 
 		final Expression expectedParsed = parseOrFail(expected);

@@ -60,9 +60,4 @@ public class MatrixElementsIterator implements IIterator<Expression> {
 	public boolean isSecond() {
 		throw new RuntimeException("NIE");
 	}
-
-	@Override
-	public List<Expression> until(String string) {
-		throw new RuntimeException("NIE");
-	}
 }

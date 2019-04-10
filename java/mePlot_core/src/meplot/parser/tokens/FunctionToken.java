@@ -86,7 +86,7 @@ public final class FunctionToken extends Token {
 			if (defaultFunction.getName().equals(val))
 				return defaultFunction.gfill(eargs);
 
-		final IIterator<UserFunction> iterator = userFunctions.getIterator();
+		final IIterator<UserFunction> iterator = userFunctions.iterator();
 		while (iterator.hasNext()) {
 			final UserFunction uff = iterator.next();
 			if (uff.getName().equals(val))
@@ -175,7 +175,7 @@ public final class FunctionToken extends Token {
 				return index + other.length();
 		}
 
-		final IIterator<UserFunction> iterator = userFunctions.getIterator();
+		final IIterator<UserFunction> iterator = userFunctions.iterator();
 		while (iterator.hasNext()) {
 			final UserFunction uff = iterator.next();
 			final int index = name.indexOf(uff.getName());
@@ -229,7 +229,7 @@ public final class FunctionToken extends Token {
 			if (defaultFunction.getName().equals(value))
 				return defaultFunction;
 
-		final IIterator<UserFunction> iterator = userFunctions.getIterator();
+		final IIterator<UserFunction> iterator = userFunctions.iterator();
 		while (iterator.hasNext()) {
 			final UserFunction uff = iterator.next();
 			if (uff.getName().equals(value))

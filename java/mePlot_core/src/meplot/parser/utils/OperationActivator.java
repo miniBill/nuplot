@@ -20,12 +20,12 @@ public final class OperationActivator {
 
 	public static TokenIterator activateOperations(final TokenIterator iterator) throws ParserException {
 		final ITokenList ttl = activateOperation(iterator, Operation.POWER);
-		TokenIterator it2 = ttl.tgetIterator();
+		TokenIterator it2 = ttl.titerator();
 		for (int op = 0; op < Operation.OPERATIONS.length; op++)
 			if (Operation.OPERATIONS[op] != Operation.POWER) {
 				final ITokenList tokenList = activateOperation(it2, Operation.OPERATIONS[op]);
 				Log.log(LogLevel.PARSER, "After activating " + Operation.OPERATIONS[op] + ':', tokenList.toString());
-				it2 = tokenList.tgetIterator();
+				it2 = tokenList.titerator();
 			}
 		return it2;
 	}
@@ -93,7 +93,7 @@ public final class OperationActivator {
 
 	private static IToken activateToken(final IToken token, final char operation) throws ParserException {
 		if (token instanceof AbstractTokenList)
-			return activateOperation(((AbstractTokenList) token).getIterator(), operation);
+			return activateOperation(((AbstractTokenList) token).iterator(), operation);
 		else if (token instanceof OperationToken)
 			return activateOperationToken((OperationToken) token, operation);
 		else if (token instanceof FunctionToken)

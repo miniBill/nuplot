@@ -13,7 +13,7 @@ public final class IntToken extends Token {
 
 	public IntToken(final ITokenList temp) throws ParserException {
 		final StringBuilder toret = new StringBuilder();
-		final TokenIterator iterator = temp.tgetIterator();
+		final TokenIterator iterator = temp.titerator();
 		while (iterator.hasNext())
 			toret.append(iterator.next());
 		try {

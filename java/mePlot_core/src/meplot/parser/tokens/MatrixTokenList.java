@@ -32,7 +32,7 @@ public final class MatrixTokenList extends TokenList {
 					new ArrayIndexOutOfBoundsException(index));
 		}
 		final IExpressionList list = new ExpressionList();
-		final IIterator<IToken> iterator = getIterator(index);
+		final IIterator<IToken> iterator = iterator(index);
 		boolean vector = false;
 		while (iterator.hasNext()) {
 			final IToken curr = iterator.next();

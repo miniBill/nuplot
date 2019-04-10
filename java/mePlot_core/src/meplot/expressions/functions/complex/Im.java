@@ -12,6 +12,8 @@ import meplot.expressions.operations.Multiplication;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.IExpressionComplexFunctionVisitor;
 
+import java.util.Iterator;
+
 public final class Im extends ComplexFunction {
 	public Im(final Expression value) {
 		super(value);
@@ -33,7 +35,7 @@ public final class Im extends ComplexFunction {
 		if (arg instanceof Sum)
 			return expandSum((Sum) arg);
 		if (arg instanceof Multiplication) {
-			final IIterator<Expression> iterator = ((Multiplication) arg).getIterator();
+			final Iterator<Expression> iterator = ((Multiplication) arg).iterator();
 			if (!iterator.hasNext())
 				return Int.ZERO;
 			final Expression first = iterator.next();

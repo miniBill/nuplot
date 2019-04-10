@@ -23,7 +23,7 @@ public final class ListIterator<T> extends Iterator<T> {
     }
 
     @Override
-    protected IIterable<T> getInner() {
+    protected Iterable<T> getInner() {
         return inner;
     }
 
@@ -37,4 +37,7 @@ public final class ListIterator<T> extends Iterator<T> {
         return inner.elementAt(index);
     }
 
+    public ListIterator<T> clone(){
+        return new ListIterator<>(inner, index);
+    }
 }

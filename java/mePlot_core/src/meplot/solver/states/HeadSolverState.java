@@ -3,15 +3,13 @@ package meplot.solver.states;
 import meplot.expressions.Expression;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionIterable;
-import platform.lists.IIterable;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.BooleanOp;
 import meplot.expressions.operations.Operation;
 import meplot.expressions.tree.ExpressionTree;
 import meplot.solver.ISolver;
+import platform.lists.IIterator;
 
 public class HeadSolverState extends SystemSolverState {
 	public HeadSolverState(final ExpressionTree tree, final ISolver solver) {
@@ -19,11 +17,9 @@ public class HeadSolverState extends SystemSolverState {
 	}
 
 	public void execute() {
-		final IIterable<Expression> last = getLeaf().getValue();
+		final Iterable<Expression> last = getLeaf().getValue();
 		final ExpressionList toPass = new ExpressionList();
-		final IIterator<Expression> iterator = last.getIterator();
-		while (iterator.hasNext()) {
-			final Expression value = iterator.next();
+		for (Expression value : last) {
 			if (value instanceof BooleanOp) {
 				final BooleanOp boo = (BooleanOp) value;
 				if (boo.getLeft() instanceof Matrix && boo.getRight().isZero()) {
