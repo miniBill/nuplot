@@ -35,7 +35,7 @@ public class MatrixElementsIterator implements IIterator<Expression> {
 		return new MatrixElementsIterator(matrix, row, col);
 	}
 
-	public Expression getCurrent() {
+	private Expression getCurrent() {
 		if (row == matrix.getRows())
 			return null;
 		return matrix.get(row, col);
@@ -49,16 +49,4 @@ public class MatrixElementsIterator implements IIterator<Expression> {
 		return matrix.getRows() * matrix.getCols();
 	}
 
-	public boolean contains(Expression arg) {
-		for (int r = row; r < matrix.getRows(); r++)
-			for (int c = (r == row ? col : 0); c < matrix.getCols(); c++)
-				if (matrix.get(r, c).equals(arg))
-					return true;
-		return false;
-	}
-
-	@Override
-	public boolean isSecond() {
-		throw new RuntimeException("NIE");
-	}
 }

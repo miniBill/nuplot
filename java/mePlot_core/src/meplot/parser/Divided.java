@@ -5,6 +5,8 @@ import meplot.parser.tokens.ITokenList;
 import meplot.parser.tokens.TokenList;
 import platform.lists.IIterator;
 
+import java.util.Iterator;
+
 public class Divided implements Iterable<DividedNode> {
 	private final DividedNodeList list = new DividedNodeList();
 	private final ITokenList restList;
@@ -13,7 +15,7 @@ public class Divided implements Iterable<DividedNode> {
 		restList = new TokenList();
 	}
 
-	public final IIterator<DividedNode> iterator() {
+	public final Iterator<DividedNode> iterator() {
 		return list.iterator();
 	}
 

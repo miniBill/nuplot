@@ -9,6 +9,8 @@ import meplot.parser.ParserException;
 import platform.lists.IIterable;
 import platform.lists.IIterator;
 
+import java.util.Iterator;
+
 public class TokenList extends AbstractTokenList {
 	/**
 	 * Creates an empty list.
@@ -32,7 +34,7 @@ public class TokenList extends AbstractTokenList {
 		return toret.toString();
 	}
 
-	public final void addRange(final IIterator<IToken> iterator) {
+	public final void addRange(final Iterator<IToken> iterator) {
 		while (iterator.hasNext())
 			add(iterator.next());
 	}

@@ -2,17 +2,12 @@ package meplot.parser.utils;
 
 import meplot.expressions.operations.Operation;
 import meplot.parser.ParserException;
-import meplot.parser.tokens.AbstractTokenList;
-import meplot.parser.tokens.FunctionToken;
-import meplot.parser.tokens.IToken;
-import meplot.parser.tokens.ITokenList;
-import meplot.parser.tokens.OperationToken;
-import meplot.parser.tokens.Token;
-import meplot.parser.tokens.TokenIterator;
-import meplot.parser.tokens.TokenList;
-import platform.lists.IIterator;
+import meplot.parser.tokens.*;
+import platform.lists.Myterator;
 import platform.log.Log;
 import platform.log.LogLevel;
+
+import java.util.Iterator;
 
 public final class OperationActivator {
 	private OperationActivator() {
@@ -30,7 +25,7 @@ public final class OperationActivator {
 		return it2;
 	}
 
-	private static ITokenList activateOperation(final IIterator<IToken> iterator, final char operation)
+	private static ITokenList activateOperation(final Iterator<IToken> iterator, final char operation)
 			throws ParserException {
 		TokenList temp = new TokenList();
 		while (iterator.hasNext()) {
@@ -41,7 +36,7 @@ public final class OperationActivator {
 				if (curr instanceof OperationToken)
 					if (((OperationToken) curr).getVal() == operation) {
 						final OperationToken opcurr = (OperationToken) curr;
-						if (iterator.isSecond()) {
+						if (((Myterator)iterator).isSecond()) {
 							if (opcurr.getVal() == Operation.ADDITION)
 								continue;
 							throw new ParserException();

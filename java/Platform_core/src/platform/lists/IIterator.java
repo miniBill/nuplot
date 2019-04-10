@@ -3,12 +3,6 @@ package platform.lists;
 public interface IIterator<T> extends java.util.Iterator<T>, java.lang.Iterable<T> {
 	int length();
 
-	boolean isSecond();
-
-	boolean contains(T value);
-
-	T getCurrent();
-
 	static <T> List<T> until(java.util.Iterator<T> iterator, String string) {
 		final List<T> toret = new List<>();
 		while (iterator.hasNext()) {

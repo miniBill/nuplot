@@ -4,9 +4,9 @@ import meplot.expressions.Expression;
 import meplot.parser.ParserException;
 import platform.lists.IIterable;
 import platform.lists.IIterator;
-import platform.lists.ToStringIterator;
+import platform.lists.Myterator;
 
-public final class TokenIterator extends ToStringIterator<IToken> {
+public final class TokenIterator extends Myterator<IToken> {
 	private final ITokenList inner;
 
 	public TokenIterator(final ITokenList head, final int index) {
@@ -40,8 +40,4 @@ public final class TokenIterator extends ToStringIterator<IToken> {
 		return new TokenIterator(inner, index);
 	}
 
-	@Override
-	public IToken getCurrent() {
-		return inner.elementAt(index);
-	}
 }

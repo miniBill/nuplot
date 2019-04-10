@@ -4,26 +4,8 @@ import meplot.expressions.Expression;
 import meplot.expressions.functions.UserFunction;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Operation;
-import meplot.parser.tokens.AbstractTokenList;
-import meplot.parser.tokens.CharList;
-import meplot.parser.tokens.CharToken;
-import meplot.parser.tokens.DoubleToken;
-import meplot.parser.tokens.FunctionToken;
-import meplot.parser.tokens.IToken;
-import meplot.parser.tokens.ITokenList;
-import meplot.parser.tokens.IntToken;
-import meplot.parser.tokens.OperationToken;
-import meplot.parser.tokens.ParToken;
-import meplot.parser.tokens.PerfectDoubleToken;
-import meplot.parser.tokens.Token;
-import meplot.parser.tokens.TokenIterator;
-import meplot.parser.tokens.TokenList;
-import meplot.parser.utils.AssumptionsParser;
-import meplot.parser.utils.Cleaner;
-import meplot.parser.utils.FunctionActivator;
-import meplot.parser.utils.MatrixDivider;
-import meplot.parser.utils.OperationActivator;
-import platform.lists.IIterator;
+import meplot.parser.tokens.*;
+import meplot.parser.utils.*;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -127,7 +109,7 @@ public final class Parser {
 			if (current instanceof TokenList)
 				toret.add(unfoldStrings(((TokenList) current)));
 			else if (current instanceof CharList)
-				toret.addRange(((CharList) current).iterator());
+				toret.addRange((CharList) current);
 			else
 				toret.add(current);
 		}

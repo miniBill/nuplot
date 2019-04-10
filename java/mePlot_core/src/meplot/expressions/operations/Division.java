@@ -14,7 +14,6 @@ import meplot.expressions.other.Poly;
 import meplot.expressions.visitors.IExpressionVisitor;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import platform.lists.IIterable;
-import platform.lists.IIterator;
 import platform.log.Log;
 
 import java.util.Iterator;
@@ -35,7 +34,7 @@ public final class Division extends AbstractExpression implements IDivision {
 			this.arg = arg;
 		}
 
-		public IIterator<Expression> iterator() {
+		public Iterator<Expression> iterator() {
 			return new ExpressionList(arg).iterator();
 		}
 

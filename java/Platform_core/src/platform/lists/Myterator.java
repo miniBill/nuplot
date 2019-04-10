@@ -1,12 +1,13 @@
 package platform.lists;
 
-public abstract class Iterator<T> extends AbstractIterator<T> {
+public abstract class Myterator<T> implements IIterator<T> {
 	protected int start;
+	protected int index;
 
-	protected Iterator() {
+	protected Myterator() {
 	}
 
-	protected Iterator(final int start) {
+	protected Myterator(final int start) {
 		index = start;
 		this.start = start;
 	}
@@ -23,13 +24,6 @@ public abstract class Iterator<T> extends AbstractIterator<T> {
 		if (cached_length == -1)
 			cached_length = IIterable.length(getInner());
 		return cached_length - index;
-	}
-
-	public final boolean contains(T value) {
-		for (T curr : this)
-			if (curr.equals(value))
-				return true;
-		return false;
 	}
 
 	public final String toString() {

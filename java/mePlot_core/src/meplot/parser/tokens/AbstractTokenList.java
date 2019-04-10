@@ -2,8 +2,9 @@ package meplot.parser.tokens;
 
 import meplot.expressions.Expression;
 import meplot.parser.ParserException;
-import platform.lists.IIterator;
 import platform.lists.ToStringList;
+
+import java.util.Iterator;
 
 public abstract class AbstractTokenList extends ToStringList<IToken> implements ITokenList {
 	public final Expression toExpression() throws ParserException {
@@ -26,7 +27,7 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 
 	public final String toSString() {
 		final StringBuilder toret = new StringBuilder("{");
-		final IIterator<IToken> iterator = iterator();
+		final Iterator<IToken> iterator = iterator();
 		while (iterator.hasNext()) {
 			final IToken curr = iterator.next();
 			if (curr instanceof TokenList)
@@ -41,9 +42,8 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 	}
 
 	protected final void cString(final StringBuffer toret) {
-		final IIterator<IToken> iterator = iterator();
-		while (iterator.hasNext())
-			toret.append(iterator.next());
+		for (IToken iToken : this)
+			toret.append(iToken);
 	}
 
 	// Needed for broken real implementations.

@@ -1,6 +1,6 @@
 package platform.lists;
 
-public final class ListIterator<T> extends Iterator<T> {
+public final class ListIterator<T> extends Myterator<T> {
     final List<T> inner;
 
     public ListIterator(List<T> inner, int index) {
@@ -30,11 +30,6 @@ public final class ListIterator<T> extends Iterator<T> {
     @Override
     public IIterator<T> iterator() {
         return new ListIterator<>(inner, index);
-    }
-
-    @Override
-    public T getCurrent() {
-        return inner.elementAt(index);
     }
 
     public ListIterator<T> clone(){
