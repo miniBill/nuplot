@@ -14,7 +14,7 @@ import meplot.expressions.operations.Multiplication;
 import meplot.expressions.operations.Power;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 
 import java.util.Iterator;
 
@@ -91,7 +91,7 @@ public final class PolynomialMath {
 	}
 
 	private static IExpressionList divisors(final Multiplication expr) {
-		final IExpressionList[] gens = new IExpressionList[IIterable.length(expr)];
+		final IExpressionList[] gens = new IExpressionList[IterableExtensions.length(expr)];
 		final Iterator<Expression> factors = expr.iterator();
 		gen(factors, gens);
 		final int[] indexes = new int[gens.length];
@@ -104,7 +104,7 @@ public final class PolynomialMath {
 
 			for (int j = 0; j < indexes.length; j++) {
 				indexes[j]++;
-				if (indexes[j] == IIterable.length(gens[j])) {
+				if (indexes[j] == IterableExtensions.length(gens[j])) {
 					if (j == indexes.length - 1)
 						return toret.fold();
 					indexes[j] = 0;

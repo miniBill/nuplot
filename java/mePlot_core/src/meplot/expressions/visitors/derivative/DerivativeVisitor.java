@@ -13,7 +13,7 @@ import meplot.expressions.other.Proxy;
 import meplot.expressions.visitors.IExpressionFunctorVisitor;
 import meplot.expressions.visitors.IExpressionTensorVisitor;
 import meplot.expressions.visitors.IExpressionVisitor;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 
 import java.util.Iterator;
 
@@ -59,7 +59,7 @@ public class DerivativeVisitor implements IExpressionVisitor {
 	}
 
 	public Expression visit(final IMultiplication multiplication) {
-        if (IIterable.isEmpty(multiplication))
+        if (IterableExtensions.isEmpty(multiplication))
 			return Int.ZERO;
 		final Iterator<Expression> factors = multiplication.iterator();
 		final Expression first = factors.next();
@@ -106,7 +106,7 @@ public class DerivativeVisitor implements IExpressionVisitor {
 
 	public Expression visit(final Sum sum) {
 		final Iterator<Expression> addends = sum.iterator();
-		if (IIterable.isSingle(sum))
+		if (IterableExtensions.isSingle(sum))
 			return genvisit(addends.next());
 		Expression toret = Int.ZERO;
 		while (addends.hasNext())

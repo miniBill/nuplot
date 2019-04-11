@@ -21,7 +21,7 @@ import meplot.expressions.tree.ExpressionTree;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import meplot.solver.states.HeadSolverState;
 import meplot.solver.states.ISystemSolverState;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 import platform.lists.List;
 
 import java.lang.reflect.Array;
@@ -43,7 +43,7 @@ public abstract class AbstractSolver implements ISolver {
 	protected static ExpressionTree appendStepSimplifyChain(final ExpressionTree tree) {
 		ExpressionTree leaf = tree;
 		final Iterable<Expression> root = tree.getValue();
-		final Iterable<Expression>[] chains = new Iterable[IIterable.length(root)];
+		final Iterable<Expression>[] chains = new Iterable[IterableExtensions.length(root)];
 		final Iterator<Expression> iterator = root.iterator();
 		for (int i = 0; i < chains.length; i++)
 			chains[i] = SimplificationHelper.stepSimplify(iterator.next());
@@ -250,7 +250,7 @@ public abstract class AbstractSolver implements ISolver {
 	}
 
 	private void explicate(final ExpressionTree toret, final char var) {
-		final Expression last = IIterable.getFirst(toret.getValue());
+		final Expression last = IterableExtensions.getFirst(toret.getValue());
 		if (last instanceof BooleanOp) {
 			final BooleanOp blast = (BooleanOp) last;
 			explicate(toret, blast, var);

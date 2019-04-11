@@ -12,7 +12,7 @@ import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.IExpressionVisitor;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 
 import java.util.Iterator;
 
@@ -41,7 +41,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 
 	private static Expression order(final Iterable<Expression> iiterable) {
 		final IExpressionList rest = new ExpressionList();
-		if (!IIterable.getFirst(iiterable).toString().startsWith("-"))
+		if (!IterableExtensions.getFirst(iiterable).toString().startsWith("-"))
 			return null;
 		Expression found = null;
 		for (Expression curr : iiterable) {
@@ -166,7 +166,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 			return super.equals(obj);
 		final Sum sumobj = (Sum) obj;
 		// TODO: Fix
-		return IIterable.checkContains(this, sumobj) && IIterable.checkContains(sumobj, this);
+		return IterableExtensions.checkContains(this, sumobj) && IterableExtensions.checkContains(sumobj, this);
 	}
 
 	/**
@@ -209,7 +209,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 	}
 
 	public final Expression innerSimplify() {
-		if (IIterable.isSingle(addends))
+		if (IterableExtensions.isSingle(addends))
 			return addends.getFirst().partialSimplify();
 		final IExpressionList after = simplifyAddends();
 
@@ -217,7 +217,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 	}
 
 	public final Expression innerStepSimplify() {
-		if (IIterable.isSingle(addends))
+		if (IterableExtensions.isSingle(addends))
 			return addends.getFirst().innerStepSimplify();
 		final IExpressionList after = stepSimplifyAddends();
 
@@ -247,7 +247,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 
 		if (inner != null)
 			return orderOrDefault(inner);
-		if (IIterable.isEmpty(after))
+		if (IterableExtensions.isEmpty(after))
 			return Int.ZERO;
 
 		return orderOrDefault(after);
@@ -259,7 +259,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 			return binomialSquare;
 		while (iterator.hasNext()) {
 			final Expression first = iterator.next();
-			for (Expression second : IIterable.clone(iterator)) {
+			for (Expression second : IterableExtensions.clone(iterator)) {
 				if (first.isZero()) {
 					return finishInner(after, first, second, second);
 				}
@@ -311,14 +311,14 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 	 * {@inheritDoc}
 	 */
 	public final boolean isOne() {
-		return IIterable.isSingle(addends) && addends.getFirst().isOne();
+		return IterableExtensions.isSingle(addends) && addends.getFirst().isOne();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public final boolean isZero() {
-		return IIterable.isEmpty(addends) || IIterable.isSingle(addends) && addends.getFirst().isZero();
+		return IterableExtensions.isEmpty(addends) || IterableExtensions.isSingle(addends) && addends.getFirst().isZero();
 	}
 
 	public final ITensor matrixDvalue(final char letter, final double value) {
@@ -364,7 +364,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 	}
 
 	public final boolean needParenthesis() {
-		return !IIterable.isSingle(addends);
+		return !IterableExtensions.isSingle(addends);
 	}
 
 	/**
@@ -471,7 +471,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 	}
 
 	private Expression tryBinomialSquare() {
-		if (IIterable.length(addends) != 3)
+		if (IterableExtensions.length(addends) != 3)
 			return null;
 
 		ICalculable remainder = null;

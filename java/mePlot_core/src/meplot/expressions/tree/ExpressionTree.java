@@ -4,7 +4,7 @@ import meplot.expressions.Expression;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.operations.BooleanOp;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 
 import java.util.Iterator;
 
@@ -188,20 +188,20 @@ public final class ExpressionTree {
 	}
 
 	private void outputValue(final StringBuffer buffer) {
-		if (IIterable.length(value) > 1) {
+		if (IterableExtensions.length(value) > 1) {
 			appendTable(buffer, value.iterator());
 			return;
 		}
-		if (IIterable.isSingle(value) && IIterable.getFirst(value) instanceof Matrix) {
-			Matrix mat = (Matrix) IIterable.getFirst(value);
+		if (IterableExtensions.isSingle(value) && IterableExtensions.getFirst(value) instanceof Matrix) {
+			Matrix mat = (Matrix) IterableExtensions.getFirst(value);
 			if (mat.getRows() * mat.getCols() > 0 && mat.get(0, 0) instanceof BooleanOp) {
 				appendTable(buffer, mat.iterator());
 				return;
 			}
 		}
 		buffer.append('$');
-		if (IIterable.length(value) > 0)
-			IIterable.getFirst(value).toHtml(buffer);
+		if (IterableExtensions.length(value) > 0)
+			IterableExtensions.getFirst(value).toHtml(buffer);
 		/*
 		 * else buffer.append("∀");
 		 */

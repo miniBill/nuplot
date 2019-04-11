@@ -5,7 +5,7 @@ import meplot.expressions.list.IExpressionIterable;
 import meplot.expressions.tree.ExpressionTree;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import meplot.solver.ISolver;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 
 public class StepSimplifyState extends SystemSolverState {
 	private final int index;
@@ -25,7 +25,7 @@ public class StepSimplifyState extends SystemSolverState {
 	}
 
 	public void execute() {
-		if (index == IIterable.length(getLeaf().getValue())) {
+		if (index == IterableExtensions.length(getLeaf().getValue())) {
 			final IExpressionIterable equations = removeNullAndZero(getLeaf().getValue());
 			final ExpressionTree child = getLeaf().addChild(equations);
 			if (nextState != null)
@@ -33,7 +33,7 @@ public class StepSimplifyState extends SystemSolverState {
 			return;
 		}
         Iterable<Expression> expressions = getLeaf().getValue();
-        final Expression[] equations = IIterable.toArray(Expression.class, expressions);
+        final Expression[] equations = IterableExtensions.toArray(Expression.class, expressions);
 		final Expression curr = equations[index];
 		ExpressionTree leaf = getLeaf();
 		for (Expression ce : SimplificationHelper.stepSimplify(curr)) {

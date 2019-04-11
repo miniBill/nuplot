@@ -5,8 +5,8 @@ import platform.NotImplementedException;
 import java.lang.reflect.Array;
 import java.util.Iterator;
 
-public final class IIterable {
-    private IIterable(){}
+public final class IterableExtensions {
+    private IterableExtensions(){}
 
     public static <T> T[] toArray(Class<T> c, Iterable<T> input) {
         T[] result = (T[]) Array.newInstance(c, length(input));

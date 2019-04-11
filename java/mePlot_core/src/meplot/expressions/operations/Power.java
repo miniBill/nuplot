@@ -17,7 +17,7 @@ import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.*;
 import meplot.expressions.visitors.IExpressionVisitor;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 
 import java.util.Iterator;
 
@@ -289,7 +289,7 @@ public final class Power extends AbstractExpression implements IPower {
 				return new Cos(Int.ONE).add(Letter.I.multiply(new Sin(Int.ONE)));
 			if (exp instanceof Multiplication) {
 				final Multiplication mulexp = (Multiplication) exp;
-				if (IIterable.contains(mulexp, Letter.I)) {
+				if (IterableExtensions.contains(mulexp, Letter.I)) {
 					final Expression arg = mulexp.divide(Letter.I);
 					return new Cos(arg).add(Letter.I.multiply(new Sin(arg)));
 				}
@@ -383,7 +383,7 @@ public final class Power extends AbstractExpression implements IPower {
 
 			final Sum sbase = (Sum) base;
 
-			if (IIterable.length(sbase) == 2) {
+			if (IterableExtensions.length(sbase) == 2) {
 				final Iterator<Expression> ita = sbase.iterator();
 				final Expression a = ita.next();
 				final Expression b = ita.next();

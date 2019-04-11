@@ -44,7 +44,7 @@ public final class Parser {
 
 		// Log.log(LogLevel.PARSER, "After Tokenization:", root.toString());
 
-		root = aggregateNumbers(root.iterator(), exact);
+		root = aggregateNumbers(root, exact);
 
 		// Log.log(LogLevel.PARSER, "After aggregateNumbers:", root.toString());
 
@@ -58,7 +58,7 @@ public final class Parser {
 		// Log.log(LogLevel.PARSER, "After process Parenthesis:",
 		// root.toString());
 
-		root = aggregateStrings(root.iterator());
+		root = aggregateStrings(root);
 
 		// Log.log(LogLevel.PARSER, "After aggregateStrings:", root.toString());
 
@@ -66,19 +66,17 @@ public final class Parser {
 
 		// Log.log(LogLevel.PARSER, "After unfoldStrings:", root.toString());
 
-		root = FunctionActivator.activateFunctions(root.iterator());
+		root = FunctionActivator.activateFunctions(root);
 
 		// Log.log(LogLevel.PARSER, "After activateFunctions:",
 		// root.toString());
 
-		TokenIterator iterator = root.titerator();
-
-		iterator = OperationActivator.activateOperations(iterator);
+		Iterator<IToken> titerator = OperationActivator.activateOperations(root);
 
 		// Log.log(LogLevel.PARSER, "After activateOperations:",
 		// iterator.toString());
 
-		Expression out = iterator.toExpression();
+		Expression out =((TokenIterator)titerator).toExpression();
 
 		if (out == null)
 			throw new ParserException();
@@ -116,12 +114,13 @@ public final class Parser {
 		return toret;
 	}
 
-	private static TokenList aggregateStrings(final Iterator<IToken> iterator) {
+	private static TokenList aggregateStrings(final Iterable<IToken> iterable) {
 		final TokenList toret = new TokenList();
+		Iterator<IToken> iterator=iterable.iterator();
 		while (iterator.hasNext()) {
 			IToken token = iterator.next();
 			if (token instanceof TokenList)
-				token = aggregateStrings(((AbstractTokenList) token).iterator());
+				token = aggregateStrings((AbstractTokenList) token);
 			if (token instanceof CharToken) {
 				final CharList charList = new CharList();
 				while (token instanceof CharToken) {
@@ -135,7 +134,7 @@ public final class Parser {
 				}
 				toret.addRange(charList.aggregate());
 				if (token instanceof TokenList)
-					token = aggregateStrings(((AbstractTokenList) token).iterator());
+					token = aggregateStrings((AbstractTokenList) token);
 			}
 			toret.add(token);
 		}
@@ -161,9 +160,10 @@ public final class Parser {
 		return toret;
 	}
 
-	private static ITokenList aggregateNumbers(final Iterator<IToken> iterator, final boolean exact)
+	private static ITokenList aggregateNumbers(final Iterable<IToken> iterable, final boolean exact)
 			throws ParserException {
 		final ITokenList root = new TokenList();
+		Iterator<IToken> iterator=iterable.iterator();
 		while (iterator.hasNext()) {
 			IToken curr = iterator.next();
 			char currChar = curr.toString().charAt(0);

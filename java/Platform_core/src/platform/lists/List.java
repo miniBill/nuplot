@@ -69,7 +69,7 @@ public class List<T> implements Iterable<T> {
 		if (!(obj instanceof List<?>))
 			return false;
 		final List<T> other = (List<T>) obj;
-		return IIterable.checkContains(this, other) && IIterable.checkContains(other, this);
+		return IterableExtensions.checkContains(this, other) && IterableExtensions.checkContains(other, this);
 	}
 
 	public T pop()

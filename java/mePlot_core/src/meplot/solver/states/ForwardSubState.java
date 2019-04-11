@@ -14,7 +14,7 @@ import meplot.expressions.tree.ExpressionTreeIterator;
 import meplot.solver.AbstractSolver;
 import meplot.solver.ISolver;
 import meplot.solver.SolveException;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -39,7 +39,7 @@ class ForwardSubState extends SystemSolverState {
 		if (firstVar == '?')
 			firstVar = AbstractSolver.getFirstVar(getLeaf().getValue());
 		ExpressionTree leaf = getLeaf();
-		if (index >= IIterable.length(getLeaf().getValue())) {
+		if (index >= IterableExtensions.length(getLeaf().getValue())) {
 			final IExpressionIterable equations = removeNullAndZero(getLeaf().getValue());
 			leaf = leaf.addChild(equations);
 			// TODO: leaf is incorrect
@@ -49,7 +49,7 @@ class ForwardSubState extends SystemSolverState {
 			return;
 		}
         Iterable<Expression> expressions = getLeaf().getValue();
-        final Expression[] equations = IIterable.toArray(Expression.class, expressions);
+        final Expression[] equations = IterableExtensions.toArray(Expression.class, expressions);
 		final Expression curr = equations[index];
 		if (curr == null) {
 			Log.log(LogLevel.DEBUG, "Null equation");
@@ -87,14 +87,14 @@ class ForwardSubState extends SystemSolverState {
 		final IExpressionList current = new ExpressionList();
 		final Iterable<Expression> stepValue = steps.getValue();
 		int newlength = 0;
-		for (int i = 0; i < IIterable.length(value); i++)
+		for (int i = 0; i < IterableExtensions.length(value); i++)
 			if (i < startindex || i > endindex)
 				current.add(iterator.next());
 			else {
 				iterator.next(); // Ignores it
 				if (i == startindex) {
 					Iterator<Expression> toAdd = stepValue.iterator();
-					newlength = IIterable.length(stepValue);
+					newlength = IterableExtensions.length(stepValue);
 					current.addRange(toAdd);
 				}
 			}
@@ -111,7 +111,7 @@ class ForwardSubState extends SystemSolverState {
 			ExpressionTree leaf = iterator.next();
 
             Iterable<Expression> expressions = leaf.getValue();
-            final Expression[] equations = IIterable.toArray(Expression.class, expressions);
+            final Expression[] equations = IterableExtensions.toArray(Expression.class, expressions);
 			if (index >= equations.length)
 				continue;
 			final Expression boo = equations[index];

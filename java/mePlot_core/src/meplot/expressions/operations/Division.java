@@ -13,7 +13,7 @@ import meplot.expressions.numbers.*;
 import meplot.expressions.other.Poly;
 import meplot.expressions.visitors.IExpressionVisitor;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 import platform.log.Log;
 
 import java.util.Iterator;
@@ -191,16 +191,16 @@ public final class Division extends AbstractExpression implements IDivision {
 		}
 
 		final Expression nnum;
-		if (IIterable.length(numerator) == 1)
-			nnum = IIterable.getFirst(numerator);
+		if (IterableExtensions.length(numerator) == 1)
+			nnum = IterableExtensions.getFirst(numerator);
 		else if (numerator instanceof Expression)
 			nnum = (Expression) numerator;
 		else
 			throw new CalcException("Awfully wrong numerator in Division#crossSimplify");
 
 		final Expression nden;
-		if (IIterable.length(denominator) == 1)
-			nden = IIterable.getFirst(denominator);
+		if (IterableExtensions.length(denominator) == 1)
+			nden = IterableExtensions.getFirst(denominator);
 		else if (denominator instanceof Expression)
 			nden = (Expression) denominator;
 		else

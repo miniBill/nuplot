@@ -8,7 +8,7 @@ import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Multiplication;
 import meplot.expressions.visitors.IExpressionMonicFunctionVisitor;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 
 public final class Sin extends NonsymbolicMonicFunction {
 	public Sin(final Expression expression) {
@@ -36,7 +36,7 @@ public final class Sin extends NonsymbolicMonicFunction {
 			return Int.ZERO;
 		if (val instanceof Multiplication) {
 			final Multiplication mval = (Multiplication) val;
-			if (IIterable.contains(mval, Int.MINUSONE))
+			if (IterableExtensions.contains(mval, Int.MINUSONE))
 				return fill(val.opposite()).opposite();
 		}
 		if (val instanceof Letter && ((Letter) val).getLetter() == 'p')

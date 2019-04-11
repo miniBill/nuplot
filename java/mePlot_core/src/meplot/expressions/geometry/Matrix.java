@@ -12,7 +12,7 @@ import meplot.expressions.operations.Operation;
 import meplot.expressions.visitors.IExpressionTensorVisitor;
 import meplot.expressions.visitors.derivative.DerivativeHelper;
 import org.jetbrains.annotations.NotNull;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -46,7 +46,7 @@ public class Matrix extends Tensor implements Iterable<Expression> {
 		if (!(exprList.getFirst() instanceof Matrix))
 			return;
 		final Matrix firstRow = (Matrix) exprList.getFirst();
-		vals = new Expression[IIterable.length(exprList)][firstRow.vals[0].length];
+		vals = new Expression[IterableExtensions.length(exprList)][firstRow.vals[0].length];
 		final Iterator<Expression> iterator = exprList.iterator();
 		Matrix mat = (Matrix) iterator.next();
 		for (int y = 0; y < getRows(); y++) {
@@ -141,7 +141,7 @@ public class Matrix extends Tensor implements Iterable<Expression> {
 	}
 
 	private void fillByList(final Iterable<Expression> iterable) {
-		vals = new Expression[1][IIterable.length(iterable)];
+		vals = new Expression[1][IterableExtensions.length(iterable)];
 		int c = 0;
 		for (Expression expression : iterable)
 			vals[0][c++] = expression;

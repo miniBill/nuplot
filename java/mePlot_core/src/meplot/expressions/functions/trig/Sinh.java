@@ -10,7 +10,7 @@ import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Multiplication;
 import meplot.expressions.visitors.IExpressionMonicFunctionVisitor;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 
 public final class Sinh extends NonsymbolicMonicFunction {
 	public Sinh(final Expression expression) {
@@ -38,7 +38,7 @@ public final class Sinh extends NonsymbolicMonicFunction {
 			return Int.ZERO;
 		if (val instanceof Multiplication) {
 			final Multiplication mval = (Multiplication) val;
-			if (IIterable.contains(mval, Letter.I))
+			if (IterableExtensions.contains(mval, Letter.I))
 				return new Sin(val.divide(Letter.I)).multiply(Letter.I);
 		}
 		final ICalculable left = new Exp(val);

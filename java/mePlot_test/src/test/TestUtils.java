@@ -10,7 +10,7 @@ import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.other.PolynomialMath;
@@ -122,7 +122,7 @@ public abstract class TestUtils {
 		final String simplifiedClean = simplified.toCleanString();
 
 		final Iterable<Expression> step = SimplificationHelper.stepSimplify(input);
-		final String stepClean = IIterable.getLast(step).toCleanString();
+		final String stepClean = IterableExtensions.getLast(step).toCleanString();
 
 		final Expression expectedParsed = parseOrFail(expected);
 		final IOutputtable expectedSimplified = SimplificationHelper.simplify(expectedParsed);
@@ -225,7 +225,7 @@ public abstract class TestUtils {
 		final Object candidate = parseOrFail(string);
 		if (candidate instanceof Matrix)
 			return (Matrix) candidate;
-		fail(string + " did not parse to Matrix");
+		fail(string + " did not parse to Matrix but to " + candidate);
 		return null;
 	}
 }

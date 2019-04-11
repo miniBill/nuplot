@@ -15,7 +15,7 @@ import meplot.expressions.operations.Multiplication;
 import meplot.expressions.operations.Power;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -197,8 +197,8 @@ public final class Poly extends Sum {
 		Poly temp = this;
 		Poly toret = new Poly(Int.ZERO, var);
 		final int divdeg = arg.getDegree();
-		if (divdeg == 0 && IIterable.length(arg) == 1) {
-			final Expression single = IIterable.getFirst(arg);
+		if (divdeg == 0 && IterableExtensions.length(arg) == 1) {
+			final Expression single = IterableExtensions.getFirst(arg);
 			if (single instanceof INumber) {
 				final IExpressionList results = new ExpressionList();
 				for (Expression expression : this)

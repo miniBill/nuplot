@@ -7,7 +7,7 @@ import meplot.expressions.operations.BooleanOp;
 import meplot.expressions.operations.Operation;
 import meplot.expressions.tree.ExpressionTree;
 import meplot.solver.ISolver;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 
 class BackwardSubState extends SystemSolverState {
 	private final int index;
@@ -17,7 +17,7 @@ class BackwardSubState extends SystemSolverState {
 		if (leaf == null)
 			index = -1;
 		else
-            index = IIterable.length(leaf.getValue()) - 1;
+            index = IterableExtensions.length(leaf.getValue()) - 1;
 	}
 
 	private BackwardSubState(final ExpressionTree leaf, final int index, final ISolver solver) {
@@ -31,7 +31,7 @@ class BackwardSubState extends SystemSolverState {
 			return;
 		}
         Iterable<Expression> expressions = getLeaf().getValue();
-        final Expression[] equations = IIterable.toArray(Expression.class, expressions);
+        final Expression[] equations = IterableExtensions.toArray(Expression.class, expressions);
 		if (index >= equations.length) {
 			QUEUE.add(new BackwardSubState(getLeaf(), equations.length - 1, getSolver()));
 			return;

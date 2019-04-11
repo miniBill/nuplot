@@ -3,7 +3,7 @@ package meplot.expressions.list;
 import meplot.expressions.Expression;
 import meplot.parser.utils.Cleaner;
 import org.jetbrains.annotations.NotNull;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 import platform.lists.ToStringList;
 
 import java.util.Iterator;
@@ -91,7 +91,7 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 	public IExpressionList fold() {
 		final IExpressionList toret = new ExpressionList();
 		for (Expression current : this) {
-            if (!IIterable.contains(toret, current))
+            if (!IterableExtensions.contains(toret, current))
 				toret.add(current);
 		}
 		return toret;

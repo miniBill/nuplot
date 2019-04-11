@@ -13,16 +13,16 @@ public final class OperationActivator {
 	private OperationActivator() {
 	}
 
-	public static TokenIterator activateOperations(final TokenIterator iterator) throws ParserException {
-		final ITokenList ttl = activateOperation(iterator, Operation.POWER);
-		TokenIterator it2 = ttl.titerator();
+	public static Iterator<IToken> activateOperations(final Iterable<IToken> iterable) throws ParserException {
+		final ITokenList ttl = activateOperation(iterable.iterator(), Operation.POWER);
+		ITokenList it2 = ttl;
 		for (int op = 0; op < Operation.OPERATIONS.length; op++)
 			if (Operation.OPERATIONS[op] != Operation.POWER) {
-				final ITokenList tokenList = activateOperation(it2, Operation.OPERATIONS[op]);
+				final ITokenList tokenList = activateOperation(it2.iterator(), Operation.OPERATIONS[op]);
 				Log.log(LogLevel.PARSER, "After activating " + Operation.OPERATIONS[op] + ':', tokenList.toString());
-				it2 = tokenList.titerator();
+				it2 = tokenList;
 			}
-		return it2;
+		return it2.titerator();
 	}
 
 	private static ITokenList activateOperation(final Iterator<IToken> iterator, final char operation)

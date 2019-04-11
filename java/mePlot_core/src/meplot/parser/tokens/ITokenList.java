@@ -2,7 +2,6 @@ package meplot.parser.tokens;
 
 import meplot.expressions.Expression;
 import meplot.parser.ParserException;
-import platform.lists.IIterable;
 
 public interface ITokenList extends Iterable<IToken>, IToken {
 	void add(final IToken token);

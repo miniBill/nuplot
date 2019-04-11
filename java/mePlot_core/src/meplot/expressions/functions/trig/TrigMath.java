@@ -12,15 +12,17 @@ import meplot.expressions.operations.OperationsMath;
 public final class TrigMath{
 	private static final double ATANCOEFF = Math.PI / 4d;
 
-	public static double asin(final double coeff){
-		if(coeff < -1 || coeff > 1)
+	public static double asin(final double coeff) {
+		if (coeff < -1 || coeff > 1)
 			return Double.NaN;
 		final double xs = coeff * coeff;
 		final double xq = xs * xs;
-		if(coeff < -0.8)
-			return 622.273 + 8108.04 * xs + 5309.75 * xq + coeff * (3550.56 + 9272.39 * xs + 1218.58 * xq);
-		if(coeff > 0.8)
-			return -622.273 - 8108.04 * xs - 5309.75 * xq + coeff * (3550.56 + 9272.39 * xs + 1218.58 * xq);
+		double left = 622.273 + 8108.04 * xs + 5309.75 * xq;
+		double right = coeff * (3550.56 + 9272.39 * xs + 1218.58 * xq);
+		if (coeff < -0.8)
+			return right + left;
+		if (coeff > 0.8)
+			return right - left;
 		return coeff * (1.0 + xs / 6.0 + 3.0 / 40.0 * xq);
 	}
 

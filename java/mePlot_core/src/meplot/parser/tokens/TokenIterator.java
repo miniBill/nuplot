@@ -2,7 +2,7 @@ package meplot.parser.tokens;
 
 import meplot.expressions.Expression;
 import meplot.parser.ParserException;
-import platform.lists.IIterable;
+import platform.lists.IterableExtensions;
 import platform.lists.Myterator;
 
 import java.util.Iterator;
@@ -17,7 +17,7 @@ public final class TokenIterator extends Myterator<IToken> {
 
 	@Override
 	public boolean hasNext() {
-		return index < IIterable.length(inner);
+		return index < IterableExtensions.length(inner);
 	}
 
 	public IToken next() {
