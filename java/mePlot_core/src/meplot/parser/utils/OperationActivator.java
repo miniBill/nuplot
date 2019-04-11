@@ -14,12 +14,11 @@ public final class OperationActivator {
 	}
 
 	public static Iterator<IToken> activateOperations(final Iterable<IToken> iterable) throws ParserException {
-		final ITokenList ttl = activateOperation(iterable.iterator(), Operation.POWER);
-		ITokenList it2 = ttl;
-		for (int op = 0; op < Operation.OPERATIONS.length; op++)
-			if (Operation.OPERATIONS[op] != Operation.POWER) {
-				final ITokenList tokenList = activateOperation(it2.iterator(), Operation.OPERATIONS[op]);
-				Log.log(LogLevel.PARSER, "After activating " + Operation.OPERATIONS[op] + ':', tokenList.toString());
+		ITokenList it2 = activateOperation(iterable.iterator(), Operation.POWER);
+		for (char operation : Operation.OPERATIONS)
+			if (operation != Operation.POWER) {
+				final ITokenList tokenList = activateOperation(it2.iterator(), operation);
+				Log.log(LogLevel.PARSER, "After activating " + operation + ':', tokenList.toString());
 				it2 = tokenList;
 			}
 		return it2.titerator();
