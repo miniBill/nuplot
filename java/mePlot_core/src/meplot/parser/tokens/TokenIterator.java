@@ -32,7 +32,7 @@ public final class TokenIterator extends Myterator<IToken> {
 		return inner.elementAt(index);
 	}
 
-	protected Iterable<IToken> getInner() {
+	public ITokenList getInner() {
 		return inner;
 	}
 

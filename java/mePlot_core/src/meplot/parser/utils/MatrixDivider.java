@@ -10,6 +10,8 @@ import meplot.parser.tokens.MatrixTokenList;
 import meplot.parser.tokens.TokenIterator;
 import meplot.parser.tokens.TokenList;
 
+import java.util.Iterator;
+
 public final class MatrixDivider {
 	private static final String CLOSED_PAR = "}";
 	private static final String OPEN_PAR = "{";
@@ -65,16 +67,15 @@ public final class MatrixDivider {
 		return toret;
 	}
 
-	private static MatrixTokenList processRow(final TokenIterator iterator) {
+	private static MatrixTokenList processRow(final Iterator<IToken> iterator) {
 		final MatrixTokenList toret = new MatrixTokenList();
 		TokenList temp = new TokenList();
 		while (iterator.hasNext()) {
-			if (iterator.peek().toString().equals(CLOSED_PAR)) {
+			IToken curr=iterator.next();
+			if (curr.toString().equals(CLOSED_PAR)) {
 				toret.add(temp);
-				iterator.next(); // discard }
 				return toret;
 			}
-			final IToken curr = iterator.next();
 			if (",".equals(curr.toString())) {
 				toret.add(temp);
 				temp = new TokenList();

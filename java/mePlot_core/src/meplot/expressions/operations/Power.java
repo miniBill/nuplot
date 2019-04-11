@@ -17,6 +17,7 @@ import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.*;
 import meplot.expressions.visitors.IExpressionVisitor;
+import org.jetbrains.annotations.Nullable;
 import platform.lists.IterableExtensions;
 
 import java.util.Iterator;
@@ -167,21 +168,17 @@ public final class Power extends AbstractExpression implements IPower {
 	private static boolean isSortOfNumber(final Expression expr) {
 		if (expr instanceof INumber)
 			return true;
-		Iterator<Expression> inner = null;
-		if (expr instanceof Sum) {
-			final Sum sexpr = (Sum) expr;
-			inner = sexpr.iterator();
-		}
-		if (expr instanceof Multiplication) {
-			final Multiplication mexpr = (Multiplication) expr;
-			inner = mexpr.iterator();
-		}
 		if (expr instanceof Sqrt)
 			return isSortOfNumber(((Sqrt) expr).getArgument());
-		if (inner == null)
+		Iterable<Expression> iterable;
+		if (expr instanceof Sum)
+			iterable = (Sum) expr;
+		else if (expr instanceof Multiplication) {
+			iterable = (Multiplication) expr;
+		} else
 			return false;
-		while (inner.hasNext())
-			if (!isSortOfNumber(inner.next()))
+		for (Expression expression : iterable)
+			if (!isSortOfNumber(expression))
 				return false;
 		return true;
 	}

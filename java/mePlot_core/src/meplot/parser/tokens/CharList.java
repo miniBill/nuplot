@@ -6,6 +6,8 @@ import meplot.expressions.list.IExpressionList;
 import meplot.expressions.operations.Multiplication;
 import meplot.parser.ParserException;
 
+import java.util.Iterator;
+
 public final class CharList extends AbstractTokenList {
 	/**
 	 * Creates an empty list.
@@ -39,16 +41,17 @@ public final class CharList extends AbstractTokenList {
 	}
 
 	public Expression toExpression(final int index) throws ParserException {
-		if (isSingle()) {
+		CharList list = this;
+		if (list.isSingle()) {
 			if (index == 0)
-				return getLast().toExpression();
+				return list.getLast().toExpression();
 			throw new ParserException("index out of bound in CharList.toExpression(I)",
 					new ArrayIndexOutOfBoundsException(index));
 		}
-		final IExpressionList list = new ExpressionList();
-		final TokenIterator iterator = titerator(index);
+		final IExpressionList result = new ExpressionList();
+		final Iterator<IToken> iterator = list.titerator(index);
 		while (iterator.hasNext())
-			list.add(iterator.next().toExpression());
-		return new Multiplication(list);
+			result.add(iterator.next().toExpression());
+		return new Multiplication(result);
 	}
 }

@@ -4,8 +4,6 @@ import meplot.expressions.Expression;
 import meplot.parser.ParserException;
 import platform.lists.ToStringList;
 
-import java.util.Iterator;
-
 public abstract class AbstractTokenList extends ToStringList<IToken> implements ITokenList {
 	public final Expression toExpression() throws ParserException {
 		return toExpression(0);
@@ -27,15 +25,15 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 
 	public final String toSString() {
 		final StringBuilder toret = new StringBuilder("{");
-		final Iterator<IToken> iterator = iterator();
-		while (iterator.hasNext()) {
-			final IToken curr = iterator.next();
+		boolean first=true;
+		for (IToken curr : this) {
+			if (!first)
+				toret.append(',');
+			first = false;
 			if (curr instanceof TokenList)
 				toret.append(curr.toCString());
 			else
 				toret.append(curr);
-			if (iterator.hasNext())
-				toret.append(',');
 		}
 		toret.append('}');
 		return toret.toString();
