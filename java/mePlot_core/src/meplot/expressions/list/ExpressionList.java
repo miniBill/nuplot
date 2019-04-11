@@ -4,7 +4,6 @@ import meplot.expressions.Expression;
 import meplot.parser.utils.Cleaner;
 import org.jetbrains.annotations.NotNull;
 import platform.lists.IIterable;
-import platform.lists.IIterator;
 import platform.lists.ToStringList;
 
 import java.util.Iterator;

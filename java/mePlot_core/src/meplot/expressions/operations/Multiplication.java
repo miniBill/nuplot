@@ -1,24 +1,17 @@
 package meplot.expressions.operations;
 
-import meplot.expressions.AbstractExpression;
-import meplot.expressions.Expression;
-import meplot.expressions.ICalculable;
-import meplot.expressions.IOutputtable;
-import meplot.expressions.ISimplifiable;
-import meplot.expressions.ISubstitutible;
-import meplot.expressions.Letter;
+import meplot.expressions.*;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.geometry.ITensor;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
-import platform.lists.IIterable;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.IInt;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.IExpressionVisitor;
+import platform.lists.IIterable;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -161,12 +154,9 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	private boolean isMinusOneOdd() {
 		boolean odd = false;
-		for (Expression curr : this) {
-			if (curr == null)
-				continue;
-			if (isMinusOne(curr))
+		for (Expression curr : this)
+			if (curr != null && isMinusOne(curr))
 				odd ^= true;
-		}
 		return odd;
 	}
 

@@ -3,7 +3,6 @@ package meplot.parser;
 import meplot.expressions.Expression;
 import meplot.parser.tokens.ITokenList;
 import meplot.parser.tokens.TokenList;
-import platform.lists.IIterator;
 
 import java.util.Iterator;
 

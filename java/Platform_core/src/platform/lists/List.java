@@ -18,7 +18,7 @@ public class List<T> implements Iterable<T> {
 		return new ListIterator<>(this);
 	}
 
-	public final IIterator<T> iterator(int index) {
+	public final Iterator<T> iterator(int index) {
 		return new ListIterator<>(this, index);
 	}
 

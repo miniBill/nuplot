@@ -3,9 +3,6 @@ package meplot.expressions.geometry;
 import meplot.expressions.Expression;
 import meplot.expressions.ICalculable;
 import meplot.expressions.exceptions.CalcException;
-import org.jetbrains.annotations.NotNull;
-import platform.lists.IIterable;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.Complex;
@@ -14,12 +11,14 @@ import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Operation;
 import meplot.expressions.visitors.IExpressionTensorVisitor;
 import meplot.expressions.visitors.derivative.DerivativeHelper;
+import org.jetbrains.annotations.NotNull;
+import platform.lists.IIterable;
 import platform.log.Log;
 import platform.log.LogLevel;
 
 import java.util.Iterator;
 
-public class Matrix extends Tensor {
+public class Matrix extends Tensor implements Iterable<Expression> {
 	private static final Matrix ZERO = new Matrix(Int.ZERO);
 	private Expression[][] vals;
 
@@ -175,7 +174,7 @@ public class Matrix extends Tensor {
 		return 0;
 	}
 
-	public final IIterator<Expression> getElements() {
+	public final Iterator<Expression> iterator() {
 		return new MatrixElementsIterator(this);
 	}
 

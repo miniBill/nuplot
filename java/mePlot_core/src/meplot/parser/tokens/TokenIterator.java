@@ -3,8 +3,9 @@ package meplot.parser.tokens;
 import meplot.expressions.Expression;
 import meplot.parser.ParserException;
 import platform.lists.IIterable;
-import platform.lists.IIterator;
 import platform.lists.Myterator;
+
+import java.util.Iterator;
 
 public final class TokenIterator extends Myterator<IToken> {
 	private final ITokenList inner;
@@ -36,7 +37,7 @@ public final class TokenIterator extends Myterator<IToken> {
 	}
 
 	@Override
-	public IIterator<IToken> iterator() {
+	public Iterator<IToken> iterator() {
 		return new TokenIterator(inner, index);
 	}
 

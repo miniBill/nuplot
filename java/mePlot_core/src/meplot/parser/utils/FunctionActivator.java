@@ -7,7 +7,6 @@ import meplot.parser.tokens.IToken;
 import meplot.parser.tokens.ITokenList;
 import meplot.parser.tokens.TokenList;
 import platform.lists.IIterable;
-import platform.lists.IIterator;
 
 import java.util.Iterator;
 
@@ -54,17 +53,17 @@ public final class FunctionActivator {
 				final ITokenList asList = (ITokenList) next;
 				final Iterator<IToken> inner = asList.iterator();
 				for (int i = 0; i < needs; i++)
-					args[i] = new TokenList(IIterator.until(inner, COMMA));
+					args[i] = new TokenList(IIterable.until(inner, COMMA));
 			} else {
 				final TokenList zero = new TokenList(next);
-				final IToken toadd = activateFunctionsToken(new TokenList(IIterator.until(iterator, COMMA)), iterator);
+				final IToken toadd = activateFunctionsToken(new TokenList(IIterable.until(iterator, COMMA)), iterator);
 				if (toadd instanceof AbstractTokenList)
 					zero.addRange((AbstractTokenList) toadd);
 				else
 					zero.add(toadd);
 				args[0] = zero;
 				for (int i = 1; i < needs - 1; i++)
-					args[i] = activateFunctionsToken(new TokenList(IIterator.until(iterator, COMMA)), iterator);
+					args[i] = activateFunctionsToken(new TokenList(IIterable.until(iterator, COMMA)), iterator);
 				if (!iterator.hasNext())
 					throw new ParserException();
 				args[needs - 1] = activateFunctionsToken(iterator.next(), iterator);
@@ -76,21 +75,21 @@ public final class FunctionActivator {
 			final ITokenList asList = (ITokenList) next;
 			final Iterator<IToken> inner = asList.iterator();
 			while (true) {
-				final ITokenList arg = new TokenList(IIterator.until(inner, COMMA));
+				final ITokenList arg = new TokenList(IIterable.until(inner, COMMA));
 				if (IIterable.isEmpty(arg))
 					break;
 				args.add(arg);
 			}
 		} else {
 			final TokenList zero = new TokenList(next);
-			final IToken toadd = activateFunctionsToken(new TokenList(IIterator.until(iterator, COMMA)), iterator);
+			final IToken toadd = activateFunctionsToken(new TokenList(IIterable.until(iterator, COMMA)), iterator);
 			if (toadd instanceof ITokenList)
 				zero.addRange((ITokenList) toadd);
 			else
 				zero.add(toadd);
 			args.add(zero);
 			while (true) {
-				final ITokenList arg = new TokenList(IIterator.until(iterator, COMMA));
+				final ITokenList arg = new TokenList(IIterable.until(iterator, COMMA));
 				if (IIterable.isEmpty(arg))
 					break;
 				args.add(activateFunctionsToken(arg, iterator));

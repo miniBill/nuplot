@@ -7,20 +7,13 @@ import meplot.expressions.functions.IFunctor;
 import meplot.expressions.functions.exp.Ln;
 import meplot.expressions.functions.piecewise.IPower;
 import meplot.expressions.geometry.ITensor;
-import platform.lists.IIterable;
-import platform.lists.IIterator;
 import meplot.expressions.numbers.Int;
-import meplot.expressions.operations.BooleanOp;
-import meplot.expressions.operations.IDivision;
-import meplot.expressions.operations.IMultiplication;
-import meplot.expressions.operations.Lambda;
-import meplot.expressions.operations.Multiplication;
-import meplot.expressions.operations.Power;
-import meplot.expressions.operations.Sum;
+import meplot.expressions.operations.*;
 import meplot.expressions.other.Proxy;
 import meplot.expressions.visitors.IExpressionFunctorVisitor;
 import meplot.expressions.visitors.IExpressionTensorVisitor;
 import meplot.expressions.visitors.IExpressionVisitor;
+import platform.lists.IIterable;
 
 import java.util.Iterator;
 

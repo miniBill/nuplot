@@ -1,5 +1,7 @@
 package platform.lists;
 
+import java.util.Iterator;
+
 public final class ListIterator<T> extends Myterator<T> {
     final List<T> inner;
 
@@ -28,7 +30,7 @@ public final class ListIterator<T> extends Myterator<T> {
     }
 
     @Override
-    public IIterator<T> iterator() {
+    public Iterator<T> iterator() {
         return new ListIterator<>(inner, index);
     }
 

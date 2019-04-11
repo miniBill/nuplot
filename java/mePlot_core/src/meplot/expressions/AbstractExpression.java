@@ -7,13 +7,8 @@ import meplot.expressions.numbers.Dou;
 import meplot.expressions.numbers.IDou;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
-import meplot.expressions.operations.Division;
-import meplot.expressions.operations.Multiplication;
-import meplot.expressions.operations.Operation;
-import meplot.expressions.operations.Power;
-import meplot.expressions.operations.Sum;
+import meplot.expressions.operations.*;
 import meplot.parser.utils.Cleaner;
-import platform.lists.IIterator;
 
 import java.util.Iterator;
 

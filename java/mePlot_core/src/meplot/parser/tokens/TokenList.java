@@ -6,8 +6,6 @@ import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Multiplication;
 import meplot.parser.ParserException;
-import platform.lists.IIterable;
-import platform.lists.IIterator;
 
 import java.util.Iterator;
 

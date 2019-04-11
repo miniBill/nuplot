@@ -7,7 +7,8 @@ import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
 import meplot.parser.Parser;
 import meplot.parser.ParserException;
-import platform.lists.IIterator;
+
+import java.util.Iterator;
 
 public final class MatrixTokenList extends TokenList {
 	public Expression toExpression(final int index) throws ParserException {
@@ -32,8 +33,8 @@ public final class MatrixTokenList extends TokenList {
 					new ArrayIndexOutOfBoundsException(index));
 		}
 		final IExpressionList list = new ExpressionList();
-		final IIterator<IToken> iterator = iterator(index);
 		boolean vector = false;
+		final Iterator<IToken> iterator = iterator(index);
 		while (iterator.hasNext()) {
 			final IToken curr = iterator.next();
 			if (curr instanceof MatrixTokenList)

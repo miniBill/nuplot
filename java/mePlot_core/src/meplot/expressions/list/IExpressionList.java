@@ -1,7 +1,6 @@
 package meplot.expressions.list;
 
 import meplot.expressions.Expression;
-import platform.lists.IIterator;
 
 import java.util.Iterator;
 

@@ -6,8 +6,6 @@ import meplot.expressions.Letter;
 import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.IExpressionIterable;
-import platform.lists.IIterable;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.operations.BooleanOp;
 import meplot.expressions.operations.Operation;
@@ -16,6 +14,7 @@ import meplot.expressions.tree.ExpressionTreeIterator;
 import meplot.solver.AbstractSolver;
 import meplot.solver.ISolver;
 import meplot.solver.SolveException;
+import platform.lists.IIterable;
 import platform.log.Log;
 import platform.log.LogLevel;
 

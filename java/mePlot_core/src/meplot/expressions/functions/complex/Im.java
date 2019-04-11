@@ -3,7 +3,6 @@ package meplot.expressions.functions.complex;
 import meplot.expressions.Expression;
 import meplot.expressions.ICalculable;
 import meplot.expressions.functions.IFunction;
-import platform.lists.IIterator;
 import meplot.expressions.numbers.IComplex;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.IReal;

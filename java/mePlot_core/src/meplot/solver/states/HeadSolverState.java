@@ -9,7 +9,8 @@ import meplot.expressions.operations.BooleanOp;
 import meplot.expressions.operations.Operation;
 import meplot.expressions.tree.ExpressionTree;
 import meplot.solver.ISolver;
-import platform.lists.IIterator;
+
+import java.util.Iterator;
 
 public class HeadSolverState extends SystemSolverState {
 	public HeadSolverState(final ExpressionTree tree, final ISolver solver) {
@@ -40,14 +41,11 @@ public class HeadSolverState extends SystemSolverState {
 	}
 
 	private static void addMatrix(final IExpressionList list, final Matrix m) {
-		final IIterator<Expression> elements = m.getElements();
-		while (elements.hasNext()) {
-			final Expression curr = elements.next();
+		for (Expression curr : m)
 			if (curr instanceof BooleanOp)
 				list.add(curr);
 			else
 				list.add(new BooleanOp(curr, Operation.EQUALS, Int.ZERO));
-		}
 	}
 
 	public ISystemSolverState fill(final ExpressionTree child) {

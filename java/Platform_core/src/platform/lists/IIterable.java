@@ -77,4 +77,15 @@ public final class IIterable {
         }
         throw new NotImplementedException();
     }
+
+    public static <T> List<T> until(Iterator<T> iterator, String string) {
+        final List<T> toret = new List<>();
+        while (iterator.hasNext()) {
+            final T curr = iterator.next();
+            if (curr.toString().equals(string))
+                break;
+            toret.add(curr);
+        }
+        return toret;
+    }
 }

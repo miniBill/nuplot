@@ -1,6 +1,8 @@
 package platform.lists;
 
-public abstract class Myterator<T> implements IIterator<T> {
+import java.util.Iterator;
+
+public abstract class Myterator<T> implements Iterator<T>, Iterable<T>{
 	protected int start;
 	protected int index;
 
@@ -16,14 +18,6 @@ public abstract class Myterator<T> implements IIterator<T> {
 
 	public final boolean isSecond() {
 		return index == start + 1;
-	}
-
-	private int cached_length = -1;
-
-	public final int length() {
-		if (cached_length == -1)
-			cached_length = IIterable.length(getInner());
-		return cached_length - index;
 	}
 
 	public final String toString() {

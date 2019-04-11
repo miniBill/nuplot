@@ -8,8 +8,6 @@ import meplot.expressions.functions.exp.Sqrt;
 import meplot.expressions.functions.piecewise.Abs;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
-import platform.lists.IIterable;
-import platform.lists.IIterator;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Fraction;
 import meplot.expressions.numbers.IInt;
@@ -23,6 +21,7 @@ import meplot.expressions.tree.ExpressionTree;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import meplot.solver.states.HeadSolverState;
 import meplot.solver.states.ISystemSolverState;
+import platform.lists.IIterable;
 import platform.lists.List;
 
 import java.lang.reflect.Array;
@@ -198,10 +197,9 @@ public abstract class AbstractSolver implements ISolver {
 				}
 			}
 			if (left instanceof Matrix) {
-				final IIterator<Expression> elements = ((Matrix) left).getElements();
 				final IExpressionList list = new ExpressionList();
-				while (elements.hasNext())
-					list.add(new BooleanOp(elements.next(), Operation.EQUALS, Int.ZERO));
+				for (Expression expression : (Matrix) left)
+					list.add(new BooleanOp(expression, Operation.EQUALS, Int.ZERO));
 				toret.addChild(list);
 				return;
 			}

@@ -5,7 +5,6 @@ import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.operations.BooleanOp;
 import platform.lists.IIterable;
-import platform.lists.IIterator;
 
 import java.util.Iterator;
 
@@ -196,7 +195,7 @@ public final class ExpressionTree {
 		if (IIterable.isSingle(value) && IIterable.getFirst(value) instanceof Matrix) {
 			Matrix mat = (Matrix) IIterable.getFirst(value);
 			if (mat.getRows() * mat.getCols() > 0 && mat.get(0, 0) instanceof BooleanOp) {
-				appendTable(buffer, mat.getElements());
+				appendTable(buffer, mat.iterator());
 				return;
 			}
 		}
