@@ -11,30 +11,26 @@ import meplot.parser.ParserException;
 import java.util.Iterator;
 
 public final class MatrixTokenList extends TokenList {
-	public Expression toExpression(final int index) throws ParserException {
+	public Expression toExpression() throws ParserException {
 		if (isEmpty())
 			return Int.ONE;
 		if (isSingle()) {
-			if (index == 0) {
-				final IToken singles = getLast();
+			final IToken singles = getLast();
 
-				if (singles instanceof MatrixTokenList)
-					return Parser.parse(singles.toSString());
-				final String toParse;
-				if (singles instanceof AbstractTokenList)
-					toParse = singles.toCString();
-				else
-					toParse = singles.toString();
-				if (toParse.length() > 0)
-					return new Matrix(Parser.parse(toParse));
-				return new Matrix(new Expression[0]);
-			}
-			throw new ParserException("index out of bound in MatrixTokenList.toExpression(I)",
-					new ArrayIndexOutOfBoundsException(index));
+			if (singles instanceof MatrixTokenList)
+				return Parser.parse(singles.toSString());
+			final String toParse;
+			if (singles instanceof AbstractTokenList)
+				toParse = singles.toCString();
+			else
+				toParse = singles.toString();
+			if (toParse.length() > 0)
+				return new Matrix(Parser.parse(toParse));
+			return new Matrix(new Expression[0]);
 		}
 		final IExpressionList list = new ExpressionList();
 		boolean vector = false;
-		final Iterator<IToken> iterator = iterator(index);
+		final Iterator<IToken> iterator = iterator(0);
 		while (iterator.hasNext()) {
 			final IToken curr = iterator.next();
 			if (curr instanceof MatrixTokenList)
@@ -50,4 +46,5 @@ public final class MatrixTokenList extends TokenList {
 		}
 		return new Matrix(list, vector);
 	}
+
 }

@@ -1,12 +1,5 @@
 package meplot.parser.tokens;
 
-import meplot.expressions.Expression;
-import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
-import meplot.expressions.numbers.Int;
-import meplot.expressions.operations.Multiplication;
-import meplot.parser.ParserException;
-
 import java.util.Iterator;
 
 public class TokenList extends AbstractTokenList {
@@ -48,21 +41,5 @@ public class TokenList extends AbstractTokenList {
 		for (int i = 0; i < toret.length; i++)
 			toret[i] = elementAt(i);
 		return toret;
-	}
-
-	public Expression toExpression(final int index) throws ParserException {
-		if (isEmpty())
-			return Int.ONE;
-		if (isSingle()) {
-			if (index == 0)
-				return getLast().toExpression();
-			throw new ParserException("index out of bound in TokenList.toExpression(I)",
-					new ArrayIndexOutOfBoundsException(index));
-		}
-		final IExpressionList toret = new ExpressionList();
-		final TokenIterator iterator = titerator(index);
-		while (iterator.hasNext())
-			toret.add(iterator.next().toExpression());
-		return new Multiplication(toret);
 	}
 }

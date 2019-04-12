@@ -1,12 +1,23 @@
 package meplot.parser.tokens;
 
 import meplot.expressions.Expression;
+import meplot.expressions.list.ExpressionList;
+import meplot.expressions.list.IExpressionList;
+import meplot.expressions.numbers.Int;
+import meplot.expressions.operations.Multiplication;
 import meplot.parser.ParserException;
 import platform.lists.ToStringList;
 
 public abstract class AbstractTokenList extends ToStringList<IToken> implements ITokenList {
-	public final Expression toExpression() throws ParserException {
-		return toExpression(0);
+	public Expression toExpression() throws ParserException {
+		if (isEmpty())
+			return Int.ONE;
+		if (isSingle())
+			return getLast().toExpression();
+		final IExpressionList result = new ExpressionList();
+		for (IToken iToken : this)
+			result.add(iToken.toExpression());
+		return new Multiplication(result);
 	}
 
 	public final TokenIterator titerator() {
@@ -43,7 +54,4 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 		for (IToken iToken : this)
 			toret.append(iToken);
 	}
-
-	// Needed for broken real implementations.
-	public abstract Expression toExpression(final int index) throws ParserException;
 }

@@ -1,13 +1,5 @@
 package meplot.parser.tokens;
 
-import meplot.expressions.Expression;
-import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
-import meplot.expressions.operations.Multiplication;
-import meplot.parser.ParserException;
-
-import java.util.Iterator;
-
 public final class CharList extends AbstractTokenList {
 	/**
 	 * Creates an empty list.
@@ -38,20 +30,5 @@ public final class CharList extends AbstractTokenList {
 	public ITokenList aggregate() {
 		final String small = toSmallString();
 		return FunctionToken.parse(small);
-	}
-
-	public Expression toExpression(final int index) throws ParserException {
-		CharList list = this;
-		if (list.isSingle()) {
-			if (index == 0)
-				return list.getLast().toExpression();
-			throw new ParserException("index out of bound in CharList.toExpression(I)",
-					new ArrayIndexOutOfBoundsException(index));
-		}
-		final IExpressionList result = new ExpressionList();
-		final Iterator<IToken> iterator = list.titerator(index);
-		while (iterator.hasNext())
-			result.add(iterator.next().toExpression());
-		return new Multiplication(result);
 	}
 }

@@ -76,7 +76,7 @@ public final class Parser {
 		// Log.log(LogLevel.PARSER, "After activateOperations:",
 		// iterator.toString());
 
-		Expression out = tokenList.toExpression(0);
+		Expression out = tokenList.toExpression();
 
 		if (out == null)
 			throw new ParserException();

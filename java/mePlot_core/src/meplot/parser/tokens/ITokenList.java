@@ -8,7 +8,7 @@ public interface ITokenList extends Iterable<IToken>, IToken {
 
 	TokenIterator titerator();
 
-	Expression toExpression(final int index) throws ParserException;
+	Expression toExpression() throws ParserException;
 
 	IToken elementAt(final int index);
 
