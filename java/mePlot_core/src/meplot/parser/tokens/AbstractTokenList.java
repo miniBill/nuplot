@@ -21,11 +21,7 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 	}
 
 	public final TokenIterator titerator() {
-		return titerator(0);
-	}
-
-	protected final TokenIterator titerator(final int index) {
-		return new TokenIterator(this, index);
+		return new TokenIterator(this, 0);
 	}
 
 	public final String toCString() {

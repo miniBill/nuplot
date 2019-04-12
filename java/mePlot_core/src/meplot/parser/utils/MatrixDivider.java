@@ -29,7 +29,7 @@ public final class MatrixDivider {
 			if (OPEN_PAR.equals(curr.toString())) {
 				if (!iterator.hasNext())
 					throw new ParserException("Error in matrix parse: wrong size!");
-				if (OPEN_PAR.equals(iterator.peek().toString())) {
+				if (OPEN_PAR.equals(IterableExtensions.clone(iterator).iterator().next().toString())) {
 					curr = processColumn(iterator);
 					try {
 						final Expression expr = curr.toExpression();

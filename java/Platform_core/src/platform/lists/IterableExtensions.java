@@ -75,6 +75,10 @@ public final class IterableExtensions {
         {
             return ((ListIterator)iterator).clone();
         }
+        if(iterator instanceof Myterator)
+        {
+            return ((Myterator)iterator).clone();
+        }
         throw new NotImplementedException();
     }
 
