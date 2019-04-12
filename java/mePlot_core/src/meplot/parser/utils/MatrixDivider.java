@@ -9,6 +9,7 @@ import meplot.parser.tokens.ITokenList;
 import meplot.parser.tokens.MatrixTokenList;
 import meplot.parser.tokens.TokenIterator;
 import meplot.parser.tokens.TokenList;
+import platform.lists.IterableExtensions;
 
 import java.util.Iterator;
 
@@ -70,8 +71,8 @@ public final class MatrixDivider {
 	private static MatrixTokenList processRow(final Iterator<IToken> iterator) {
 		final MatrixTokenList toret = new MatrixTokenList();
 		TokenList temp = new TokenList();
-		while (iterator.hasNext()) {
-			IToken curr=iterator.next();
+
+		for (IToken curr : IterableExtensions.wrap(iterator)) {
 			if (curr.toString().equals(CLOSED_PAR)) {
 				toret.add(temp);
 				return toret;
@@ -85,5 +86,4 @@ public final class MatrixDivider {
 		toret.add(temp);
 		return toret;
 	}
-
 }
