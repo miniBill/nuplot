@@ -80,12 +80,15 @@ public final class IterableExtensions {
 
     public static <T> List<T> until(Iterator<T> iterator, String string) {
         final List<T> toret = new List<>();
-        while (iterator.hasNext()) {
-            final T curr = iterator.next();
+        for (T curr : IterableExtensions.wrap(iterator))
             if (curr.toString().equals(string))
                 break;
-            toret.add(curr);
-        }
+            else
+                toret.add(curr);
         return toret;
+    }
+
+    public static <T> Iterable<T> wrap(Iterator<T> iterator) {
+        return () -> iterator;
     }
 }

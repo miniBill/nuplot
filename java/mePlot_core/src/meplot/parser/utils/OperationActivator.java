@@ -13,7 +13,7 @@ public final class OperationActivator {
 	private OperationActivator() {
 	}
 
-	public static Iterator<IToken> activateOperations(final Iterable<IToken> iterable) throws ParserException {
+	public static ITokenList activateOperations(final Iterable<IToken> iterable) throws ParserException {
 		ITokenList it2 = activateOperation(iterable.iterator(), Operation.POWER);
 		for (char operation : Operation.OPERATIONS)
 			if (operation != Operation.POWER) {
@@ -21,7 +21,7 @@ public final class OperationActivator {
 				Log.log(LogLevel.PARSER, "After activating " + operation + ':', tokenList.toString());
 				it2 = tokenList;
 			}
-		return it2.titerator();
+		return it2;
 	}
 
 	private static ITokenList activateOperation(final Iterator<IToken> iterator, final char operation)

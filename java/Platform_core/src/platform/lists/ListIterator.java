@@ -1,7 +1,5 @@
 package platform.lists;
 
-import java.util.Iterator;
-
 public final class ListIterator<T> extends Myterator<T> {
     final List<T> inner;
 
@@ -24,17 +22,8 @@ public final class ListIterator<T> extends Myterator<T> {
         return inner.elementAt(index++);
     }
 
-    @Override
-    protected Iterable<T> getInner() {
-        return inner;
-    }
-
-    @Override
-    public Iterator<T> iterator() {
-        return new ListIterator<>(inner, index);
-    }
-
-    public ListIterator<T> clone(){
-        return new ListIterator<>(inner, index);
+    public Iterable<T> clone() {
+        int currIndex = index;
+        return () -> new ListIterator<>(inner, currIndex);
     }
 }
