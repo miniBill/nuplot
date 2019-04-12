@@ -44,13 +44,11 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 		if (!IterableExtensions.getFirst(iiterable).toString().startsWith("-"))
 			return null;
 		Expression found = null;
-		for (Expression curr : iiterable) {
+		for (Expression curr : iiterable)
 			if (found != null || curr.toString().startsWith("-"))
 				rest.add(curr);
-			else {
+			else
 				found = curr;
-			}
-		}
 		if (found == null)
 			return null;
 		IExpressionList result = new ExpressionList(found);
@@ -73,10 +71,14 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 	private final IExpressionList addends = new ExpressionList();
 
 	public Sum(final Expression left) {
-		if (left instanceof Sum)
-			addends.addRange(((Sum) left).iterator());
+		addRange(left);
+	}
+
+	private void addRange(Expression expression) {
+		if (expression instanceof Sum)
+			addends.addRange(((Sum) expression).iterator());
 		else
-			addends.add(left);
+			addends.add(expression);
 	}
 
 	public Sum(final Expression left, final Expression right) {
