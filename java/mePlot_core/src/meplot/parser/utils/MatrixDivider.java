@@ -7,7 +7,6 @@ import meplot.parser.tokens.CharToken;
 import meplot.parser.tokens.IToken;
 import meplot.parser.tokens.ITokenList;
 import meplot.parser.tokens.MatrixTokenList;
-import meplot.parser.tokens.TokenIterator;
 import meplot.parser.tokens.TokenList;
 import platform.lists.IterableExtensions;
 

@@ -1,9 +1,9 @@
 package platform.lists;
 
 public final class ListIterator<T> extends Myterator<T> {
-    final List<T> inner;
+    final IList<T> inner;
 
-    public ListIterator(List<T> inner, int index) {
+    public ListIterator(IList<T> inner, int index) {
         super(index);
         this.inner = inner;
     }

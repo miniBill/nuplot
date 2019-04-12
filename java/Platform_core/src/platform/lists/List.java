@@ -3,7 +3,7 @@ package platform.lists;
 import java.util.Iterator;
 import java.util.Vector;
 
-public class List<T> implements Iterable<T> {
+public class List<T> implements IList<T> {
 	private final Vector<T> container = new Vector<>();
 
 	public List() {
