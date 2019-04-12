@@ -20,10 +20,6 @@ public final class TokenIterator extends Myterator<IToken> {
 		return inner.elementAt(index++);
 	}
 
-	public IToken peek() {
-		return inner.elementAt(index);
-	}
-
 	public Iterable<IToken> clone() {
 		int currIndex = index;
 		return () -> new TokenIterator(inner, currIndex);

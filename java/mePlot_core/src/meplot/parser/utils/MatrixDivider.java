@@ -22,7 +22,7 @@ public final class MatrixDivider {
 
 	public static Divided divideMatrices(final ITokenList root) throws ParserException {
 		final Divided toret = new Divided();
-		final TokenIterator iterator = root.titerator();
+		final Iterator<IToken> iterator = root.iterator();
 		char name = 'A';
 		while (iterator.hasNext()) {
 			IToken curr = iterator.next();
@@ -50,19 +50,16 @@ public final class MatrixDivider {
 		return toret;
 	}
 
-	private static MatrixTokenList processColumn(final TokenIterator iterator) {
+	private static MatrixTokenList processColumn(final Iterator<IToken> iterator) {
 		final MatrixTokenList toret = new MatrixTokenList();
 		while (iterator.hasNext()) {
 			iterator.next(); // skip "{"
 			final IToken curr = processRow(iterator);
 			toret.add(curr);
 			if (iterator.hasNext()) {
-				if (CLOSED_PAR.equals(iterator.peek().toString())) {
-					iterator.next(); // drop }
-					return toret;
-				}
-				if (iterator.hasNext())
-					iterator.next(); // jump comma
+				IToken curr2 = iterator.next(); // jump comma or }
+				if (CLOSED_PAR.equals(curr2.toString()))
+					break;
 			}
 		}
 		return toret;

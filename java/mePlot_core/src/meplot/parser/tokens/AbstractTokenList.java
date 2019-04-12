@@ -20,10 +20,6 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 		return new Multiplication(result);
 	}
 
-	public final TokenIterator titerator() {
-		return new TokenIterator(this, 0);
-	}
-
 	public final String toCString() {
 		final StringBuffer toret = new StringBuffer();
 		cString(toret);
