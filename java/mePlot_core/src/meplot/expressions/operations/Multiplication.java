@@ -84,15 +84,11 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public boolean toStringStartsWith(char prefix) {
-		final Iterator<Expression> iterator = iterator();
-		if (!iterator.hasNext())
-			return false;
 		if (IterableExtensions.isSingle(factors))
 			return factors.getFirst().toStringStartsWith(prefix);
 		if (isMinusOneOdd())
 			return prefix == '-';
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : this) {
 			if (!isMinusOne(curr)) {
 				if (curr instanceof Letter || curr instanceof IFunction || curr instanceof Power
 						|| curr instanceof Matrix)
@@ -122,8 +118,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		}
 		Expression last = null;
 		boolean hasAppended = false;
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : IterableExtensions.wrap(iterator)) {
 			if (curr == null) {
 				Log.log(LogLevel.ERROR, "WTHNULL in Multiplication.toString");
 				continue;
@@ -575,14 +570,12 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public void toHtml(final StringBuffer buffer) {
-		final Iterator<Expression> iterator = iterator();
-		if (!iterator.hasNext())
-			return;
 		if (IterableExtensions.isSingle(factors)) {
 			factors.getFirst().toHtml(buffer);
 			return;
 		}
 		if (isMinusOneOdd()) {
+			final Iterator<Expression> iterator = iterator();
 			buffer.append('-');
 			if (!iterator.hasNext()) {
 				buffer.append('1');
@@ -591,8 +584,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		}
 		Expression last = null;
 		boolean hasAppended = false;
-		while (iterator.hasNext()) {
-			final Expression curr = iterator.next();
+		for (Expression curr : this) {
 			if (curr == null) {
 				Log.log(LogLevel.ERROR, "WTHNULL in Multiplication.toString");
 				continue;
