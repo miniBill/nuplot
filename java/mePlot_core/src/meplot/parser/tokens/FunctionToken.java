@@ -20,6 +20,8 @@ import meplot.expressions.functions.piecewise.*;
 import meplot.expressions.functions.trig.*;
 import meplot.expressions.numbers.Int;
 import meplot.parser.ParserException;
+import platform.lists.IList;
+import platform.lists.IterableExtensions;
 import platform.lists.List;
 
 public final class FunctionToken extends Token {
@@ -178,8 +180,14 @@ public final class FunctionToken extends Token {
 		return -1;
 	}
 
+	@Deprecated
 	public Token fill(final IToken[] args) {
 		return new FunctionToken(val, args);
+	}
+
+	public Token fill(final IList<IToken> args)
+	{
+		return new FunctionToken(val, IterableExtensions.toArray(IToken.class, args));
 	}
 
 	public int needs() {

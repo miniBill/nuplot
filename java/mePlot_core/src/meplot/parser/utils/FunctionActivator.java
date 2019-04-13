@@ -99,7 +99,7 @@ public final class FunctionActivator {
 			if (iterator.hasNext())
 				args.add(activateFunctionsToken(iterator.next(), iterator));
 		}
-		return funTok.fill(args.toArray());
+		return funTok.fill(args);
 	}
 
 	@NotNull
