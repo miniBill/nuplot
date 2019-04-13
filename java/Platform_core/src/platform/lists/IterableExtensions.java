@@ -95,4 +95,11 @@ public final class IterableExtensions {
     public static <T> Iterable<T> wrap(Iterator<T> iterator) {
         return () -> iterator;
     }
+
+    public static <T> IList<T> toList(T[] input) {
+        List<T> result = new List<>();
+        for (T t : input)
+            result.add(t);
+        return result;
+    }
 }

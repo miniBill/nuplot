@@ -3,6 +3,8 @@ package meplot.parser.utils;
 import meplot.expressions.operations.Operation;
 import meplot.parser.ParserException;
 import meplot.parser.tokens.*;
+import platform.lists.IList;
+import platform.lists.IterableExtensions;
 import platform.lists.Myterator;
 import platform.log.Log;
 import platform.log.LogLevel;
@@ -99,10 +101,10 @@ public final class OperationActivator {
 			throws ParserException {
 		if (token.getValues() == null)
 			return token;
-		final IToken[] args = token.getValues();
-		final IToken[] newargs = new IToken[args.length];
-		for (int c = 0; c < args.length; c++)
-			newargs[c] = activateToken(args[c], operation);
+		final IList<IToken> args = IterableExtensions.toList(token.getValues());
+		final IToken[] newargs = new IToken[args.length()];
+		for (int c = 0; c < args.length(); c++)
+			newargs[c] = activateToken(args.elementAt(c), operation);
 		return token.fill(newargs);
 	}
 }
