@@ -14,6 +14,10 @@ public class List<T> implements IList<T> {
 		add(head);
 	}
 
+	public List(Iterable<T> vals) {
+		addRange(vals);
+	}
+
 	@Deprecated
 	public List(T[] vals) {
 		addRange(IterableExtensions.toList(vals));

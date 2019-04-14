@@ -12,32 +12,30 @@ import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.IExpressionVisitor;
 import platform.lists.IterableExtensions;
+import platform.lists.List;
 import platform.log.Log;
 import platform.log.LogLevel;
 
 import java.util.Iterator;
 
 public final class Multiplication extends AbstractExpression implements IMultiplication {
-	private final IExpressionList factors;
+	private final List<Expression> factors;
 
 	public Multiplication(final Expression left, final Expression right) {
 		factors = new ExpressionList(left, right);
 	}
 
-	private Multiplication(final IExpressionList left, final IExpressionList right) {
-		factors = new ExpressionList(left, right);
+	private Multiplication(final Iterable<Expression> left, final Iterable<Expression> right) {
+		factors = new List<>(left);
+		factors.addRange(right);
 	}
 
-	public Multiplication(final IExpressionList val) {
-		factors = new ExpressionList(val);
+	public Multiplication(final Iterable<Expression> val) {
+		factors = new List<>(val);
 	}
 
-	public Multiplication(final Iterator<Expression> iterator) {
-		factors = new ExpressionList(iterator);
-	}
-
-	private Multiplication(final IExpressionList left, final Expression right) {
-		factors = new ExpressionList(left);
+	private Multiplication(final Iterable<Expression> left, final Expression right) {
+		factors = new List<>(left);
 		factors.add(right);
 	}
 
@@ -234,7 +232,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	private static Expression simplifyFactors(final Iterable<Expression> iterable) {
-		final IExpressionList after = new ExpressionList();
+		final List<Expression> after = new List<>();
 		for (ISimplifiable curr : iterable) {
 			final Expression currs = curr.partialSimplify();
 			if (currs.isZero())
@@ -356,7 +354,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		return usd;
 	}
 
-	private static boolean nCheckContains(final IExpressionList small, final IExpressionList big) {
+	private static boolean nCheckContains(final Iterable<Expression> small, final Iterable<Expression> big) {
 		final boolean[] used = new boolean[IterableExtensions.length(big)];
 		for (Expression curr : small) {
 			if (curr instanceof INumber)
@@ -393,8 +391,8 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 				return new Sum(this, marg);
 			return super.add(arg);
 		}
-		final IExpressionList thisnonINumbers = extractNonINumbers(factors);
-		final IExpressionList argnonINumbers = extractNonINumbers(marg.factors);
+		final List<Expression> thisnonINumbers = extractNonINumbers(factors);
+		final List<Expression> argnonINumbers = extractNonINumbers(marg.factors);
 		if (!thisnonINumbers.equals(argnonINumbers))
 			return super.add(arg);
 		final INumber thiscoeff = getCoefficent(factors);
@@ -407,7 +405,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		return getCoefficent(factors);
 	}
 
-	private static INumber getCoefficent(final IExpressionList list) {
+	private static INumber getCoefficent(final Iterable<Expression> list) {
 		INumber toret = Int.ONE;
 		for (Expression curr : list)
 			if (curr instanceof INumber)
@@ -415,8 +413,8 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		return toret;
 	}
 
-	private static IExpressionList extractNonINumbers(final IExpressionList list) {
-		final IExpressionList toret = new ExpressionList();
+	private static List<Expression> extractNonINumbers(final Iterable<Expression> list) {
+		final List<Expression> toret = new List<>();
 		for (Expression curr : list)
 			if (!(curr instanceof INumber))
 				toret.add(curr);
@@ -432,13 +430,13 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 
 	public Expression divide(final Expression arg) {
 		if (compatible(arg, Operation.DIVISION)) {
-			final IExpressionList toret = new ExpressionList();
+			final List<Expression> toret = new List<>();
 			final Iterator<Expression> iterator = iterator();
 			while (iterator.hasNext()) {
 				final Expression curr = iterator.next();
 				if (curr.compatible(arg, Operation.DIVISION)) {
 					toret.add(curr.divide(arg));
-					toret.addRange(iterator);
+					IterableExtensions.addRange(toret, iterator);
 				} else
 					toret.add(curr);
 			}
@@ -497,7 +495,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public boolean hasLetter(final char arg) {
-		return factors.hasLetter(arg);
+		return ExpressionList.hasLetter(factors, arg);
 	}
 
 	public boolean equals(final Object obj) {

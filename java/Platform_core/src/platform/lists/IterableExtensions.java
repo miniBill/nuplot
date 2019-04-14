@@ -105,4 +105,9 @@ public final class IterableExtensions {
         for (T t : toAdd)
             list.add(t);
     }
+
+    @Deprecated
+    public static <T> void addRange(IList<T> list, Iterator<T> toAdd) {
+        addRange(list,wrap(toAdd));
+    }
 }

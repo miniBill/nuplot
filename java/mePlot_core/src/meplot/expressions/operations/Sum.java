@@ -13,6 +13,7 @@ import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.IExpressionVisitor;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import platform.lists.IterableExtensions;
+import platform.lists.List;
 
 import java.util.Iterator;
 
@@ -51,7 +52,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 				found = curr;
 		if (found == null)
 			return null;
-		IExpressionList result = new ExpressionList(found);
+		List<Expression> result = new List<>(found);
 		result.addRange(rest);
 		return new Sum(result);
 	}
@@ -68,7 +69,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 		return null;
 	}
 
-	private final IExpressionList addends = new ExpressionList();
+	private final List<Expression> addends = new List<>();
 
 	public Sum(final Expression left) {
 		addRange(left);
@@ -76,7 +77,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 
 	private void addRange(Expression expression) {
 		if (expression instanceof Sum)
-			addends.addRange(((Sum) expression).iterator());
+			addends.addRange((Sum) expression);
 		else
 			addends.add(expression);
 	}
@@ -86,17 +87,14 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 		addends.add(right);
 	}
 
-	public Sum(final Iterator<Expression> iterator) {
-		addends.addRange(iterator);
-	}
-
-	private Sum(final Iterator<Expression> list1, final Iterator<Expression> list2) {
+	@Deprecated
+	private Sum(final Iterable<Expression> list1, final Iterable<Expression> list2) {
 		addends.addRange(list1);
 		addends.addRange(list2);
 	}
 
-	public Sum(final IExpressionList list) {
-		addends.addRange(list.iterator());
+	public Sum(final Iterable<Expression> list) {
+		addends.addRange(list);
 	}
 
 	/**
@@ -109,7 +107,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 	}
 
 	private Sum add(final Sum arg) {
-		return new Sum(iterator(), arg.iterator());
+		return new Sum((Iterable<Expression>)this, arg);
 	}
 
 	private boolean canDivide(final ICalculable base) {
@@ -145,7 +143,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 				return new Power(pow.getBase(), pow.getExponent().opposite().add(Int.ONE)).opposite();
 		}
 		if (isDivisible(arg)) {
-			final IExpressionList toret = new ExpressionList();
+			final List<Expression> toret = new List<>();
 			for (ICalculable curr : this) {
 				final ISimplifiable div = curr.divide(arg);
 				final Expression sim = div.partialSimplify();
@@ -207,7 +205,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 	}
 
 	public final boolean hasLetter(final char var) {
-		return addends.hasLetter(var);
+		return ExpressionList.hasLetter(addends, var);
 	}
 
 	public final Expression innerSimplify() {
@@ -379,7 +377,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 			if (currs.isZero())
 				continue;
 			if (currs instanceof Sum)
-				after.addRange(((Sum) currs).addends);
+				after.addRange(((Sum) currs).addends.iterator());
 			else
 				after.add(currs);
 		}
@@ -420,7 +418,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 			if (currs.isZero())
 				continue;
 			if (currs instanceof Sum)
-				after.addRange(((Sum) currs).addends);
+				after.addRange(((Sum) currs).addends.iterator());
 			else if (currs instanceof Multiplication)
 				after.add(currs.expand());
 			else
@@ -436,7 +434,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 			if (currs.isZero())
 				continue;
 			if (currs instanceof Sum)
-				after.addRange(((Sum) currs).addends);
+				after.addRange(((Sum) currs).addends.iterator());
 			else if (currs instanceof Multiplication)
 				after.add(currs.expand());
 			else

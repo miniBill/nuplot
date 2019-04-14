@@ -8,7 +8,6 @@ import platform.lists.ToStringList;
 
 import java.util.Iterator;
 
-@Deprecated
 public final class ExpressionList extends ToStringList<Expression> implements IExpressionList {
 	private static final IExpressionList EMPTY = new ExpressionList();
 
@@ -16,6 +15,7 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 		return EMPTY;
 	}
 
+	@Deprecated
 	public ExpressionList(final Expression expr) {
 		add(expr);
 	}
@@ -23,59 +23,69 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 	/**
 	 * Creates empty list.
 	 */
+	@Deprecated
 	public ExpressionList() {
 		// Creates empty list
 	}
 
+	@Deprecated
 	public ExpressionList(final Expression expr, final Iterator<Expression> expressionList) {
 		add(expr);
 		addRange(expressionList);
 	}
 
+	@Deprecated
 	public ExpressionList(final Expression expr1, final Expression expr2) {
 		add(expr1);
 		add(expr2);
 	}
 
+	@Deprecated
 	public ExpressionList(final Expression[] expressionList) {
 		for (Expression expression : expressionList)
 			add(expression);
 	}
 
+	@Deprecated
 	public ExpressionList(final Iterator<Expression> iterator1, final Iterator<Expression> iterator2) {
 		addRange(iterator1);
 		addRange(iterator2);
 	}
 
+	@Deprecated
 	public ExpressionList(final IExpressionList left, final IExpressionList right) {
 		addRange(left);
 		addRange(right);
 	}
 
+	@Deprecated
 	public ExpressionList(final IExpressionList left) {
 		addRange(left);
 	}
 
+	@Deprecated
 	public ExpressionList(final Iterator<Expression> iterator) {
 		addRange(iterator);
 	}
 
-	public void addRange(final IExpressionList range) {
-		addRange(range.iterator());
-	}
-
+	@Deprecated
 	public void addRange(final Iterator<Expression> toAdd) {
 		while (toAdd.hasNext())
 			add(toAdd.next());
 	}
 
 	public boolean hasLetter(final char letter) {
-		for (int i = 0; i < length(); i++)
-			if (elementAt(i).hasLetter(letter))
+		return hasLetter(this, letter);
+	}
+
+	public static boolean hasLetter(Iterable<Expression> list, char letter) {
+		for (Expression expr : list)
+			if (expr.hasLetter(letter))
 				return true;
 		return false;
 	}
 
+	@Deprecated
 	public Expression[] toArray() {
 		final Expression[] toret = new Expression[length()];
 		int c = 0;
@@ -92,7 +102,7 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 	public IExpressionList fold() {
 		final IExpressionList toret = new ExpressionList();
 		for (Expression current : this) {
-            if (!IterableExtensions.contains(toret, current))
+			if (!IterableExtensions.contains(toret, current))
 				toret.add(current);
 		}
 		return toret;

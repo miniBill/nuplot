@@ -24,7 +24,7 @@ public final class Poly extends Sum {
 	private final Letter varLetter;
 
 	public Poly(final Sum original, final char var) {
-		super(original.iterator());
+		super((Iterable<Expression>)original);
 		this.var = var;
 		varLetter = new Letter(var);
 	}
@@ -35,7 +35,8 @@ public final class Poly extends Sum {
 		varLetter = new Letter(var);
 	}
 
-	private Poly(final IExpressionList addends, final char var) {
+	@Deprecated
+	private Poly(final Iterable<Expression> addends, final char var) {
 		super(addends);
 		this.var = var;
 		varLetter = new Letter(var);

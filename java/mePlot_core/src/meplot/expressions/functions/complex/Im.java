@@ -10,6 +10,7 @@ import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Multiplication;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.IExpressionComplexFunctionVisitor;
+import platform.lists.IterableExtensions;
 
 import java.util.Iterator;
 
@@ -38,7 +39,7 @@ public final class Im extends ComplexFunction {
 			if (!iterator.hasNext())
 				return Int.ZERO;
 			final Expression first = iterator.next();
-			final Expression rest = new Multiplication(iterator);
+			final Expression rest = new Multiplication(IterableExtensions.wrap(iterator));
 			final ICalculable left = new Im(first).multiply(new Re(rest));
 			final Expression right = new Re(first).multiply(new Im(rest));
 			return left.add(right);
