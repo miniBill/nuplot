@@ -1,5 +1,6 @@
 package meplot.expressions.tree;
 
+import meplot.expressions.list.ExpressionList;
 import platform.lists.IterableExtensions;
 
 public abstract class ExpressionTreeIterator implements java.util.Iterator<ExpressionTree> {
@@ -15,7 +16,7 @@ public abstract class ExpressionTreeIterator implements java.util.Iterator<Expre
 			if (!first)
 				buffer.append(',');
 			first = false;
-			buffer.append(expressionTree.getValue());
+			ExpressionList.toString(expressionTree.getValue(), buffer);
 		}
 		return buffer.toString();
 	}

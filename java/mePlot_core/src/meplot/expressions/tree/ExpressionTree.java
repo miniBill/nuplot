@@ -6,6 +6,7 @@ import meplot.expressions.list.ExpressionList;
 import meplot.expressions.operations.BooleanOp;
 import platform.lists.IList;
 import platform.lists.IterableExtensions;
+import platform.lists.List;
 
 import java.util.Iterator;
 
@@ -19,19 +20,19 @@ public final class ExpressionTree {
 	}
 
 	public ExpressionTree(final Expression val) {
-		value = new ExpressionList(val);
+		value = new List<>(val);
 	}
 
 	public String toString() {
-		final StringBuffer buffer = new StringBuffer();
+		final StringBuilder buffer = new StringBuilder();
 		toString(buffer);
 		return buffer.toString();
 	}
 
-	private void toString(final StringBuffer buffer) {
+	private void toString(final StringBuilder buffer) {
 		if (hasBrother()) {
 			buffer.append('(');
-			buffer.append(value);
+			ExpressionList.toString(value, buffer);
 			if (hasChild()) {
 				buffer.append('[');
 				child.toString(buffer);
@@ -42,7 +43,7 @@ public final class ExpressionTree {
 			buffer.append(')');
 			return;
 		}
-		buffer.append(value);
+		ExpressionList.toString(value, buffer);
 		if (hasChild()) {
 			buffer.append(',');
 			child.toString(buffer);
@@ -127,16 +128,16 @@ public final class ExpressionTree {
 	}
 
 	public String toCleanString(final char separator) {
-		final StringBuffer buffer = new StringBuffer();
+		final StringBuilder buffer = new StringBuilder();
 		toCleanString(separator, buffer);
 		return buffer.toString();
 	}
 
-	private void toCleanString(final char separator, final StringBuffer buffer) {
+	private void toCleanString(final char separator, final StringBuilder buffer) {
 		toTreeString(separator, buffer, 0);
 	}
 
-	private void toTreeString(final char separator, final StringBuffer buffer, final int index) {
+	private void toTreeString(final char separator, final StringBuilder buffer, final int index) {
 		if (hasBrother()) {
 			appendTree(buffer, index);
 			buffer.append('°');
@@ -163,14 +164,14 @@ public final class ExpressionTree {
 		}
 	}
 
-	private static void appendTree(final StringBuffer buffer, final int nested) {
+	private static void appendTree(final StringBuilder buffer, final int nested) {
 		for (int a = 0; a < nested - 1; a++)
 			buffer.append(' ');
 		if (nested != 0)
 			buffer.append('|');
 	}
 
-	public void toHtml(final StringBuffer buffer) {
+	public void toHtml(final StringBuilder buffer) {
 		if (hasBrother())
 			buffer.append("<table><tr><td><div class=\"border\">\n");
 		outputValue(buffer);
@@ -184,7 +185,7 @@ public final class ExpressionTree {
 		}
 	}
 
-	private void outputValue(final StringBuffer buffer) {
+	private void outputValue(final StringBuilder buffer) {
 		if (IterableExtensions.length(value) > 1) {
 			appendTable(buffer, value.iterator());
 			return;
@@ -205,7 +206,7 @@ public final class ExpressionTree {
 		buffer.append('$');
 	}
 
-	private static void appendTable(final StringBuffer buffer, final Iterator<Expression> iterator) {
+	private static void appendTable(final StringBuilder buffer, final Iterator<Expression> iterator) {
 		buffer.append("$\\{\\table ");
 		while (iterator.hasNext()) {
 			iterator.next().toWrappedHtml(buffer);
@@ -223,7 +224,8 @@ public final class ExpressionTree {
 			child.addBrother(node);
 	}
 
+	@Deprecated
 	public ExpressionTree addChild(final Expression[] expressions) {
-		return addChild(new ExpressionList(expressions));
+		return addChild(new List<Expression>(expressions));
 	}
 }

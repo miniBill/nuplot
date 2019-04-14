@@ -16,15 +16,15 @@ public final class InvisibleHold extends Hold{
 		return new InvisibleHold(expr);
 	}
 
-	public void toHtml(StringBuffer buffer){
+	public void toHtml(StringBuilder buffer){
 		getArgument().toHtml(buffer);
 	}
 
-	public void toPString(StringBuffer buffer){
+	public void toPString(StringBuilder buffer){
 		getArgument().toPString(buffer);
 	}
 
-	public void toString(StringBuffer buffer){
+	public void toString(StringBuilder buffer){
 		getArgument().toString(buffer);
 	}
 }

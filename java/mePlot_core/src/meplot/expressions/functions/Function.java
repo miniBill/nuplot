@@ -137,7 +137,7 @@ public abstract class Function extends Functor implements IFunction{
 	/**
 	 * {@inheritDoc}
 	 */
-	public final void toFullString(final StringBuffer buffer){
+	public final void toFullString(final StringBuilder buffer){
 		buffer.append(getName());
 		buffer.append('(');
 		for(int c = 0; c < args.length; c++){
@@ -151,7 +151,7 @@ public abstract class Function extends Functor implements IFunction{
 		buffer.append(')');
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		buffer.append(getName());
 		buffer.append('(');
 		for(int c = 0; c < args.length - 1; c++){

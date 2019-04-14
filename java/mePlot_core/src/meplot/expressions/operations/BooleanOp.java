@@ -38,7 +38,7 @@ public final class BooleanOp extends AbstractExpression{
 	/**
 	 * {@inheritDoc}
 	 */
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		left.toString(buffer);
 		buffer.append(boole);
 		right.toString(buffer);
@@ -145,7 +145,7 @@ public final class BooleanOp extends AbstractExpression{
 	/**
 	 * {@inheritDoc}
 	 */
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		buffer.append(boole);
 		buffer.append('(');
 		left.toFullString(buffer);
@@ -268,7 +268,7 @@ public final class BooleanOp extends AbstractExpression{
 		return new BooleanOp(left.expand(), boole, right.expand());
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		left.toWrappedHtml(buffer);
 		buffer.append(boole);
 		right.toWrappedHtml(buffer);

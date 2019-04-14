@@ -92,7 +92,7 @@ public final class PerfectDoubleToken extends Token {
 		return new Fou(intPart, decPart, decLen, infPart, infLen, input);
 	}
 
-	public void toString(final StringBuffer buffer) {
+	public void toString(final StringBuilder buffer) {
 		buffer.append(intPart);
 		buffer.append('.');
 		buffer.append(decPart);

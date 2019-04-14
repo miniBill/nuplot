@@ -10,7 +10,7 @@ import platform.log.MyLogger;
  * @author Leonardo Taglialegne
  */
 public class MemoryLogger implements MyLogger{
-	private final StringBuffer buffer = new StringBuffer();
+	private final StringBuilder buffer = new StringBuilder();
 
 	public void println(final LogLevel level, final String string){
 		buffer.append(level);

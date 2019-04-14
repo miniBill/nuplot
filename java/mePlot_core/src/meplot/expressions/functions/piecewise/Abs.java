@@ -67,7 +67,7 @@ public final class Abs extends AbstractComplexFunction{
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		buffer.append('|');
 		getArgument().toWrappedHtml(buffer);
 		buffer.append('|');

@@ -17,7 +17,7 @@ public final class Solution{
 		return "Passaggi:\n" + steps.stringFold().toCleanString('\n');
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		buffer.append("Passaggi:<br/>\n");
 		steps.toHtml(buffer);
 	}

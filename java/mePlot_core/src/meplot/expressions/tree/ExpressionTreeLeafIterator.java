@@ -38,7 +38,7 @@ final class ExpressionTreeLeafIterator extends ExpressionTreeIterator{
 
 	public String toString(){
 		final ExpressionTreeIterator clone = subIterator();
-		final StringBuffer buffer = new StringBuffer();
+		final StringBuilder buffer = new StringBuilder();
 		while(clone.hasNext()){
 			ToStringList.toString(clone.next().getValue(), buffer);
 			if(clone.hasNext())

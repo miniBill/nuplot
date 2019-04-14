@@ -5,13 +5,13 @@ import platform.lists.IToString;
 public interface IOutputtable extends IToString{
 	boolean needParenthesis();
 
-	void toFullString(StringBuffer buffer);
+	void toFullString(StringBuilder buffer);
 
-	void toPString(StringBuffer buffer);
+	void toPString(StringBuilder buffer);
 
-	void toHtml(StringBuffer buffer);
+	void toHtml(StringBuilder buffer);
 
-	void toWrappedHtml(StringBuffer buffer);
+	void toWrappedHtml(StringBuilder buffer);
 
 	String toCleanString();
 

@@ -13,7 +13,7 @@ public final class Int extends AbstractInteger{
 		simplified = true;
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		buffer.append(getValue());
 	}
 
@@ -49,7 +49,7 @@ public final class Int extends AbstractInteger{
 		return new Int(-getValue());
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		buffer.append("Int(");
 		buffer.append(getValue());
 		buffer.append(')');
@@ -60,7 +60,7 @@ public final class Int extends AbstractInteger{
 		return new Int(value * value);
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		buffer.append(getValue());
 	}
 }

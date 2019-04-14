@@ -27,7 +27,7 @@ public final class Letter extends AbstractExpression{
 
 	private final char value;
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		buffer.append(value);
 	}
 
@@ -95,7 +95,7 @@ public final class Letter extends AbstractExpression{
 		return value == letter;
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		buffer.append("L(");
 		buffer.append(value);
 		buffer.append(')');
@@ -116,7 +116,7 @@ public final class Letter extends AbstractExpression{
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		buffer.append(value);
 	}
 

@@ -17,7 +17,7 @@ public final class ToHtmlTest extends TestUtils{
 		final Expression expr = new BooleanOp(a.multiply(a.minverse()), '=', Int.ONE);
 		final Solver s = new Solver();
 		final Solution solution = s.solve(expr);
-		final StringBuffer buffer = new StringBuffer();
+		final StringBuilder buffer = new StringBuilder();
 		solution.toHtml(buffer);
 		assertEquals("Passaggi:<br/>\n"
 				+ "${(\\table {{{{w}{x}}{-{z}{y}}}/{{{w}{x}}{-{y}{z}}}},{{0}/{{{w}{x}}{-{y}{z}}}};"
@@ -39,7 +39,7 @@ public final class ToHtmlTest extends TestUtils{
 	@Test
 	public void testMatrix2(){
 		final Expression a = parseOrFail("x^{{a,b},{c,d}}=0");
-		final StringBuffer buffer = new StringBuffer();
+		final StringBuilder buffer = new StringBuilder();
 		a.toHtml(buffer);
 		assertEquals("{{x}^{(\\table {a},{b}; {c},{d})}}={0}", buffer.toString());
 	}
@@ -47,7 +47,7 @@ public final class ToHtmlTest extends TestUtils{
 	@Test
 	public void testMatrix3(){
 		final Expression a = parseOrFail("[a{{x,y},{z,w}}]aa=1");
-		final StringBuffer buffer = new StringBuffer();
+		final StringBuilder buffer = new StringBuilder();
 		a.toHtml(buffer);
 		assertEquals("{{(\\table {x},{y}; {z},{w})}{(\\table {x},{y}; {z},{w})}}={1}", buffer.toString());
 	}

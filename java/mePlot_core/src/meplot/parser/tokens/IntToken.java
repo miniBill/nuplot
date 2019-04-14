@@ -30,7 +30,7 @@ public final class IntToken extends Token {
 		return new Int(val);
 	}
 
-	public void toString(final StringBuffer buffer) {
+	public void toString(final StringBuilder buffer) {
 		buffer.append(val);
 	}
 }

@@ -233,7 +233,7 @@ public final class Division extends AbstractExpression implements IDivision {
 		return new Division(numerator, denominator.multiply(other));
 	}
 
-	public void toString(final StringBuffer buffer) {
+	public void toString(final StringBuilder buffer) {
 		numerator.toPString(buffer);
 		buffer.append(Operation.DIVISION);
 		if (denominator instanceof Division)
@@ -269,7 +269,7 @@ public final class Division extends AbstractExpression implements IDivision {
 		return numerator.containsMatrix() || denominator.containsMatrix();
 	}
 
-	public void toFullString(final StringBuffer buffer) {
+	public void toFullString(final StringBuilder buffer) {
 		buffer.append("/(");
 		numerator.toFullString(buffer);
 		buffer.append(',');
@@ -318,7 +318,7 @@ public final class Division extends AbstractExpression implements IDivision {
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer) {
+	public void toHtml(final StringBuilder buffer) {
 		numerator.toWrappedHtml(buffer);
 		buffer.append('/');
 		denominator.toWrappedHtml(buffer);

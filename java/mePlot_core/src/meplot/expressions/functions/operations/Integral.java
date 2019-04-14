@@ -157,7 +157,7 @@ public final class Integral extends Function {
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer) {
+	public void toHtml(final StringBuilder buffer) {
 		final Expression[] arguments = getArguments();
 		buffer.append("∫_");
 		arguments[2].toWrappedHtml(buffer);

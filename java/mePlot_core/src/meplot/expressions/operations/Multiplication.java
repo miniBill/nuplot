@@ -101,7 +101,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		return prefix == '1';
 	}
 
-	public void toString(final StringBuffer buffer) {
+	public void toString(final StringBuilder buffer) {
 		final Iterator<Expression> iterator = iterator();
 		if (!iterator.hasNext())
 			return;
@@ -514,7 +514,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		return false;
 	}
 
-	public void toFullString(final StringBuffer buffer) {
+	public void toFullString(final StringBuilder buffer) {
 		buffer.append("*(");
 		boolean first = true;
 		for (IOutputtable curr : this) {
@@ -569,7 +569,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer) {
+	public void toHtml(final StringBuilder buffer) {
 		if (IterableExtensions.isSingle(factors)) {
 			factors.getFirst().toHtml(buffer);
 			return;

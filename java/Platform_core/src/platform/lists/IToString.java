@@ -1,5 +1,5 @@
 package platform.lists;
 
 public interface IToString{
-	void toString(final StringBuffer buffer);
+	void toString(final StringBuilder buffer);
 }

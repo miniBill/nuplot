@@ -14,7 +14,7 @@ public final class CharList extends AbstractTokenList {
 	}
 
 	public String toString() {
-		final StringBuffer toret = new StringBuffer("{C");
+		final StringBuilder toret = new StringBuilder("{C");
 		cString(toret);
 		toret.append('}');
 		return toret.toString();

@@ -120,7 +120,7 @@ public final class Sqrt extends NonsymbolicMonicFunction{
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		buffer.append('√');
 		getArgument().toWrappedHtml(buffer);
 	}

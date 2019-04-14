@@ -82,14 +82,14 @@ public final class Infinity extends Real implements IDou{
 		return sign ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		if(sign)
 			buffer.append("INFTY(+)");
 		else
 			buffer.append("INFTY(-)");
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		if(sign)
 			buffer.append("+∞");
 		else
@@ -100,7 +100,7 @@ public final class Infinity extends Real implements IDou{
 		return POSITIVE;
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		throw new NotImplementedException();
 	}
 }

@@ -21,7 +21,7 @@ public final class CharToken extends Token{
 		return new Letter(val);
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		buffer.append(val);
 	}
 }

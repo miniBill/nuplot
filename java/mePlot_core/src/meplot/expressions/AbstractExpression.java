@@ -24,7 +24,7 @@ public abstract class AbstractExpression implements Expression {
 
 	private String string;
 
-	public final void toWrappedHtml(final StringBuffer buffer) {
+	public final void toWrappedHtml(final StringBuilder buffer) {
 		buffer.append('{');
 		toHtml(buffer);
 		buffer.append('}');
@@ -216,16 +216,16 @@ public abstract class AbstractExpression implements Expression {
 	 */
 	public final String toFullString() {
 		if (fullString == null) {
-			final StringBuffer buffer = new StringBuffer();
+			final StringBuilder buffer = new StringBuilder();
 			toFullString(buffer);
 			fullString = buffer.toString();
 		}
 		return fullString;
 	}
 
-	public abstract void toFullString(final StringBuffer buffer);
+	public abstract void toFullString(final StringBuilder buffer);
 
-	public void toPString(final StringBuffer buffer) {
+	public void toPString(final StringBuilder buffer) {
 		if (needParenthesis())
 			buffer.append('(');
 		toString(buffer);
@@ -235,14 +235,14 @@ public abstract class AbstractExpression implements Expression {
 
 	public final String toString() {
 		if (string == null) {
-			final StringBuffer buffer = new StringBuffer();
+			final StringBuilder buffer = new StringBuilder();
 			toString(buffer);
 			string = buffer.toString();
 		}
 		return string;
 	}
 
-	public abstract void toString(final StringBuffer buffer);
+	public abstract void toString(final StringBuilder buffer);
 
 	public final INumber value() {
 		return value(ValueList.EMPTY);

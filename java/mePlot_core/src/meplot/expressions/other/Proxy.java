@@ -17,7 +17,7 @@ public class Proxy extends AbstractExpression{
 		return value.hasLetter(letter);
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		value.toFullString(buffer);
 	}
 
@@ -93,11 +93,11 @@ public class Proxy extends AbstractExpression{
 		return value.square();
 	}
 
-	public void toPString(final StringBuffer buffer){
+	public void toPString(final StringBuilder buffer){
 		value.toPString(buffer);
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		value.toString(buffer);
 	}
 
@@ -135,7 +135,7 @@ public class Proxy extends AbstractExpression{
 		return value;
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		value.toHtml(buffer);
 	}
 }

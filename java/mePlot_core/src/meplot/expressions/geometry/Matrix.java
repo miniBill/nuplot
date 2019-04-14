@@ -362,7 +362,7 @@ public class Matrix extends Tensor implements Iterable<Expression> {
 			if (getCols() >= 0) System.arraycopy(values[y], 0, vals[y], 0, getCols());
 	}
 
-	public final void toFullString(final StringBuffer buffer) {
+	public final void toFullString(final StringBuilder buffer) {
 		buffer.append("Mat{");
 		for (int y = 0; y < getRows(); y++) {
 			if (y > 0)
@@ -381,7 +381,7 @@ public class Matrix extends Tensor implements Iterable<Expression> {
 		buffer.append('}');
 	}
 
-	public final void toString(final StringBuffer toret) {
+	public final void toString(final StringBuilder toret) {
 		toret.append('{');
 		for (int y = 0; y < getRows(); y++) {
 			if (y > 0)
@@ -419,7 +419,7 @@ public class Matrix extends Tensor implements Iterable<Expression> {
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer) {
+	public void toHtml(final StringBuilder buffer) {
 		buffer.append("(\\table ");
 		for (int y = 0; y < getRows(); y++) {
 			if (y > 0)

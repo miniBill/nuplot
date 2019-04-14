@@ -84,12 +84,12 @@ public final class FunctionToken extends Token {
 	}
 
 	public String toString() {
-		final StringBuffer toret = new StringBuffer();
+		final StringBuilder toret = new StringBuilder();
 		toString(toret);
 		return toret.toString();
 	}
 
-	public void toString(final StringBuffer toret) {
+	public void toString(final StringBuilder toret) {
 		toret.append(val);
 		toret.append('(');
 		if (args == null)

@@ -19,7 +19,7 @@ public class TokenList extends AbstractTokenList {
 	}
 
 	public final String toString() {
-		final StringBuffer toret = new StringBuffer("{");
+		final StringBuilder toret = new StringBuilder("{");
 		cString(toret);
 		toret.append('}');
 		return toret.toString();

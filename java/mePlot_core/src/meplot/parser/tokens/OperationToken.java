@@ -41,12 +41,12 @@ public final class OperationToken extends Token{
 	}
 
 	public String toString(){
-		final StringBuffer toret = new StringBuffer();
+		final StringBuilder toret = new StringBuilder();
 		toString(toret);
 		return toret.toString();
 	}
 
-	public void toString(final StringBuffer toret){
+	public void toString(final StringBuilder toret){
 		final boolean bothNotNull = left != null && right != null;
 		if(bothNotNull)
 			toret.append('(');
@@ -57,7 +57,7 @@ public final class OperationToken extends Token{
 			toret.append(')');
 	}
 
-	private static void toStringOrDOT(final StringBuffer toret, final IToken value){
+	private static void toStringOrDOT(final StringBuilder toret, final IToken value){
 		if(value == null)
 			toret.append(DOT);
 		else

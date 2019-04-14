@@ -22,7 +22,7 @@ public final class ParToken extends Token{
 		return isOpen;
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		if(isOpen())
 			buffer.append('(');
 		else

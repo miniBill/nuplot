@@ -19,7 +19,7 @@ public abstract class SolverUtils extends TestUtils {
 			sol = paidsolver.solve(input);
 		else
 			sol = solver.solve(input);
-		StringBuffer buffer = new StringBuffer();
+		StringBuilder buffer = new StringBuilder();
 		sol.toHtml(buffer);
 		assertEquals(expected, buffer.toString());
 	}

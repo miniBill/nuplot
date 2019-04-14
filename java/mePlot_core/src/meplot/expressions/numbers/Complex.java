@@ -123,7 +123,7 @@ public final class Complex extends Number implements IComplex{
 		return new Complex(realPart.add(carg.real()), immaginaryPart.add(carg.immaginary()));
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		if(realPart.isZero()){
 			if(immaginaryPart.isZero())
 				buffer.append('0');
@@ -186,7 +186,7 @@ public final class Complex extends Number implements IComplex{
 		return new Complex(realPart.irSimplify(), immaginaryPart.irSimplify());
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		buffer.append("Cx(");
 		realPart.toFullString(buffer);
 		buffer.append(',');
@@ -269,7 +269,7 @@ public final class Complex extends Number implements IComplex{
 		return new Complex(nre, nim);
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		if(realPart.isZero()){
 			if(immaginaryPart.isZero())
 				buffer.append('0');

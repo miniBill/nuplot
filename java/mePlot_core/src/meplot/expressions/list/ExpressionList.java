@@ -98,11 +98,11 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 		return toret;
 	}
 
-	public void toCleanString(final char separator, final StringBuffer buffer) {
+	public void toCleanString(final char separator, final StringBuilder buffer) {
 		toCleanString(this, separator, buffer);
 	}
 
-	public static void toCleanString(Iterable<Expression> expressions, char separator, StringBuffer buffer) {
+	public static void toCleanString(Iterable<Expression> expressions, char separator, StringBuilder buffer) {
 		boolean first = true;
 		for (Expression curr : expressions) {
 			if (first)
@@ -119,7 +119,7 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 
 	@NotNull
 	public static String toCleanString(Iterable<Expression> expressions, char separator) {
-		final StringBuffer toret = new StringBuffer();
+		final StringBuilder toret = new StringBuilder();
 		toCleanString(expressions, separator, toret);
 		return toret.toString();
 	}

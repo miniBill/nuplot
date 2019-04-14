@@ -21,7 +21,7 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 	}
 
 	public final String toCString() {
-		final StringBuffer toret = new StringBuffer();
+		final StringBuilder toret = new StringBuilder();
 		cString(toret);
 		return toret.toString();
 	}
@@ -42,7 +42,7 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 		return toret.toString();
 	}
 
-	protected final void cString(final StringBuffer toret) {
+	protected final void cString(final StringBuilder toret) {
 		for (IToken iToken : this)
 			toret.append(iToken);
 	}

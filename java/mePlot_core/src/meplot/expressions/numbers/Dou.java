@@ -43,7 +43,7 @@ public final class Dou extends Real implements IDou{
 		return value == 0;
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		buffer.append(value);
 	}
 
@@ -65,7 +65,7 @@ public final class Dou extends Real implements IDou{
 		return this;
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		buffer.append("Dou(");
 		toString(buffer);
 		buffer.append(')');
@@ -90,7 +90,7 @@ public final class Dou extends Real implements IDou{
 		return new Dou(value * value);
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		buffer.append(value);
 	}
 }

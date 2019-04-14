@@ -445,7 +445,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 		return after;
 	}
 
-	public final void toFullString(final StringBuffer buffer) {
+	public final void toFullString(final StringBuilder buffer) {
 		buffer.append("+(");
 		boolean first = true;
 		for (Expression expression : this) {
@@ -457,7 +457,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 		buffer.append(')');
 	}
 
-	public final void toString(final StringBuffer buffer) {
+	public final void toString(final StringBuilder buffer) {
 		boolean first = true;
 		for (Expression curr : this) {
 			if (!first && !curr.toStringStartsWith('-'))
@@ -532,7 +532,7 @@ public class Sum extends AbstractExpression implements Iterable<Expression>, Exp
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer) {
+	public void toHtml(final StringBuilder buffer) {
 		boolean first = true;
 		for (Expression curr : this) {
 			if (!first && !curr.toStringStartsWith('-'))

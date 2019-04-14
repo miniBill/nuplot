@@ -31,7 +31,7 @@ public final class Power extends AbstractExpression implements IPower {
 		this.exponent = exponent;
 	}
 
-	public void toString(final StringBuffer toret) {
+	public void toString(final StringBuilder toret) {
 		if (base instanceof Letter || base instanceof Function || base instanceof IInt && ((IInt) base).getValue() >= 0)
 			toret.append(base);
 		else {
@@ -354,7 +354,7 @@ public final class Power extends AbstractExpression implements IPower {
 		return base.containsMatrix() || exponent.containsMatrix();
 	}
 
-	public void toFullString(final StringBuffer buffer) {
+	public void toFullString(final StringBuilder buffer) {
 		buffer.append("^(");
 		base.toFullString(buffer);
 		buffer.append(',');
@@ -418,7 +418,7 @@ public final class Power extends AbstractExpression implements IPower {
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer) {
+	public void toHtml(final StringBuilder buffer) {
 		if (base instanceof Letter || base instanceof Function || base instanceof Int && ((Int) base).getValue() >= 0)
 			base.toWrappedHtml(buffer);
 		else {

@@ -67,7 +67,7 @@ public final class Monomial extends Proxy{
 		return deg;
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		if(coeff.equals(Int.MINUSONE)){
 			buffer.append('-');
 			noCoeffString(buffer);
@@ -90,7 +90,7 @@ public final class Monomial extends Proxy{
 		}
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		buffer.append("M(");
 		coeff.toFullString(buffer);
 		buffer.append(',');
@@ -100,7 +100,7 @@ public final class Monomial extends Proxy{
 		buffer.append(')');
 	}
 
-	private void noCoeffString(final StringBuffer buffer){
+	private void noCoeffString(final StringBuilder buffer){
 		if(deg == 0){
 			buffer.append('1');
 			return;

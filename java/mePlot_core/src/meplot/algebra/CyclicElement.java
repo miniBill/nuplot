@@ -14,7 +14,7 @@ public final class CyclicElement extends AbstractInteger{ // NO_UCD
 		field = elementField;
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		buffer.append("CE[");
 		buffer.append(getValue());
 		buffer.append(',');
@@ -73,7 +73,7 @@ public final class CyclicElement extends AbstractInteger{ // NO_UCD
 		return new CyclicElement(field - getValue(), field);
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		buffer.append(toFullString());
 	}
 
@@ -85,7 +85,7 @@ public final class CyclicElement extends AbstractInteger{ // NO_UCD
 		return new CyclicElement(getValue() * getValue() % field, field);
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		buffer.append(getValue());
 		buffer.append('_');
 		buffer.append(field);

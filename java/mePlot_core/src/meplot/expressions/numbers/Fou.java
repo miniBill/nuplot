@@ -19,14 +19,14 @@ public final class Fou extends Fraction{
 		return new Fraction(this);
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		if(svalue == null)
 			super.toString(buffer);
 		else
 			buffer.append(svalue);
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		buffer.append("Fou(");
 		super.toFullString(buffer);
 		buffer.append(')');

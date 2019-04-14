@@ -30,7 +30,7 @@ public final class DoubleToken extends Token {
 		return new Dou(val);
 	}
 
-	public void toString(final StringBuffer buffer) {
+	public void toString(final StringBuilder buffer) {
 		buffer.append(val);
 	}
 }

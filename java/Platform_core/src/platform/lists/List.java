@@ -1,10 +1,10 @@
 package platform.lists;
 
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Vector;
 
 public class List<T> implements IList<T> {
-	private final Vector<T> container = new Vector<>();
+	private final ArrayList<T> container = new ArrayList<>();
 
 	public List() {
 	}
@@ -12,6 +12,11 @@ public class List<T> implements IList<T> {
 	public List(T head)
 	{
 		add(head);
+	}
+
+	@Deprecated
+	public List(T[] vals) {
+		addRange(IterableExtensions.toList(vals));
 	}
 
 	public final Iterator<T> iterator() {
@@ -23,7 +28,7 @@ public class List<T> implements IList<T> {
 	}
 
 	public final void add(final T obj) {
-		container.addElement(obj);
+		container.add(obj);
 	}
 
 	public final void addRange(final Iterable<T> other) {
@@ -46,23 +51,23 @@ public class List<T> implements IList<T> {
 	public final T getLast() {
 		if (isEmpty())
 			return null;
-		return container.elementAt(container.size() - 1);
+		return container .get(container.size() - 1);
 	}
 
 	public final T elementAt(final int index) {
-		return container.elementAt(index);
+		return container.get(index);
 	}
 
 	public final T getFirst() {
-		return container.elementAt(0);
+		return container.get(0);
 	}
 
 	public final void removeAt(final int index) {
-		container.removeElementAt(index);
+		container.remove(index);
 	}
 
 	public final void insert(final T obj, final int index) {
-		container.insertElementAt(obj, index);
+		container.add(index, obj);
 	}
 
 	public final boolean equals(final Object obj) {
@@ -74,7 +79,7 @@ public class List<T> implements IList<T> {
 
 	public T pop()
 	{
-		T result = container.elementAt(0);
+		T result = container.get(0);
 		container.remove(0);
 		return result;
 	}

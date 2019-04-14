@@ -79,14 +79,14 @@ public abstract class MatrixFunction extends Functor{
 		return fill(mat.partialSubstitute(letter, value));
 	}
 
-	public final void toFullString(final StringBuffer buffer){
+	public final void toFullString(final StringBuilder buffer){
 		buffer.append(getName());
 		buffer.append('(');
 		mat.toFullString(buffer);
 		buffer.append(')');
 	}
 
-	public final void toString(final StringBuffer buffer){
+	public final void toString(final StringBuilder buffer){
 		buffer.append(getName());
 		buffer.append('(');
 		mat.toString(buffer);

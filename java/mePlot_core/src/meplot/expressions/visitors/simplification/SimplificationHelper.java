@@ -62,7 +62,7 @@ public final class SimplificationHelper {
 			toret.add(next);
 			if (safety == MAX_SIMPLIFY_ITERATIONS - 1) {
 				final int togot = 10;
-				final StringBuffer lastString = new StringBuffer();
+				final StringBuilder lastString = new StringBuilder();
 				for (int i = 1; i <= togot; i++) {
 					lastString.append('\n');
 					final Expression curr = toret.elementAt(toret.length() - i);

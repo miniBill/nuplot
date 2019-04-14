@@ -4,15 +4,17 @@ import meplot.expressions.Expression;
 import meplot.expressions.tree.ExpressionTree;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import meplot.solver.ISolver;
+import org.jetbrains.annotations.Nullable;
 import platform.lists.IList;
 import platform.lists.IterableExtensions;
 
 public class StepSimplifyState extends SystemSolverState {
 	private final int index;
+	@Nullable
 	private final ISystemSolverState nextState;
 
 	protected StepSimplifyState(final ExpressionTree tree, final int index, final ISolver solver,
-			final ISystemSolverState nextState) {
+								@Nullable final ISystemSolverState nextState) {
 		super(tree, solver);
 		this.index = index;
 		this.nextState = nextState;

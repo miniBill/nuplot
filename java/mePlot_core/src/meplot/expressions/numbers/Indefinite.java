@@ -51,11 +51,11 @@ public final class Indefinite extends Real implements IDou{
 		return Double.NaN;
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		buffer.append("INDEF");
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		buffer.append('¿');
 	}
 
@@ -63,7 +63,7 @@ public final class Indefinite extends Real implements IDou{
 		return this;
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		throw new NotImplementedException();
 	}
 }

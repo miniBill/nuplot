@@ -141,7 +141,7 @@ public class Fraction extends Real implements IDivision{
 		return simp.isOne();
 	}
 
-	public void toString(final StringBuffer buffer){
+	public void toString(final StringBuilder buffer){
 		numerator.toString(buffer);
 		if(denominator.isOne())
 			return;
@@ -165,7 +165,7 @@ public class Fraction extends Real implements IDivision{
 		return denominator;
 	}
 
-	public void toFullString(final StringBuffer buffer){
+	public void toFullString(final StringBuilder buffer){
 		buffer.append("Frac(");
 		numerator.toFullString(buffer);
 		buffer.append(',');
@@ -213,7 +213,7 @@ public class Fraction extends Real implements IDivision{
 		return new Fraction(numerator.isquare(),denominator.isquare());
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		numerator.toWrappedHtml(buffer);
 		buffer.append('/');
 		denominator.toWrappedHtml(buffer);

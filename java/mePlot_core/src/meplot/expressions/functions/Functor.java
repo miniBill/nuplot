@@ -30,7 +30,7 @@ public abstract class Functor extends AbstractExpression implements IFunctor{
 		return visitor.visit(this);
 	}
 
-	public void toHtml(final StringBuffer buffer){
+	public void toHtml(final StringBuilder buffer){
 		buffer.append(getName());
 		buffer.append('(');
 		final Expression[] args = getArguments();

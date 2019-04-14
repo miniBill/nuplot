@@ -51,7 +51,7 @@ public final class Lambda extends AbstractExpression {
         return left == letter || right.hasLetter(letter);
     }
 
-    public void toFullString(final StringBuffer buffer) {
+    public void toFullString(final StringBuilder buffer) {
         buffer.append("=>(");
         buffer.append(left);
         buffer.append(',');
@@ -59,7 +59,7 @@ public final class Lambda extends AbstractExpression {
         buffer.append(')');
     }
 
-    public void toString(final StringBuffer buffer) {
+    public void toString(final StringBuilder buffer) {
         buffer.append(left);
         buffer.append("=>");
         right.toPString(buffer);
@@ -138,7 +138,7 @@ public final class Lambda extends AbstractExpression {
         return right;
     }
 
-    public void toHtml(final StringBuffer buffer) {
+    public void toHtml(final StringBuilder buffer) {
         throw new NotImplementedException();
     }
 }
