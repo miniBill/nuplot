@@ -105,6 +105,6 @@ public final class OperationActivator {
 		final IToken[] newargs = new IToken[args.length()];
 		for (int c = 0; c < args.length(); c++)
 			newargs[c] = activateToken(args.elementAt(c), operation);
-		return token.fill(newargs);
+		return token.fill(IterableExtensions.toList(newargs));
 	}
 }

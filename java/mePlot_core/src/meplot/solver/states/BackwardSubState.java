@@ -7,6 +7,7 @@ import meplot.expressions.operations.BooleanOp;
 import meplot.expressions.operations.Operation;
 import meplot.expressions.tree.ExpressionTree;
 import meplot.solver.ISolver;
+import platform.lists.IList;
 import platform.lists.IterableExtensions;
 
 class BackwardSubState extends SystemSolverState {
@@ -54,7 +55,7 @@ class BackwardSubState extends SystemSolverState {
 	}
 
 	private void nextStep() {
-		final IExpressionIterable equations = removeNullAndZero(getLeaf().getValue());
+		final IList<Expression> equations = removeNullAndZero(getLeaf().getValue());
 		final ExpressionTree child = getLeaf().addChild(equations);
 		QUEUE.add(new StepSimplifyState(child, 0, getSolver()));
 	}

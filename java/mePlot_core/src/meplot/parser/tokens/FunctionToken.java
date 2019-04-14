@@ -30,9 +30,9 @@ public final class FunctionToken extends Token {
 	 */
 	private static final String MAGIC_FUNCTION = "M";
 	private final String val;
-	private final IToken[] args;
+	private final IList<IToken> args;
 
-	public FunctionToken(final String name, final IToken[] tokens) {
+	public FunctionToken(final String name, final IList<IToken> tokens) {
 		val = name;
 		args = tokens;
 	}
@@ -73,36 +73,36 @@ public final class FunctionToken extends Token {
 	}
 
 	private Expression[] getArgs() throws ParserException {
-		final Expression[] eargs;
-		if (args == null)
-			eargs = new Expression[0];
-		else {
-			eargs = new Expression[args.length];
-			for (int c = 0; c < args.length; c++)
-				eargs[c] = args[c] == null ? Letter.I : args[c].toExpression();
+		if (args == null) {
+			return new Expression[0];
 		}
-		return eargs;
+
+		final IList<Expression> eargs = new List<>();
+		for (IToken arg : args)
+			eargs.add(arg == null ? Letter.I : arg.toExpression());
+		return IterableExtensions.toArray(Expression.class, eargs);
 	}
 
 	public String toString() {
-		final StringBuffer toret = new StringBuffer(val);
+		final StringBuffer toret = new StringBuffer();
 		toString(toret);
 		return toret.toString();
 	}
 
 	public void toString(final StringBuffer toret) {
-		if (args == null) {
-			toret.append(val);
-			toret.append("(?)");
-			return;
-		}
+		toret.append(val);
 		toret.append('(');
-		for (int c = 0; c < args.length - 1; c++) {
-			toret.append(stringize(args[c]));
-			toret.append(',');
+		if (args == null)
+			toret.append("?");
+		else {
+			boolean first = true;
+			for (IToken arg : args) {
+				if (!first)
+					toret.append(',');
+				first = false;
+				toret.append(stringize(arg));
+			}
 		}
-		if (args.length > 0)
-			toret.append(stringize(args[args.length - 1]));
 		toret.append(')');
 	}
 
@@ -111,7 +111,7 @@ public final class FunctionToken extends Token {
 	}
 
 	public IToken[] getValues() {
-		return args;
+		return IterableExtensions.toArray(IToken.class, args);
 	}
 
 	public static ITokenList parse(final String input) {
@@ -124,7 +124,7 @@ public final class FunctionToken extends Token {
 				toret.addRange(tokenList);
 			}
 			final String substring = input.substring(start, end);
-			final FunctionToken token = new FunctionToken(substring, new Token[0]);
+			final FunctionToken token = new FunctionToken(substring, new List<>());
 			toret.add(token);
 			if (input.length() > end) {
 				final String remains = input.substring(end);
@@ -180,14 +180,9 @@ public final class FunctionToken extends Token {
 		return -1;
 	}
 
-	@Deprecated
-	public Token fill(final IToken[] args) {
-		return new FunctionToken(val, args);
-	}
-
 	public Token fill(final IList<IToken> args)
 	{
-		return new FunctionToken(val, IterableExtensions.toArray(IToken.class, args));
+		return new FunctionToken(val, args);
 	}
 
 	public int needs() {

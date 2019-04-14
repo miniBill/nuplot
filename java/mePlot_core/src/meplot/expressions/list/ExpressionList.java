@@ -8,6 +8,7 @@ import platform.lists.ToStringList;
 
 import java.util.Iterator;
 
+@Deprecated
 public final class ExpressionList extends ToStringList<Expression> implements IExpressionList {
 	private static final IExpressionList EMPTY = new ExpressionList();
 

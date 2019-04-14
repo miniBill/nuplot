@@ -5,7 +5,6 @@ import meplot.expressions.ISubstitutible;
 import meplot.expressions.Letter;
 import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionIterable;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.operations.BooleanOp;
 import meplot.expressions.operations.Operation;
@@ -14,6 +13,7 @@ import meplot.expressions.tree.ExpressionTreeIterator;
 import meplot.solver.AbstractSolver;
 import meplot.solver.ISolver;
 import meplot.solver.SolveException;
+import platform.lists.IList;
 import platform.lists.IterableExtensions;
 import platform.log.Log;
 import platform.log.LogLevel;
@@ -40,7 +40,7 @@ class ForwardSubState extends SystemSolverState {
 			firstVar = AbstractSolver.getFirstVar(getLeaf().getValue());
 		ExpressionTree leaf = getLeaf();
 		if (index >= IterableExtensions.length(getLeaf().getValue())) {
-			final IExpressionIterable equations = removeNullAndZero(getLeaf().getValue());
+			final IList<Expression> equations = removeNullAndZero(getLeaf().getValue());
 			leaf = leaf.addChild(equations);
 			// TODO: leaf is incorrect
 			final BackwardSubState nextState = new BackwardSubState(leaf, getSolver());
@@ -84,7 +84,7 @@ class ForwardSubState extends SystemSolverState {
 			final int endindex) {
 		final Iterable<Expression> value = leaf.getValue();
 		final Iterator<Expression> iterator = value.iterator();
-		final IExpressionList current = new ExpressionList();
+		final IList<Expression> current = new ExpressionList();
 		final Iterable<Expression> stepValue = steps.getValue();
 		int newlength = 0;
 		for (int i = 0; i < IterableExtensions.length(value); i++)
@@ -93,9 +93,8 @@ class ForwardSubState extends SystemSolverState {
 			else {
 				iterator.next(); // Ignores it
 				if (i == startindex) {
-					Iterator<Expression> toAdd = stepValue.iterator();
 					newlength = IterableExtensions.length(stepValue);
-					current.addRange(toAdd);
+					IterableExtensions.addRange(current, stepValue);
 				}
 			}
 		final ExpressionTree child = leaf.addChild(current);

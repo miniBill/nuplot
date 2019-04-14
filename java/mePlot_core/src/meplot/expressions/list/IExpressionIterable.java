@@ -2,6 +2,7 @@ package meplot.expressions.list;
 
 import meplot.expressions.Expression;
 
+@Deprecated
 public interface IExpressionIterable extends IToStringIterable<Expression> {
 	Expression elementAt(int index);
 

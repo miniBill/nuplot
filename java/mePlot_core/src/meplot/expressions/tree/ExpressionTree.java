@@ -4,16 +4,17 @@ import meplot.expressions.Expression;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.operations.BooleanOp;
+import platform.lists.IList;
 import platform.lists.IterableExtensions;
 
 import java.util.Iterator;
 
 public final class ExpressionTree {
 	private ExpressionTree child;
-	private final Iterable<Expression> value;
+	private final IList<Expression> value;
 	private ExpressionTree brother;
 
-	private ExpressionTree(final Iterable<Expression> list) {
+	private ExpressionTree(final IList<Expression> list) {
 		value = list;
 	}
 
@@ -22,33 +23,29 @@ public final class ExpressionTree {
 	}
 
 	public String toString() {
-		return toString(',');
-	}
-
-	private String toString(final char separator) {
 		final StringBuffer buffer = new StringBuffer();
-		toString(separator, buffer);
+		toString(buffer);
 		return buffer.toString();
 	}
 
-	private void toString(final char separator, final StringBuffer buffer) {
+	private void toString(final StringBuffer buffer) {
 		if (hasBrother()) {
 			buffer.append('(');
 			buffer.append(value);
 			if (hasChild()) {
 				buffer.append('[');
-				child.toString(separator, buffer);
+				child.toString(buffer);
 				buffer.append(']');
 			}
 			buffer.append(" o ");
-			brother.toString(separator, buffer);
+			brother.toString(buffer);
 			buffer.append(')');
 			return;
 		}
 		buffer.append(value);
 		if (hasChild()) {
-			buffer.append(separator);
-			child.toString(separator, buffer);
+			buffer.append(',');
+			child.toString(buffer);
 		}
 	}
 
@@ -56,7 +53,7 @@ public final class ExpressionTree {
 		return value;
 	}
 
-	private ExpressionTree addBrother(final Iterable<Expression> equations) {
+	private ExpressionTree addBrother(final IList<Expression> equations) {
 		return addBrother(new ExpressionTree(equations));
 	}
 
@@ -89,7 +86,7 @@ public final class ExpressionTree {
 		return new ExpressionTreeIteratorImpl(this);
 	}
 
-	public ExpressionTree addChild(final Iterable<Expression> equations) {
+	public ExpressionTree addChild(final IList<Expression> equations) {
 		if (child == null) {
 			child = new ExpressionTree(equations);
 			return child;

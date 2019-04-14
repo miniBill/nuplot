@@ -70,7 +70,7 @@ public final class FunctionActivator {
 					throw new ParserException();
 				args[needs - 1] = activateFunctionsToken(iterator.next(), iterator);
 			}
-			return funTok.fill(args);
+			return funTok.fill(IterableExtensions.toList(args));
 		}
 		final TokenList args = new TokenList();
 		if (next instanceof ITokenList) {

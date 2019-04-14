@@ -8,6 +8,7 @@ import java.util.Iterator;
 public final class IterableExtensions {
     private IterableExtensions(){}
 
+    @Deprecated
     public static <T> T[] toArray(Class<T> c, Iterable<T> input) {
         T[] result = (T[]) Array.newInstance(c, length(input));
         int i = 0;
@@ -70,21 +71,18 @@ public final class IterableExtensions {
         return false;
     }
 
+    @Deprecated
     public static <T> Iterable<T> clone(Iterator<T> iterator) {
         if(iterator instanceof ListIterator)
-        {
-            return ((ListIterator)iterator).clone();
-        }
+            return ((ListIterator) iterator).clone();
         if(iterator instanceof Myterator)
-        {
-            return ((Myterator)iterator).clone();
-        }
+            return ((Myterator) iterator).clone();
         throw new NotImplementedException();
     }
 
     public static <T> List<T> until(Iterator<T> iterator, String string) {
         final List<T> toret = new List<>();
-        for (T curr : IterableExtensions.wrap(iterator))
+        for (T curr : wrap(iterator))
             if (curr.toString().equals(string))
                 break;
             else
@@ -101,5 +99,10 @@ public final class IterableExtensions {
         for (T t : input)
             result.add(t);
         return result;
+    }
+
+    public static <T> void addRange(IList<T> list, Iterable<T> toAdd) {
+        for (T t : toAdd)
+            list.add(t);
     }
 }

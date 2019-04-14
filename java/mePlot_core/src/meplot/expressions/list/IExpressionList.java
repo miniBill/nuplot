@@ -4,6 +4,7 @@ import meplot.expressions.Expression;
 
 import java.util.Iterator;
 
+@Deprecated
 public interface IExpressionList extends IExpressionIterable {
 	void add(Expression expand);
 

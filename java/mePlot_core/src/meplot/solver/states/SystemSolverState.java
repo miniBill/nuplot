@@ -3,12 +3,11 @@ package meplot.solver.states;
 import meplot.expressions.Expression;
 import meplot.expressions.Letter;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionIterable;
-import platform.lists.IterableExtensions;
-import platform.lists.List;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.tree.ExpressionTree;
 import meplot.solver.ISolver;
+import platform.lists.IList;
+import platform.lists.IterableExtensions;
+import platform.lists.List;
 
 abstract class SystemSolverState implements ISystemSolverState {
 	private final ExpressionTree leave;
@@ -50,8 +49,8 @@ abstract class SystemSolverState implements ISystemSolverState {
 		return var;
 	}
 
-	protected static IExpressionIterable removeNullAndZero(final Iterable<Expression> equations) {
-		final IExpressionList toret = new ExpressionList();
+	protected static IList<Expression> removeNullAndZero(final Iterable<Expression> equations) {
+		final IList<Expression> toret = new ExpressionList();
 		for (Expression expression : equations) {
 			if (expression != null)
 				if (expression instanceof Letter) {

@@ -21,6 +21,7 @@ import meplot.expressions.tree.ExpressionTree;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import meplot.solver.states.HeadSolverState;
 import meplot.solver.states.ISystemSolverState;
+import platform.lists.IList;
 import platform.lists.IterableExtensions;
 import platform.lists.List;
 
@@ -51,8 +52,9 @@ public abstract class AbstractSolver implements ISolver {
 		for(Expression[] layer : zipped){
 			leaf = leaf.addChild(layer);
 		}
-		final IExpressionList last = new ExpressionList();
-		for (Expression expression : leaf.getValue()) last.add(SimplificationHelper.simplify(expression));
+		final IList<Expression> last = new ExpressionList();
+		for (Expression expression : leaf.getValue())
+			last.add(SimplificationHelper.simplify(expression));
 		return leaf.addChild(last);
 	}
 
@@ -197,7 +199,7 @@ public abstract class AbstractSolver implements ISolver {
 				}
 			}
 			if (left instanceof Matrix) {
-				final IExpressionList list = new ExpressionList();
+				final IList<Expression> list = new ExpressionList();
 				for (Expression expression : (Matrix) left)
 					list.add(new BooleanOp(expression, Operation.EQUALS, Int.ZERO));
 				toret.addChild(list);

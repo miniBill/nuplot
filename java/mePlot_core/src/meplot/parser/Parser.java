@@ -6,6 +6,7 @@ import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Operation;
 import meplot.parser.tokens.*;
 import meplot.parser.utils.*;
+import platform.lists.List;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -244,7 +245,7 @@ public final class Parser {
 		if (last instanceof OperationToken) {
 			final char val = ((OperationToken) last).getVal();
 			if (val == Operation.DIVISION || val == Operation.MULTIPLICATION) {
-				toret.add(new FunctionToken("M", new Token[0]));
+				toret.add(new FunctionToken("M", new List<>()));
 				return;
 			}
 		}
