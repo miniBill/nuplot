@@ -3,6 +3,8 @@ package meplot.expressions.functions;
 import meplot.expressions.Expression;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.INumber;
+import platform.lists.IList;
+import platform.lists.IterableExtensions;
 
 public abstract class Function extends Functor implements IFunction{
 	public static boolean[] allTrue(final int count){
@@ -24,8 +26,14 @@ public abstract class Function extends Functor implements IFunction{
 		symbolicArgs = new boolean[args.length];
 	}
 
+	@Deprecated
 	protected Function(final Expression[] arguments, final boolean[] symbolicArguments){
 		args = arguments;
+		symbolicArgs = symbolicArguments;
+	}
+
+	protected Function(final IList<Expression> arguments, final boolean[] symbolicArguments){
+		args = IterableExtensions.toArray(Expression.class, arguments);
 		symbolicArgs = symbolicArguments;
 	}
 

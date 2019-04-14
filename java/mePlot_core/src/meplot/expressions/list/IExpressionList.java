@@ -10,6 +10,4 @@ public interface IExpressionList extends IExpressionIterable, IList<Expression> 
 	void addRange(Iterator<Expression> iterator);
 
 	IExpressionList fold();
-
-	Expression[] toArray();
 }

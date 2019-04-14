@@ -11,15 +11,17 @@ import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.IExpressionFunctorVisitor;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
+import platform.lists.IList;
 import platform.lists.IterableExtensions;
+import platform.lists.List;
 
 public final class Span extends ArbitraryFunction{
-	public Span(final Expression[] values){
-		super(values, values == null ? new boolean[0] : allTrue(values.length));
+	public Span(final IList<Expression> values){
+		super(values, values == null ? new boolean[0] : allTrue(values.length()));
 	}
 
 	protected Expression innerStepSimplify(final Expression[] vals){
-		final IExpressionList toret = new ExpressionList();
+		final List<Expression> toret = new List<>();
         for (Expression val : vals)
 			if (!IterableExtensions.contains(toret, val))
 				toret.add(val);
@@ -36,7 +38,7 @@ public final class Span extends ArbitraryFunction{
 					}
         if(IterableExtensions.length(toret) == vals.length && areSimplified(vals))
 			return new Matrix(vals);
-		return new Span(toret.toArray());
+		return new Span(toret);
 	}
 
 	private static boolean areSimplified(final ISimplifiable[] vals){
@@ -51,7 +53,7 @@ public final class Span extends ArbitraryFunction{
 	}
 
 	public IFunction fill(final Expression[] args){
-		return new Span(args);
+		return new Span(IterableExtensions.toList(args));
 	}
 
     public String getName(){

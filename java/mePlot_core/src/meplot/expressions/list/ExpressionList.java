@@ -81,16 +81,7 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 		return false;
 	}
 
-	@Deprecated
-	public Expression[] toArray() {
-		final Expression[] toret = new Expression[length()];
-		int c = 0;
-		for (Expression expression : this)
-			toret[c++] = expression;
-		return toret;
-	}
-
-	/**
+    /**
 	 * Returns a new list with duplicates squashed.
 	 * 
 	 * @return The list with no duplicates

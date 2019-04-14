@@ -52,7 +52,7 @@ public final class FunctionToken extends Token {
 			new Hold(Int.ZERO), new Cbrt(Int.ZERO), new Gradient(Int.ZERO),
 			new MaxNorm(NARR), new PNorm(NARR), new Piecewise(NARR), new Max(NARR),
 			new Min(NARR), new Mandelbrot(NARR), new Mod(NARR), new Derivative(NARR), new Integral(NARR),
-			new Ackermann(NARR), new Span(NARR), new GenericOde(NARR), new Ode(NARR), new Gcd(NARR) };
+			new Ackermann(NARR), new Span(new List<>()), new GenericOde(NARR), new Ode(NARR), new Gcd(NARR) };
 
 	private static List<UserFunction> userFunctions = new List<>();
 
