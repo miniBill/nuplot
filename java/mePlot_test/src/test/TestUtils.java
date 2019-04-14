@@ -10,6 +10,7 @@ import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
+import platform.lists.IList;
 import platform.lists.IterableExtensions;
 import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
@@ -19,6 +20,7 @@ import meplot.expressions.visitors.simplification.SimplificationHelper;
 import meplot.parser.Parser;
 import meplot.parser.ParserException;
 import meplot.parser.utils.Cleaner;
+import platform.lists.List;
 import platform.log.FilterLogger;
 import platform.log.Log;
 import platform.log.LogLevel;
@@ -134,23 +136,23 @@ public abstract class TestUtils {
 		assertEquals("Step gone wrong", expectedClean, stepClean);
 
 		if (doManual) {
-			final IExpressionList inputManual = manualSimplify(input);
-			final String manualClean = inputManual.getLast().toCleanString();
+			final IList<Expression> inputManual = manualSimplify(input);
+			final String manualClean = IterableExtensions.getLast(inputManual).toCleanString();
 			assertEquals("step/man", stepClean, manualClean);
 			assertEquals("dir/man", simplifiedClean, manualClean);
 			assertEquals("Manual gone wrong", expectedClean, manualClean);
 		}
 	}
 
-	private IExpressionList manualSimplify(final Expression input) {
+	private IList<Expression> manualSimplify(final Expression input) {
 		if (input.isSimplified())
-			return new ExpressionList(input);
+			return new List<>(input);
 		if ("0".equals(input.toString()))// otherwise it could FAIL
-			return new ExpressionList(Int.ZERO);
+			return new List<>(Int.ZERO);
 		Expression current = Int.ZERO;
 		Expression next = input;
 		final int max = toString().length() > 25 ? 20 : 100;
-		final IExpressionList toret = new ExpressionList(next);
+		final List<Expression> toret = new List<>(next);
 		for (int safety = 0; safety < max && next != null && !current.isIdentical(next); safety++) {
 			current = parseOrFail(next.toCleanString());
 			next = current;
@@ -200,8 +202,8 @@ public abstract class TestUtils {
 	}
 
 	protected static void checkRoots(final Expression e, final char x, final String out) {
-		final IExpressionList roots = PolynomialMath.getRoots(e, x);
-		assertEquals(out, roots.toString(','));
+		final IList<Expression> roots = PolynomialMath.getRoots(e, x);
+		assertEquals(out, ExpressionList.toString(roots));
 	}
 
 	protected static void checkPrecision(final double val, final double target, final double percent) {

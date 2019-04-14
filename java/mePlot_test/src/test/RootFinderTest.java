@@ -15,6 +15,7 @@ import meplot.parser.Parser;
 import meplot.solver.AbstractSolver;
 
 import org.junit.Test;
+import platform.lists.IList;
 
 public class RootFinderTest extends TestUtils{
 	@Test
@@ -32,15 +33,15 @@ public class RootFinderTest extends TestUtils{
 
 	@Test
 	public void testDivisors(){
-		final IExpressionList div = PolynomialMath.divisors(new Int(36));
-		assertEquals("1,2,3,4,6,9,12,18,36", div.toString(','));
+		final IList<Expression> div = PolynomialMath.divisors(new Int(36));
+		assertEquals("1,2,3,4,6,9,12,18,36", ExpressionList.toString(div));
 	}
 
 	@Test
 	public void testFractionDivisors(){
-		final IExpressionList fdiv = PolynomialMath.divisors(new Fraction(new Int(10),
+		final IList<Expression> fdiv = PolynomialMath.divisors(new Fraction(new Int(10),
 				new Int(14)));
-		assertEquals("1,2,5,10,1/2,5/2,1/7,2/7,5/7,10/7,1/14,5/14", fdiv.toString(','));
+		assertEquals("1,2,5,10,1/2,5/2,1/7,2/7,5/7,10/7,1/14,5/14", ExpressionList.toString(fdiv));
 	}
 
 	@Test

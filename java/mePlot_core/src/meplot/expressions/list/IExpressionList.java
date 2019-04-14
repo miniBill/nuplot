@@ -11,11 +11,5 @@ public interface IExpressionList extends IExpressionIterable, IList<Expression> 
 
 	IExpressionList fold();
 
-	boolean hasLetter(char letter);
-
-	String toString(char sep);
-
-	Expression getLast();
-
 	Expression[] toArray();
 }

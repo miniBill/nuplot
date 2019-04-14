@@ -74,10 +74,6 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 			add(toAdd.next());
 	}
 
-	public boolean hasLetter(final char letter) {
-		return hasLetter(this, letter);
-	}
-
 	public static boolean hasLetter(Iterable<Expression> list, char letter) {
 		for (Expression expr : list)
 			if (expr.hasLetter(letter))
