@@ -12,13 +12,11 @@ import meplot.expressions.functions.piecewise.IPower;
 import meplot.expressions.functions.trig.Cos;
 import meplot.expressions.functions.trig.Sin;
 import meplot.expressions.geometry.Matrix;
-import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.*;
 import meplot.expressions.visitors.IExpressionVisitor;
-import org.jetbrains.annotations.Nullable;
 import platform.lists.IterableExtensions;
+import platform.lists.List;
 
 import java.util.Iterator;
 
@@ -296,7 +294,7 @@ public final class Power extends AbstractExpression implements IPower {
 	}
 
 	private static Expression finishSimplificationMultiplication(final Multiplication base, final Expression exp) {
-		final IExpressionList toret = new ExpressionList();
+		final List<Expression> toret = new List<>();
 		for (Expression expression : base)
 			toret.add(new Power(expression, exp));
 		return new Multiplication(toret);
@@ -376,7 +374,7 @@ public final class Power extends AbstractExpression implements IPower {
 		if (base instanceof IReal)
 			return finishSimplificationRealInt((IReal) base, iexp);
 		if (iexp.getValue() == 2 && base instanceof Sum) {
-			final IExpressionList toret = new ExpressionList();
+			final List<Expression> toret = new List<>();
 
 			final Sum sbase = (Sum) base;
 

@@ -12,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import platform.lists.IList;
 import platform.lists.IterableExtensions;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.other.PolynomialMath;
 import meplot.expressions.visitors.derivative.DerivativeHelper;

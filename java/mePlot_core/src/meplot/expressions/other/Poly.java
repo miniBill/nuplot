@@ -6,7 +6,6 @@ import meplot.expressions.Letter;
 import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.exceptions.SimplificationException;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Fraction;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
@@ -16,6 +15,7 @@ import meplot.expressions.operations.Power;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import platform.lists.IterableExtensions;
+import platform.lists.List;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -201,7 +201,7 @@ public final class Poly extends Sum {
 		if (divdeg == 0 && IterableExtensions.length(arg) == 1) {
 			final Expression single = IterableExtensions.getFirst(arg);
 			if (single instanceof INumber) {
-				final IExpressionList results = new ExpressionList();
+				final List<Expression> results = new List<>();
 				for (Expression expression : this)
 					results.add(expression.divide(single));
 				return new Sum(results);
@@ -252,7 +252,7 @@ public final class Poly extends Sum {
 	}
 
 	private Poly popposite() {
-		final IExpressionList after = new ExpressionList();
+		final List<Expression> after = new List<>();
 
 		for (ICalculable curr : this) {
 			final Expression currs = curr.opposite();
@@ -260,7 +260,7 @@ public final class Poly extends Sum {
 				continue;
 			if (currs instanceof Sum) {
 				final Sum scls = (Sum) currs;
-				after.addRange(scls.iterator());
+				IterableExtensions.addRange(after, scls);
 			} else
 				after.add(currs);
 		}
@@ -268,11 +268,13 @@ public final class Poly extends Sum {
 	}
 
 	private Poly add(final Poly arg) {
-		return new Poly(new ExpressionList(iterator(), arg.iterator()), var);
+		// This is needed to call the Iterable<Expression> ctor instead of the Expression one
+		Iterable<Expression> iterable = arg;
+		return new Poly(new List<>(this, iterable), var);
 	}
 
 	private Poly multiply(final Monomial arg) {
-		final IExpressionList toret = new ExpressionList();
+		final List<Expression> toret = new List<>();
 		for (Expression expression : this)
 			toret.add(expression.multiply(arg));
 		return new Poly(toret, var);

@@ -5,7 +5,6 @@ import meplot.expressions.ISubstitutible;
 import meplot.expressions.Letter;
 import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.operations.BooleanOp;
 import meplot.expressions.operations.Operation;
 import meplot.expressions.tree.ExpressionTree;

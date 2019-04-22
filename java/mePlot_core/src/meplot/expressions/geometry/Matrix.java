@@ -3,7 +3,6 @@ package meplot.expressions.geometry;
 import meplot.expressions.Expression;
 import meplot.expressions.ICalculable;
 import meplot.expressions.exceptions.CalcException;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.Complex;
 import meplot.expressions.numbers.INumber;
@@ -13,6 +12,7 @@ import meplot.expressions.visitors.IExpressionTensorVisitor;
 import meplot.expressions.visitors.derivative.DerivativeHelper;
 import org.jetbrains.annotations.NotNull;
 import platform.lists.IterableExtensions;
+import platform.lists.List;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -38,7 +38,7 @@ public class Matrix extends Tensor implements Iterable<Expression> {
 		set(values);
 	}
 
-	public Matrix(final IExpressionList exprList, final boolean isVector) {
+	public Matrix(final List<Expression> exprList, final boolean isVector) {
 		if (isVector) {
 			fillByList(exprList);
 			return;

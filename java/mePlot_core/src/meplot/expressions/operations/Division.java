@@ -7,13 +7,13 @@ import meplot.expressions.exceptions.CalcException;
 import meplot.expressions.functions.FunctionsMath;
 import meplot.expressions.functions.exp.Sqrt;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.*;
 import meplot.expressions.other.Poly;
 import meplot.expressions.visitors.IExpressionVisitor;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import platform.lists.IterableExtensions;
+import platform.lists.List;
 import platform.log.Log;
 
 import java.util.Iterator;
@@ -168,11 +168,11 @@ public final class Division extends AbstractExpression implements IDivision {
 	}
 
 	private static Expression crossSimplify(final IMultiplication numerator, final IMultiplication denominator) {
-		final IExpressionList newNumList = new ExpressionList();
+		final List<Expression> newNumList = new List<>();
 		final Iterator<Expression> nFactorsIt = numerator.iterator();
 		while (nFactorsIt.hasNext()) {
 			final Expression currentN = nFactorsIt.next();
-			final IExpressionList newDenList = new ExpressionList();
+			final List<Expression> newDenList = new List<>();
 			final Iterator<Expression> dFactorsIt = denominator.iterator();
 			while (dFactorsIt.hasNext()) {
 				final Expression currentD = dFactorsIt.next();
@@ -180,8 +180,8 @@ public final class Division extends AbstractExpression implements IDivision {
 					final Expression test = currentN.divide(currentD);
 					if (!(test instanceof Fraction)) {
 						newNumList.add(test);
-						newNumList.addRange(nFactorsIt);
-						newDenList.addRange(dFactorsIt);
+						IterableExtensions.addRange(newNumList, nFactorsIt);
+						IterableExtensions.addRange(newDenList, dFactorsIt);
 						return new Division(new Multiplication(newNumList), new Multiplication(newDenList));
 					}
 				}

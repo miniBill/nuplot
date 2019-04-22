@@ -2,11 +2,10 @@ package meplot.parser.tokens;
 
 import meplot.expressions.Expression;
 import meplot.expressions.geometry.Matrix;
-import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
 import meplot.parser.Parser;
 import meplot.parser.ParserException;
+import platform.lists.List;
 
 import java.util.Iterator;
 
@@ -28,7 +27,7 @@ public final class MatrixTokenList extends TokenList {
 				return new Matrix(Parser.parse(toParse));
 			return new Matrix(new Expression[0]);
 		}
-		final IExpressionList list = new ExpressionList();
+		final List<Expression> list = new List<>();
 		boolean vector = false;
 		final Iterator<IToken> iterator = iterator(0);
 		while (iterator.hasNext()) {

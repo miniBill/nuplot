@@ -8,7 +8,6 @@ import meplot.expressions.functions.exp.Sqrt;
 import meplot.expressions.functions.piecewise.Abs;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Fraction;
 import meplot.expressions.numbers.IInt;
 import meplot.expressions.numbers.INumber;

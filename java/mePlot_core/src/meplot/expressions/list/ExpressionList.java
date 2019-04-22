@@ -3,15 +3,18 @@ package meplot.expressions.list;
 import meplot.expressions.Expression;
 import meplot.parser.utils.Cleaner;
 import org.jetbrains.annotations.NotNull;
+import platform.lists.IList;
 import platform.lists.IterableExtensions;
+import platform.lists.List;
 import platform.lists.ToStringList;
 
 import java.util.Iterator;
 
-public final class ExpressionList extends ToStringList<Expression> implements IExpressionList {
-	private static final IExpressionList EMPTY = new ExpressionList();
+@Deprecated
+public final class ExpressionList extends ToStringList<Expression> implements IExpressionIterable, IList<Expression> {
+	private static final ExpressionList EMPTY = new ExpressionList();
 
-	public static IExpressionList getEmpty() {
+	public static ExpressionList getEmpty() {
 		return EMPTY;
 	}
 
@@ -29,46 +32,6 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 	}
 
 	@Deprecated
-	public ExpressionList(final Expression expr, final Iterator<Expression> expressionList) {
-		add(expr);
-		addRange(expressionList);
-	}
-
-	@Deprecated
-	public ExpressionList(final Expression expr1, final Expression expr2) {
-		add(expr1);
-		add(expr2);
-	}
-
-	@Deprecated
-	public ExpressionList(final Expression[] expressionList) {
-		for (Expression expression : expressionList)
-			add(expression);
-	}
-
-	@Deprecated
-	public ExpressionList(final Iterator<Expression> iterator1, final Iterator<Expression> iterator2) {
-		addRange(iterator1);
-		addRange(iterator2);
-	}
-
-	@Deprecated
-	public ExpressionList(final IExpressionList left, final IExpressionList right) {
-		addRange(left);
-		addRange(right);
-	}
-
-	@Deprecated
-	public ExpressionList(final IExpressionList left) {
-		addRange(left);
-	}
-
-	@Deprecated
-	public ExpressionList(final Iterator<Expression> iterator) {
-		addRange(iterator);
-	}
-
-	@Deprecated
 	public void addRange(final Iterator<Expression> toAdd) {
 		while (toAdd.hasNext())
 			add(toAdd.next());
@@ -81,14 +44,10 @@ public final class ExpressionList extends ToStringList<Expression> implements IE
 		return false;
 	}
 
-    /**
-	 * Returns a new list with duplicates squashed.
-	 * 
-	 * @return The list with no duplicates
-	 */
-	public IExpressionList fold() {
-		final IExpressionList toret = new ExpressionList();
-		for (Expression current : this) {
+	@NotNull
+	public static IList<Expression> unique(Iterable<Expression> list) {
+		final IList<Expression> toret = new List<>();
+		for (Expression current : list) {
 			if (!IterableExtensions.contains(toret, current))
 				toret.add(current);
 		}

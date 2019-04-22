@@ -5,7 +5,6 @@ import meplot.expressions.Expression;
 import meplot.expressions.Letter;
 import meplot.expressions.functions.FunctionsMath;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Fraction;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.other.Poly;
@@ -16,19 +15,20 @@ import meplot.solver.AbstractSolver;
 
 import org.junit.Test;
 import platform.lists.IList;
+import platform.lists.List;
 
 public class RootFinderTest extends TestUtils{
 	@Test
-	public void testFold(){
-		final IExpressionList test = new ExpressionList();
+	public void testUnique() {
+		final IList<Expression> test = new List<>();
 		test.add(Int.ONE);
 		test.add(Int.ZERO);
 		test.add(Letter.I);
 		test.add(Int.ONE);
 		test.add(Parser.parseOrDefault("0"));
 		test.add(new Letter('i'));// EXPLICITLY creating a new copy
-		final IExpressionList folded = test.fold();
-		assertEquals("1,0,i", folded.toString());
+		final IList<Expression> folded = ExpressionList.unique(test);
+		assertEquals("1,0,i", ExpressionList.toString(folded));
 	}
 
 	@Test

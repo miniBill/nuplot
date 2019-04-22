@@ -1,11 +1,10 @@
 package meplot.parser.tokens;
 
 import meplot.expressions.Expression;
-import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Multiplication;
 import meplot.parser.ParserException;
+import platform.lists.List;
 import platform.lists.ToStringList;
 
 public abstract class AbstractTokenList extends ToStringList<IToken> implements ITokenList {
@@ -14,7 +13,7 @@ public abstract class AbstractTokenList extends ToStringList<IToken> implements 
 			return Int.ONE;
 		if (isSingle())
 			return getLast().toExpression();
-		final IExpressionList result = new ExpressionList();
+		final List<Expression> result = new List<>();
 		for (IToken iToken : this)
 			result.add(iToken.toExpression());
 		return new Multiplication(result);

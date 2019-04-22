@@ -5,13 +5,12 @@ import meplot.expressions.IValue;
 import meplot.expressions.Letter;
 import meplot.expressions.functions.Function;
 import meplot.expressions.functions.IFunction;
-import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.Dou;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.IExpressionFunctorVisitor;
+import platform.lists.List;
 
 public final class Integral extends Function {
 	public Integral(final Expression[] args) {
@@ -86,7 +85,7 @@ public final class Integral extends Function {
 
 	private static Expression sumIntegrate(final Sum function, final Letter differential, final Expression lower,
 			final Expression upper) {
-		final IExpressionList exprList = new ExpressionList();
+		final List<Expression> exprList = new List<>();
 		for (Expression curr : function)
 			exprList.add(new Integral(curr, differential, lower, upper));
 		return new Sum(exprList);

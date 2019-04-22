@@ -5,8 +5,6 @@ import meplot.expressions.ISimplifiable;
 import meplot.expressions.functions.ArbitraryFunction;
 import meplot.expressions.functions.IFunction;
 import meplot.expressions.geometry.Matrix;
-import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.numbers.INumber;
 import meplot.expressions.numbers.Int;
 import meplot.expressions.visitors.IExpressionFunctorVisitor;

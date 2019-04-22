@@ -5,7 +5,6 @@ import meplot.expressions.functions.IFunction;
 import meplot.expressions.geometry.ITensor;
 import meplot.expressions.geometry.Matrix;
 import meplot.expressions.list.ExpressionList;
-import meplot.expressions.list.IExpressionList;
 import meplot.expressions.list.IValueList;
 import meplot.expressions.numbers.IInt;
 import meplot.expressions.numbers.INumber;
@@ -22,7 +21,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	private final List<Expression> factors;
 
 	public Multiplication(final Expression left, final Expression right) {
-		factors = new ExpressionList(left, right);
+		factors = new List<>(left, right);
 	}
 
 	private Multiplication(final Iterable<Expression> left, final Iterable<Expression> right) {
@@ -40,11 +39,11 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public Multiplication() {
-		factors = new ExpressionList();
+		factors = new List<>();
 	}
 
 	public Multiplication(final Expression val) {
-		factors = new ExpressionList(val);
+		factors = new List<>(val);
 	}
 
 	public Expression multiply(final Expression arg) {
@@ -60,20 +59,20 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public Expression expand() {
-		final IExpressionList temp = new ExpressionList();
+		final List<Expression> temp = new List<>();
 		final Iterator<Expression> iterator = iterator();
 		while (iterator.hasNext()) {
 			final Expression curr = iterator.next();
 			if (curr instanceof Sum) {
-				temp.addRange(iterator);
+				IterableExtensions.addRange(temp, iterator);
 				final ICalculable mul = new Multiplication(temp);
-				final IExpressionList toret = new ExpressionList();
+				final List<Expression> toret = new List<>();
 				for (Expression expression : (Sum) curr)
 					toret.add(mul.multiply(expression));
 				return new Sum(toret);
 			} else if (curr instanceof Power) {
 				temp.add(curr.expand());
-				temp.addRange(iterator);
+				IterableExtensions.addRange(temp, iterator);
 				return new Multiplication(temp);
 			} else
 				temp.add(curr);
@@ -310,7 +309,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	private Multiplication order() {
-		final IExpressionList toret = new ExpressionList();
+		final List<Expression> toret = new List<>();
 		for (Expression curr : this)
 			if (curr instanceof INumber)
 				toret.add(curr);
@@ -460,7 +459,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public Expression partialSubstitute(final IValueList valueList) {
-		final IExpressionList toret = new ExpressionList();
+		final List<Expression> toret = new List<>();
 		for (ISubstitutible curr : this) {
 			final Expression par = curr.partialSubstitute(valueList);
 			toret.add(par);
@@ -469,7 +468,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public Expression partialSubstitute(final char var, final double value) {
-		final IExpressionList toret = new ExpressionList();
+		final List<Expression> toret = new List<>();
 		for (ISubstitutible curr : this) {
 			final Expression par = curr.partialSubstitute(var, value);
 			toret.add(par);
@@ -478,7 +477,7 @@ public final class Multiplication extends AbstractExpression implements IMultipl
 	}
 
 	public Expression partialSubstitute(final char var, final Expression value) {
-		final IExpressionList toret = new ExpressionList();
+		final List<Expression> toret = new List<>();
 		for (ISubstitutible curr : this) {
 			final Expression par = curr.partialSubstitute(var, value);
 			toret.add(par);
