@@ -14,6 +14,7 @@ import meplot.solver.ISolver;
 import meplot.solver.SolveException;
 import platform.lists.IList;
 import platform.lists.IterableExtensions;
+import platform.lists.List;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -83,7 +84,7 @@ class ForwardSubState extends SystemSolverState {
 			final int endindex) {
 		final Iterable<Expression> value = leaf.getValue();
 		final Iterator<Expression> iterator = value.iterator();
-		final IList<Expression> current = new ExpressionList();
+		final List<Expression> current = new List<Expression>();
 		final Iterable<Expression> stepValue = steps.getValue();
 		int newlength = 0;
 		for (int i = 0; i < IterableExtensions.length(value); i++)

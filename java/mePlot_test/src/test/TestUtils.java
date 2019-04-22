@@ -20,6 +20,7 @@ import meplot.parser.Parser;
 import meplot.parser.ParserException;
 import meplot.parser.utils.Cleaner;
 import platform.lists.List;
+import platform.lists.ToStringList;
 import platform.log.FilterLogger;
 import platform.log.Log;
 import platform.log.LogLevel;
@@ -202,7 +203,7 @@ public abstract class TestUtils {
 
 	protected static void checkRoots(final Expression e, final char x, final String out) {
 		final IList<Expression> roots = PolynomialMath.getRoots(e, x);
-		assertEquals(out, ExpressionList.toString(roots));
+		assertEquals(out, ToStringList.toString(roots));
 	}
 
 	protected static void checkPrecision(final double val, final double target, final double percent) {

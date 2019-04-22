@@ -7,6 +7,7 @@ import meplot.expressions.operations.BooleanOp;
 import platform.lists.IList;
 import platform.lists.IterableExtensions;
 import platform.lists.List;
+import platform.lists.ToStringList;
 
 import java.util.Iterator;
 
@@ -32,7 +33,7 @@ public final class ExpressionTree {
 	private void toString(final StringBuilder buffer) {
 		if (hasBrother()) {
 			buffer.append('(');
-			ExpressionList.toString(value, buffer);
+			ToStringList.toString(value, buffer);
 			if (hasChild()) {
 				buffer.append('[');
 				child.toString(buffer);
@@ -43,7 +44,7 @@ public final class ExpressionTree {
 			buffer.append(')');
 			return;
 		}
-		ExpressionList.toString(value, buffer);
+		ToStringList.toString(value, buffer);
 		if (hasChild()) {
 			buffer.append(',');
 			child.toString(buffer);

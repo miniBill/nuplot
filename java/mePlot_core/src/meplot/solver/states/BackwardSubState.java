@@ -2,7 +2,6 @@ package meplot.solver.states;
 
 import meplot.expressions.Expression;
 import meplot.expressions.Letter;
-import meplot.expressions.list.IExpressionIterable;
 import meplot.expressions.operations.BooleanOp;
 import meplot.expressions.operations.Operation;
 import meplot.expressions.tree.ExpressionTree;

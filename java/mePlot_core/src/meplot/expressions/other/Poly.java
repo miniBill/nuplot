@@ -349,12 +349,12 @@ public final class Poly extends Sum {
 	}
 
 	public Poly sumExpand() {
-		final ExpressionList toret = new ExpressionList();
+		final List<Expression> toret = new List<>();
 		boolean same = true;
 		for (Expression curr : this) {
 			if (curr instanceof Sum) {
 				same = false;
-				toret.addRange(((Sum) curr).iterator());
+				toret.addRange((Sum) curr);
 			} else
 				toret.add(curr);
 		}

@@ -1,5 +1,6 @@
 package platform.lists;
 
+import com.sun.istack.internal.NotNull;
 import platform.NotImplementedException;
 
 import java.lang.reflect.Array;
@@ -89,6 +90,16 @@ public final class IterableExtensions {
                 toret.add(curr);
         return toret;
     }
+
+    @NotNull
+    public static <T> IList<T> unique(Iterable<T> list) {
+        final IList<T> toret = new List<>();
+        for (T current : list)
+            if (!IterableExtensions.contains(toret, current))
+                toret.add(current);
+        return toret;
+    }
+
 
     public static <T> Iterable<T> wrap(Iterator<T> iterator) {
         return () -> iterator;

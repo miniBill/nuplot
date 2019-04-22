@@ -3,7 +3,6 @@ package meplot.expressions.other;
 import meplot.expressions.Expression;
 import meplot.expressions.Letter;
 import meplot.expressions.exceptions.DivisorException;
-import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.ValueList;
 import meplot.expressions.numbers.Fraction;
 import meplot.expressions.numbers.IInt;
@@ -14,6 +13,7 @@ import meplot.expressions.operations.Power;
 import meplot.expressions.operations.Sum;
 import meplot.expressions.visitors.simplification.SimplificationHelper;
 import platform.lists.IList;
+import platform.lists.IterableExtensions;
 import platform.lists.List;
 
 public final class PolynomialMath {
@@ -27,11 +27,11 @@ public final class PolynomialMath {
 			return getRoots(new Poly((Sum) poly, var), var);
 		if (poly instanceof Letter) {
 			if (((Letter) poly).getLetter() == var)
-				return new ExpressionList(Int.ZERO);
-			return ExpressionList.getEmpty();
+				return new List<>(Int.ZERO);
+			return new List<>();
 		}
 		if (poly instanceof INumber)
-			return ExpressionList.getEmpty();
+			return new List<>();
 		if (poly instanceof Power) {
 			final Power ppoly = (Power) poly;
 			final Expression exp = ppoly.getExponent();
@@ -39,20 +39,20 @@ public final class PolynomialMath {
 				final IInt iexp = (IInt) exp;
 				final int value = iexp.getValue();
 				if (value <= 0)
-					return ExpressionList.getEmpty();
+					return new List<>();
 				return getRoots(ppoly.getBase(), var);
 			}
 		}
-		return ExpressionList.getEmpty();
+		return new List<>();
 	}
 
 	private static IList<Expression> getRoots(final Poly poly, final char var) {
 		if (!Poly.isPoly(poly, var))
-			return ExpressionList.getEmpty();
+			return new List<>();
 		final Expression lead = poly.getLeadingCoeff();
 		final IList<Expression> leadDiv = getDivisors(lead);
 		if (leadDiv == null)
-			return ExpressionList.getEmpty();
+			return new List<>();
 		final Expression trail = poly.getTrailingCoeff();
 		final IList<Expression> trailDiv = getDivisors(trail);
 		final IList<Expression> toret = new List<>();
@@ -102,7 +102,7 @@ public final class PolynomialMath {
 				indexes[j]++;
 				if (indexes[j] == gens.elementAt(j).length()) {
 					if (j == indexes.length - 1)
-						return ExpressionList.unique( toret);
+						return IterableExtensions.unique( toret);
 					indexes[j] = 0;
 				}
 			}
@@ -112,7 +112,7 @@ public final class PolynomialMath {
 	private static IList<IList<Expression>> gen(final Iterable<Expression> iterable) {
 		IList<IList<Expression>> result = new List<>();
 		for (Expression expression : iterable)
-			result.add(ExpressionList.unique(new List<>(Int.ONE, getDivisors(expression))));
+			result.add(IterableExtensions.unique(new List<>(Int.ONE, getDivisors(expression))));
 		return result;
 	}
 
@@ -141,7 +141,7 @@ public final class PolynomialMath {
 		for (Expression denCurr : denDiv)
 			for (Expression numCurr : numDiv)
 				toret.add(SimplificationHelper.simplify(numCurr.divide(denCurr)));
-		return ExpressionList.unique(toret);
+		return IterableExtensions.unique(toret);
 	}
 
 	public static IList<Expression> divisors(final IInt dint) {

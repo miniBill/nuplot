@@ -51,7 +51,7 @@ public abstract class AbstractSolver implements ISolver {
 		for(Expression[] layer : zipped){
 			leaf = leaf.addChild(layer);
 		}
-		final IList<Expression> last = new ExpressionList();
+		final List<Expression> last = new List<>();
 		for (Expression expression : leaf.getValue())
 			last.add(SimplificationHelper.simplify(expression));
 		return leaf.addChild(last);
@@ -198,7 +198,7 @@ public abstract class AbstractSolver implements ISolver {
 				}
 			}
 			if (left instanceof Matrix) {
-				final IList<Expression> list = new ExpressionList();
+				final List<Expression> list = new List<>();
 				for (Expression expression : (Matrix) left)
 					list.add(new BooleanOp(expression, Operation.EQUALS, Int.ZERO));
 				toret.addChild(list);

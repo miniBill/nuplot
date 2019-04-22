@@ -5,6 +5,7 @@ import meplot.expressions.IOutputtable;
 import meplot.expressions.list.ExpressionList;
 import meplot.expressions.list.SimplifyList;
 import meplot.expressions.numbers.Int;
+import platform.lists.List;
 import platform.log.Log;
 import platform.log.LogLevel;
 
@@ -44,14 +45,14 @@ public final class SimplificationHelper {
 
 	public static Iterable<Expression> stepSimplify(final Expression arg) {
 		if (arg.isSimplified())
-			return new ExpressionList(arg);
+			return new List<>(arg);
 		String argstring = arg.toString();
 		if ("0".equals(argstring))// otherwise it could FAIL
-			return new ExpressionList(Int.ZERO);
+			return new List<>(Int.ZERO);
 		Expression current = Int.ZERO;
 		Expression next = arg;
 		final int max = argstring.length() > 25 ? 10 : 100;
-		final ExpressionList toret = new ExpressionList(next);
+		final List<Expression> toret = new List<>(next);
 		for (int safety = 0; safety < max; safety++) {
 			current = next;
 			if (next == null) {

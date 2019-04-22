@@ -35,7 +35,7 @@ public final class Division extends AbstractExpression implements IDivision {
 		}
 
 		public Iterator<Expression> iterator() {
-			return new ExpressionList(arg).iterator();
+			return new List<>(arg).iterator();
 		}
 
 		public INumber coefficent() {

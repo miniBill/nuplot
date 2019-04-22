@@ -50,17 +50,17 @@ abstract class SystemSolverState implements ISystemSolverState {
 	}
 
 	protected static IList<Expression> removeNullAndZero(final Iterable<Expression> equations) {
-		final IList<Expression> toret = new ExpressionList();
+		final IList<Expression> toret = new List<>();
 		for (Expression expression : equations) {
 			if (expression != null)
 				if (expression instanceof Letter) {
 					if (expression.isIdentical(Letter.NOTEXISTS))
-						return new ExpressionList(Letter.NOTEXISTS);
+						return new List<>(Letter.NOTEXISTS);
 				} else if (!expression.isZero() && !expression.equals(Letter.FORALL))
 					toret.add(expression);
 		}
         if (IterableExtensions.isEmpty(toret))
-			return new ExpressionList(Letter.FORALL);
+			return new List<>(Letter.FORALL);
 		return toret;
 	}
 
