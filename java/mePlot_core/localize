@@ -1,2 +1,0 @@
-CLASSPATH=Localizator/bin:bin  java Localizator > /dev/null
-mv it.res res/
