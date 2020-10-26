@@ -1,37 +1,75 @@
-module Expression exposing (BinaryOperation(..), Expression(..), by, div, double, equals, int, ipow, minus, partialSubstitute, plus, pow, sqroot, square, triple)
+module Expression exposing
+    ( BinaryOperation(..)
+    , Expression(..)
+    , by
+    , div
+    , double
+    , equals
+    , int
+    , ipow
+    , minus
+    , negate
+    , one
+    , partialSubstitute
+    , plus
+    , pow
+    , sqroot
+    , square
+    , squash
+    , triple
+    , two
+    , zero
+    )
+
+import Dict exposing (Dict)
 
 
 type Expression
-    = BinaryOperation BinaryOperation Expression Expression (List Expression)
+    = UnaryOperation UnaryOperation Expression
+    | BinaryOperation BinaryOperation Expression Expression
+    | AssociativeOperation AssociativeOperation Expression Expression (List Expression)
     | Variable String
     | Integer Int
-    | Replace (List ( String, Expression )) Expression
+    | Float Float
+    | Replace (Dict String Expression) Expression
     | List (List Expression)
 
 
+type UnaryOperation
+    = Negate
+
+
 type BinaryOperation
-    = Addition
-    | Subtraction
-    | Multiplication
-    | Division
+    = Division
     | Power
 
 
-partialSubstitute expr =
+type AssociativeOperation
+    = Addition
+    | Multiplication
+
+
+partialSubstitute : Expression -> a
+partialSubstitute _ =
     Debug.todo "partialSubstitute"
 
 
 equals : Expression -> Expression -> Bool
 equals l r =
     case ( l, r ) of
-        ( BinaryOperation lop ll lr lo, BinaryOperation rop rl rr ro ) ->
-            lop
-                == rop
+        ( UnaryOperation lop le, UnaryOperation rop re ) ->
+            (lop == rop) && equals le re
+
+        ( BinaryOperation lop ll lr, BinaryOperation rop rl rr ) ->
+            (lop == rop)
                 && equals ll rl
                 && equals lr rr
-                && List.length lo
-                == List.length ro
-                && List.all identity (List.map2 equals lo ro)
+
+        ( AssociativeOperation lop ll lr lo, AssociativeOperation rop rl rr ro ) ->
+            (lop == rop)
+                && equals ll rl
+                && equals lr rr
+                && listEquals lo ro
 
         ( Variable lv, Variable rv ) ->
             lv == rv
@@ -40,30 +78,26 @@ equals l r =
             li == ri
 
         ( Replace ls le, Replace rs re ) ->
-            List.length ls
-                == List.length rs
+            (Dict.size ls == Dict.size rs)
                 && equals le re
                 && List.all identity
                     (List.map2
-                        (\( lc, ln ) ( rc, rn ) ->
-                            lc == rc && equals ln rn
-                        )
-                        ls
-                        rs
+                        (\( lc, ln ) ( rc, rn ) -> lc == rc && equals ln rn)
+                        (Dict.toList ls)
+                        (Dict.toList rs)
                     )
 
         ( List ls, List rs ) ->
-            List.length ls
-                == List.length rs
-                && List.all identity
-                    (List.map2
-                        equals
-                        ls
-                        rs
-                    )
+            listEquals ls rs
 
         _ ->
             False
+
+
+listEquals : List Expression -> List Expression -> Bool
+listEquals ls rs =
+    (List.length ls == List.length rs)
+        && List.all identity (List.map2 equals ls rs)
 
 
 int : Int -> Expression
@@ -71,7 +105,8 @@ int =
     Integer
 
 
-operation default op xs =
+associativeOperation : AssociativeOperation -> Expression -> List Expression -> Expression
+associativeOperation op default xs =
     case xs of
         [] ->
             default
@@ -80,33 +115,45 @@ operation default op xs =
             y
 
         y :: z :: zs ->
-            BinaryOperation op y z zs
+            AssociativeOperation op y z zs
 
 
+plus : List Expression -> Expression
 plus =
-    operation (Integer 0) Addition
+    associativeOperation Addition (Integer 0)
 
 
-minus x =
-    by [ Integer -1, x ]
+minus : Expression -> Expression -> Expression
+minus x y =
+    plus [ x, negate y ]
 
 
+negate : Expression -> Expression
+negate =
+    UnaryOperation Negate
+
+
+by : List Expression -> Expression
 by =
-    operation (Integer 1) Multiplication
+    associativeOperation Multiplication (Integer 1)
 
 
+div : Expression -> Expression -> Expression
 div x y =
-    BinaryOperation Division x y []
+    BinaryOperation Division x y
 
 
+pow : Expression -> Expression -> Expression
 pow x y =
-    BinaryOperation Power x y []
+    BinaryOperation Power x y
 
 
+double : Expression -> Expression
 double x =
     by [ Integer 2, x ]
 
 
+triple : Expression -> Expression
 triple x =
     by [ Integer 3, x ]
 
@@ -121,5 +168,52 @@ square x =
     ipow x 2
 
 
+sqroot : Expression -> Expression
 sqroot x =
     by [ Variable "sqrt", x ]
+
+
+zero : Expression
+zero =
+    Integer 0
+
+
+one : Expression
+one =
+    Integer 1
+
+
+two : Expression
+two =
+    Integer 2
+
+
+squash : Expression -> Expression
+squash expr =
+    case expr of
+        AssociativeOperation oop ol or oo ->
+            case squash ol of
+                (AssociativeOperation iop il ir io) as sl ->
+                    if oop == iop then
+                        squash <| AssociativeOperation oop il ir (io ++ or :: oo)
+
+                    else
+                        AssociativeOperation oop sl (squash or) (List.map squash oo)
+
+                sl ->
+                    AssociativeOperation oop sl (squash or) (List.map squash oo)
+
+        UnaryOperation uop e ->
+            UnaryOperation uop <| squash e
+
+        Replace vars e ->
+            Replace (Dict.map (\_ -> squash) vars) <| squash e
+
+        List es ->
+            List <| List.map squash es
+
+        BinaryOperation bop l r ->
+            BinaryOperation bop (squash l) (squash r)
+
+        _ ->
+            expr

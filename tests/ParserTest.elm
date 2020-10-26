@@ -1,9 +1,10 @@
 module ParserTest exposing (suite)
 
+import Dict
 import Expect
-import Expression exposing (BinaryOperation(..), Expression(..), by, div, double, minus, plus, sqroot, square, triple)
+import Expression exposing (BinaryOperation(..), Expression(..), by, div, double, minus, one, plus, pow, sqroot, square, triple, two)
+import Expression.Parser as Parser exposing (Problem(..))
 import Parser
-import ParserModel
 import Test exposing (Test, describe, test)
 
 
@@ -19,16 +20,43 @@ suite =
                     in
                     case parsed of
                         Ok ok ->
-                            Expression.equals ok to
-                                |> Expect.true "correctly parsed"
+                            Expect.equal to ok
 
                         Err err ->
-                            Expect.fail <| ParserModel.parserErrorToString err
+                            Expect.fail <|
+                                String.join "\n" <|
+                                    [ "Error parsing expression:"
+                                    , "  " ++ from
+                                    ]
+                                        ++ (if List.isEmpty err then
+                                                [ "No valid parse?" ]
+
+                                            else
+                                                List.map
+                                                    (\{ col, problem } ->
+                                                        String.concat
+                                                            [ String.repeat (col + 1) " "
+                                                            , "^--"
+                                                            , problemToString problem
+                                                            ]
+                                                    )
+                                                    err
+                                           )
     in
     describe "The Parser module"
         [ describe "Parser.parse" <|
             List.map toTest tests
         ]
+
+
+problemToString : Problem -> String
+problemToString problem =
+    case problem of
+        Expected string ->
+            "Expected " ++ string
+
+        Unexpected ->
+            "Unexpected"
 
 
 tests : List ( String, Expression )
@@ -46,6 +74,12 @@ tests =
         f =
             Variable "f"
 
+        g =
+            Variable "g"
+
+        i =
+            Variable "i"
+
         n =
             Variable "n"
 
@@ -58,19 +92,38 @@ tests =
         z =
             Variable "z"
     in
-    [ ( "[a=2x;b=3z]2a+b^2"
+    [ ( "a", a )
+    , ( "a+b", plus [ a, b ] )
+    , ( "a-b", minus a b )
+    , ( "a*b", by [ a, b ] )
+    , ( " a * b ", by [ a, b ] )
+    , ( "ab", by [ a, b ] )
+    , ( "a/b", div a b )
+    , ( "a*b*c", by [ a, b, c ] )
+    , ( "a*b/c", div (by [ a, b ]) c )
+    , ( "a/b*c", by [ div a b, c ] )
+    , ( "a/b/c", div (div a b) c )
+    , ( "[a=2x;b=3z]2a+b^2"
       , Replace
-            [ ( "a", double x ), ( "b", triple z ) ]
+            (Dict.fromList
+                [ ( "a", double x )
+                , ( "b", triple z )
+                ]
+            )
             (plus [ double a, square b ])
       )
     , ( "[a2x;b3z]2a+b^2"
       , Replace
-            [ ( "a", double x ), ( "b", triple z ) ]
+            (Dict.fromList
+                [ ( "a", double x )
+                , ( "b", triple z )
+                ]
+            )
             (plus [ double a, square b ])
       )
     , ( "[ab]aaa"
       , Replace
-            [ ( "a", b ) ]
+            (Dict.singleton "a" b)
             (by [ a, a, a ])
       )
     , ( "(bx+ax)/(abn)"
@@ -79,34 +132,80 @@ tests =
             (by [ a, b, n ])
       )
     , ( "[cx/a+x/b;f(y-1)/a+(y+1)/b]{c/n,f/n}"
-      , List
-            [ div
-                (plus [ by [ b, x ], by [ a, x ] ])
-                (by [ a, b, n ])
-            , div
-                (plus [ by [ b, y ], minus b, by [ a, y ], a ])
-                (by [ a, b, n ])
-            ]
+      , Replace
+            (Dict.fromList
+                [ ( "c", plus [ div x a, div x b ] )
+                , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
+                ]
+            )
+            (List
+                [ div c n
+                , div f n
+                ]
+            )
       )
     , ( "[nsqrt(cc+ff)][cx/a+x/b;f(y-1)/a+(y+1)/b]{c/n,f/n}"
-      , List
-            [ div
-                (plus [ by [ b, x ], by [ a, x ] ])
-                (by [ a, b, sqroot <| plus [ square c, square f ] ])
-            , div
-                (plus [ by [ b, y ], minus b, by [ a, y ], a ])
-                (by [ a, b, sqroot <| plus [ square c, square f ] ])
-            ]
+      , Replace
+            (Dict.fromList
+                [ ( "n", sqroot (plus [ by [ c, c ], by [ f, f ] ]) )
+                ]
+            )
+        <|
+            Replace
+                (Dict.fromList
+                    [ ( "c", plus [ div x a, div x b ] )
+                    , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
+                    ]
+                )
+            <|
+                List
+                    [ div c n
+                    , div f n
+                    ]
       )
+    , ( "[cov=3]covcov"
+      , let
+            cov =
+                Variable "cov"
+        in
+        Replace
+            (Dict.fromList
+                [ ( "cov", Integer 3 )
+                ]
+            )
+            (by [ cov, cov ])
+      )
+    , ( "[a=1]a"
+      , Replace (Dict.singleton "a" one) a
+      )
+    , ( "[g(xx-yy)^(3/2)+1/10]gra{x/(gg),y/(gg)}"
+      , Replace
+            (Dict.fromList
+                [ ( "g"
+                  , plus
+                        [ pow (minus (by [ x, x ]) (by [ y, y ])) (div (Integer 3) two)
+                        , div one <| Integer 10
+                        ]
+                  )
+                ]
+            )
+        <|
+            by
+                [ Variable "gra"
+                , List
+                    [ div x <| by [ g, g ]
+                    , div y <| by [ g, g ]
+                    ]
+                ]
+      )
+    , ( "2x", by [ two, x ] )
+    , ( "sinh(ix)", by [ Variable "sinh", by [ i, x ] ] )
+    , ( "cosh(ix)", by [ Variable "cosh", by [ i, x ] ] )
     ]
 
 
 
 {-
-   parseOrFail("[g(xx-yy)^(3/2)+1/10]gra{x/(gg),y/(gg)}");
-   justParse("2x");
-   assertSimplify("sinh(ix)", "isin(x)");
-   assertSimplify("cosh(ix)", "cos(x)");
    assertSimplify("(a+ib)(a-ib)", "a^2+b^2");
    assertSimplify("i^2", "-1");
    assertSimplify("i^69", "i");
@@ -261,7 +360,7 @@ tests =
    justParse("(a-b)(a+b)", "a^2-b^2");
    justParse("(a+b)(a+b)", "(a+b)^2");
    justParse("aa", "a^2");
-   justParse("aabb", "b^2a^2");// TODO: Fix
+   justParse("aabb", "a^2b^2");
    justParse("c(a+b)");
    assertSimplify("a++a", "2a");
    justParse("a+-b", "a-b");
