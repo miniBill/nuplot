@@ -1,7 +1,9 @@
 module Expression.Parser exposing (Context(..), Problem(..), parse)
 
 import Dict
-import Expression exposing (Expression(..), by, div, minus, plus, pow)
+import Expression exposing (AssociativeOperation(..), Expression(..))
+import Expression.Utils exposing (by, div, minus, negate_, plus, pow)
+import List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
 
 
@@ -34,14 +36,106 @@ parse input =
             (\r ->
                 r
                     |> explode defaultContext
-                    |> Expression.squash
+                    |> Expression.Utils.squash
+                    |> activateFunctions defaultContext
             )
+
+
+longerFirst : List String -> List String
+longerFirst =
+    List.sortBy (\s -> -(String.length s))
 
 
 defaultContext : List String
 defaultContext =
-    [ "sqrt", "sin", "cos", "sinh", "cosh", "gra" ]
-        |> List.sortBy (\s -> -(String.length s))
+    let
+        power =
+            [ "abs", "sqrt" ]
+
+        trig =
+            [ "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh" ]
+    in
+    longerFirst <|
+        List.concat
+            [ power
+            , trig
+            , [ "gra" ]
+            ]
+
+
+activateFunctions : List String -> Expression -> Expression
+activateFunctions context expr =
+    let
+        isFunction _ _ =
+            False
+    in
+    case expr of
+        Replace vars e ->
+            Replace (Dict.map (\_ -> activateFunctions context) vars) <|
+                activateFunctions
+                    (longerFirst (context ++ Dict.keys (Dict.filter isFunction vars)))
+                    e
+
+        UnaryOperation uop e ->
+            UnaryOperation uop <| activateFunctions context e
+
+        BinaryOperation bop l r ->
+            BinaryOperation bop (activateFunctions context l) (activateFunctions context r)
+
+        AssociativeOperation aop l r o ->
+            let
+                al =
+                    activateFunctions context l
+
+                ar =
+                    activateFunctions context r
+
+                ao =
+                    List.map (activateFunctions context) o
+            in
+            if aop == Multiplication then
+                let
+                    ( neh, net ) =
+                        case List.reverse (al :: ar :: ao) of
+                            [] ->
+                                -- Impossible
+                                ( al, [] )
+
+                            last :: init ->
+                                ( last, init )
+
+                    raw =
+                        (\( h, t ) -> h :: t) <|
+                            List.foldl
+                                (\e ( last, rest ) ->
+                                    case e of
+                                        Variable v ->
+                                            if List.member v context then
+                                                ( by [ e, last ], rest )
+
+                                            else
+                                                ( e, last :: rest )
+
+                                        _ ->
+                                            ( e, last :: rest )
+                                )
+                                ( neh, [] )
+                                net
+                in
+                if 1 < List.length raw && List.length raw < 2 + List.length ao then
+                    activateFunctions context <| by raw
+
+                else
+                    by raw
+
+            else
+                AssociativeOperation aop al ar ao
+
+        Expression.List es ->
+            Expression.List <| List.map (activateFunctions context) es
+
+        _ ->
+            expr
 
 
 explode : List String -> Expression -> Expression
@@ -215,7 +309,7 @@ multidivisionParser =
 
 powerParser : ExpressionParser Expression
 powerParser =
-    Parser.succeed (\a f -> f a)
+    Parser.succeed (\atom maybePow -> maybePow atom)
         |= atomParser
         |. whitespace
         |= Parser.oneOf
@@ -235,7 +329,13 @@ type alias SequenceData =
 
 multiSequence : SequenceData -> ExpressionParser Expression
 multiSequence data =
-    data.item
+    Parser.succeed identity
+        |= Parser.oneOf
+            [ Parser.succeed negate_
+                |. Parser.symbol (token "-")
+            , Parser.succeed identity
+            ]
+        |= data.item
         |> Parser.andThen
             (\first ->
                 Parser.loop first (multiSequenceHelp data)

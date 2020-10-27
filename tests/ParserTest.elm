@@ -2,8 +2,9 @@ module ParserTest exposing (suite)
 
 import Dict
 import Expect
-import Expression exposing (BinaryOperation(..), Expression(..), by, div, double, minus, one, plus, pow, sqroot, square, triple, two)
+import Expression exposing (Expression(..))
 import Expression.Parser as Parser exposing (Problem(..))
+import Expression.Utils exposing (a, abs_, b, by, c, cos_, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sqrt_, square, triple, two, x, y, z)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -62,35 +63,8 @@ problemToString problem =
 tests : List ( String, Expression )
 tests =
     let
-        a =
-            Variable "a"
-
-        b =
-            Variable "b"
-
-        c =
-            Variable "c"
-
-        f =
-            Variable "f"
-
-        g =
-            Variable "g"
-
-        i =
-            Variable "i"
-
-        n =
-            Variable "n"
-
-        x =
-            Variable "x"
-
-        y =
-            Variable "y"
-
-        z =
-            Variable "z"
+        byself var =
+            by [ var, var ]
     in
     [ ( "a", a )
     , ( "a+b", plus [ a, b ] )
@@ -138,16 +112,12 @@ tests =
                 , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
                 ]
             )
-            (List
-                [ div c n
-                , div f n
-                ]
-            )
+            (List [ div c n, div f n ])
       )
     , ( "[nsqrt(cc+ff)][cx/a+x/b;f(y-1)/a+(y+1)/b]{c/n,f/n}"
       , Replace
             (Dict.fromList
-                [ ( "n", sqroot (plus [ by [ c, c ], by [ f, f ] ]) )
+                [ ( "n", sqrt_ (plus [ byself c, byself f ]) )
                 ]
             )
         <|
@@ -158,69 +128,70 @@ tests =
                     ]
                 )
             <|
-                List
-                    [ div c n
-                    , div f n
-                    ]
+                List [ div c n, div f n ]
       )
     , ( "[cov=3]covcov"
-      , let
-            cov =
-                Variable "cov"
-        in
-        Replace
+      , Replace
             (Dict.fromList
                 [ ( "cov", Integer 3 )
                 ]
             )
-            (by [ cov, cov ])
+            (byself <| Variable "cov")
       )
     , ( "[a=1]a"
       , Replace (Dict.singleton "a" one) a
       )
     , ( "[g(xx-yy)^(3/2)+1/10]gra{x/(gg),y/(gg)}"
-      , Replace
+      , let
+            gg =
+                byself g
+        in
+        Replace
             (Dict.fromList
                 [ ( "g"
                   , plus
-                        [ pow (minus (by [ x, x ]) (by [ y, y ])) (div (Integer 3) two)
+                        [ pow (minus (byself x) (byself y)) (div (Integer 3) two)
                         , div one <| Integer 10
                         ]
                   )
                 ]
             )
-        <|
-            by
-                [ Variable "gra"
-                , List
-                    [ div x <| by [ g, g ]
-                    , div y <| by [ g, g ]
-                    ]
-                ]
+            (by [ Variable "gra", List [ div x gg, div y gg ] ])
       )
     , ( "2x", by [ two, x ] )
     , ( "sinh(ix)", by [ Variable "sinh", by [ i, x ] ] )
     , ( "cosh(ix)", by [ Variable "cosh", by [ i, x ] ] )
+    , ( "(a+ib)(a-ib)"
+      , let
+            ib =
+                by [ i, b ]
+        in
+        by [ plus [ a, ib ], minus a ib ]
+      )
+    , ( "i^2", square i )
+    , ( "i^69", ipow i 69 )
+    , ( "0.5+3i", plus [ Float 0.5, triple i ] )
+    , ( "1/i", div one i )
+    , ( "i*i", byself i )
+    , ( "-a", negate_ a )
+    , ( "sqrt(-1)", sqrt_ (negate_ one) )
+    , ( "5+10i", icomplex 5 10 )
+    , ( "2+i", icomplex 2 1 )
+    , ( "(5+10i)/(2+i)", div (icomplex 5 10) (icomplex 2 1) )
+    , ( "sincosx", sin_ (cos_ x) )
+    , ( "sqrtabsx", sqrt_ (abs_ x) )
+    , ( "abs(xx)", abs_ (byself x) )
+    , ( "absxx", by [ abs_ x, x ] )
     ]
 
 
 
 {-
-   assertSimplify("(a+ib)(a-ib)", "a^2+b^2");
-   assertSimplify("i^2", "-1");
-   assertSimplify("i^69", "i");
-   justParse("0.5+3i");
-   assertSimplify("1/i", "-i");
-   assertSimplify("i*i", "-1");
-   assertSimplify("sqrt(-1)", "i");
-   final ICalculable numerator = parseOrFail("5+10i");
-   final Expression denominator = parseOrFail("2+i");
-   assertSimplify(SimplificationHelper.simplify(numerator.divide(denominator)), "4+3i");
-   justParse("sincosx", "sin(cos(x))");
-   justParse("sqrtabsx", "sqrt(abs(x))");
    justParse("abs(xx)", "x^2");
    justParse("abs(x^4)abs(sqrtx)", "x^4sqrt(x)");
    justParse("sinxcosy", "sin(x)cos(y)");
+   justParse("asinxcosy", "asin(x)cos(y)");
+   justParse("bsinxcosy", "b*sin(x)cos(y)");
    assertSimplify("sin(-x)", "-sinx");
    assertSimplify("cos(-x)", "cosx");
    assertSimplify("(-cos(x)abs(x)x^2)/x", "-xcosxabsx");
