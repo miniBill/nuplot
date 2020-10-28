@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, b, by, c, cos_, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sqrt_, square, triple, two, x, y, z)
+import Expression.Utils exposing (a, abs_, asin_, b, by, c, cos_, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sqrt_, square, triple, two, x, y, z)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -12,7 +12,7 @@ import Test exposing (Test, describe, test)
 suite : Test
 suite =
     let
-        toTest ( from, to ) =
+        toTest ( from, to, expectedString ) =
             test ("has the same behaviour of the java one on " ++ from) <|
                 \_ ->
                     let
@@ -21,7 +21,11 @@ suite =
                     in
                     case parsed of
                         Ok ok ->
-                            Expect.equal to ok
+                            Expect.all
+                                [ Expect.equal (Expression.toString to ++ " = " ++ Debug.toString to)
+                                , Expect.equal (expectedString ++ " = " ++ Debug.toString to)
+                                ]
+                                (Expression.toString ok ++ " = " ++ Debug.toString ok)
 
                         Err err ->
                             Expect.fail <|
@@ -60,23 +64,26 @@ problemToString problem =
             "Unexpected"
 
 
-tests : List ( String, Expression )
+tests : List ( String, Expression, String )
 tests =
     let
         byself var =
             by [ var, var ]
+
+        straight s v =
+            ( s, v, s )
     in
-    [ ( "a", a )
-    , ( "a+b", plus [ a, b ] )
-    , ( "a-b", minus a b )
-    , ( "a*b", by [ a, b ] )
-    , ( " a * b ", by [ a, b ] )
-    , ( "ab", by [ a, b ] )
-    , ( "a/b", div a b )
-    , ( "a*b*c", by [ a, b, c ] )
-    , ( "a*b/c", div (by [ a, b ]) c )
-    , ( "a/b*c", by [ div a b, c ] )
-    , ( "a/b/c", div (div a b) c )
+    [ straight "a" a
+    , ( "a+b", plus [ a, b ], "a + b" )
+    , ( "a-b", minus a b, "a - b" )
+    , straight "a*b" <| by [ a, b ]
+    , ( " a * b ", by [ a, b ], "a*b" )
+    , ( "ab", by [ a, b ], "a*b" )
+    , straight "a/b" (div a b)
+    , straight "a*b*c" <| by [ a, b, c ]
+    , straight "a*b/c" <| div (by [ a, b ]) c
+    , straight "a/b*c" <| by [ div a b, c ]
+    , straight "a/b/c" <| div (div a b) c
     , ( "[a=2x;b=3z]2a+b^2"
       , Replace
             (Dict.fromList
@@ -85,6 +92,7 @@ tests =
                 ]
             )
             (plus [ double a, square b ])
+      , "[a=2x; b=3z] 2a + b²"
       )
     , ( "[a2x;b3z]2a+b^2"
       , Replace
@@ -94,16 +102,19 @@ tests =
                 ]
             )
             (plus [ double a, square b ])
+      , "[a=2x; b=3z] 2a + b²"
       )
     , ( "[ab]aaa"
       , Replace
             (Dict.singleton "a" b)
             (by [ a, a, a ])
+      , "[a=b] a*a*a"
       )
     , ( "(bx+ax)/(abn)"
       , div
             (plus [ by [ b, x ], by [ a, x ] ])
             (by [ a, b, n ])
+      , "(b*x + a*x)/(a*b*n)"
       )
     , ( "[cx/a+x/b;f(y-1)/a+(y+1)/b]{c/n,f/n}"
       , Replace
@@ -113,6 +124,7 @@ tests =
                 ]
             )
             (List [ div c n, div f n ])
+      , "[c = x/a + x/b; f = (y - 1)/a + (y + 1)/b] {c/n, f/n}"
       )
     , ( "[nsqrt(cc+ff)][cx/a+x/b;f(y-1)/a+(y+1)/b]{c/n,f/n}"
       , Replace
@@ -129,6 +141,7 @@ tests =
                 )
             <|
                 List [ div c n, div f n ]
+      , "[n = sqrt(c*c + f*f)] [c = x/a + x/b; f = (y - 1)/a + (y + 1)/b] {c/n, f/n}"
       )
     , ( "[cov=3]covcov"
       , Replace
@@ -137,9 +150,11 @@ tests =
                 ]
             )
             (byself <| Variable "cov")
+      , "[cov=3] cov*cov"
       )
     , ( "[a=1]a"
       , Replace (Dict.singleton "a" one) a
+      , "[a=1] a"
       )
     , ( "[g(xx-yy)^(3/2)+1/10]gra{x/(gg),y/(gg)}"
       , let
@@ -157,45 +172,61 @@ tests =
                 ]
             )
             (by [ Variable "gra", List [ div x gg, div y gg ] ])
+      , "[g = (x*x - y*y)^(3/2) + 1/10] gra{x/(g*g), y/(g*g)}"
       )
-    , ( "2x", by [ two, x ] )
-    , ( "sinh(ix)", by [ Variable "sinh", by [ i, x ] ] )
-    , ( "cosh(ix)", by [ Variable "cosh", by [ i, x ] ] )
+    , straight "2x" (by [ two, x ])
+    , ( "sinh(ix)", by [ Variable "sinh", by [ i, x ] ], "sinh(i*x)" )
+    , ( "cosh(ix)", by [ Variable "cosh", by [ i, x ] ], "cosh(i*x)" )
     , ( "(a+ib)(a-ib)"
       , let
             ib =
                 by [ i, b ]
         in
         by [ plus [ a, ib ], minus a ib ]
+      , "(a + i*b)*(a - i*b)"
       )
-    , ( "i^2", square i )
-    , ( "i^69", ipow i 69 )
-    , ( "0.5+3i", plus [ Float 0.5, triple i ] )
-    , ( "1/i", div one i )
-    , ( "i*i", byself i )
-    , ( "-a", negate_ a )
-    , ( "sqrt(-1)", sqrt_ (negate_ one) )
-    , ( "5+10i", icomplex 5 10 )
-    , ( "2+i", icomplex 2 1 )
-    , ( "(5+10i)/(2+i)", div (icomplex 5 10) (icomplex 2 1) )
-    , ( "sincosx", sin_ (cos_ x) )
-    , ( "sqrtabsx", sqrt_ (abs_ x) )
-    , ( "abs(xx)", abs_ (byself x) )
-    , ( "absxx", by [ abs_ x, x ] )
+    , ( "i^2", square i, "i²" )
+    , straight "i^69" <| ipow i 69
+    , ( "0.5+3i", plus [ Float 0.5, triple i ], "0.5 + 3i" )
+    , straight "1/i" <| div one i
+    , straight "i*i" <| byself i
+    , straight "-a" <| negate_ a
+    , straight "sqrt(-1)" <| sqrt_ (negate_ one)
+    , ( "5+10i", icomplex 5 10, "5 + 10i" )
+    , ( "2+i", icomplex 2 1, "2 + i" )
+    , ( "(5+10i)/(2+i)", div (icomplex 5 10) (icomplex 2 1), "(5 + 10i)/(2 + i)" )
+    , ( "sincosx", sin_ (cos_ x), "sin(cos(x))" )
+    , ( "sqrtabsx", sqrt_ (abs_ x), "sqrt(abs(x))" )
+    , ( "abs(xx)", abs_ (byself x), "abs(x*x)" )
+    , ( "absxx", by [ abs_ x, x ], "abs(x)*x" )
+    , ( "abs(x^4)abs(sqrtx)", by [ abs_ (ipow x 4), abs_ (sqrt_ x) ], "abs(x^4)*abs(sqrt(x))" )
+    , ( "sinxcosy", by [ sin_ x, cos_ y ], "sin(x)*cos(y)" )
+    , ( "asinxcosy", by [ asin_ x, cos_ y ], "asin(x)*cos(y)" )
+    , ( "bsinxcosy", by [ b, sin_ x, cos_ y ], "b*sin(x)*cos(y)" )
+    , ( "sqrt*x", sqrt_ x, "sqrt(x)" )
+    , straight "sin(-x)" <| sin_ <| negate_ x
+    , straight "cos(-x)" <| cos_ <| negate_ x
+    , ( "(-cos(x)abs(x)x^2)/x"
+      , div
+            (negate_ <| by [ cos_ x, abs_ x, square x ])
+            x
+      , "-(cos(x)*abs(x)*x²)/x"
+      )
+    , ( "x^2(-xcos(x)abs(x"
+      , by [ square x, negate_ <| by [ x, cos_ x, abs_ x ] ]
+      , "x²*-(x*cos(x)*abs(x))"
+      )
+    , ( "(2cos(x)abs(x)x^2)/x"
+      , div
+            (by [ two, cos_ x, abs_ x, square x ])
+            x
+      , "2cos(x)*abs(x)*x²/x"
+      )
     ]
 
 
 
 {-
-   justParse("abs(xx)", "x^2");
-   justParse("abs(x^4)abs(sqrtx)", "x^4sqrt(x)");
-   justParse("sinxcosy", "sin(x)cos(y)");
-   justParse("asinxcosy", "asin(x)cos(y)");
-   justParse("bsinxcosy", "b*sin(x)cos(y)");
-   assertSimplify("sin(-x)", "-sinx");
-   assertSimplify("cos(-x)", "cosx");
-   assertSimplify("(-cos(x)abs(x)x^2)/x", "-xcosxabsx");
-   assertSimplify("x^2(-xcos(x)abs(x)", "-x^3cosxabsx");
    assertSimplify("(2cos(x)abs(x)x^2)/x", "2xcosxabsx");
    assertSimplify("-x^2+2x^2", "x^2");
    assertSimplify("-x^3cosxabsx+2x^3cosxabsx", "x^3cosxabsx");

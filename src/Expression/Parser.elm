@@ -1,7 +1,7 @@
 module Expression.Parser exposing (Context(..), Problem(..), parse)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), Expression(..))
+import Expression exposing (AssociativeOperation(..), Expression(..), defaultContext, isFunction)
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow)
 import List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
@@ -23,6 +23,11 @@ type Problem
     | Unexpected
 
 
+longerFirst : List String -> List String
+longerFirst =
+    List.sortBy (\s -> -(String.length s))
+
+
 parse : String -> Result (List (Parser.DeadEnd Context Problem)) Expression
 parse input =
     input
@@ -35,40 +40,14 @@ parse input =
         |> Result.map
             (\r ->
                 r
-                    |> explode defaultContext
+                    |> explode (longerFirst defaultContext)
                     |> Expression.Utils.squash
-                    |> activateFunctions defaultContext
+                    |> activateFunctions (longerFirst defaultContext)
             )
-
-
-longerFirst : List String -> List String
-longerFirst =
-    List.sortBy (\s -> -(String.length s))
-
-
-defaultContext : List String
-defaultContext =
-    let
-        power =
-            [ "abs", "sqrt" ]
-
-        trig =
-            [ "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh" ]
-    in
-    longerFirst <|
-        List.concat
-            [ power
-            , trig
-            , [ "gra" ]
-            ]
 
 
 activateFunctions : List String -> Expression -> Expression
 activateFunctions context expr =
-    let
-        isFunction _ _ =
-            False
-    in
     case expr of
         Replace vars e ->
             Replace (Dict.map (\_ -> activateFunctions context) vars) <|
@@ -201,6 +180,7 @@ explode context expr =
 
 mainParser : ExpressionParser Expression
 mainParser =
+    --relationParser
     addsubtractionParser
 
 
@@ -283,16 +263,26 @@ listParser =
                 }
 
 
+relationParser : ExpressionParser Expression
+relationParser =
+    Parser.inContext Expression <|
+        Parser.succeed (\a f -> f a)
+            |= addsubtractionParser
+            |= Parser.oneOf
+                [ Parser.problem <| Expected "todo"
+                , Parser.succeed identity
+                ]
+
+
 addsubtractionParser : ExpressionParser Expression
 addsubtractionParser =
-    Parser.inContext Expression <|
-        multiSequence
-            { separators =
-                [ ( \l r -> plus [ l, r ], Parser.symbol <| token "+" )
-                , ( \l r -> minus l r, Parser.symbol <| token "-" )
-                ]
-            , item = multidivisionParser
-            }
+    multiSequence
+        { separators =
+            [ ( \l r -> plus [ l, r ], Parser.symbol <| token "+" )
+            , ( \l r -> minus l r, Parser.symbol <| token "-" )
+            ]
+        , item = multidivisionParser
+        }
 
 
 multidivisionParser : ExpressionParser Expression
@@ -378,7 +368,11 @@ atomParser =
             |. whitespace
             |= Parser.lazy (\_ -> mainParser)
             |. whitespace
-            |. Parser.symbol (token ")")
+            |. Parser.oneOf
+                -- closed parens are optional
+                [ Parser.symbol (token ")")
+                , Parser.succeed ()
+                ]
         , replacementParser
         , listParser
         , Parser.chompWhile Char.isLower

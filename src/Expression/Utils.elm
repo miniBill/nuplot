@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, associativeOperation, b, by, c, cos_, d, div, double, f, g, i, icomplex, int, ipow, minus, n, negate_, one, plus, pow, sin_, sqrt_, square, squash, triple, two, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, associativeOperation, b, by, c, cos_, d, div, double, f, g, i, icomplex, int, ipow, minus, n, negate_, one, plus, pow, sin_, sqrt_, square, squash, triple, two, x, y, z, zero)
 
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
@@ -141,14 +141,19 @@ abs_ =
     func "abs"
 
 
+sin_ : Expression -> Expression
+sin_ =
+    func "sin"
+
+
 cos_ : Expression -> Expression
 cos_ =
     func "cos"
 
 
-sin_ : Expression -> Expression
-sin_ =
-    func "sin"
+asin_ : Expression -> Expression
+asin_ =
+    func "asin"
 
 
 double : Expression -> Expression
