@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, b, by, c, cos_, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sqrt_, square, triple, two, x, y, z)
+import Expression.Utils exposing (a, abs_, asin_, b, by, c, cos_, cosh_, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, x, y, z)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -171,12 +171,12 @@ tests =
                   )
                 ]
             )
-            (by [ Variable "gra", List [ div x gg, div y gg ] ])
+            (unaryFunc "gra" <| List [ div x gg, div y gg ])
       , "[g = (x*x - y*y)^(3/2) + 1/10] gra{x/(g*g), y/(g*g)}"
       )
     , straight "2x" (by [ two, x ])
-    , ( "sinh(ix)", by [ Variable "sinh", by [ i, x ] ], "sinh(i*x)" )
-    , ( "cosh(ix)", by [ Variable "cosh", by [ i, x ] ], "cosh(i*x)" )
+    , ( "sinh(ix)", sinh_ <| by [ i, x ], "sinh(i*x)" )
+    , ( "cosh(ix)", cosh_ <| by [ i, x ], "cosh(i*x)" )
     , ( "(a+ib)(a-ib)"
       , let
             ib =
@@ -222,13 +222,29 @@ tests =
             x
       , "2cos(x)*abs(x)*x²/x"
       )
+    , ( "-x^2+2x^2"
+      , plus
+            [ negate_ <| square x
+            , double <| square x
+            ]
+      , "-(x²) + 2x²"
+      )
+    , ( "-x^3cosxabsx"
+      , negate_ <| by [ ipow x 3, cos_ x, abs_ x ]
+      , "-(x³*cos(x)*abs(x))"
+      )
+    , ( "-x^3cosxabsx+2x^3cosxabsx"
+      , plus
+            [ negate_ <| by [ ipow x 3, cos_ x, abs_ x ]
+            , by [ double <| ipow x 3, cos_ x, abs_ x ]
+            ]
+      , "-(x³*cos(x)*abs(x)) + 2x³*cos(x)*abs(x)"
+      )
     ]
 
 
 
 {-
-   assertSimplify("(2cos(x)abs(x)x^2)/x", "2xcosxabsx");
-   assertSimplify("-x^2+2x^2", "x^2");
    assertSimplify("-x^3cosxabsx+2x^3cosxabsx", "x^3cosxabsx");
    setLogToNormal();
    assertEquals("Default not honored", Parser.parseOrDefault("^", Int.MINUSONE), Int.MINUSONE);

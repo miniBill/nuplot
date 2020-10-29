@@ -1,7 +1,6 @@
-module Expression.Utils exposing (a, abs_, asin_, associativeOperation, b, by, c, cos_, d, div, double, f, g, i, icomplex, int, ipow, minus, n, negate_, one, plus, pow, sin_, sqrt_, square, squash, triple, two, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, associativeOperation, b, by, c, cos_, cosh_, d, div, double, f, g, i, icomplex, int, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, squashHarder, triple, two, unaryFunc, x, y, z, zero)
 
-import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), visit)
 
 
 
@@ -86,9 +85,9 @@ z =
 -- Functions
 
 
-func : String -> Expression -> Expression
-func name x_ =
-    by [ Variable name, x_ ]
+unaryFunc : String -> Expression -> Expression
+unaryFunc name arg =
+    Apply name [ arg ]
 
 
 plus : List Expression -> Expression
@@ -128,7 +127,7 @@ ipow base exponent =
 
 sqrt_ : Expression -> Expression
 sqrt_ =
-    func "sqrt"
+    unaryFunc "sqrt"
 
 
 square : Expression -> Expression
@@ -138,22 +137,32 @@ square base =
 
 abs_ : Expression -> Expression
 abs_ =
-    func "abs"
+    unaryFunc "abs"
 
 
 sin_ : Expression -> Expression
 sin_ =
-    func "sin"
+    unaryFunc "sin"
 
 
 cos_ : Expression -> Expression
 cos_ =
-    func "cos"
+    unaryFunc "cos"
+
+
+sinh_ : Expression -> Expression
+sinh_ =
+    unaryFunc "sinh"
+
+
+cosh_ : Expression -> Expression
+cosh_ =
+    unaryFunc "cosh"
 
 
 asin_ : Expression -> Expression
 asin_ =
-    func "asin"
+    unaryFunc "asin"
 
 
 double : Expression -> Expression
@@ -185,36 +194,71 @@ associativeOperation op default xs =
 
 
 squash : Expression -> Expression
-squash expr =
-    case expr of
-        AssociativeOperation oop ol or oo ->
-            case squash ol of
-                (AssociativeOperation iop il ir io) as sl ->
-                    if oop == iop then
-                        squash <| AssociativeOperation oop il ir (io ++ or :: oo)
+squash =
+    visit <|
+        \expr ->
+            case expr of
+                AssociativeOperation Addition ol or oo ->
+                    Just <|
+                        plus <|
+                            List.concatMap
+                                (\e ->
+                                    case squash e of
+                                        AssociativeOperation Addition il ir io ->
+                                            il :: ir :: io
 
-                    else
-                        AssociativeOperation oop sl (squash or) (List.map squash oo)
+                                        s ->
+                                            [ s ]
+                                )
+                                (ol :: or :: oo)
 
-                sl ->
-                    AssociativeOperation oop sl (squash or) (List.map squash oo)
+                AssociativeOperation Multiplication ol or oo ->
+                    Just <|
+                        case squash ol of
+                            AssociativeOperation Multiplication il ir io ->
+                                squash <| AssociativeOperation Multiplication il ir (io ++ or :: oo)
 
-        UnaryOperation uop e ->
-            UnaryOperation uop <| squash e
+                            sl ->
+                                AssociativeOperation Multiplication sl (squash or) (List.map squash oo)
 
-        Replace vars e ->
-            Replace (Dict.map (\_ -> squash) vars) <| squash e
-
-        List es ->
-            List <| List.map squash es
-
-        BinaryOperation bop l r ->
-            BinaryOperation bop (squash l) (squash r)
-
-        _ ->
-            expr
+                _ ->
+                    Nothing
 
 
+squashHarder : Expression -> Expression
+squashHarder =
+    visit <|
+        \expr ->
+            case expr of
+                AssociativeOperation Addition ol or oo ->
+                    let
+                        extract e =
+                            case squashHarder e of
+                                AssociativeOperation Addition il ir io ->
+                                    List.concatMap extract <| il :: ir :: io
+
+                                s ->
+                                    [ s ]
+                    in
+                    Just <| plus <| List.concatMap extract (ol :: or :: oo)
+
+                AssociativeOperation Multiplication ol or oo ->
+                    let
+                        extract e =
+                            case squashHarder e of
+                                AssociativeOperation Multiplication il ir io ->
+                                    List.concatMap extract <| il :: ir :: io
+
+                                s ->
+                                    [ s ]
+                    in
+                    Just <| by <| List.concatMap extract (ol :: or :: oo)
+
+                _ ->
+                    Nothing
+
+
+icomplex : Int -> Int -> Expression
 icomplex real immaginary =
     case ( real, immaginary ) of
         ( _, 0 ) ->

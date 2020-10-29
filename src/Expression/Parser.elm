@@ -1,8 +1,8 @@
 module Expression.Parser exposing (Context(..), Problem(..), parse)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), Expression(..), defaultContext, isFunction)
-import Expression.Utils exposing (by, div, minus, negate_, plus, pow)
+import Expression exposing (AssociativeOperation(..), Expression(..), defaultContext, isFunction, visit)
+import Expression.Utils exposing (by, div, minus, negate_, plus, pow, unaryFunc)
 import List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
 
@@ -30,6 +30,14 @@ longerFirst =
 
 parse : String -> Result (List (Parser.DeadEnd Context Problem)) Expression
 parse input =
+    let
+        log msg =
+            if input == "-x^3cosxabsx" then
+                Debug.log msg
+
+            else
+                identity
+    in
     input
         |> String.trim
         |> Parser.run
@@ -40,85 +48,85 @@ parse input =
         |> Result.map
             (\r ->
                 r
+                    |> log "raw"
                     |> explode (longerFirst defaultContext)
+                    |> log "after explode"
                     |> Expression.Utils.squash
+                    |> log "after squash"
                     |> activateFunctions (longerFirst defaultContext)
+                    |> log "after function activation"
+                    |> Expression.Utils.squashHarder
             )
 
 
 activateFunctions : List String -> Expression -> Expression
-activateFunctions context expr =
-    case expr of
-        Replace vars e ->
-            Replace (Dict.map (\_ -> activateFunctions context) vars) <|
-                activateFunctions
-                    (longerFirst (context ++ Dict.keys (Dict.filter isFunction vars)))
-                    e
+activateFunctions context =
+    visit <|
+        \expr ->
+            case expr of
+                Replace vars e ->
+                    Just <|
+                        Replace (Dict.map (\_ -> activateFunctions context) vars) <|
+                            activateFunctions
+                                (longerFirst (context ++ Dict.keys (Dict.filter isFunction vars)))
+                                e
 
-        UnaryOperation uop e ->
-            UnaryOperation uop <| activateFunctions context e
+                AssociativeOperation aop l r o ->
+                    Just <|
+                        let
+                            al =
+                                activateFunctions context l
 
-        BinaryOperation bop l r ->
-            BinaryOperation bop (activateFunctions context l) (activateFunctions context r)
+                            ar =
+                                activateFunctions context r
 
-        AssociativeOperation aop l r o ->
-            let
-                al =
-                    activateFunctions context l
+                            ao =
+                                List.map (activateFunctions context) o
+                        in
+                        if aop == Multiplication then
+                            let
+                                ( last, net ) =
+                                    case List.reverse (al :: ar :: ao) of
+                                        [] ->
+                                            -- Impossible
+                                            ( al, [] )
 
-                ar =
-                    activateFunctions context r
+                                        l_ :: init ->
+                                            ( l_, init )
 
-                ao =
-                    List.map (activateFunctions context) o
-            in
-            if aop == Multiplication then
-                let
-                    ( neh, net ) =
-                        case List.reverse (al :: ar :: ao) of
-                            [] ->
-                                -- Impossible
-                                ( al, [] )
+                                raw =
+                                    (\( h, t ) -> h :: t) <|
+                                        List.foldl
+                                            (\e ( pending, rest ) ->
+                                                case e of
+                                                    Variable v ->
+                                                        if List.member v context then
+                                                            ( unaryFunc v pending, rest )
 
-                            last :: init ->
-                                ( last, init )
+                                                        else
+                                                            ( e, pending :: rest )
 
-                    raw =
-                        (\( h, t ) -> h :: t) <|
-                            List.foldl
-                                (\e ( last, rest ) ->
-                                    case e of
-                                        Variable v ->
-                                            if List.member v context then
-                                                ( by [ e, last ], rest )
+                                                    _ ->
+                                                        ( e, pending :: rest )
+                                            )
+                                            ( last, [] )
+                                            net
+                            in
+                            if 1 < List.length raw && List.length raw < 2 + List.length ao then
+                                activateFunctions context <| by raw
 
-                                            else
-                                                ( e, last :: rest )
+                            else
+                                by raw
 
-                                        _ ->
-                                            ( e, last :: rest )
-                                )
-                                ( neh, [] )
-                                net
-                in
-                if 1 < List.length raw && List.length raw < 2 + List.length ao then
-                    activateFunctions context <| by raw
+                        else
+                            AssociativeOperation aop al ar ao
 
-                else
-                    by raw
-
-            else
-                AssociativeOperation aop al ar ao
-
-        Expression.List es ->
-            Expression.List <| List.map (activateFunctions context) es
-
-        _ ->
-            expr
+                _ ->
+                    Nothing
 
 
 explode : List String -> Expression -> Expression
-explode context expr =
+explode context =
     let
         findPrefixes w =
             case String.uncons w of
@@ -146,36 +154,28 @@ explode context expr =
                 Nothing ->
                     []
     in
-    case expr of
-        Variable v ->
-            if String.length v < 2 then
-                expr
+    visit <|
+        \expr ->
+            case expr of
+                Variable v ->
+                    Just <|
+                        if String.length v < 2 then
+                            expr
 
-            else
-                by <| List.map Variable <| findPrefixes v
+                        else
+                            by <| List.map Variable <| findPrefixes v
 
-        Replace vars e ->
-            Replace (Dict.map (\_ -> explode context) vars) <|
-                explode
-                    ((context ++ Dict.keys vars)
-                        |> List.sortBy (\s -> -(String.length s))
-                    )
-                    e
+                Replace vars e ->
+                    Just <|
+                        Replace (Dict.map (\_ -> explode context) vars) <|
+                            explode
+                                ((context ++ Dict.keys vars)
+                                    |> List.sortBy (\s -> -(String.length s))
+                                )
+                                e
 
-        UnaryOperation uop e ->
-            UnaryOperation uop <| explode context e
-
-        BinaryOperation bop l r ->
-            BinaryOperation bop (explode context l) (explode context r)
-
-        AssociativeOperation aop l r o ->
-            AssociativeOperation aop (explode context l) (explode context r) (List.map (explode context) o)
-
-        Expression.List es ->
-            Expression.List <| List.map (explode context) es
-
-        _ ->
-            expr
+                _ ->
+                    Nothing
 
 
 mainParser : ExpressionParser Expression

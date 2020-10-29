@@ -8,6 +8,7 @@ module Expression exposing
     , isFunction
     , partialSubstitute
     , toString
+    , visit
     )
 
 import Dict exposing (Dict)
@@ -17,6 +18,7 @@ type Expression
     = UnaryOperation UnaryOperation Expression
     | BinaryOperation BinaryOperation Expression Expression
     | AssociativeOperation AssociativeOperation Expression Expression (List Expression)
+    | Apply String (List Expression)
     | Variable String
     | Integer Int
     | Float Float
@@ -38,9 +40,66 @@ type AssociativeOperation
     | Multiplication
 
 
-partialSubstitute : Expression -> a
-partialSubstitute _ =
-    Debug.todo "partialSubstitute"
+visit : (Expression -> Maybe Expression) -> Expression -> Expression
+visit f expr =
+    case f expr of
+        Just r ->
+            r
+
+        Nothing ->
+            case expr of
+                Integer i ->
+                    Integer i
+
+                UnaryOperation uop e ->
+                    UnaryOperation uop <| visit f e
+
+                BinaryOperation bop l r ->
+                    BinaryOperation bop (visit f l) (visit f r)
+
+                AssociativeOperation aop l r o ->
+                    AssociativeOperation aop (visit f l) (visit f r) (List.map (visit f) o)
+
+                Apply func e ->
+                    Apply func <| List.map (visit f) e
+
+                Variable v ->
+                    Variable v
+
+                Float fl ->
+                    Float fl
+
+                Replace vars e ->
+                    Replace (Dict.map (\_ -> visit f) vars) (visit f e)
+
+                List es ->
+                    List <| List.map (visit f) es
+
+
+partialSubstitute : String -> Expression -> Expression -> Expression
+partialSubstitute var value =
+    visit <|
+        \expr ->
+            case expr of
+                Replace vars e ->
+                    Just <|
+                        Replace (Dict.map (\_ v -> partialSubstitute var value v) vars) <|
+                            if Dict.member var vars then
+                                e
+
+                            else
+                                partialSubstitute var value e
+
+                Variable string ->
+                    Just <|
+                        if string == var then
+                            value
+
+                        else
+                            expr
+
+                _ ->
+                    Nothing
 
 
 equals : Expression -> Expression -> Bool
@@ -100,13 +159,12 @@ type PrintExpression
     | PAtom String
     | PAdd PrintExpression PrintExpression
     | PNegate PrintExpression
-    | PMinus PrintExpression PrintExpression
     | PBy PrintExpression PrintExpression
     | PDiv PrintExpression PrintExpression
     | PPower PrintExpression PrintExpression
-    | PFunc String PrintExpression
     | PReplace (Dict String PrintExpression) PrintExpression
     | PList (List PrintExpression)
+    | PApply String (List PrintExpression)
 
 
 toPrintExpression : List String -> Expression -> PrintExpression
@@ -130,13 +188,6 @@ toPrintExpression context e =
         BinaryOperation Division l r ->
             PDiv (toPrintExpression context l) (toPrintExpression context r)
 
-        AssociativeOperation Multiplication ((Variable v) as l) r [] ->
-            if List.member v context then
-                PFunc v (toPrintExpression context r)
-
-            else
-                PBy (toPrintExpression context l) (toPrintExpression context r)
-
         AssociativeOperation Addition l r o ->
             List.foldl (\el a -> PAdd a el)
                 (PAdd (toPrintExpression context l) (toPrintExpression context r))
@@ -155,6 +206,9 @@ toPrintExpression context e =
 
         List es ->
             PList <| List.map (toPrintExpression context) es
+
+        Apply f es ->
+            PApply f <| List.map (toPrintExpression context) es
 
 
 
@@ -197,9 +251,9 @@ toStringPrec p e =
         PAdd l r ->
             infixl_ 6 " + " l r
 
-        PMinus l r ->
-            infixl_ 6 " - " l r
-
+        {- PMinus l r ->
+           infixl_ 6 " - " l r
+        -}
         PBy ((PInteger _) as l) r ->
             infixl_ 7 "" l r
 
@@ -218,11 +272,11 @@ toStringPrec p e =
         PPower l r ->
             infixr_ 8 "^" l r
 
-        PFunc name ((PList _) as ex) ->
+        PApply name [ (PList _) as ex ] ->
             paren (p > 10) <| name ++ toStringPrec 0 ex
 
-        PFunc name ex ->
-            paren (p > 10) <| name ++ "(" ++ toStringPrec 0 ex ++ ")"
+        PApply name ex ->
+            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (toStringPrec 0) ex) ++ ")"
 
         PList es ->
             "{" ++ String.join ", " (List.map (toStringPrec 0) es) ++ "}"
