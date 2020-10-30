@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, b, by, c, cos_, cosh_, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, x, y, z)
+import Expression.Utils exposing (a, abs_, asin_, b, by, c, cos_, cosh_, d, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, x, y, z)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -233,28 +233,36 @@ tests =
       , negate_ <| by [ ipow x 3, cos_ x, abs_ x ]
       , "-(x³*cos(x)*abs(x))"
       )
+    , ( "2x^3cosxabsx"
+      , by [ two, ipow x 3, cos_ x, abs_ x ]
+      , "2x³*cos(x)*abs(x)"
+      )
     , ( "-x^3cosxabsx+2x^3cosxabsx"
       , plus
             [ negate_ <| by [ ipow x 3, cos_ x, abs_ x ]
-            , by [ double <| ipow x 3, cos_ x, abs_ x ]
+            , by [ two, ipow x 3, cos_ x, abs_ x ]
             ]
       , "-(x³*cos(x)*abs(x)) + 2x³*cos(x)*abs(x)"
+      )
+    , straight "(c - d)/(d - c)" <|
+        div
+            (minus c d)
+            (minus d c)
+    , straight "(-c + d)/(-d + c)²" <|
+        div
+            (plus [ negate_ c, d ])
+            (square <| plus [ negate_ d, c ])
+    , ( "(3/10)/a"
+      , div
+            (div (Integer 3) (Integer 10))
+            a
+      , "3/10/a"
       )
     ]
 
 
 
 {-
-   assertSimplify("-x^3cosxabsx+2x^3cosxabsx", "x^3cosxabsx");
-   setLogToNormal();
-   assertEquals("Default not honored", Parser.parseOrDefault("^", Int.MINUSONE), Int.MINUSONE);
-   setLogToFail();
-   assertSimplify("(c-d)/(d-c)", "-1");
-   final ICalculable n = parseOrFail("-c+d");
-   final Expression d = parseOrFail("(-d+c)^2");
-   assertTrue("Couldn't divide :(", n.compatible(d, Operation.DIVISION));
-   assertSimplify("(-c+d)/(-d+c)^2", "-1/(-d+c)");
-   assertSimplify("(3/10)/a", "3/(10*a)");
    assertSimplify("(3-2x)/(1-x)^2)", "(3+-2x)/((1+-x)^2)");
    assertSimplify("ddx^2,x", "2x");
    assertSimplify("dd(x^2,x)", "2x");

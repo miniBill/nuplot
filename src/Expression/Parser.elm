@@ -32,7 +32,7 @@ parse : String -> Result (List (Parser.DeadEnd Context Problem)) Expression
 parse input =
     let
         log msg =
-            if input == "-x^3cosxabsx" then
+            if String.contains "DEBUG" input then
                 Debug.log msg
 
             else
@@ -40,6 +40,7 @@ parse input =
     in
     input
         |> String.trim
+        |> prepare
         |> Parser.run
             (Parser.succeed identity
                 |= mainParser
@@ -57,6 +58,13 @@ parse input =
                     |> log "after function activation"
                     |> Expression.Utils.squashHarder
             )
+
+
+prepare : String -> String
+prepare =
+    String.replace "DEBUG" ""
+        >> String.replace "²" "^2"
+        >> String.replace "³" "^3"
 
 
 activateFunctions : List String -> Expression -> Expression

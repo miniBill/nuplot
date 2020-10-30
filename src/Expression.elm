@@ -119,11 +119,17 @@ equals l r =
                 && equals lr rr
                 && listEquals lo ro
 
+        ( Apply lname largs, Apply rname rargs ) ->
+            lname == rname && listEquals largs rargs
+
         ( Variable lv, Variable rv ) ->
             lv == rv
 
         ( Integer li, Integer ri ) ->
             li == ri
+
+        ( Float lf, Float rf ) ->
+            lf == rf
 
         ( Replace ls le, Replace rs re ) ->
             (Dict.size ls == Dict.size rs)
@@ -255,7 +261,18 @@ toStringPrec p e =
            infixl_ 6 " - " l r
         -}
         PBy ((PInteger _) as l) r ->
-            infixl_ 7 "" l r
+            case r of
+                PPower _ _ ->
+                    infixl_ 7 "" l r
+
+                PAtom _ ->
+                    infixl_ 7 "" l r
+
+                PApply _ _ ->
+                    infixl_ 7 "" l r
+
+                _ ->
+                    infixl_ 7 "*" l r
 
         PBy l r ->
             infixl_ 7 "*" l r
