@@ -99,12 +99,11 @@ tests =
     , ( cosh_ <| by [ i, x ], cos_ x )
     , simplified <| plus [ Float 0.5, triple i ]
     , ( div one i, negate_ i )
+    , ( byself i, Integer -1 )
+    , simplified <| negate_ a
+    , ( sqrt_ <| negate_ one, i )
 
     {-
-       , straight "1/i" <| div one i
-       , straight "i*i" <| byself i
-       , straight "-a" <| negate_ a
-       , straight "sqrt(-1)" <| sqrt_ (negate_ one)
        , ( "5+10i", icomplex 5 10, "5 + 10i" )
        , ( "2+i", icomplex 2 1, "2 + i" )
        , ( "(5+10i)/(2+i)", div (icomplex 5 10) (icomplex 2 1), "(5 + 10i)/(2 + i)" )

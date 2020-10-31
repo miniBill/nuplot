@@ -2,7 +2,7 @@ module Expression.Simplify exposing (simplify)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
-import Expression.Utils exposing (by, cos_, div, i, ipow, negate_, one, plus, pow, sin_, two, zero)
+import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
 import List exposing (concatMap)
 import List.Extra as List
 import Maybe.Extra as Maybe
@@ -58,6 +58,9 @@ innerSimplify context expr =
             UnaryOperation Negate (UnaryOperation Negate e) ->
                 innerSimplify context e
 
+            UnaryOperation Negate (Integer ni) ->
+                Integer -ni
+
             UnaryOperation uop e ->
                 UnaryOperation uop <| innerSimplify context e
 
@@ -94,38 +97,48 @@ innerSimplify context expr =
 
 innerSimplifyApply : Dict String Expression -> String -> List Expression -> Expression
 innerSimplifyApply context name args =
-    let
-        sargs =
-            List.map (innerSimplify context) args
-    in
-    case name of
-        "sinh" ->
-            case args of
-                [ AssociativeOperation Multiplication l r o ] ->
-                    case extract (findSpecificVariable "i") (l :: r :: o) of
-                        Just ( _, rest ) ->
-                            innerSimplify context <| by [ i, sin_ <| by rest ]
+    case ( name, List.map (innerSimplify context) args ) of
+        ( "sqrt", [ Integer i ] as sargs ) ->
+            let
+                a =
+                    abs i
 
-                        Nothing ->
-                            Apply name sargs
+                f =
+                    toFloat a
 
-                _ ->
+                s =
+                    sqrt f
+
+                r =
+                    truncate s
+            in
+            if r * r == a then
+                if i < 0 then
+                    icomplex 0 r
+
+                else
+                    Integer r
+
+            else
+                Apply name sargs
+
+        ( "sinh", [ AssociativeOperation Multiplication l r o ] as sargs ) ->
+            case extract (findSpecificVariable "i") (l :: r :: o) of
+                Just ( _, rest ) ->
+                    innerSimplify context <| by [ i, sin_ <| by rest ]
+
+                Nothing ->
                     Apply name sargs
 
-        "cosh" ->
-            case args of
-                [ AssociativeOperation Multiplication l r o ] ->
-                    case extract (findSpecificVariable "i") (l :: r :: o) of
-                        Just ( _, rest ) ->
-                            innerSimplify context <| cos_ <| by rest
+        ( "cosh", [ AssociativeOperation Multiplication l r o ] as sargs ) ->
+            case extract (findSpecificVariable "i") (l :: r :: o) of
+                Just ( _, rest ) ->
+                    innerSimplify context <| cos_ <| by rest
 
-                        Nothing ->
-                            Apply name sargs
-
-                _ ->
+                Nothing ->
                     Apply name sargs
 
-        _ ->
+        ( _, sargs ) ->
             Apply name sargs
 
 
@@ -134,6 +147,9 @@ innerSimplifyDivision context ls rs =
     case ( ls, rs ) of
         ( BinaryOperation Division lsn lsd, _ ) ->
             innerSimplify context <| div lsn <| by [ lsd, rs ]
+
+        ( _, Variable "i" ) ->
+            innerSimplify context <| by [ ls, negate_ i ]
 
         _ ->
             if Expression.equals ls rs then
@@ -450,6 +466,12 @@ groupStepMultiplication : Expression -> Expression -> Maybe Expression
 groupStepMultiplication curr last =
     log ("groupStepMultiplication \"" ++ Expression.toString curr ++ "\" \"" ++ Expression.toString last ++ "\"") <|
         case ( curr, last ) of
+            ( Integer 1, _ ) ->
+                Just last
+
+            ( _, Integer 1 ) ->
+                Just curr
+
             ( Integer il, Integer ir ) ->
                 Just <| Integer <| il * ir
 
