@@ -33,6 +33,11 @@ type UnaryOperation
 type BinaryOperation
     = Division
     | Power
+    | LessThan
+    | LessThanOrEquals
+    | Equals
+    | GreaterThanOrEquals
+    | GreaterThan
 
 
 type AssociativeOperation
@@ -167,6 +172,7 @@ type PrintExpression
     | PNegate PrintExpression
     | PBy PrintExpression PrintExpression
     | PDiv PrintExpression PrintExpression
+    | PRel String PrintExpression PrintExpression
     | PPower PrintExpression PrintExpression
     | PReplace (Dict String PrintExpression) PrintExpression
     | PList (List PrintExpression)
@@ -194,6 +200,21 @@ toPrintExpression context e =
         BinaryOperation Division l r ->
             PDiv (toPrintExpression context l) (toPrintExpression context r)
 
+        BinaryOperation LessThan l r ->
+            PRel "<" (toPrintExpression context l) (toPrintExpression context r)
+
+        BinaryOperation LessThanOrEquals l r ->
+            PRel "⩽" (toPrintExpression context l) (toPrintExpression context r)
+
+        BinaryOperation Equals l r ->
+            PRel "=" (toPrintExpression context l) (toPrintExpression context r)
+
+        BinaryOperation GreaterThanOrEquals l r ->
+            PRel "⩾" (toPrintExpression context l) (toPrintExpression context r)
+
+        BinaryOperation GreaterThan l r ->
+            PRel ">" (toPrintExpression context l) (toPrintExpression context r)
+
         AssociativeOperation Addition l r o ->
             List.foldl (\el a -> PAdd a el)
                 (PAdd (toPrintExpression context l) (toPrintExpression context r))
@@ -218,6 +239,7 @@ toPrintExpression context e =
 
 
 
+-- 5 < <= = >= >
 -- 6 + -
 -- 7 * /
 
@@ -257,9 +279,9 @@ toStringPrec p e =
         PAdd l r ->
             infixl_ 6 " + " l r
 
-        {- PMinus l r ->
-           infixl_ 6 " - " l r
-        -}
+        PRel rel l r ->
+            infixl_ 5 (" " ++ rel ++ " ") l r
+
         PBy ((PInteger _) as l) r ->
             case r of
                 PPower _ _ ->

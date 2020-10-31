@@ -1,9 +1,10 @@
-module Expression.Parser exposing (Context(..), Problem(..), parse)
+module Expression.Parser exposing (Context(..), Problem(..), errorsToString, parse)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), Expression(..), defaultContext, isFunction, visit)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), defaultContext, isFunction, visit)
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, unaryFunc)
 import List
+import List.Extra as List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
 
 
@@ -26,6 +27,69 @@ type Problem
 longerFirst : List String -> List String
 longerFirst =
     List.sortBy (\s -> -(String.length s))
+
+
+errorsToString : String -> List (Parser.DeadEnd Context Problem) -> String
+errorsToString input err =
+    String.join "\n" <|
+        [ "Error parsing expression:"
+        , "  " ++ input
+        ]
+            ++ (if List.isEmpty err then
+                    [ "No valid parse?" ]
+
+                else
+                    List.map
+                        (\( { col, problem }, problems ) ->
+                            let
+                                allProblems =
+                                    problem :: List.map .problem problems
+                            in
+                            String.concat
+                                [ String.repeat (col + 1) " "
+                                , "^--"
+                                , if List.any ((==) Unexpected) allProblems then
+                                    if List.all ((==) Unexpected) allProblems then
+                                        "Unexpected"
+
+                                    else
+                                        "Unexpected, expected: "
+
+                                  else
+                                    "Expected: "
+                                , allProblems
+                                    |> List.filterMap
+                                        (\p ->
+                                            case p of
+                                                Unexpected ->
+                                                    Nothing
+
+                                                Expected e ->
+                                                    Just e
+                                        )
+                                    |> (\expecteds ->
+                                            case List.reverse expecteds of
+                                                [] ->
+                                                    ""
+
+                                                last :: init ->
+                                                    String.join ", " (List.reverse init) ++ " or " ++ last
+                                       )
+                                ]
+                        )
+                    <|
+                        List.gatherEqualsBy .col err
+               )
+
+
+problemToString : Problem -> String
+problemToString problem =
+    case problem of
+        Expected string ->
+            "Expected " ++ string
+
+        Unexpected ->
+            "Unexpected"
 
 
 parse : String -> Result (List (Parser.DeadEnd Context Problem)) Expression
@@ -188,8 +252,7 @@ explode context =
 
 mainParser : ExpressionParser Expression
 mainParser =
-    --relationParser
-    addsubtractionParser
+    relationParser
 
 
 token : String -> Token Problem
@@ -276,8 +339,18 @@ relationParser =
     Parser.inContext Expression <|
         Parser.succeed (\a f -> f a)
             |= addsubtractionParser
+            |. whitespace
             |= Parser.oneOf
-                [ Parser.problem <| Expected "todo"
+                [ Parser.succeed (\o r l -> BinaryOperation o l r)
+                    |= Parser.oneOf
+                        [ Parser.succeed LessThanOrEquals |. Parser.symbol (token "<=")
+                        , Parser.succeed GreaterThanOrEquals |. Parser.symbol (token ">=")
+                        , Parser.succeed LessThan |. Parser.symbol (token "<")
+                        , Parser.succeed Equals |. Parser.symbol (token "=")
+                        , Parser.succeed GreaterThan |. Parser.symbol (token ">")
+                        ]
+                    |. whitespace
+                    |= addsubtractionParser
                 , Parser.succeed identity
                 ]
 

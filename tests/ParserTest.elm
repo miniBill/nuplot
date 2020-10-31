@@ -28,40 +28,12 @@ suite =
                                 (Expression.toString ok ++ " = " ++ Debug.toString ok)
 
                         Err err ->
-                            Expect.fail <|
-                                String.join "\n" <|
-                                    [ "Error parsing expression:"
-                                    , "  " ++ from
-                                    ]
-                                        ++ (if List.isEmpty err then
-                                                [ "No valid parse?" ]
-
-                                            else
-                                                List.map
-                                                    (\{ col, problem } ->
-                                                        String.concat
-                                                            [ String.repeat (col + 1) " "
-                                                            , "^--"
-                                                            , problemToString problem
-                                                            ]
-                                                    )
-                                                    err
-                                           )
+                            Expect.fail <| Parser.errorsToString from err
     in
     describe "The Parser module"
         [ describe "Parser.parse" <|
             List.map toTest tests
         ]
-
-
-problemToString : Problem -> String
-problemToString problem =
-    case problem of
-        Expected string ->
-            "Expected " ++ string
-
-        Unexpected ->
-            "Unexpected"
 
 
 tests : List ( String, Expression, String )

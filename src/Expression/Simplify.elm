@@ -79,6 +79,9 @@ innerSimplify context expr =
                     Power ->
                         innerSimplifyPower context ls rs
 
+                    _ ->
+                        BinaryOperation bop ls rs
+
             AssociativeOperation aop l r o ->
                 innerSimplifyAssociative context aop l r o
 
@@ -601,6 +604,21 @@ polyDegree var expr =
             Maybe.map ((*) i) <| polyDegree var base
 
         BinaryOperation Power _ _ ->
+            Nothing
+
+        BinaryOperation LessThan _ _ ->
+            Nothing
+
+        BinaryOperation LessThanOrEquals _ _ ->
+            Nothing
+
+        BinaryOperation Equals _ _ ->
+            Nothing
+
+        BinaryOperation GreaterThan _ _ ->
+            Nothing
+
+        BinaryOperation GreaterThanOrEquals _ _ ->
             Nothing
 
         AssociativeOperation Addition l r o ->
