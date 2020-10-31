@@ -91,63 +91,16 @@ tests =
     , ( by [ complex a b, minus a <| by [ i, b ] ]
       , plus [ square a, square b ]
       )
+    , simplified <|
+        div
+            (plus [ by [ b, x ], by [ a, x ] ])
+            (by [ a, b, n ])
+    , ( sinh_ <| by [ i, x ], by [ i, sin_ x ] )
+    , ( cosh_ <| by [ i, x ], cos_ x )
+    , simplified <| plus [ Float 0.5, triple i ]
+    , ( div one i, negate_ i )
 
-    {- , ( Replace
-             (Dict.fromList
-                 [ ( "c", plus [ div x a, div x b ] )
-                 , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
-                 ]
-             )
-             (List [ div c n, div f n ])
-       , List []
-       )
-    -}
     {-
-       , ( "(bx+ax)/(abn)"
-         , div
-               (plus [ by [ b, x ], by [ a, x ] ])
-               (by [ a, b, n ])
-         , "(b*x + a*x)/(a*b*n)"
-         )
-       , ( "[nsqrt(cc+ff)][cx/a+x/b;f(y-1)/a+(y+1)/b]{c/n,f/n}"
-         , Replace
-               (Dict.fromList
-                   [ ( "n", sqrt_ (plus [ byself c, byself f ]) )
-                   ]
-               )
-           <|
-               Replace
-                   (Dict.fromList
-                       [ ( "c", plus [ div x a, div x b ] )
-                       , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
-                       ]
-                   )
-               <|
-                   List [ div c n, div f n ]
-         , "[n = sqrt(c*c + f*f)] [c = x/a + x/b; f = (y - 1)/a + (y + 1)/b] {c/n, f/n}"
-         )
-       , ( "[g(xx-yy)^(3/2)+1/10]gra{x/(gg),y/(gg)}"
-         , let
-               gg =
-                   byself g
-           in
-           Replace
-               (Dict.fromList
-                   [ ( "g"
-                     , plus
-                           [ pow (minus (byself x) (byself y)) (div (Integer 3) two)
-                           , div one <| Integer 10
-                           ]
-                     )
-                   ]
-               )
-               (unaryFunc "gra" <| List [ div x gg, div y gg ])
-         , "[g = (x*x - y*y)^(3/2) + 1/10] gra{x/(g*g), y/(g*g)}"
-         )
-       , ( "sinh(ix)", sinh_ <| by [ i, x ], "sinh(i*x)" )
-       , ( "cosh(ix)", cosh_ <| by [ i, x ], "cosh(i*x)" )
-
-       , ( "0.5+3i", plus [ Float 0.5, triple i ], "0.5 + 3i" )
        , straight "1/i" <| div one i
        , straight "i*i" <| byself i
        , straight "-a" <| negate_ a
@@ -217,6 +170,53 @@ tests =
                (div (Integer 3) (Integer 10))
                a
          , "3/10/a"
+         )
+    -}
+    {- , ( Replace
+             (Dict.fromList
+                 [ ( "c", plus [ div x a, div x b ] )
+                 , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
+                 ]
+             )
+             (List [ div c n, div f n ])
+       , List []
+       )
+    -}
+    {-
+         , ( "[nsqrt(cc+ff)][cx/a+x/b;f(y-1)/a+(y+1)/b]{c/n,f/n}"
+         , Replace
+               (Dict.fromList
+                   [ ( "n", sqrt_ (plus [ byself c, byself f ]) )
+                   ]
+               )
+           <|
+               Replace
+                   (Dict.fromList
+                       [ ( "c", plus [ div x a, div x b ] )
+                       , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
+                       ]
+                   )
+               <|
+                   List [ div c n, div f n ]
+         , "[n = sqrt(c*c + f*f)] [c = x/a + x/b; f = (y - 1)/a + (y + 1)/b] {c/n, f/n}"
+         )
+       , ( "[g(xx-yy)^(3/2)+1/10]gra{x/(gg),y/(gg)}"
+         , let
+               gg =
+                   byself g
+           in
+           Replace
+               (Dict.fromList
+                   [ ( "g"
+                     , plus
+                           [ pow (minus (byself x) (byself y)) (div (Integer 3) two)
+                           , div one <| Integer 10
+                           ]
+                     )
+                   ]
+               )
+               (unaryFunc "gra" <| List [ div x gg, div y gg ])
+         , "[g = (x*x - y*y)^(3/2) + 1/10] gra{x/(g*g), y/(g*g)}"
          )
     -}
     ]

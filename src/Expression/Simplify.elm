@@ -2,7 +2,7 @@ module Expression.Simplify exposing (simplify)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
-import Expression.Utils exposing (by, div, i, ipow, negate_, one, plus, pow, two)
+import Expression.Utils exposing (by, cos_, div, i, ipow, negate_, one, plus, pow, sin_, two, zero)
 import List exposing (concatMap)
 import List.Extra as List
 import Maybe.Extra as Maybe
@@ -80,7 +80,7 @@ innerSimplify context expr =
                 innerSimplifyAssociative context aop l r o
 
             Apply name args ->
-                Apply name (List.map (innerSimplify context) args)
+                innerSimplifyApply context name args
 
             List es ->
                 List <| List.map (innerSimplify context) es
@@ -90,6 +90,43 @@ innerSimplify context expr =
 
             Float _ ->
                 expr
+
+
+innerSimplifyApply : Dict String Expression -> String -> List Expression -> Expression
+innerSimplifyApply context name args =
+    let
+        sargs =
+            List.map (innerSimplify context) args
+    in
+    case name of
+        "sinh" ->
+            case args of
+                [ AssociativeOperation Multiplication l r o ] ->
+                    case extract (findSpecificVariable "i") (l :: r :: o) of
+                        Just ( _, rest ) ->
+                            innerSimplify context <| by [ i, sin_ <| by rest ]
+
+                        Nothing ->
+                            Apply name sargs
+
+                _ ->
+                    Apply name sargs
+
+        "cosh" ->
+            case args of
+                [ AssociativeOperation Multiplication l r o ] ->
+                    case extract (findSpecificVariable "i") (l :: r :: o) of
+                        Just ( _, rest ) ->
+                            innerSimplify context <| cos_ <| by rest
+
+                        Nothing ->
+                            Apply name sargs
+
+                _ ->
+                    Apply name sargs
+
+        _ ->
+            Apply name sargs
 
 
 innerSimplifyDivision : Dict String Expression -> Expression -> Expression -> Expression
@@ -145,15 +182,6 @@ innerSimplifyPower context ls rs =
 innerSimplifyAssociative : Dict String Expression -> AssociativeOperation -> Expression -> Expression -> List Expression -> Expression
 innerSimplifyAssociative context aop l r o =
     let
-        ls =
-            innerSimplify context l
-
-        rs =
-            innerSimplify context r
-
-        os =
-            List.map (innerSimplify context) o
-
         extractop e =
             case e of
                 AssociativeOperation iaop il ir io ->
@@ -167,12 +195,6 @@ innerSimplifyAssociative context aop l r o =
                 _ ->
                     [ e ]
 
-        extracted =
-            List.concatMap extractop <| ls :: rs :: os
-
-        grouped =
-            squashAndGroupAssociative context aop extracted
-
         build =
             case aop of
                 Addition ->
@@ -180,55 +202,87 @@ innerSimplifyAssociative context aop l r o =
 
                 Multiplication ->
                     by
-
-        findMinusOne expr =
-            case expr of
-                Integer i ->
-                    if i == -1 then
-                        Just ()
-
-                    else
-                        Nothing
-
-                _ ->
-                    Nothing
     in
-    if List.length extracted > 2 + List.length os then
-        innerSimplify context <| build grouped
+    (l :: r :: o)
+        |> List.map (innerSimplify context)
+        |> List.concatMap extractop
+        |> Trying
+        |> try
+            (\e ->
+                if List.length e > 2 + List.length o then
+                    Just e
 
-    else
-        {- case denominatorLcm grouped of
-           Integer 1 ->
-               build grouped
+                else
+                    Nothing
+            )
+            build
+        |> mapTrying (squashAndGroupAssociative context aop)
+        |> (case aop of
+                Addition ->
+                    tryExtract (findSpecificInteger 0) (\( _, rest ) -> build rest)
 
-           divLcm ->
-               transformAssociativeToDivision context aop divLcm grouped
-        -}
-        case aop of
-            Addition ->
-                build grouped
+                Multiplication ->
+                    tryExtract (findSpecificInteger -1) (\( _, rest ) -> negate_ <| build rest)
+                        >> tryExtract findNegate (\( negated, rest ) -> negate_ <| build <| negated :: rest)
+                        >> tryExtract findAdditionList (\( adds, rest ) -> plus <| List.map (\x -> by <| x :: rest) adds)
+           )
+        |> mapFound (innerSimplify context)
+        |> tryingToExpression build
 
-            Multiplication ->
-                case extract findMinusOne grouped of
-                    Just ( (), rest ) ->
-                        innerSimplify context <| negate_ <| build rest
 
-                    Nothing ->
-                        case extract findNegate grouped of
-                            Just ( negated, rest ) ->
-                                negate_ <| build <| negated :: rest
+type Trying a b
+    = Trying a
+    | Found b
 
-                            Nothing ->
-                                case extract findAddition grouped of
-                                    Just ( ( ml, mr, mo ), rest ) ->
-                                        innerSimplify context <|
-                                            plus <|
-                                                by (ml :: rest)
-                                                    :: by (mr :: rest)
-                                                    :: List.map (\mf -> by (mf :: rest)) mo
 
-                                    Nothing ->
-                                        build grouped
+mapTrying : (a -> c) -> Trying a b -> Trying c b
+mapTrying f t =
+    case t of
+        Trying v ->
+            Trying <| f v
+
+        Found a ->
+            Found a
+
+
+mapFound : (b -> c) -> Trying a b -> Trying a c
+mapFound f t =
+    case t of
+        Trying v ->
+            Trying v
+
+        Found a ->
+            Found <| f a
+
+
+tryingToExpression : (a -> b) -> Trying a b -> b
+tryingToExpression onFailure t =
+    case t of
+        Trying e ->
+            onFailure e
+
+        Found e ->
+            e
+
+
+try : (a -> Maybe b) -> (b -> c) -> Trying a c -> Trying a c
+try test toResult incoming =
+    case incoming of
+        Found _ ->
+            incoming
+
+        Trying e ->
+            case test e of
+                Just r ->
+                    Found <| toResult r
+
+                Nothing ->
+                    incoming
+
+
+tryExtract : (a -> Maybe b) -> (( b, List a ) -> c) -> Trying (List a) c -> Trying (List a) c
+tryExtract f =
+    try <| extract f
 
 
 extract : (a -> Maybe b) -> List a -> Maybe ( b, List a )
@@ -250,6 +304,34 @@ extract filter ls =
     go [] ls
 
 
+findSpecificInteger : Int -> Expression -> Maybe Int
+findSpecificInteger j expr =
+    case expr of
+        Integer i ->
+            if i == j then
+                Just i
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
+findSpecificVariable : String -> Expression -> Maybe String
+findSpecificVariable j expr =
+    case expr of
+        Variable i ->
+            if i == j then
+                Just i
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
 findAddition : Expression -> Maybe ( Expression, Expression, List Expression )
 findAddition expr =
     case expr of
@@ -258,6 +340,11 @@ findAddition expr =
 
         _ ->
             Nothing
+
+
+findAdditionList : Expression -> Maybe (List Expression)
+findAdditionList =
+    findAddition >> Maybe.map (\( l, r, o ) -> l :: r :: o)
 
 
 findNegate : Expression -> Maybe Expression
@@ -324,12 +411,29 @@ squashAndGroupAssociative context aop extracted =
 groupStepAddition : Expression -> Expression -> Maybe Expression
 groupStepAddition curr last =
     case ( curr, last ) of
+        ( _, Integer 0 ) ->
+            Just curr
+
         ( Integer il, Integer ir ) ->
             Just <| Integer <| il + ir
 
         ( _, AssociativeOperation Multiplication (Integer c) mon [] ) ->
             if Expression.equals curr mon then
                 Just <| by [ Integer (c + 1), mon ]
+
+            else
+                Nothing
+
+        ( UnaryOperation Negate nl, _ ) ->
+            if Expression.equals nl last then
+                Just zero
+
+            else
+                Nothing
+
+        ( _, UnaryOperation Negate nr ) ->
+            if Expression.equals nr curr then
+                Just zero
 
             else
                 Nothing
