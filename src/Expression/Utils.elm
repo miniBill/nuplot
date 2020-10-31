@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, associativeOperation, b, by, c, cos_, cosh_, d, div, double, f, g, i, icomplex, int, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, squashHarder, triple, two, unaryFunc, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, associativeOperation, b, by, c, complex, cos_, cosh_, d, div, double, f, g, i, icomplex, int, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, squashHarder, triple, two, unaryFunc, x, y, z, zero)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), visit)
 
@@ -258,20 +258,25 @@ squashHarder =
                     Nothing
 
 
-icomplex : Int -> Int -> Expression
-icomplex real immaginary =
+complex : Expression -> Expression -> Expression
+complex real immaginary =
     case ( real, immaginary ) of
-        ( _, 0 ) ->
-            Integer real
+        ( _, Integer 0 ) ->
+            real
 
-        ( 0, 1 ) ->
+        ( Integer 0, Integer 1 ) ->
             i
 
-        ( 0, _ ) ->
-            by [ Integer immaginary, i ]
+        ( Integer 0, _ ) ->
+            by [ immaginary, i ]
 
-        ( _, 1 ) ->
-            plus [ Integer real, i ]
+        ( _, Integer 1 ) ->
+            plus [ real, i ]
 
         _ ->
-            plus [ Integer real, by [ Integer immaginary, i ] ]
+            plus [ real, by [ immaginary, i ] ]
+
+
+icomplex : Int -> Int -> Expression
+icomplex real immaginary =
+    complex (Integer real) (Integer immaginary)

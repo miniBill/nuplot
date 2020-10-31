@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..))
 import Expression.Simplify
-import Expression.Utils exposing (a, abs_, asin_, b, by, c, cos_, cosh_, d, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, x, y, z)
+import Expression.Utils exposing (a, abs_, asin_, b, by, c, complex, cos_, cosh_, d, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, x, y, z)
 import Test exposing (Test, describe, test)
 
 
@@ -24,7 +24,7 @@ suite =
                     Expect.equal
                         (Expression.toString to ++ " = " ++ Debug.toString to)
                         (Expression.toString simplified ++ " = " ++ Debug.toString simplified)
-            , test ("Simplification is idempotent for " ++ Expression.toString simplified) <|
+            , test ("Simplification is idempotent for " ++ Expression.toString from) <|
                 \_ ->
                     Expect.equal
                         (Expression.toString simplified ++ " = " ++ Debug.toString simplified)
@@ -53,8 +53,12 @@ tests =
     , simplified <| div a b
     , simplified <| by [ a, b, c ]
     , simplified <| div (by [ a, b ]) c
-    , simplified <| by [ div a b, c ]
+    , ( by [ div a b, c ]
+      , --div (by [ a, c ]) b
+        by [ div a b, c ]
+      )
     , ( div (div a b) c, div a <| by [ b, c ] )
+    , ( div a a, one )
     , ( Replace
             (Dict.fromList
                 [ ( "a", double x )
@@ -72,16 +76,32 @@ tests =
             (by [ a, a, a ])
       , ipow b 3
       )
+    , ( Replace (Dict.singleton "a" one) a, one )
     , ( Replace
             (Dict.fromList
-                [ ( "c", plus [ div x a, div x b ] )
-                , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
+                [ ( "cov", Integer 3 )
                 ]
             )
-            (List [ div c n, div f n ])
-      , List []
+            (byself <| Variable "cov")
+      , Integer 9
+      )
+    , simplified <| by [ two, x ]
+    , ( square i, Integer -1 )
+    , ( ipow i 69, i )
+    , ( by [ complex a b, minus a <| by [ i, b ] ]
+      , plus [ square a, square b ]
       )
 
+    {- , ( Replace
+             (Dict.fromList
+                 [ ( "c", plus [ div x a, div x b ] )
+                 , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
+                 ]
+             )
+             (List [ div c n, div f n ])
+       , List []
+       )
+    -}
     {-
        , ( "(bx+ax)/(abn)"
          , div
@@ -106,19 +126,6 @@ tests =
                    List [ div c n, div f n ]
          , "[n = sqrt(c*c + f*f)] [c = x/a + x/b; f = (y - 1)/a + (y + 1)/b] {c/n, f/n}"
          )
-       , ( "[cov=3]covcov"
-         , Replace
-               (Dict.fromList
-                   [ ( "cov", Integer 3 )
-                   ]
-               )
-               (byself <| Variable "cov")
-         , "[cov=3] cov*cov"
-         )
-       , ( "[a=1]a"
-         , Replace (Dict.singleton "a" one) a
-         , "[a=1] a"
-         )
        , ( "[g(xx-yy)^(3/2)+1/10]gra{x/(gg),y/(gg)}"
          , let
                gg =
@@ -137,19 +144,9 @@ tests =
                (unaryFunc "gra" <| List [ div x gg, div y gg ])
          , "[g = (x*x - y*y)^(3/2) + 1/10] gra{x/(g*g), y/(g*g)}"
          )
-       , straight "2x" (by [ two, x ])
        , ( "sinh(ix)", sinh_ <| by [ i, x ], "sinh(i*x)" )
        , ( "cosh(ix)", cosh_ <| by [ i, x ], "cosh(i*x)" )
-       , ( "(a+ib)(a-ib)"
-         , let
-               ib =
-                   by [ i, b ]
-           in
-           by [ plus [ a, ib ], minus a ib ]
-         , "(a + i*b)*(a - i*b)"
-         )
-       , ( "i^2", square i, "i²" )
-       , straight "i^69" <| ipow i 69
+
        , ( "0.5+3i", plus [ Float 0.5, triple i ], "0.5 + 3i" )
        , straight "1/i" <| div one i
        , straight "i*i" <| byself i
