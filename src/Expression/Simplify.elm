@@ -1,7 +1,7 @@
 module Expression.Simplify exposing (simplify)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), getFreeVariables)
 import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
 import List exposing (concatMap)
 import List.Extra as List
@@ -645,39 +645,3 @@ polyDegree var expr =
 
         List _ ->
             Nothing
-
-
-getFreeVariables : Expression -> Set String
-getFreeVariables expr =
-    let
-        concatMap =
-            List.foldl (Set.union << getFreeVariables) Set.empty
-    in
-    case expr of
-        Variable v ->
-            Set.singleton v
-
-        UnaryOperation _ e ->
-            getFreeVariables e
-
-        BinaryOperation _ l r ->
-            Set.union (getFreeVariables l) (getFreeVariables r)
-
-        AssociativeOperation _ l r o ->
-            Set.union (getFreeVariables l) (getFreeVariables r)
-                |> Set.union (concatMap o)
-
-        Apply _ args ->
-            concatMap args
-
-        Integer _ ->
-            Set.empty
-
-        Float _ ->
-            Set.empty
-
-        Replace vars e ->
-            Set.diff (getFreeVariables e) (Set.fromList <| Dict.keys vars)
-
-        List es ->
-            concatMap es

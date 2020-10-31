@@ -1,11 +1,12 @@
-module Expression.Parser exposing (Context(..), Problem(..), errorsToString, parse)
+module Expression.Parser exposing (Context(..), Problem(..), errorsToString, parse, parseGraph)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), defaultContext, isFunction, visit)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables, isFunction, visit)
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, unaryFunc)
 import List
 import List.Extra as List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
+import Set
 
 
 type alias ExpressionParser a =
@@ -82,16 +83,6 @@ errorsToString input err =
                )
 
 
-problemToString : Problem -> String
-problemToString problem =
-    case problem of
-        Expected string ->
-            "Expected " ++ string
-
-        Unexpected ->
-            "Unexpected"
-
-
 parse : String -> Result (List (Parser.DeadEnd Context Problem)) Expression
 parse input =
     let
@@ -122,6 +113,26 @@ parse input =
                     |> log "after function activation"
                     |> Expression.Utils.squashHarder
             )
+
+
+parseGraph : Expression -> Graph
+parseGraph expr =
+    case expr of
+        RelationOperation rop l r ->
+            case l of
+                Variable "y" ->
+                    case Set.toList <| getFreeVariables r of
+                        [ "x" ] ->
+                            Explicit2D r
+
+                        _ ->
+                            Implicit2D l rop r
+
+                _ ->
+                    Implicit2D l rop r
+
+        _ ->
+            Explicit2D expr
 
 
 prepare : String -> String
@@ -341,7 +352,7 @@ relationParser =
             |= addsubtractionParser
             |. whitespace
             |= Parser.oneOf
-                [ Parser.succeed (\o r l -> BinaryOperation o l r)
+                [ Parser.succeed (\o r l -> RelationOperation o l r)
                     |= Parser.oneOf
                         [ Parser.succeed LessThanOrEquals |. Parser.symbol (token "<=")
                         , Parser.succeed GreaterThanOrEquals |. Parser.symbol (token ">=")

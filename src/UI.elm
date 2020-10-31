@@ -4,9 +4,8 @@ import Browser
 import Element exposing (Element, column, el, fill, height, padding, spacing, text, width)
 import Element.Font as Font
 import Element.Input as Input
-import Element.Keyed
 import Element.Lazy
-import Expression
+import Expression exposing (Graph(..))
 import Expression.Parser
 import List.Extra as List
 import UI.Theme as Theme
@@ -82,12 +81,26 @@ viewRow row value =
                             Expression.Parser.parse value
                     in
                     case parsed of
-                        Ok expr ->
-                            [ text <| "Interpreted as: " ++ Expression.toString expr ]
-
                         Err e ->
                             [ el [ Font.family [ Font.monospace ] ] <| text <| Expression.Parser.errorsToString value e ]
+
+                        Ok expr ->
+                            let
+                                graph =
+                                    Expression.Parser.parseGraph expr
+                            in
+                            [ text <| "Interpreted as: " ++ Expression.toString expr, draw graph ]
                )
+
+
+draw : Graph -> Element msg
+draw graph =
+    case graph of
+        Explicit2D e ->
+            text <| "y = " ++ Expression.toString e
+
+        Implicit2D l rop r ->
+            text <| Expression.toString l ++ " " ++ Expression.relationToString rop ++ " " ++ Expression.toString r
 
 
 update : Msg -> Model -> Model

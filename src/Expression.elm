@@ -2,21 +2,32 @@ module Expression exposing
     ( AssociativeOperation(..)
     , BinaryOperation(..)
     , Expression(..)
+    , Graph(..)
+    , RelationOperation(..)
     , UnaryOperation(..)
     , defaultContext
     , equals
+    , getFreeVariables
     , isFunction
     , partialSubstitute
+    , relationToString
     , toString
     , visit
     )
 
 import Dict exposing (Dict)
+import Set exposing (Set)
+
+
+type Graph
+    = Explicit2D Expression
+    | Implicit2D Expression RelationOperation Expression
 
 
 type Expression
     = UnaryOperation UnaryOperation Expression
     | BinaryOperation BinaryOperation Expression Expression
+    | RelationOperation RelationOperation Expression Expression
     | AssociativeOperation AssociativeOperation Expression Expression (List Expression)
     | Apply String (List Expression)
     | Variable String
@@ -33,11 +44,33 @@ type UnaryOperation
 type BinaryOperation
     = Division
     | Power
-    | LessThan
+
+
+type RelationOperation
+    = LessThan
     | LessThanOrEquals
     | Equals
     | GreaterThanOrEquals
     | GreaterThan
+
+
+relationToString : RelationOperation -> String
+relationToString rop =
+    case rop of
+        LessThan ->
+            "<"
+
+        LessThanOrEquals ->
+            "⩽"
+
+        Equals ->
+            "="
+
+        GreaterThanOrEquals ->
+            "⩾"
+
+        GreaterThan ->
+            ">"
 
 
 type AssociativeOperation
@@ -61,6 +94,9 @@ visit f expr =
 
                 BinaryOperation bop l r ->
                     BinaryOperation bop (visit f l) (visit f r)
+
+                RelationOperation rop l r ->
+                    RelationOperation rop (visit f l) (visit f r)
 
                 AssociativeOperation aop l r o ->
                     AssociativeOperation aop (visit f l) (visit f r) (List.map (visit f) o)
@@ -200,19 +236,19 @@ toPrintExpression context e =
         BinaryOperation Division l r ->
             PDiv (toPrintExpression context l) (toPrintExpression context r)
 
-        BinaryOperation LessThan l r ->
+        RelationOperation LessThan l r ->
             PRel "<" (toPrintExpression context l) (toPrintExpression context r)
 
-        BinaryOperation LessThanOrEquals l r ->
+        RelationOperation LessThanOrEquals l r ->
             PRel "⩽" (toPrintExpression context l) (toPrintExpression context r)
 
-        BinaryOperation Equals l r ->
+        RelationOperation Equals l r ->
             PRel "=" (toPrintExpression context l) (toPrintExpression context r)
 
-        BinaryOperation GreaterThanOrEquals l r ->
+        RelationOperation GreaterThanOrEquals l r ->
             PRel "⩾" (toPrintExpression context l) (toPrintExpression context r)
 
-        BinaryOperation GreaterThan l r ->
+        RelationOperation GreaterThan l r ->
             PRel ">" (toPrintExpression context l) (toPrintExpression context r)
 
         AssociativeOperation Addition l r o ->
@@ -364,3 +400,42 @@ defaultContext =
 isFunction : String -> Expression -> Bool
 isFunction _ _ =
     False
+
+
+getFreeVariables : Expression -> Set String
+getFreeVariables expr =
+    let
+        concatMap =
+            List.foldl (Set.union << getFreeVariables) Set.empty
+    in
+    case expr of
+        Variable v ->
+            Set.singleton v
+
+        UnaryOperation _ e ->
+            getFreeVariables e
+
+        BinaryOperation _ l r ->
+            Set.union (getFreeVariables l) (getFreeVariables r)
+
+        RelationOperation _ l r ->
+            Set.union (getFreeVariables l) (getFreeVariables r)
+
+        AssociativeOperation _ l r o ->
+            Set.union (getFreeVariables l) (getFreeVariables r)
+                |> Set.union (concatMap o)
+
+        Apply _ args ->
+            concatMap args
+
+        Integer _ ->
+            Set.empty
+
+        Float _ ->
+            Set.empty
+
+        Replace vars e ->
+            Set.diff (getFreeVariables e) (Set.fromList <| Dict.keys vars)
+
+        List es ->
+            concatMap es
