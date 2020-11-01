@@ -486,6 +486,12 @@ value context expr =
         Apply "cos" [ e ] ->
             Complex.cos <| value context e
 
+        Apply "sinh" [ e ] ->
+            Complex.sinh <| value context e
+
+        Apply "cosh" [ e ] ->
+            Complex.cosh <| value context e
+
         Apply "sqrt" [ e ] ->
             Complex.sqrt <| value context e
 
@@ -505,4 +511,8 @@ value context expr =
             Complex.zero
 
         Replace ctx e ->
-            Debug.todo "Replace"
+            value context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
+
+
+
+--[x=x+1](x²+y²)² + 4x(x²+y²)-4y² = 0

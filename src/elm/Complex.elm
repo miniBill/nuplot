@@ -1,4 +1,4 @@
-module Complex exposing (Complex(..), abs, by, cos, div, fromReal, invert, minus, negate, one, plus, power, real, sin, sqrt, zero)
+module Complex exposing (Complex(..), abs, by, cos, cosh, div, fromReal, invert, minus, negate, one, plus, power, real, sin, sinh, sqrt, zero)
 
 
 type Complex
@@ -13,6 +13,11 @@ zero =
 one : Complex
 one =
     Complex 1 0
+
+
+i : Complex
+i =
+    Complex 0 1
 
 
 fromReal : Float -> Complex
@@ -31,8 +36,8 @@ plus (Complex lr li) (Complex rr ri) =
 
 
 negate : Complex -> Complex
-negate (Complex r i) =
-    Complex -r -i
+negate (Complex x y) =
+    Complex -x -y
 
 
 minus : Complex -> Complex -> Complex
@@ -46,12 +51,12 @@ by (Complex lr li) (Complex rr ri) =
 
 
 invert : Complex -> Complex
-invert (Complex r i) =
+invert (Complex x y) =
     let
         l =
-            r * r + i * i
+            x * x + y * y
     in
-    Complex (r / l) (-i / l)
+    Complex (x / l) (-y / l)
 
 
 div : Complex -> Complex -> Complex
@@ -69,8 +74,8 @@ power b z =
 
 
 abs : Complex -> Float
-abs (Complex r i) =
-    Basics.sqrt (r * r + i * i)
+abs (Complex x y) =
+    Basics.sqrt (x * x + y * y)
 
 
 theta : Complex -> Float
@@ -84,8 +89,8 @@ toPolar c =
 
 
 exp : Complex -> Complex
-exp (Complex r i) =
-    Complex (e ^ r * Basics.cos i) (e ^ r * Basics.sin i)
+exp (Complex x y) =
+    Complex (e ^ x * Basics.cos y) (e ^ x * Basics.sin y)
 
 
 sinh_ : Float -> Float
@@ -96,6 +101,16 @@ sinh_ x =
 cosh_ : Float -> Float
 cosh_ x =
     (e ^ x + e ^ -x) / 2
+
+
+sinh : Complex -> Complex
+sinh x =
+    negate (by i <| sin <| by i x)
+
+
+cosh : Complex -> Complex
+cosh x =
+    cos <| by i x
 
 
 sin : Complex -> Complex
@@ -110,4 +125,21 @@ cos (Complex x y) =
 
 sqrt : Complex -> Complex
 sqrt (Complex x y) =
-    Debug.todo "sqrt"
+    let
+        a =
+            Basics.sqrt (x * x + y * y)
+
+        r =
+            Basics.sqrt ((a + x) / 2)
+
+        mi =
+            Basics.sqrt ((a - x) / 2)
+
+        si =
+            if y >= 0 then
+                mi
+
+            else
+                -mi
+    in
+    Complex r si

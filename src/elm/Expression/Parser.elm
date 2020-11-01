@@ -2,6 +2,7 @@ module Expression.Parser exposing (Context(..), Problem(..), errorsToString, par
 
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables, isFunction, visit)
+import Expression.Cleaner as Cleaner
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, unaryFunc)
 import List
 import List.Extra as List
@@ -95,7 +96,7 @@ parse input =
     in
     input
         |> String.trim
-        |> prepare
+        |> Cleaner.cleanInput
         |> Parser.run
             (Parser.succeed identity
                 |= mainParser
@@ -118,6 +119,9 @@ parse input =
 parseGraph : Expression -> Graph
 parseGraph expr =
     case expr of
+        Replace ctx (RelationOperation rop l r) ->
+            parseGraph (RelationOperation rop (Replace ctx l) (Replace ctx r))
+
         RelationOperation rop l r ->
             case ( l, rop, Set.toList <| getFreeVariables r ) of
                 ( Variable "y", Equals, [ "x" ] ) ->
@@ -131,13 +135,6 @@ parseGraph expr =
 
         _ ->
             Explicit2D expr
-
-
-prepare : String -> String
-prepare =
-    String.replace "DEBUG" ""
-        >> String.replace "²" "^2"
-        >> String.replace "³" "^3"
 
 
 activateFunctions : List String -> Expression -> Expression

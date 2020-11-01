@@ -230,6 +230,7 @@ tests =
             a
       , "3/10/a"
       )
+    , ( "b²3x", by [ square b, Integer 3, x ], "b²*3*x" )
     ]
 
 
