@@ -6,7 +6,7 @@ import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one
 import List exposing (concatMap)
 import List.Extra as List
 import Maybe.Extra as Maybe
-import Set exposing (Set)
+import Set
 
 
 log : String -> a -> a

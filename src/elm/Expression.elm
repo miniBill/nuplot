@@ -507,12 +507,8 @@ value context expr =
         Float f ->
             Complex.fromReal f
 
-        List es ->
+        List _ ->
             Complex.zero
 
         Replace ctx e ->
             value context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
-
-
-
---[x=x+1](x²+y²)² + 4x(x²+y²)-4y² = 0
