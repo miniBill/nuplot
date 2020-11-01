@@ -119,17 +119,15 @@ parseGraph : Expression -> Graph
 parseGraph expr =
     case expr of
         RelationOperation rop l r ->
-            case l of
-                Variable "y" ->
-                    case Set.toList <| getFreeVariables r of
-                        [ "x" ] ->
-                            Explicit2D r
+            case ( l, rop, Set.toList <| getFreeVariables r ) of
+                ( Variable "y", Equals, [ "x" ] ) ->
+                    Explicit2D r
 
-                        _ ->
-                            Implicit2D l rop r
+                ( _, Equals, _ ) ->
+                    Implicit2D l r
 
                 _ ->
-                    Implicit2D l rop r
+                    Relation2D rop l r
 
         _ ->
             Explicit2D expr

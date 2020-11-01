@@ -1,7 +1,7 @@
 module Expression.Simplify exposing (simplify)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), getFreeVariables)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), UnaryOperation(..), getFreeVariables)
 import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
 import List exposing (concatMap)
 import List.Extra as List
@@ -79,8 +79,15 @@ innerSimplify context expr =
                     Power ->
                         innerSimplifyPower context ls rs
 
-                    _ ->
-                        BinaryOperation bop ls rs
+            RelationOperation rop l r ->
+                let
+                    ls =
+                        innerSimplify context l
+
+                    rs =
+                        innerSimplify context r
+                in
+                RelationOperation rop ls rs
 
             AssociativeOperation aop l r o ->
                 innerSimplifyAssociative context aop l r o
@@ -606,19 +613,19 @@ polyDegree var expr =
         BinaryOperation Power _ _ ->
             Nothing
 
-        BinaryOperation LessThan _ _ ->
+        RelationOperation LessThan _ _ ->
             Nothing
 
-        BinaryOperation LessThanOrEquals _ _ ->
+        RelationOperation LessThanOrEquals _ _ ->
             Nothing
 
-        BinaryOperation Equals _ _ ->
+        RelationOperation Equals _ _ ->
             Nothing
 
-        BinaryOperation GreaterThan _ _ ->
+        RelationOperation GreaterThan _ _ ->
             Nothing
 
-        BinaryOperation GreaterThanOrEquals _ _ ->
+        RelationOperation GreaterThanOrEquals _ _ ->
             Nothing
 
         AssociativeOperation Addition l r o ->

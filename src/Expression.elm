@@ -12,16 +12,19 @@ module Expression exposing
     , partialSubstitute
     , relationToString
     , toString
+    , value
     , visit
     )
 
+import Complex exposing (Complex(..))
 import Dict exposing (Dict)
 import Set exposing (Set)
 
 
 type Graph
     = Explicit2D Expression
-    | Implicit2D Expression RelationOperation Expression
+    | Relation2D RelationOperation Expression Expression
+    | Implicit2D Expression Expression
 
 
 type Expression
@@ -118,23 +121,23 @@ visit f expr =
 
 
 partialSubstitute : String -> Expression -> Expression -> Expression
-partialSubstitute var value =
+partialSubstitute var val =
     visit <|
         \expr ->
             case expr of
                 Replace vars e ->
                     Just <|
-                        Replace (Dict.map (\_ v -> partialSubstitute var value v) vars) <|
+                        Replace (Dict.map (\_ v -> partialSubstitute var val v) vars) <|
                             if Dict.member var vars then
                                 e
 
                             else
-                                partialSubstitute var value e
+                                partialSubstitute var val e
 
                 Variable string ->
                     Just <|
                         if string == var then
-                            value
+                            val
 
                         else
                             expr
@@ -439,3 +442,67 @@ getFreeVariables expr =
 
         List es ->
             concatMap es
+
+
+value : Dict String Complex -> Expression -> Complex
+value context expr =
+    case expr of
+        Variable v ->
+            Dict.get v context |> Maybe.withDefault Complex.zero
+
+        UnaryOperation Negate e ->
+            Complex.negate <| value context e
+
+        BinaryOperation Division l r ->
+            Complex.div (value context l) (value context r)
+
+        BinaryOperation Power l r ->
+            Complex.power (value context l) (value context r)
+
+        RelationOperation LessThan l r ->
+            Complex.minus (value context r) (value context l)
+
+        RelationOperation LessThanOrEquals l r ->
+            Complex.minus (value context r) (value context l)
+
+        RelationOperation Equals l r ->
+            Complex.minus (value context r) (value context l)
+
+        RelationOperation GreaterThanOrEquals l r ->
+            Complex.minus (value context l) (value context r)
+
+        RelationOperation GreaterThan l r ->
+            Complex.minus (value context l) (value context r)
+
+        AssociativeOperation Addition l r o ->
+            List.foldl Complex.plus Complex.zero <| List.map (value context) (l :: r :: o)
+
+        AssociativeOperation Multiplication l r o ->
+            List.foldl Complex.by Complex.one <| List.map (value context) (l :: r :: o)
+
+        Apply "sin" [ e ] ->
+            Complex.sin <| value context e
+
+        Apply "cos" [ e ] ->
+            Complex.cos <| value context e
+
+        Apply "sqrt" [ e ] ->
+            Complex.sqrt <| value context e
+
+        Apply "abs" [ e ] ->
+            Complex.fromReal <| Complex.abs <| value context e
+
+        Apply _ _ ->
+            Debug.todo "Apply"
+
+        Integer i ->
+            Complex.fromReal <| toFloat i
+
+        Float f ->
+            Complex.fromReal f
+
+        List es ->
+            Complex.zero
+
+        Replace ctx e ->
+            Debug.todo "Replace"

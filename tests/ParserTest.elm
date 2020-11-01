@@ -439,5 +439,4 @@ tests =
    checkWithDerivatives("x^x", "x^x+ln(x)x^x", "?", 'x');
    checkWithDerivatives("0x+3y+xx", "3y+x^2", "2x", "2", 'x');
    checkWithDerivatives("ax^2+bx+c", "2ax+b", "2a", 'x');
-
 -}
