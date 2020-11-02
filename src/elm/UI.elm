@@ -6,15 +6,26 @@ import Element exposing (fill, height, width)
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import List.Extra as List
 import Model exposing (ColoredShapes, Flags, Model, Msg(..), RowResult(..), WorkerRequest(..), WorkerResponse(..), workerRequestCodec, workerResponseCodec)
+import Process
+import Task
+import UI.Theme as Theme
 import UI.View exposing (view)
+import Worker
 
 
 port toWorker : String -> Cmd msg
 
 
-send : WorkerRequest -> Cmd msg
-send =
-    Codec.encodeToString 0 workerRequestCodec >> toWorker
+send : WorkerRequest -> Cmd Msg
+send request =
+    case ( request, Theme.debug ) of
+        ( PlotRequest input, True ) ->
+            Process.sleep 10
+                |> Task.map (\_ -> Worker.doPlot input)
+                |> Task.perform WorkerResponse
+
+        _ ->
+            toWorker <| Codec.encodeToString 0 workerRequestCodec request
 
 
 port fromWorker : (String -> msg) -> Sub msg
@@ -35,7 +46,7 @@ main =
         }
 
 
-init : Flags -> ( Model, Cmd msg )
+init : Flags -> ( Model, Cmd Msg )
 init _ =
     let
         raw =
@@ -56,12 +67,15 @@ init _ =
     )
 
 
-update : Msg -> Model -> ( Model, Cmd msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Input { row, input } ->
             model
-                |> List.updateAt row (\r -> { r | input = input })
+                |> List.setAt row
+                    { input = input
+                    , result = Calculating
+                    }
                 |> List.filter (not << String.isEmpty << .input)
                 |> (\l ->
                         ( l
@@ -69,7 +83,11 @@ update msg model =
                                  , result = Empty
                                  }
                                ]
-                        , send <| PlotRequest input
+                        , if String.isEmpty input then
+                            Cmd.none
+
+                          else
+                            send <| PlotRequest input
                         )
                    )
 

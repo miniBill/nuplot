@@ -87,12 +87,13 @@ errorsToString input err =
 parse : String -> Result (List (Parser.DeadEnd Context Problem)) Expression
 parse input =
     let
-        log msg =
-            if String.contains "DEBUG" input then
-                Debug.log msg
+        log _ =
+            {- if String.contains "DEBUG" input then
+                   Debug.log msg
 
-            else
-                identity
+               else
+            -}
+            identity
     in
     input
         |> String.trim

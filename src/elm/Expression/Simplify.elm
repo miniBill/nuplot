@@ -11,11 +11,12 @@ import Set
 
 log : String -> a -> a
 log =
-    if False then
-        Debug.log
+    {- if False then
+           Debug.log
 
-    else
-        always identity
+       else
+    -}
+    always identity
 
 
 simplify : Expression -> Expression

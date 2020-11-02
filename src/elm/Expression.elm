@@ -388,7 +388,7 @@ defaultContext : List String
 defaultContext =
     let
         power =
-            [ "abs", "sqrt" ]
+            [ "abs", "sqrt", "ln" ]
 
         trig =
             [ "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh" ]
@@ -480,26 +480,8 @@ value context expr =
         AssociativeOperation Multiplication l r o ->
             List.foldl Complex.by Complex.one <| List.map (value context) (l :: r :: o)
 
-        Apply "sin" [ e ] ->
-            Complex.sin <| value context e
-
-        Apply "cos" [ e ] ->
-            Complex.cos <| value context e
-
-        Apply "sinh" [ e ] ->
-            Complex.sinh <| value context e
-
-        Apply "cosh" [ e ] ->
-            Complex.cosh <| value context e
-
-        Apply "sqrt" [ e ] ->
-            Complex.sqrt <| value context e
-
-        Apply "abs" [ e ] ->
-            Complex.fromReal <| Complex.abs <| value context e
-
-        Apply _ _ ->
-            Debug.todo "Apply"
+        Apply name args ->
+            applyValue context name args
 
         Integer i ->
             Complex.fromReal <| toFloat i
@@ -512,3 +494,46 @@ value context expr =
 
         Replace ctx e ->
             value context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
+
+
+applyValue : Dict String Complex -> String -> List Expression -> Complex
+applyValue context name args =
+    case ( name, args ) of
+        ( "sin", [ e ] ) ->
+            Complex.sin <| value context e
+
+        ( "cos", [ e ] ) ->
+            Complex.cos <| value context e
+
+        ( "tan", [ e ] ) ->
+            Complex.tan <| value context e
+
+        ( "sinh", [ e ] ) ->
+            Complex.sinh <| value context e
+
+        ( "cosh", [ e ] ) ->
+            Complex.cosh <| value context e
+
+        ( "tanh", [ e ] ) ->
+            Complex.tanh <| value context e
+
+        ( "asin", [ e ] ) ->
+            Complex.asin <| value context e
+
+        ( "acos", [ e ] ) ->
+            Complex.acos <| value context e
+
+        ( "atan", [ e ] ) ->
+            Complex.atan <| value context e
+
+        ( "sqrt", [ e ] ) ->
+            Complex.sqrt <| value context e
+
+        ( "ln", [ e ] ) ->
+            Complex.ln <| value context e
+
+        ( "abs", [ e ] ) ->
+            Complex.fromReal <| Complex.abs <| value context e
+
+        _ ->
+            Complex.zero

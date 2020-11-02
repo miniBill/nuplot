@@ -1,7 +1,6 @@
 {
     "browserslist": {
         "production": [
-            "1 last version",
             "> 1%"
         ],
         "development": [

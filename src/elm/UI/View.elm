@@ -82,37 +82,71 @@ viewRow index row =
                 , text = row.input
                 }
 
-        outputBlock =
+        statusLine =
             case row.result of
                 Empty ->
-                    []
+                    Element.none
 
                 Waiting ->
-                    [ text "Typing..." ]
+                    text "Typing..."
 
                 Calculating ->
-                    [ text "Calculating..." ]
+                    text "Calculating..."
 
                 ParseError e ->
-                    [ el
+                    el
                         [ Font.family [ Font.monospace ]
                         , Font.color <| rgb 1 0 0
                         ]
-                      <|
+                    <|
                         text e
-                    ]
 
-                Plotted { interpreted, shapes } ->
-                    [ text <| "Interpreted as: " ++ interpreted
-                    , Element.Keyed.el [ centerX ] ( row.input, draw shapes )
-                    ]
+                Plotted { interpreted } ->
+                    text <| "Interpreted as: " ++ interpreted
+
+        outputBlock =
+            Element.Keyed.el [ centerX ]
+                ( row.input ++ resultTag
+                , case row.result of
+                    Empty ->
+                        Element.none
+
+                    Waiting ->
+                        Element.none
+
+                    Calculating ->
+                        Element.none
+
+                    ParseError _ ->
+                        Element.none
+
+                    Plotted { shapes } ->
+                        draw shapes
+                )
+
+        resultTag =
+            case row.result of
+                Empty ->
+                    " "
+
+                Waiting ->
+                    "W"
+
+                Calculating ->
+                    "C"
+
+                ParseError _ ->
+                    "E"
+
+                Plotted _ ->
+                    "P"
     in
     column
         [ padding Theme.spacing
         , spacing Theme.spacing
         , width fill
         ]
-        (inputLine :: outputBlock)
+        [ inputLine, statusLine, outputBlock ]
 
 
 view : Model -> Element Msg

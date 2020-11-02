@@ -1,4 +1,4 @@
-module Complex exposing (Complex(..), abs, by, cos, cosh, div, fromReal, invert, minus, negate, one, plus, power, real, sin, sinh, sqrt, zero)
+module Complex exposing (Complex(..), abs, acos, asin, atan, by, cos, cosh, div, fromReal, invert, ln, minus, negate, one, plus, power, real, sin, sinh, sqrt, tan, tanh, zero)
 
 
 type Complex
@@ -93,6 +93,15 @@ exp (Complex x y) =
     Complex (e ^ x * Basics.cos y) (e ^ x * Basics.sin y)
 
 
+ln : Complex -> Complex
+ln c =
+    let
+        ( a, t ) =
+            toPolar c
+    in
+    Complex (Basics.logBase Basics.e a) t
+
+
 sinh_ : Float -> Float
 sinh_ x =
     (e ^ x - e ^ -x) / 2
@@ -103,16 +112,6 @@ cosh_ x =
     (e ^ x + e ^ -x) / 2
 
 
-sinh : Complex -> Complex
-sinh x =
-    negate (by i <| sin <| by i x)
-
-
-cosh : Complex -> Complex
-cosh x =
-    cos <| by i x
-
-
 sin : Complex -> Complex
 sin (Complex x y) =
     Complex (Basics.sin x * cosh_ y) (Basics.cos x * sinh_ y)
@@ -121,6 +120,41 @@ sin (Complex x y) =
 cos : Complex -> Complex
 cos (Complex x y) =
     Complex (Basics.cos x * cosh_ y) (Basics.sin x * sinh_ y)
+
+
+tan : Complex -> Complex
+tan c =
+    div (sin c) (cos c)
+
+
+sinh : Complex -> Complex
+sinh x =
+    negate <| (by i <| sin <| by i x)
+
+
+cosh : Complex -> Complex
+cosh x =
+    cos <| by i x
+
+
+tanh : Complex -> Complex
+tanh x =
+    negate <| by i <| tan <| by i x
+
+
+asin : Complex -> Complex
+asin x =
+    by i <| ln <| minus (sqrt <| minus one <| by x x) (by i x)
+
+
+acos : Complex -> Complex
+acos x =
+    negate <| by i <| ln <| plus x <| by i <| sqrt <| minus one <| by x x
+
+
+atan : Complex -> Complex
+atan x =
+    negate <| by i <| tan <| by i x
 
 
 sqrt : Complex -> Complex

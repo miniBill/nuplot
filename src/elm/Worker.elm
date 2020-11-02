@@ -1,7 +1,7 @@
-port module Worker exposing (main)
+port module Worker exposing (doPlot, main)
 
 import Codec
-import Expression exposing (Expression)
+import Expression
 import Expression.Parser
 import Expression.Plotter
 import Model exposing (Msg(..), RowResult(..), WorkerRequest(..), WorkerResponse(..), workerRequestCodec, workerResponseCodec)
@@ -48,31 +48,35 @@ update msg () =
 
         PlotRequest input ->
             ( ()
-            , send <|
-                PlotResponse <|
-                    let
-                        parsed =
-                            Expression.Parser.parse input
-                    in
-                    case parsed of
-                        Err e ->
-                            { input = input
-                            , result = Err <| Expression.Parser.errorsToString input e
-                            }
-
-                        Ok o ->
-                            let
-                                g =
-                                    Expression.Parser.parseGraph o
-                            in
-                            { input = input
-                            , result =
-                                Ok
-                                    { interpreted = Expression.toString o
-                                    , shapes = Expression.Plotter.getShapes Expression.Plotter.defaultBounds g
-                                    }
-                            }
+            , send <| doPlot input
             )
+
+
+doPlot : String -> WorkerResponse
+doPlot input =
+    PlotResponse <|
+        let
+            parsed =
+                Expression.Parser.parse input
+        in
+        case parsed of
+            Err e ->
+                { input = input
+                , result = Err <| Expression.Parser.errorsToString input e
+                }
+
+            Ok o ->
+                let
+                    g =
+                        Expression.Parser.parseGraph o
+                in
+                { input = input
+                , result =
+                    Ok
+                        { interpreted = Expression.toString o
+                        , shapes = Expression.Plotter.getShapes Expression.Plotter.defaultBounds g
+                        }
+                }
 
 
 subscriptions : Model -> Sub WorkerRequest
