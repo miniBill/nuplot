@@ -5,23 +5,9 @@ const ctx: Worker = self as any;
 // @ts-ignore Allow Elm to work in a Worker
 ctx.document = { body: {} };
 
-function plot(data: { request: string; expression: string; }): void {
-    var worker = Elm.Worker.init();
-    worker.ports.plotted.subscribe(result =>
-        ctx.postMessage({
-            request: data.request,
-            response: {
-                expression: data.expression,
-                lines: result
-            }
-        }));
-    worker.ports.plot.send(data.expression);
-}
+var worker = Elm.Worker.init();
+worker.ports.fromWorker.subscribe(msg => ctx.postMessage(msg));
 
 self.addEventListener('message', function (e) {
-    switch (e.data.request) {
-        case 'plot':
-            plot(JSON.parse(e.data));
-            break;
-    }
+    worker.ports.toWorker.send(e.data);
 })

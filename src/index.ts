@@ -1,23 +1,24 @@
 import { Elm } from "./elm/UI.elm"
 
-var worker: Worker = new Worker("/worker.ts");
+function init() {
+    var worker: Worker = new Worker("/worker.ts");
 
-worker.addEventListener("message", function (e) {
-    switch (e.data.request) {
-        case 'plot':
-            app.ports.plotted.send(e.data.response);
-            break;
+    const node = document.getElementById("main");
+    if (node == null) {
+        document.write("Error initializing application. This might be caused by a browser extension.");
+        return;
     }
-});
 
-var app = Elm.UI.init({
-    node: document.getElementById("main"),
-    flags: 1
-});
+    var app = Elm.UI.init({
+        node: node,
+        flags: 1
+    });
+    app.ports.toWorker.subscribe(json => {
+        worker.postMessage(json);
+    });
+    worker.addEventListener("message", function (e) {
+        app.ports.fromWorker.send(e.data);
+    });
+}
 
-app.ports.plot.subscribe(expression => {
-    worker.postMessage(JSON.stringify({
-        request: "plot",
-        expression: expression
-    }));
-});
+init();

@@ -1,16 +1,21 @@
 port module Worker exposing (main)
 
-import Model exposing (PlotResult)
+import Codec
+import Expression exposing (Expression)
+import Expression.Parser
+import Expression.Plotter
+import Model exposing (Msg(..), RowResult(..), WorkerRequest(..), WorkerResponse(..), workerRequestCodec, workerResponseCodec)
 
 
-port plot : (String -> msg) -> Sub msg
+port toWorker : (String -> msg) -> Sub msg
 
 
-port plotted : PlotResult -> Cmd msg
+send : WorkerResponse -> Cmd msg
+send =
+    Codec.encodeToString 0 workerResponseCodec >> fromWorker
 
 
-type Msg
-    = Plot String
+port fromWorker : String -> Cmd msg
 
 
 type alias Flags =
@@ -21,7 +26,7 @@ type alias Model =
     ()
 
 
-main : Program Flags Model Msg
+main : Program Flags Model WorkerRequest
 main =
     Platform.worker
         { init = init
@@ -35,18 +40,41 @@ init _ =
     ( (), Cmd.none )
 
 
-update : Msg -> Model -> ( Model, Cmd msg )
+update : WorkerRequest -> Model -> ( Model, Cmd msg )
 update msg () =
     case msg of
-        Plot expression ->
+        WorkerRequestDecodingFailed ->
+            ( (), Cmd.none )
+
+        PlotRequest input ->
             ( ()
-            , plotted
-                { expression = expression
-                , lines = []
-                }
+            , send <|
+                PlotResponse <|
+                    let
+                        parsed =
+                            Expression.Parser.parse input
+                    in
+                    case parsed of
+                        Err e ->
+                            { input = input
+                            , result = Err <| Expression.Parser.errorsToString input e
+                            }
+
+                        Ok o ->
+                            let
+                                g =
+                                    Expression.Parser.parseGraph o
+                            in
+                            { input = input
+                            , result =
+                                Ok
+                                    { interpreted = Expression.toString o
+                                    , shapes = Expression.Plotter.getShapes Expression.Plotter.defaultBounds g
+                                    }
+                            }
             )
 
 
-subscriptions : Model -> Sub Msg
+subscriptions : Model -> Sub WorkerRequest
 subscriptions _ =
-    plot Plot
+    toWorker (Codec.decodeString workerRequestCodec >> Result.withDefault WorkerRequestDecodingFailed)

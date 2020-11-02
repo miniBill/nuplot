@@ -1,17 +1,23 @@
 port module UI exposing (main)
 
 import Browser
+import Codec
 import Element exposing (fill, height, width)
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import List.Extra as List
-import Model exposing (Flags, GraphStatus(..), Model, Msg(..), PlotResult)
+import Model exposing (ColoredShapes, Flags, Model, Msg(..), RowResult(..), WorkerRequest(..), WorkerResponse(..), workerRequestCodec, workerResponseCodec)
 import UI.View exposing (view)
 
 
-port plot : String -> Cmd msg
+port toWorker : String -> Cmd msg
 
 
-port plotted : (PlotResult -> msg) -> Sub msg
+send : WorkerRequest -> Cmd msg
+send =
+    Codec.encodeToString 0 workerRequestCodec >> toWorker
+
+
+port fromWorker : (String -> msg) -> Sub msg
 
 
 main : Program Flags Model Msg
@@ -39,32 +45,68 @@ init _ =
             , ""
             ]
     in
-    ( List.map (\i -> { input = i, graph = Just Drawing }) raw
-    , Cmd.batch <| List.map (\i -> plot i) raw
+    ( List.map
+        (\i ->
+            { input = i
+            , result = Calculating
+            }
+        )
+        raw
+    , Cmd.batch <| List.map (\i -> send <| PlotRequest i) raw
     )
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
     case msg of
-        Input { row, value } ->
+        Input { row, input } ->
             model
-                |> List.updateAt row (\r -> { r | input = value })
+                |> List.updateAt row (\r -> { r | input = input })
                 |> List.filter (not << String.isEmpty << .input)
                 |> (\l ->
                         ( l
                             ++ [ { input = ""
-                                 , graph = Nothing
+                                 , result = Empty
                                  }
                                ]
-                        , plot value
+                        , send <| PlotRequest input
                         )
                    )
 
-        Plotted _ ->
+        WorkerResponse (PlotResponse { input, result }) ->
+            ( model
+                |> List.updateIf (.input >> (==) input)
+                    (\r ->
+                        { r
+                            | result = toRowResult result
+                        }
+                    )
+            , Cmd.none
+            )
+
+        WorkerResponseDecodingFailed ->
             ( model, Cmd.none )
+
+
+toRowResult :
+    Result String
+        { interpreted : String
+        , shapes : List ColoredShapes
+        }
+    -> RowResult
+toRowResult result =
+    case result of
+        Err e ->
+            ParseError e
+
+        Ok r ->
+            Plotted r
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    plotted Plotted
+    fromWorker
+        (Codec.decodeString workerResponseCodec
+            >> Result.map WorkerResponse
+            >> Result.withDefault WorkerResponseDecodingFailed
+        )

@@ -10,11 +10,11 @@ export const Elm: {
 
 export type UIInstance = {
     ports: {
-        plot: {
-            subscribe: ((callback: ((expression: string) => void)) => void)
+        toWorker: {
+            subscribe: ((callback: ((json: string) => void)) => void)
         },
-        plotted: {
-            send: (result: PlotResult) => void
+        fromWorker: {
+            send: (json: string) => void
         }
     }
 }

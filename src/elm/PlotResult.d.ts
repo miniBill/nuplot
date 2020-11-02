@@ -1,9 +1,9 @@
 export type PlotResult = {
     expression: string;
-    lines: ColoredLines[];
+    lines: ColoredShapes[];
 };
 
-export type ColoredLines = {
+export type ColoredShapes = {
     color: string,
     lines: Line[]
 }
