@@ -1,6 +1,6 @@
 module UI.View exposing (view)
 
-import Element exposing (Element, centerX, column, el, fill, padding, rgb, spacing, text, width)
+import Element exposing (Element, alignTop, centerX, column, el, fill, padding, rgb, spacing, text, width, wrappedRow)
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed
@@ -145,13 +145,14 @@ viewRow index row =
         [ padding Theme.spacing
         , spacing Theme.spacing
         , width fill
+        , alignTop
         ]
         [ inputLine, statusLine, outputBlock ]
 
 
 view : Model -> Element Msg
 view model =
-    column
+    wrappedRow
         [ spacing <| 2 * Theme.spacing
         , width fill
         ]

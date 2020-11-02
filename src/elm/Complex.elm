@@ -1,4 +1,4 @@
-module Complex exposing (Complex(..), abs, acos, asin, atan, by, cos, cosh, div, fromReal, invert, ln, minus, negate, one, plus, power, real, sin, sinh, sqrt, tan, tanh, zero)
+module Complex exposing (Complex(..), abs, acos, asin, atan, by, cos, cosh, div, fromReal, im, invert, ln, minus, negate, one, plus, power, re, real, sin, sinh, sqrt, tan, tanh, zero)
 
 
 type Complex
@@ -100,6 +100,16 @@ ln c =
             toPolar c
     in
     Complex (Basics.logBase Basics.e a) t
+
+
+re : Complex -> Complex
+re (Complex x _) =
+    fromReal x
+
+
+im : Complex -> Complex
+im (Complex _ y) =
+    fromReal y
 
 
 sinh_ : Float -> Float

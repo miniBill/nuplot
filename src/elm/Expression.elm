@@ -390,12 +390,16 @@ defaultContext =
         power =
             [ "abs", "sqrt", "ln" ]
 
+        complex =
+            [ "re", "im" ]
+
         trig =
             [ "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh" ]
     in
     List.concat
         [ power
         , trig
+        , complex
         , [ "gra" ]
         ]
 
@@ -531,6 +535,12 @@ applyValue context name args =
 
         ( "ln", [ e ] ) ->
             Complex.ln <| value context e
+
+        ( "re", [ e ] ) ->
+            Complex.re <| value context e
+
+        ( "im", [ e ] ) ->
+            Complex.im <| value context e
 
         ( "abs", [ e ] ) ->
             Complex.fromReal <| Complex.abs <| value context e
