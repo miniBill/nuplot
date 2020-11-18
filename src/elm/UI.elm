@@ -5,7 +5,7 @@ import Codec
 import Element exposing (fill, height, width)
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import List.Extra as List
-import Model exposing (ColoredShapes, Flags, Model, Msg(..), RowResult(..), WorkerRequest(..), WorkerResponse(..), workerRequestCodec, workerResponseCodec)
+import Model exposing (Flags, Model, Msg(..), RowResult(..), WorkerRequest(..), WorkerResponse(..), workerRequestCodec, workerResponseCodec)
 import Process
 import Task
 import UI.Theme as Theme
@@ -18,7 +18,7 @@ port toWorker : String -> Cmd msg
 
 send : WorkerRequest -> Cmd Msg
 send request =
-    case ( request, Theme.debug ) of
+    case ( request, Theme.paintInForegroud ) of
         ( PlotRequest input, True ) ->
             Process.sleep 10
                 |> Task.map (\_ -> Worker.doPlot input)
@@ -39,6 +39,7 @@ main =
             Element.layout
                 [ width fill
                 , height fill
+                , Element.padding Theme.spacing
                 ]
                 << view
         , update = update
@@ -50,20 +51,18 @@ init : Flags -> ( Model, Cmd Msg )
 init _ =
     let
         raw =
-            [ "y = sin x"
-            , "x² + y² = 25"
-            , "!"
-            , ""
+            [ { input = "y = sin x", result = Calculating }
+            , { input = "x² + y² = 25", result = Calculating }
+            , { input = "x² + y² < 25", result = Calculating }
+            , { input = "", result = Empty }
             ]
     in
-    ( List.map
-        (\i ->
-            { input = i
-            , result = Calculating
-            }
-        )
-        raw
-    , Cmd.batch <| List.map (\i -> send <| PlotRequest i) raw
+    ( raw
+    , raw
+        |> List.map .input
+        |> List.filterNot String.isEmpty
+        |> List.map (PlotRequest >> send)
+        |> Cmd.batch
     )
 
 
@@ -78,11 +77,7 @@ update msg model =
                     }
                 |> List.filter (not << String.isEmpty << .input)
                 |> (\l ->
-                        ( l
-                            ++ [ { input = ""
-                                 , result = Empty
-                                 }
-                               ]
+                        ( l ++ [ Model.emptyRow ]
                         , if String.isEmpty input then
                             Cmd.none
 
@@ -109,7 +104,7 @@ update msg model =
 toRowResult :
     Result String
         { interpreted : String
-        , shapes : List ColoredShapes
+        , png : String
         }
     -> RowResult
 toRowResult result =

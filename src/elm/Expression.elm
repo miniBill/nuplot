@@ -391,7 +391,7 @@ defaultContext =
             [ "abs", "sqrt", "ln" ]
 
         complex =
-            [ "re", "im" ]
+            [ "re", "im", "arg" ]
 
         trig =
             [ "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh" ]
@@ -535,6 +535,9 @@ applyValue context name args =
 
         ( "ln", [ e ] ) ->
             Complex.ln <| value context e
+
+        ( "arg", [ e ] ) ->
+            Complex.fromReal <| Complex.arg <| value context e
 
         ( "re", [ e ] ) ->
             Complex.re <| value context e

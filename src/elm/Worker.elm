@@ -74,7 +74,7 @@ doPlot input =
                 , result =
                     Ok
                         { interpreted = Expression.toString o
-                        , shapes = Expression.Plotter.getShapes Expression.Plotter.defaultBounds g
+                        , png = Expression.Plotter.getPng Expression.Plotter.defaultBounds g
                         }
                 }
 

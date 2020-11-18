@@ -1,4 +1,4 @@
-module Complex exposing (Complex(..), abs, acos, asin, atan, by, cos, cosh, div, fromReal, im, invert, ln, minus, negate, one, plus, power, re, real, sin, sinh, sqrt, tan, tanh, zero)
+module Complex exposing (Complex(..), abs, acos, arg, asin, atan, by, cos, cosh, div, fromReal, im, invert, ln, minus, negate, one, plus, power, re, real, sin, sinh, sqrt, tan, tanh, zero)
 
 
 type Complex
@@ -78,14 +78,14 @@ abs (Complex x y) =
     Basics.sqrt (x * x + y * y)
 
 
-theta : Complex -> Float
-theta (Complex x y) =
+arg : Complex -> Float
+arg (Complex x y) =
     atan2 y x
 
 
 toPolar : Complex -> ( Float, Float )
 toPolar c =
-    ( abs c, theta c )
+    ( abs c, arg c )
 
 
 exp : Complex -> Complex

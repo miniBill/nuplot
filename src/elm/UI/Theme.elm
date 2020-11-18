@@ -1,8 +1,8 @@
-module UI.Theme exposing (debug, spacing)
+module UI.Theme exposing (paintInForegroud, spacing)
 
 
-debug : Bool
-debug =
+paintInForegroud : Bool
+paintInForegroud =
     True
 
 

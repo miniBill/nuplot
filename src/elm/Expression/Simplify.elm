@@ -24,6 +24,13 @@ simplify =
     innerSimplify Dict.empty
 
 
+-- condition ? ifTrue : ifFalse (C, C++, C#)
+-- if condition then ifTrue else ifFalse (Haskel, Elm, Curry)
+-- ifTrue if condition else ifFalse (Python) -- DUMB
+
+-- a && b (C, C++, C#, Haskell, Elm)
+-- a and b (Python) -- NOT DUMB
+
 {-| Preconditions: context contains simplified expressions
 -}
 innerSimplify : Dict String Expression -> Expression -> Expression
