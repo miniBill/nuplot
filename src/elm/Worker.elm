@@ -1,7 +1,6 @@
 port module Worker exposing (doPlot, main)
 
 import Codec
-import Expression
 import Expression.Parser
 import Expression.Plotter
 import Model exposing (Msg(..), RowResult(..), WorkerRequest(..), WorkerResponse(..), workerRequestCodec, workerResponseCodec)
@@ -71,11 +70,7 @@ doPlot input =
                         Expression.Parser.parseGraph o
                 in
                 { input = input
-                , result =
-                    Ok
-                        { interpreted = Expression.toString o
-                        , png = Expression.Plotter.getPng Expression.Plotter.defaultBounds g
-                        }
+                , result = Ok <| Expression.Plotter.getPng Expression.Plotter.defaultBounds g
                 }
 
 

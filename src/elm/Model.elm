@@ -1,5 +1,6 @@
 module Model exposing (Flags, Model, Msg(..), Row, RowResult(..), WorkerRequest(..), WorkerResponse(..), WorkerResult, emptyRow, workerRequestCodec, workerResponseCodec, workerResultCodec)
 
+import Bounce exposing (Bounce)
 import Codec exposing (Codec)
 
 
@@ -14,6 +15,7 @@ type alias Model =
 type alias Row =
     { input : String
     , result : RowResult
+    , bounce : Bounce
     }
 
 
@@ -21,6 +23,7 @@ emptyRow : Row
 emptyRow =
     { input = ""
     , result = Empty
+    , bounce = Bounce.init
     }
 
 
@@ -29,16 +32,12 @@ type RowResult
     | Waiting
     | Calculating
     | ParseError String
-    | Plotted { interpreted : String, png : String }
+    | Plotted String
 
 
 type alias WorkerResult =
     { input : String
-    , result :
-        Result String
-            { interpreted : String
-            , png : String
-            }
+    , result : Result String String
     }
 
 
@@ -46,15 +45,7 @@ workerResultCodec : Codec WorkerResult
 workerResultCodec =
     Codec.object WorkerResult
         |> Codec.field "input" .input Codec.string
-        |> Codec.field "result"
-            .result
-            (Codec.result Codec.string
-                (Codec.object (\i p -> { interpreted = i, png = p })
-                    |> Codec.field "interpreted" .interpreted Codec.string
-                    |> Codec.field "png" .png Codec.string
-                    |> Codec.buildObject
-                )
-            )
+        |> Codec.field "result" .result (Codec.result Codec.string Codec.string)
         |> Codec.buildObject
 
 
@@ -62,6 +53,7 @@ type Msg
     = Input { row : Int, input : String }
     | WorkerResponse WorkerResponse
     | WorkerResponseDecodingFailed
+    | BounceMsg Int
 
 
 type WorkerRequest

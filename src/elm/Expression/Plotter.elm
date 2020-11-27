@@ -2,10 +2,12 @@ module Expression.Plotter exposing (Bounds, defaultBounds, getPng)
 
 import Array exposing (Array)
 import Array.Extra as Array
-import Complex
+import Color
+import Complex exposing (Complex(..))
 import Dict
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import Image exposing (Pixel)
+import UI.Theme as Theme
 
 
 type alias Bounds =
@@ -23,7 +25,7 @@ defaultBounds =
     , maxx = 5
     , miny = -5
     , maxy = 5
-    , steps = 300
+    , steps = Theme.imageSize
     }
 
 
@@ -68,6 +70,9 @@ drawGraph bounds graph =
         Implicit2D l r ->
             implicit2d bounds l r
 
+        Contour e ->
+            contour bounds e
+
 
 screenToX : Bounds -> Int -> Float
 screenToX { minx, maxx, steps } sx =
@@ -81,7 +86,7 @@ xToScreen { minx, maxx, steps } x =
 
 screenToY : Bounds -> Int -> Float
 screenToY { miny, maxy, steps } sy =
-    miny + toFloat sy * (maxy - miny) / (toFloat steps - 1)
+    maxy - toFloat sy * (maxy - miny) / (toFloat steps - 1)
 
 
 yToScreen : Bounds -> Float -> Int
@@ -119,7 +124,7 @@ explicit2d bounds e =
             )
 
 
-sweep : Bounds -> (Int -> Canvas -> Canvas) -> Canvas -> Canvas
+sweep : Bounds -> (Int -> a -> a) -> a -> a
 sweep { steps } f =
     let
         go i a =
@@ -132,12 +137,12 @@ sweep { steps } f =
     go 0
 
 
-sweepX : Bounds -> (Int -> Float -> Canvas -> Canvas) -> Canvas -> Canvas
+sweepX : Bounds -> (Int -> Float -> a -> a) -> a -> a
 sweepX bounds f =
     sweep bounds (\sx -> f sx (screenToX bounds sx))
 
 
-sweepY : Bounds -> (Int -> Float -> Canvas -> Canvas) -> Canvas -> Canvas
+sweepY : Bounds -> (Int -> Float -> a -> a) -> a -> a
 sweepY bounds f =
     sweep bounds (\sy -> f sy (screenToY bounds sy))
 
@@ -231,13 +236,81 @@ implicit2d bounds l r =
             )
 
 
+contour : Bounds -> Expression -> Canvas
+contour bounds e =
+    let
+        valueToColor (Complex cr ci) =
+            let
+                z =
+                    Complex -cr ci
+
+                logRadius =
+                    logBase 2 <|
+                        Complex.abs z
+
+                -- theta \in [0, 1]
+                theta =
+                    (pi - Complex.arg z) / (2 * pi)
+
+                -- thetaSix \in [-6,6]
+                thetaSix =
+                    0.5 + Complex.arg z * 6 / pi
+
+                thetaNeigh =
+                    0.05
+
+                thetaDelta =
+                    abs (thetaSix - toFloat (round thetaSix)) / thetaNeigh
+
+                powerRemainder =
+                    logRadius - (toFloat <| floor logRadius)
+
+                squished =
+                    powerRemainder * 0.4 + 0.3
+
+                l =
+                    if thetaDelta < 1 then
+                        squished * thetaDelta + (1 - thetaDelta)
+
+                    else
+                        squished
+
+                { red, green, blue } =
+                    Color.hsl theta 1 l
+                        |> Color.toRgba
+
+                r =
+                    clamp 0 255 <| round <| red * 255
+
+                g =
+                    clamp 0 255 <| round <| green * 255
+
+                b =
+                    clamp 0 255 <| round <| blue * 255
+            in
+            r * 0x01000000 + g * 0x00010000 + b * 0x0100 + 0xFF
+    in
+    axes2 bounds
+        |> sweepX bounds
+            (\sx x ->
+                sweepY bounds
+                    (\sy y ->
+                        set sx sy <| valueToColor <| cvalue x y e
+                    )
+            )
+
+
 dvalue : Float -> Float -> Expression -> Float
 dvalue x y e =
-    Complex.real <|
-        Expression.value
-            (Dict.fromList
-                [ ( "x", Complex.fromReal x )
-                , ( "y", Complex.fromReal y )
-                ]
-            )
-            e
+    Complex.real <| cvalue x y e
+
+
+cvalue : Float -> Float -> Expression -> Complex
+cvalue x y e =
+    Expression.value
+        (Dict.fromList
+            [ ( "x", Complex.fromReal x )
+            , ( "y", Complex.fromReal y )
+            ]
+        )
+        e

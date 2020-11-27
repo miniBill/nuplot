@@ -8,6 +8,7 @@ module Expression exposing
     , defaultContext
     , equals
     , getFreeVariables
+    , greeks
     , isFunction
     , partialSubstitute
     , relationToString
@@ -25,6 +26,7 @@ type Graph
     = Explicit2D Expression
     | Relation2D RelationOperation Expression Expression
     | Implicit2D Expression Expression
+    | Contour Expression
 
 
 type Expression
@@ -384,6 +386,44 @@ toStringPrec p e =
                 ++ toStringPrec 0 expr
 
 
+greeks : Dict String String
+greeks =
+    Dict.fromList
+        [ ( "alpha", "α" )
+        , ( "beta", "β" )
+        , ( "delta", "δ" )
+        , ( "Delta", "Δ" )
+        , ( "epsilon", "ɛ" )
+        , ( "eta", "η" )
+        , ( "gamma", "γ" )
+        , ( "Gamma", "Γ" )
+        , ( "iota", "ι" )
+        , ( "kappa", "κ" )
+        , ( "lambda", "λ" )
+        , ( "Lambda", "Λ" )
+        , ( "mu", "μ" )
+        , ( "nu", "ν" )
+        , ( "omega", "ω" )
+        , ( "Omega", "Ω" )
+        , ( "phi", "φ" )
+        , ( "Phi", "Φ" )
+        , ( "pi", "π" )
+        , ( "Pi", "Π" )
+        , ( "psi", "ψ" )
+        , ( "Psi", "Ψ" )
+        , ( "rho", "ρ" )
+        , ( "sigma", "σ" )
+        , ( "Sigma", "Σ" )
+        , ( "tau", "τ" )
+        , ( "theta", "ϑ" )
+        , ( "Theta", "Θ" )
+        , ( "upsilon", "υ" )
+        , ( "xi", "ξ" )
+        , ( "Xi", "Ξ" )
+        , ( "zeta", "ζ" )
+        ]
+
+
 defaultContext : List String
 defaultContext =
     let
@@ -401,6 +441,8 @@ defaultContext =
         , trig
         , complex
         , [ "gra" ]
+        , [ "e" ]
+        , Dict.keys greeks
         ]
 
 
@@ -451,6 +493,9 @@ getFreeVariables expr =
 value : Dict String Complex -> Expression -> Complex
 value context expr =
     case expr of
+        Variable "i" ->
+            Complex.i
+
         Variable v ->
             Dict.get v context |> Maybe.withDefault Complex.zero
 

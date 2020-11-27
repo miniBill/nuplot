@@ -135,7 +135,16 @@ parseGraph expr =
                     Relation2D rop l r
 
         _ ->
-            Explicit2D expr
+            case Set.toList <| getFreeVariables expr of
+                [ "x" ] ->
+                    Explicit2D expr
+
+                [ "x", "y" ] ->
+                    Contour expr
+
+                _ ->
+                    -- Probably?
+                    Contour expr
 
 
 activateFunctions : List String -> Expression -> Expression
@@ -463,7 +472,7 @@ atomParser =
                 ]
         , replacementParser
         , listParser
-        , Parser.chompWhile Char.isLower
+        , Parser.chompWhile Char.isAlpha
             |> Parser.getChompedString
             |> Parser.andThen
                 (\s ->
