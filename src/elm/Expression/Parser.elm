@@ -1,7 +1,7 @@
-module Expression.Parser exposing (Context(..), Problem(..), errorsToString, parse, parseGraph)
+module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, parse, parseGraph)
 
-import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables, isFunction, visit)
+import Dict exposing (Dict)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables, isFunction, visit)
 import Expression.Cleaner as Cleaner
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, unaryFunc)
 import List
@@ -11,10 +11,10 @@ import Set
 
 
 type alias ExpressionParser a =
-    Parser Context Problem a
+    Parser ParserContext Problem a
 
 
-type Context
+type ParserContext
     = Expression
     | List
     | Replacement
@@ -31,7 +31,7 @@ longerFirst =
     List.sortBy (\s -> -(String.length s))
 
 
-errorsToString : String -> List (Parser.DeadEnd Context Problem) -> String
+errorsToString : String -> List (Parser.DeadEnd ParserContext Problem) -> String
 errorsToString input err =
     String.join "\n" <|
         [ "Error parsing expression:"
@@ -84,7 +84,7 @@ errorsToString input err =
                )
 
 
-parse : String -> Result (List (Parser.DeadEnd Context Problem)) Expression
+parse : String -> Result (List (Parser.DeadEnd ParserContext Problem)) Expression
 parse input =
     let
         log _ =
@@ -107,11 +107,11 @@ parse input =
             (\r ->
                 r
                     |> log "raw"
-                    |> explode (longerFirst defaultContext)
+                    |> explode defaultContext
                     |> log "after explode"
                     |> Expression.Utils.squash
                     |> log "after squash"
-                    |> activateFunctions (longerFirst defaultContext)
+                    |> activateFunctions defaultContext
                     |> log "after function activation"
                     |> Expression.Utils.squashHarder
             )
@@ -147,7 +147,14 @@ parseGraph expr =
                     Contour expr
 
 
-activateFunctions : List String -> Expression -> Expression
+combineContext : Context -> Dict String Expression -> Context
+combineContext context vars =
+    { variables = context.variables ++ Dict.keys (Dict.filter (\k v -> not (isFunction k v)) vars)
+    , functions = context.functions ++ Dict.keys (Dict.filter isFunction vars)
+    }
+
+
+activateFunctions : Context -> Expression -> Expression
 activateFunctions context =
     visit <|
         \expr ->
@@ -155,9 +162,7 @@ activateFunctions context =
                 Replace vars e ->
                     Just <|
                         Replace (Dict.map (\_ -> activateFunctions context) vars) <|
-                            activateFunctions
-                                (longerFirst (context ++ Dict.keys (Dict.filter isFunction vars)))
-                                e
+                            activateFunctions (combineContext context vars) e
 
                 AssociativeOperation aop l r o ->
                     Just <|
@@ -188,7 +193,7 @@ activateFunctions context =
                                             (\e ( pending, rest ) ->
                                                 case e of
                                                     Variable v ->
-                                                        if List.member v context then
+                                                        if List.member v context.functions then
                                                             ( unaryFunc v pending, rest )
 
                                                         else
@@ -213,13 +218,14 @@ activateFunctions context =
                     Nothing
 
 
-explode : List String -> Expression -> Expression
+explode : Context -> Expression -> Expression
 explode context =
     let
         findPrefixes w =
             case String.uncons w of
                 Just ( h, t ) ->
-                    context
+                    (context.functions ++ context.variables)
+                        |> longerFirst
                         |> List.foldl
                             (\e acc ->
                                 case acc of
@@ -256,11 +262,7 @@ explode context =
                 Replace vars e ->
                     Just <|
                         Replace (Dict.map (\_ -> explode context) vars) <|
-                            explode
-                                ((context ++ Dict.keys vars)
-                                    |> List.sortBy (\s -> -(String.length s))
-                                )
-                                e
+                            explode (combineContext context vars) e
 
                 _ ->
                     Nothing
@@ -289,11 +291,11 @@ replacementParser =
                         , spaces = whitespace
                         , item =
                             Parser.succeed (\h ( t, v ) -> ( h ++ t, v ))
-                                |= Parser.getChompedString (Parser.chompIf Char.isAlpha (Expected "a letter"))
+                                |= Parser.getChompedString (Parser.chompIf isVariableLetter (Expected "a letter"))
                                 |= Parser.oneOf
                                     [ Parser.backtrackable
                                         (Parser.succeed Tuple.pair
-                                            |= (Parser.chompWhile Char.isAlpha
+                                            |= (Parser.chompWhile isVariableLetter
                                                     |> Parser.getChompedString
                                                     |> Parser.andThen
                                                         (\s ->
@@ -472,12 +474,12 @@ atomParser =
                 ]
         , replacementParser
         , listParser
-        , Parser.chompWhile Char.isAlpha
+        , Parser.chompWhile isVariableLetter
             |> Parser.getChompedString
             |> Parser.andThen
                 (\s ->
                     if String.isEmpty s then
-                        Parser.problem (Expected "a lowercase char")
+                        Parser.problem (Expected "a letter")
 
                     else
                         Parser.succeed (Variable s)
@@ -492,3 +494,8 @@ atomParser =
             , expecting = Expected "a number"
             }
         ]
+
+
+isVariableLetter : Char -> Bool
+isVariableLetter c =
+    Char.isAlpha c || (Char.toCode c >= Char.toCode 'Ά' && Char.toCode c <= Char.toCode 'Ͽ')

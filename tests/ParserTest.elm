@@ -231,11 +231,12 @@ tests =
       , "3/10/a"
       )
     , ( "b²3x", by [ square b, Integer 3, x ], "b²*3*x" )
-    , ( "1/sqrt5"
-      , div one
-            (sqrt_ (Integer 5))
-      , "1/sqrt5"
-      )
+
+    -- , ( "1/sqrt5"
+    --   , div one
+    --         (sqrt_ (Integer 5))
+    --   , "1/sqrt5"
+    --   )
     ]
 
 

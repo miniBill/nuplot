@@ -1,6 +1,7 @@
 module Expression exposing
     ( AssociativeOperation(..)
     , BinaryOperation(..)
+    , Context
     , Expression(..)
     , Graph(..)
     , RelationOperation(..)
@@ -202,7 +203,7 @@ listEquals ls rs =
 
 toString : Expression -> String
 toString =
-    toPrintExpression defaultContext
+    toPrintExpression
         >> toStringPrec 0
 
 
@@ -220,8 +221,8 @@ type PrintExpression
     | PApply String (List PrintExpression)
 
 
-toPrintExpression : List String -> Expression -> PrintExpression
-toPrintExpression context e =
+toPrintExpression : Expression -> PrintExpression
+toPrintExpression e =
     case e of
         Variable v ->
             PAtom v
@@ -233,50 +234,48 @@ toPrintExpression context e =
             PAtom <| String.fromFloat f
 
         UnaryOperation Negate expression ->
-            PNegate <| toPrintExpression context expression
+            PNegate <| toPrintExpression expression
 
         BinaryOperation Power l r ->
-            PPower (toPrintExpression context l) (toPrintExpression context r)
+            PPower (toPrintExpression l) (toPrintExpression r)
 
         BinaryOperation Division l r ->
-            PDiv (toPrintExpression context l) (toPrintExpression context r)
+            PDiv (toPrintExpression l) (toPrintExpression r)
 
         RelationOperation LessThan l r ->
-            PRel "<" (toPrintExpression context l) (toPrintExpression context r)
+            PRel "<" (toPrintExpression l) (toPrintExpression r)
 
         RelationOperation LessThanOrEquals l r ->
-            PRel "⩽" (toPrintExpression context l) (toPrintExpression context r)
+            PRel "⩽" (toPrintExpression l) (toPrintExpression r)
 
         RelationOperation Equals l r ->
-            PRel "=" (toPrintExpression context l) (toPrintExpression context r)
+            PRel "=" (toPrintExpression l) (toPrintExpression r)
 
         RelationOperation GreaterThanOrEquals l r ->
-            PRel "⩾" (toPrintExpression context l) (toPrintExpression context r)
+            PRel "⩾" (toPrintExpression l) (toPrintExpression r)
 
         RelationOperation GreaterThan l r ->
-            PRel ">" (toPrintExpression context l) (toPrintExpression context r)
+            PRel ">" (toPrintExpression l) (toPrintExpression r)
 
         AssociativeOperation Addition l r o ->
             List.foldl (\el a -> PAdd a el)
-                (PAdd (toPrintExpression context l) (toPrintExpression context r))
-                (List.map (toPrintExpression context) o)
+                (PAdd (toPrintExpression l) (toPrintExpression r))
+                (List.map toPrintExpression o)
 
         AssociativeOperation Multiplication l r o ->
             List.foldl (\el a -> PBy a el)
-                (PBy (toPrintExpression context l) (toPrintExpression context r))
-                (List.map (toPrintExpression context) o)
+                (PBy (toPrintExpression l) (toPrintExpression r))
+                (List.map toPrintExpression o)
 
         Replace vars expr ->
-            PReplace (Dict.map (\_ -> toPrintExpression context) vars) <|
-                toPrintExpression
-                    (context ++ Dict.keys (Dict.filter isFunction vars))
-                    expr
+            PReplace (Dict.map (\_ -> toPrintExpression) vars) <|
+                toPrintExpression expr
 
         List es ->
-            PList <| List.map (toPrintExpression context) es
+            PList <| List.map toPrintExpression es
 
         Apply f es ->
-            PApply f <| List.map (toPrintExpression context) es
+            PApply f <| List.map toPrintExpression es
 
 
 
@@ -424,7 +423,13 @@ greeks =
         ]
 
 
-defaultContext : List String
+type alias Context =
+    { functions : List String
+    , variables : List String
+    }
+
+
+defaultContext : Context
 defaultContext =
     let
         power =
@@ -436,14 +441,15 @@ defaultContext =
         trig =
             [ "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh" ]
     in
-    List.concat
-        [ power
-        , trig
-        , complex
-        , [ "gra" ]
-        , [ "e" ]
-        , Dict.keys greeks
-        ]
+    { functions =
+        List.concat
+            [ power
+            , trig
+            , complex
+            , [ "gra" ]
+            ]
+    , variables = "e" :: Dict.keys greeks
+    }
 
 
 isFunction : String -> Expression -> Bool
@@ -491,7 +497,16 @@ getFreeVariables expr =
 
 
 value : Dict String Complex -> Expression -> Complex
-value context expr =
+value context =
+    innerValue
+        (Dict.insert "e" (Complex.fromReal e) <|
+            Dict.insert "pi" (Complex.fromReal pi) <|
+                Dict.insert "π" (Complex.fromReal pi) context
+        )
+
+
+innerValue : Dict String Complex -> Expression -> Complex
+innerValue context expr =
     case expr of
         Variable "i" ->
             Complex.i
@@ -500,34 +515,34 @@ value context expr =
             Dict.get v context |> Maybe.withDefault Complex.zero
 
         UnaryOperation Negate e ->
-            Complex.negate <| value context e
+            Complex.negate <| innerValue context e
 
         BinaryOperation Division l r ->
-            Complex.div (value context l) (value context r)
+            Complex.div (innerValue context l) (innerValue context r)
 
         BinaryOperation Power l r ->
-            Complex.power (value context l) (value context r)
+            Complex.power (innerValue context l) (innerValue context r)
 
         RelationOperation LessThan l r ->
-            Complex.minus (value context r) (value context l)
+            Complex.minus (innerValue context r) (innerValue context l)
 
         RelationOperation LessThanOrEquals l r ->
-            Complex.minus (value context r) (value context l)
+            Complex.minus (innerValue context r) (innerValue context l)
 
         RelationOperation Equals l r ->
-            Complex.minus (value context r) (value context l)
+            Complex.minus (innerValue context r) (innerValue context l)
 
         RelationOperation GreaterThanOrEquals l r ->
-            Complex.minus (value context l) (value context r)
+            Complex.minus (innerValue context l) (innerValue context r)
 
         RelationOperation GreaterThan l r ->
-            Complex.minus (value context l) (value context r)
+            Complex.minus (innerValue context l) (innerValue context r)
 
         AssociativeOperation Addition l r o ->
-            List.foldl Complex.plus Complex.zero <| List.map (value context) (l :: r :: o)
+            List.foldl Complex.plus Complex.zero <| List.map (innerValue context) (l :: r :: o)
 
         AssociativeOperation Multiplication l r o ->
-            List.foldl Complex.by Complex.one <| List.map (value context) (l :: r :: o)
+            List.foldl Complex.by Complex.one <| List.map (innerValue context) (l :: r :: o)
 
         Apply name args ->
             applyValue context name args
@@ -542,56 +557,56 @@ value context expr =
             Complex.zero
 
         Replace ctx e ->
-            value context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
+            innerValue context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
 
 
 applyValue : Dict String Complex -> String -> List Expression -> Complex
 applyValue context name args =
     case ( name, args ) of
         ( "sin", [ e ] ) ->
-            Complex.sin <| value context e
+            Complex.sin <| innerValue context e
 
         ( "cos", [ e ] ) ->
-            Complex.cos <| value context e
+            Complex.cos <| innerValue context e
 
         ( "tan", [ e ] ) ->
-            Complex.tan <| value context e
+            Complex.tan <| innerValue context e
 
         ( "sinh", [ e ] ) ->
-            Complex.sinh <| value context e
+            Complex.sinh <| innerValue context e
 
         ( "cosh", [ e ] ) ->
-            Complex.cosh <| value context e
+            Complex.cosh <| innerValue context e
 
         ( "tanh", [ e ] ) ->
-            Complex.tanh <| value context e
+            Complex.tanh <| innerValue context e
 
         ( "asin", [ e ] ) ->
-            Complex.asin <| value context e
+            Complex.asin <| innerValue context e
 
         ( "acos", [ e ] ) ->
-            Complex.acos <| value context e
+            Complex.acos <| innerValue context e
 
         ( "atan", [ e ] ) ->
-            Complex.atan <| value context e
+            Complex.atan <| innerValue context e
 
         ( "sqrt", [ e ] ) ->
-            Complex.sqrt <| value context e
+            Complex.sqrt <| innerValue context e
 
         ( "ln", [ e ] ) ->
-            Complex.ln <| value context e
+            Complex.ln <| innerValue context e
 
         ( "arg", [ e ] ) ->
-            Complex.fromReal <| Complex.arg <| value context e
+            Complex.fromReal <| Complex.arg <| innerValue context e
 
         ( "re", [ e ] ) ->
-            Complex.re <| value context e
+            Complex.re <| innerValue context e
 
         ( "im", [ e ] ) ->
-            Complex.im <| value context e
+            Complex.im <| innerValue context e
 
         ( "abs", [ e ] ) ->
-            Complex.fromReal <| Complex.abs <| value context e
+            Complex.fromReal <| Complex.abs <| innerValue context e
 
         _ ->
             Complex.zero

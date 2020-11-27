@@ -1,4 +1,4 @@
-module Expression.Plotter exposing (Bounds, defaultBounds, getPng)
+module Expression.Plotter exposing (Bounds, defaultBounds, getPng, screenToX, screenToY, xToScreen, yToScreen)
 
 import Array exposing (Array)
 import Array.Extra as Array
@@ -29,12 +29,13 @@ defaultBounds =
     }
 
 
-colors : { black : number, red : number, green : number, white : number }
+colors : { black : number, red : number, green : number, blue : number, white : number }
 colors =
     { black = 0xFF
     , red = 0xF01010FF
     , green = 0x10F010FF
     , white = 0xFFFFFFFF
+    , blue = 0x1010F0FF
     }
 
 
@@ -91,7 +92,7 @@ screenToY { miny, maxy, steps } sy =
 
 yToScreen : Bounds -> Float -> Int
 yToScreen { miny, maxy, steps } y =
-    round <| (y - miny) / (maxy - miny) * (toFloat steps - 1)
+    round <| ((maxy - y) / (maxy - miny) * (toFloat steps - 1))
 
 
 explicit2d : Bounds -> Expression -> Canvas
@@ -179,7 +180,7 @@ relation2d bounds rop l r =
                 sweepY bounds
                     (\sy y ->
                         if 0 < dvalue x y e then
-                            set sx sy colors.white
+                            set sx sy colors.blue
 
                         else
                             identity
