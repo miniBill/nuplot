@@ -261,6 +261,8 @@ tests =
       , RelationOperation Equals y (sin_ x)
       , "y = sin(x)"
       )
+    , straight "asin(x)" (asin_ x)
+    , ( "a sin x", by [ a, sin_ x ], "a*sin(x)" )
     ]
 
 
