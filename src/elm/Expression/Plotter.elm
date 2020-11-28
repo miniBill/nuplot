@@ -291,6 +291,11 @@ contour bounds e =
             in
             r * 0x01000000 + g * 0x00010000 + b * 0x0100 + 0xFF
     in
+    initialize2 bounds (\_ x _ y -> valueToColor <| cvalue x y e)
+
+
+initialize2 : Bounds -> (Int -> Float -> Int -> Float -> Pixel) -> Canvas
+initialize2 bounds f =
     Array.initialize bounds.steps
         (\sy ->
             let
@@ -303,7 +308,7 @@ contour bounds e =
                         x =
                             screenToX bounds sx
                     in
-                    valueToColor <| cvalue x y e
+                    f sx x sy y
                 )
         )
 
