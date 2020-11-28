@@ -1,17 +1,18 @@
 module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, parse, parseGraph)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables, isFunction, visit)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables, visit)
 import Expression.Cleaner as Cleaner
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, unaryFunc, vector)
 import List
 import List.Extra as List
-import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
+import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), backtrackable)
 import Set
+import Trie
 
 
 type alias ExpressionParser a =
-    Parser ParserContext Problem a
+    Context -> Parser ParserContext Problem a
 
 
 type ParserContext
@@ -24,11 +25,6 @@ type ParserContext
 type Problem
     = Expected String
     | Unexpected
-
-
-longerFirst : List String -> List String
-longerFirst =
-    List.sortBy (\s -> -(String.length s))
 
 
 errorsToString : String -> List (Parser.DeadEnd ParserContext Problem) -> String
@@ -74,6 +70,9 @@ errorsToString input err =
                                                 [] ->
                                                     ""
 
+                                                [ single ] ->
+                                                    single
+
                                                 last :: init ->
                                                     String.join ", " (List.reverse init) ++ " or " ++ last
                                        )
@@ -100,19 +99,15 @@ parse input =
         |> Cleaner.cleanInput
         |> Parser.run
             (Parser.succeed identity
-                |= mainParser
+                |= mainParser defaultContext
                 |. Parser.end Unexpected
             )
         |> Result.map
             (\r ->
                 r
                     |> log "raw"
-                    |> explode defaultContext
-                    |> log "after explode"
                     |> Expression.Utils.squash
                     |> log "after squash"
-                    |> activateFunctions defaultContext
-                    |> log "after function activation"
                     |> Expression.Utils.squashHarder
             )
 
@@ -146,125 +141,18 @@ parseGraph expr =
                 Explicit2D expr
 
 
-combineContext : Context -> Dict String Expression -> Context
-combineContext context vars =
-    { variables = context.variables ++ Dict.keys (Dict.filter (\k v -> not (isFunction k v)) vars)
-    , functions = context.functions ++ Dict.keys (Dict.filter isFunction vars)
+toContext : Dict String Expression -> Context
+toContext d =
+    { variables = Trie.fromList <| List.map (\v -> ( v, () )) <| Dict.keys d
+    , functions = Trie.empty
     }
 
 
-activateFunctions : Context -> Expression -> Expression
-activateFunctions context =
-    visit <|
-        \expr ->
-            case expr of
-                Replace vars e ->
-                    Just <|
-                        Replace (Dict.map (\_ -> activateFunctions context) vars) <|
-                            activateFunctions (combineContext context vars) e
-
-                AssociativeOperation aop l r o ->
-                    Just <|
-                        let
-                            al =
-                                activateFunctions context l
-
-                            ar =
-                                activateFunctions context r
-
-                            ao =
-                                List.map (activateFunctions context) o
-                        in
-                        if aop == Multiplication then
-                            let
-                                ( last, net ) =
-                                    case List.reverse (al :: ar :: ao) of
-                                        [] ->
-                                            -- Impossible
-                                            ( al, [] )
-
-                                        l_ :: init ->
-                                            ( l_, init )
-
-                                raw =
-                                    (\( h, t ) -> h :: t) <|
-                                        List.foldl
-                                            (\e ( pending, rest ) ->
-                                                case e of
-                                                    Variable v ->
-                                                        if List.member v context.functions then
-                                                            ( unaryFunc v pending, rest )
-
-                                                        else
-                                                            ( e, pending :: rest )
-
-                                                    _ ->
-                                                        ( e, pending :: rest )
-                                            )
-                                            ( last, [] )
-                                            net
-                            in
-                            if 1 < List.length raw && List.length raw < 2 + List.length ao then
-                                activateFunctions context <| by raw
-
-                            else
-                                by raw
-
-                        else
-                            AssociativeOperation aop al ar ao
-
-                _ ->
-                    Nothing
-
-
-explode : Context -> Expression -> Expression
-explode context =
-    let
-        findPrefixes w =
-            case String.uncons w of
-                Just ( h, t ) ->
-                    (context.functions ++ context.variables)
-                        |> longerFirst
-                        |> List.foldl
-                            (\e acc ->
-                                case acc of
-                                    Just found ->
-                                        Just found
-
-                                    Nothing ->
-                                        if e == w then
-                                            Just [ e ]
-
-                                        else if String.startsWith e w then
-                                            Just <| e :: findPrefixes (String.dropLeft (String.length e) w)
-
-                                        else
-                                            Nothing
-                            )
-                            Nothing
-                        |> Maybe.withDefault (String.fromChar h :: findPrefixes t)
-
-                Nothing ->
-                    []
-    in
-    visit <|
-        \expr ->
-            case expr of
-                Variable v ->
-                    Just <|
-                        if String.length v < 2 then
-                            expr
-
-                        else
-                            by <| List.map Variable <| findPrefixes v
-
-                Replace vars e ->
-                    Just <|
-                        Replace (Dict.map (\_ -> explode context) vars) <|
-                            explode (combineContext context vars) e
-
-                _ ->
-                    Nothing
+combineContext : Context -> Context -> Context
+combineContext old new =
+    { variables = Trie.union old.variables new.variables
+    , functions = Trie.union old.functions new.functions
+    }
 
 
 mainParser : ExpressionParser Expression
@@ -278,67 +166,82 @@ token x =
 
 
 replacementParser : ExpressionParser Expression
-replacementParser =
-    Parser.inContext Replacement <|
-        Parser.succeed Replace
-            |= Parser.inContext ReplacementList
-                (Parser.map Dict.fromList <|
-                    Parser.sequence
-                        { start = token "["
-                        , separator = token ";"
-                        , end = token "]"
-                        , spaces = whitespace
-                        , item =
-                            Parser.succeed (\h ( t, v ) -> ( h ++ t, v ))
-                                |= Parser.getChompedString (Parser.chompIf isVariableLetter (Expected "a letter"))
-                                |= Parser.oneOf
-                                    [ Parser.backtrackable
-                                        (Parser.succeed Tuple.pair
-                                            |= (Parser.chompWhile isVariableLetter
-                                                    |> Parser.getChompedString
-                                                    |> Parser.andThen
-                                                        (\s ->
-                                                            if String.isEmpty s then
-                                                                Parser.problem <| Expected "a letter"
+replacementParser context =
+    replacementListParser context
+        |> Parser.andThen
+            (\list ->
+                Parser.succeed (Replace list)
+                    |= mainParser (combineContext context (toContext list))
+            )
+        |> Parser.inContext Replacement
 
-                                                            else
-                                                                Parser.succeed s
-                                                        )
-                                               )
-                                            |. whitespace
-                                            |. Parser.symbol (token "=")
-                                            |. whitespace
-                                            |= Parser.lazy (\_ -> mainParser)
-                                        )
-                                    , Parser.succeed (\e -> ( "", e ))
-                                        |. whitespace
-                                        |. (Parser.chompWhile ((==) '=')
-                                                |> Parser.getChompedString
-                                                |> Parser.andThen
-                                                    (\s ->
-                                                        if String.length s > 1 then
-                                                            Parser.problem <| Expected "0 or 1 '='"
 
-                                                        else
-                                                            Parser.succeed ()
-                                                    )
-                                           )
-                                        |. whitespace
-                                        |= Parser.lazy (\_ -> mainParser)
-                                    ]
-                        , trailing = Parser.Optional
-                        }
+replacementListParser : ExpressionParser (Dict String Expression)
+replacementListParser context =
+    let
+        longVariable =
+            Parser.backtrackable
+                (Parser.succeed Tuple.pair
+                    |= (Parser.chompWhile isVariableLetter
+                            |> Parser.getChompedString
+                            |> Parser.andThen
+                                (\s ->
+                                    if String.isEmpty s then
+                                        Parser.problem <| Expected "a letter"
+
+                                    else
+                                        Parser.succeed s
+                                )
+                       )
+                    |. whitespace
+                    |. Parser.symbol (token "=")
+                    |. whitespace
+                    |= Parser.lazy (\_ -> mainParser context)
                 )
-            |= Parser.lazy (\_ -> mainParser)
+
+        shortVariable =
+            Parser.succeed (\e -> ( "", e ))
+                |. whitespace
+                |. (Parser.chompWhile ((==) '=')
+                        |> Parser.getChompedString
+                        |> Parser.andThen
+                            (\s ->
+                                if String.length s > 1 then
+                                    Parser.problem <| Expected "0 or 1 '='"
+
+                                else
+                                    Parser.succeed ()
+                            )
+                   )
+                |. whitespace
+                |= Parser.lazy (\_ -> mainParser context)
+    in
+    Parser.inContext ReplacementList <|
+        (Parser.map Dict.fromList <|
+            Parser.sequence
+                { start = token "["
+                , separator = token ";"
+                , end = token "]"
+                , spaces = whitespace
+                , item =
+                    Parser.succeed (\h ( t, v ) -> ( h ++ t, v ))
+                        |= Parser.getChompedString (Parser.chompIf isVariableLetter (Expected "a letter"))
+                        |= Parser.oneOf
+                            [ longVariable
+                            , shortVariable
+                            ]
+                , trailing = Parser.Optional
+                }
+        )
 
 
-whitespace : ExpressionParser ()
+whitespace : Parser ParserContext Problem ()
 whitespace =
     Parser.chompWhile (\c -> c == ' ' || c == '\n')
 
 
 listParser : ExpressionParser Expression
-listParser =
+listParser context =
     Parser.inContext List <|
         Parser.map Expression.List <|
             Parser.sequence
@@ -346,16 +249,16 @@ listParser =
                 , separator = token ","
                 , end = token "}"
                 , spaces = whitespace
-                , item = Parser.lazy (\_ -> mainParser)
+                , item = Parser.lazy (\_ -> mainParser context)
                 , trailing = Parser.Optional
                 }
 
 
 relationParser : ExpressionParser Expression
-relationParser =
+relationParser context =
     Parser.inContext Expression <|
         Parser.succeed (\a f -> f a)
-            |= addsubtractionParser
+            |= addsubtractionParser context
             |. whitespace
             |= Parser.oneOf
                 [ Parser.succeed (\o r l -> RelationOperation o l r)
@@ -367,44 +270,46 @@ relationParser =
                         , Parser.succeed GreaterThan |. Parser.symbol (token ">")
                         ]
                     |. whitespace
-                    |= addsubtractionParser
+                    |= addsubtractionParser context
                 , Parser.succeed identity
                 ]
 
 
 addsubtractionParser : ExpressionParser Expression
-addsubtractionParser =
+addsubtractionParser context =
     multiSequence
         { separators =
-            [ ( \l r -> plus [ l, r ], Parser.symbol <| token "+" )
-            , ( \l r -> minus l r, Parser.symbol <| token "-" )
+            [ ( \l r -> plus [ l, r ], \_ -> Parser.symbol <| token "+" )
+            , ( \l r -> minus l r, \_ -> Parser.symbol <| token "-" )
             ]
         , item = multidivisionParser
         }
+        context
 
 
 multidivisionParser : ExpressionParser Expression
-multidivisionParser =
+multidivisionParser context =
     multiSequence
         { separators =
-            [ ( \l r -> by [ l, r ], Parser.symbol <| token "*" )
-            , ( \l r -> div l r, Parser.symbol <| token "/" )
-            , ( \l r -> by [ l, r ], Parser.succeed () )
+            [ ( \l r -> by [ l, r ], \_ -> Parser.symbol <| token "*" )
+            , ( \l r -> div l r, \_ -> Parser.symbol <| token "/" )
+            , ( \l r -> by [ l, r ], \_ -> Parser.succeed () )
             ]
         , item = powerParser
         }
+        context
 
 
 powerParser : ExpressionParser Expression
-powerParser =
+powerParser context =
     Parser.succeed (\atom maybePow -> maybePow atom)
-        |= atomParser
+        |= atomParser context
         |. whitespace
         |= Parser.oneOf
             [ Parser.succeed (\e b -> pow b e)
                 |. Parser.symbol (token "^")
                 |. whitespace
-                |= Parser.lazy (\_ -> powerParser)
+                |= Parser.lazy (\_ -> powerParser context)
             , Parser.succeed identity
             ]
 
@@ -416,17 +321,17 @@ type alias SequenceData =
 
 
 multiSequence : SequenceData -> ExpressionParser Expression
-multiSequence data =
+multiSequence data context =
     Parser.succeed identity
         |= Parser.oneOf
             [ Parser.succeed negate_
                 |. Parser.symbol (token "-")
             , Parser.succeed identity
             ]
-        |= data.item
+        |= data.item context
         |> Parser.andThen
             (\first ->
-                Parser.loop first (multiSequenceHelp data)
+                Parser.loop first (\expr -> multiSequenceHelp data expr context)
             )
 
 
@@ -434,16 +339,16 @@ multiSequenceHelp :
     SequenceData
     -> Expression
     -> ExpressionParser (Step Expression Expression)
-multiSequenceHelp { separators, item } acc =
+multiSequenceHelp { separators, item } acc context =
     let
         separated =
             separators
                 |> List.map
                     (\( f, parser ) ->
                         Parser.succeed (\e -> Loop <| f acc e)
-                            |. parser
+                            |. parser context
                             |. whitespace
-                            |= item
+                            |= item context
                     )
                 |> Parser.oneOf
                 |> (\p ->
@@ -459,7 +364,7 @@ multiSequenceHelp { separators, item } acc =
 
 
 atomParser : ExpressionParser Expression
-atomParser =
+atomParser context =
     Parser.oneOf
         [ Parser.succeed
             (\es ->
@@ -475,7 +380,7 @@ atomParser =
                 , separator = token ","
                 , end = token ""
                 , spaces = whitespace
-                , item = Parser.lazy (\_ -> mainParser)
+                , item = Parser.lazy (\_ -> mainParser context)
                 , trailing = Parser.Forbidden
                 }
             |. whitespace
@@ -484,18 +389,8 @@ atomParser =
                 [ Parser.symbol (token ")")
                 , Parser.succeed ()
                 ]
-        , replacementParser
-        , listParser
-        , Parser.chompWhile isVariableLetter
-            |> Parser.getChompedString
-            |> Parser.andThen
-                (\s ->
-                    if String.isEmpty s then
-                        Parser.problem (Expected "a letter")
-
-                    else
-                        Parser.succeed (Variable s)
-                )
+        , replacementParser context
+        , listParser context
         , Parser.number
             { binary = Ok Integer
             , float = Ok Float
@@ -505,7 +400,163 @@ atomParser =
             , invalid = Expected "a valid number"
             , expecting = Expected "a number"
             }
+        , variableParser context
         ]
+
+
+variableParser : ExpressionParser Expression
+variableParser context =
+    let
+        chomp i =
+            if i <= 0 then
+                Parser.succeed ()
+
+            else
+                Parser.succeed identity
+                    |. Parser.chompIf (\_ -> True) Unexpected
+                    |= chomp (i - 1)
+    in
+    (Parser.succeed String.dropLeft
+        |= Parser.getOffset
+        |= Parser.getSource
+    )
+        |> Parser.andThen
+            (\rest ->
+                case Trie.getLongestPrefix rest context.functions of
+                    Just ( name, arity ) ->
+                        Parser.succeed (Apply name)
+                            |. chomp (String.length name)
+                            |= Parser.oneOf
+                                [ Parser.succeed identity
+                                    |. Parser.symbol (token "(")
+                                    |= parseArgs arity True context
+                                    |. Parser.oneOf [ Parser.symbol (token ")"), Parser.succeed () ]
+                                , parseArgs arity False context
+                                ]
+
+                    Nothing ->
+                        case Trie.getLongestPrefix rest context.variables of
+                            Just ( name, () ) ->
+                                Parser.succeed (Variable name)
+                                    |. chomp (String.length name)
+
+                            Nothing ->
+                                Parser.problem (Expected "a letter")
+            )
+
+
+
+{- let
+       expected =
+           Expected "a letter"
+
+       problem =
+           Parser.problem expected
+
+       go acc =
+           let
+               _ =
+                   Debug.log "variableParser" { acc = acc }
+
+               tryClose : List Char -> Parser ParserContext Problem ( String, Maybe Int )
+               tryClose a =
+                   case Trie.get a context.functions of
+                       Just arity ->
+                           Parser.succeed ( String.fromList a, Just arity )
+
+                       Nothing ->
+                           case Trie.get a context.variables of
+                               Just () ->
+                                   Parser.succeed ( String.fromList a, Nothing )
+
+                               Nothing ->
+                                   problem
+           in
+           peek
+               |> Parser.andThen
+                   (\next ->
+                       case next of
+                           Nothing ->
+                               tryClose acc
+
+                           Just p ->
+                               let
+                                   acc_ =
+                                       acc ++ [ p ]
+                               in
+                               if Trie.isPrefix acc_ context.functions || Trie.isPrefix acc_ context.variables then
+                                   Parser.succeed identity
+                                       |. Parser.chompIf (\_ -> True) expected
+                                       |= Parser.oneOf
+                                           [ backtrackable <| go acc_
+                                           , tryClose acc_
+                                           ]
+
+                               else
+                                   tryClose acc
+                   )
+   in
+   Parser.chompIf isVariableLetter expected
+       |> Parser.getChompedString
+       |> Parser.andThen
+           (\s ->
+               case String.toList s of
+                   [ f ] ->
+                       go [ f ]
+                           |> Parser.andThen
+                               (\( name, arity ) ->
+                                   case arity of
+                                       Nothing ->
+                                           Parser.succeed <| Variable name
+
+                                       Just a ->
+                                           Parser.succeed (Apply name)
+                                               |= Parser.oneOf
+                                                   [ Parser.succeed identity
+                                                       |. Parser.symbol (token "(")
+                                                       |= parseArgs a True context
+                                                       |. Parser.oneOf [ Parser.symbol (token ")"), Parser.succeed () ]
+                                                   , parseArgs a False context
+                                                   ]
+                               )
+
+                   _ ->
+                       problem
+           )
+-}
+
+
+parseArgs : Int -> Bool -> ExpressionParser (List Expression)
+parseArgs count greedy context =
+    case count of
+        0 ->
+            Parser.succeed []
+
+        1 ->
+            if greedy then
+                Parser.succeed (\e -> [ e ])
+                    |= Parser.lazy (\_ -> mainParser context)
+                    |. whitespace
+
+            else
+                Parser.succeed (\e -> [ e ])
+                    |= Parser.lazy (\_ -> powerParser context)
+                    |. whitespace
+
+        _ ->
+            Parser.succeed (::)
+                |= Parser.lazy (\_ -> mainParser context)
+                |. whitespace
+                |. Parser.symbol (token ",")
+                |. whitespace
+                |= parseArgs (count - 1) greedy context
+
+
+peek : Parser ParserContext Problem (Maybe Char)
+peek =
+    Parser.succeed (\off src -> List.head <| String.toList <| String.slice off (off + 1) src)
+        |= Parser.getOffset
+        |= Parser.getSource
 
 
 isVariableLetter : Char -> Bool

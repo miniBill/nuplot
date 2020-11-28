@@ -10,7 +10,6 @@ module Expression exposing
     , equals
     , getFreeVariables
     , greeks
-    , isFunction
     , partialSubstitute
     , relationToString
     , toString
@@ -18,10 +17,12 @@ module Expression exposing
     , visit
     )
 
+import Char
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)
 import List
 import Set exposing (Set)
+import Trie exposing (Trie)
 
 
 type Graph
@@ -450,14 +451,22 @@ greeks =
 
 
 type alias Context =
-    { functions : List String
-    , variables : List String
+    { functions : Trie Int
+    , variables : Trie ()
     }
 
 
 defaultContext : Context
 defaultContext =
     let
+        unary =
+            List.concat
+                [ power
+                , trig
+                , complex
+                , [ "gra" ]
+                ]
+
         power =
             [ "abs", "sqrt", "ln" ]
 
@@ -466,21 +475,22 @@ defaultContext =
 
         trig =
             [ "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh" ]
+
+        binary =
+            [ "atan2" ]
+
+        letters =
+            List.range (Char.toCode 'a') (Char.toCode 'z')
+                |> List.map (Char.fromCode >> String.fromChar)
     in
     { functions =
-        List.concat
-            [ power
-            , trig
-            , complex
-            , [ "gra" ]
-            ]
-    , variables = "e" :: Dict.keys greeks
+        Trie.fromList <|
+            List.concat
+                [ List.map (\f -> ( f, 1 )) unary
+                , List.map (\f -> ( f, 2 )) binary
+                ]
+    , variables = Trie.fromList <| List.map (\v -> ( v, () )) <| letters ++ Dict.keys greeks
     }
-
-
-isFunction : String -> Expression -> Bool
-isFunction _ _ =
-    False
 
 
 getFreeVariables : Expression -> Set String

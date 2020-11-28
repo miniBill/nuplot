@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, b, by, c, cos_, cosh_, d, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, vector, x, y, z)
+import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, cos_, cosh_, d, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, vector, x, y, z)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -175,7 +175,7 @@ tests =
     , ( "sinxcosy", by [ sin_ x, cos_ y ], "sin(x)*cos(y)" )
     , ( "asinxcosy", by [ asin_ x, cos_ y ], "asin(x)*cos(y)" )
     , ( "bsinxcosy", by [ b, sin_ x, cos_ y ], "b*sin(x)*cos(y)" )
-    , ( "sqrt*x", sqrt_ x, "sqrt(x)" )
+    , straight "sqrt(x)" <| sqrt_ x
     , straight "sin(-x)" <| sin_ <| negate_ x
     , straight "cos(-x)" <| cos_ <| negate_ x
     , ( "(-cos(x)abs(x)x^2)/x"
@@ -234,11 +234,12 @@ tests =
     , ( "1/sqrt5"
       , div one
             (sqrt_ (Integer 5))
-      , "1/sqrt5"
+      , "1/sqrt(5)"
       )
-    , ( "sqrt(2,3)"
-      , sqrt_ <| vector [ Integer 2, Integer 3 ]
-      , "sqrt(2, 3)"
+    , ( "(2,3)", vector [ Integer 2, Integer 3 ], "(2, 3)" )
+    , ( "atan2(2,3)"
+      , atan2_ (Integer 2) (Integer 3)
+      , "atan2(2, 3)"
       )
     ]
 
