@@ -1,9 +1,9 @@
 module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, parse, parseGraph)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables, visit)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables)
 import Expression.Cleaner as Cleaner
-import Expression.Utils exposing (by, div, minus, negate_, plus, pow, unaryFunc, vector)
+import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
 import List
 import List.Extra as List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), backtrackable)
@@ -426,6 +426,7 @@ variableParser context =
                     Just ( name, arity ) ->
                         Parser.succeed (Apply name)
                             |. chomp (String.length name)
+                            |. whitespace
                             |= Parser.oneOf
                                 [ Parser.succeed identity
                                     |. Parser.symbol (token "(")
@@ -443,87 +444,6 @@ variableParser context =
                             Nothing ->
                                 Parser.problem (Expected "a letter")
             )
-
-
-
-{- let
-       expected =
-           Expected "a letter"
-
-       problem =
-           Parser.problem expected
-
-       go acc =
-           let
-               _ =
-                   Debug.log "variableParser" { acc = acc }
-
-               tryClose : List Char -> Parser ParserContext Problem ( String, Maybe Int )
-               tryClose a =
-                   case Trie.get a context.functions of
-                       Just arity ->
-                           Parser.succeed ( String.fromList a, Just arity )
-
-                       Nothing ->
-                           case Trie.get a context.variables of
-                               Just () ->
-                                   Parser.succeed ( String.fromList a, Nothing )
-
-                               Nothing ->
-                                   problem
-           in
-           peek
-               |> Parser.andThen
-                   (\next ->
-                       case next of
-                           Nothing ->
-                               tryClose acc
-
-                           Just p ->
-                               let
-                                   acc_ =
-                                       acc ++ [ p ]
-                               in
-                               if Trie.isPrefix acc_ context.functions || Trie.isPrefix acc_ context.variables then
-                                   Parser.succeed identity
-                                       |. Parser.chompIf (\_ -> True) expected
-                                       |= Parser.oneOf
-                                           [ backtrackable <| go acc_
-                                           , tryClose acc_
-                                           ]
-
-                               else
-                                   tryClose acc
-                   )
-   in
-   Parser.chompIf isVariableLetter expected
-       |> Parser.getChompedString
-       |> Parser.andThen
-           (\s ->
-               case String.toList s of
-                   [ f ] ->
-                       go [ f ]
-                           |> Parser.andThen
-                               (\( name, arity ) ->
-                                   case arity of
-                                       Nothing ->
-                                           Parser.succeed <| Variable name
-
-                                       Just a ->
-                                           Parser.succeed (Apply name)
-                                               |= Parser.oneOf
-                                                   [ Parser.succeed identity
-                                                       |. Parser.symbol (token "(")
-                                                       |= parseArgs a True context
-                                                       |. Parser.oneOf [ Parser.symbol (token ")"), Parser.succeed () ]
-                                                   , parseArgs a False context
-                                                   ]
-                               )
-
-                   _ ->
-                       problem
-           )
--}
 
 
 parseArgs : Int -> Bool -> ExpressionParser (List Expression)
@@ -550,13 +470,6 @@ parseArgs count greedy context =
                 |. Parser.symbol (token ",")
                 |. whitespace
                 |= parseArgs (count - 1) greedy context
-
-
-peek : Parser ParserContext Problem (Maybe Char)
-peek =
-    Parser.succeed (\off src -> List.head <| String.toList <| String.slice off (off + 1) src)
-        |= Parser.getOffset
-        |= Parser.getSource
 
 
 isVariableLetter : Char -> Bool
