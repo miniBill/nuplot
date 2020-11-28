@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, associativeOperation, atan2_, b, by, c, complex, cos_, cosh_, d, div, double, f, g, i, icomplex, int, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, squashHarder, triple, two, unaryFunc, vector, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, associativeOperation, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, f, g, i, icomplex, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, squashHarder, triple, two, unaryFunc, vector, x, y, z, zero)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), visit)
 
@@ -175,6 +175,11 @@ asin_ =
     unaryFunc "asin"
 
 
+ln_ : Expression -> Expression
+ln_ =
+    unaryFunc "ln"
+
+
 double : Expression -> Expression
 double num =
     by [ two, num ]
@@ -183,6 +188,11 @@ double num =
 triple : Expression -> Expression
 triple num =
     by [ Integer 3, num ]
+
+
+dd : Expression -> Expression -> Expression
+dd =
+    binaryFunc "dd"
 
 
 int : Int -> Expression

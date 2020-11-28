@@ -477,7 +477,13 @@ defaultContext =
             [ "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh" ]
 
         binary =
-            [ "atan2" ]
+            [ "atan2", "dd" ]
+
+        ternary =
+            [ "pw" ]
+
+        quaternary =
+            [ "ii" ]
 
         letters =
             List.range (Char.toCode 'a') (Char.toCode 'z')
@@ -488,6 +494,8 @@ defaultContext =
             List.concat
                 [ List.map (\f -> ( f, 1 )) unary
                 , List.map (\f -> ( f, 2 )) binary
+                , List.map (\f -> ( f, 3 )) ternary
+                , List.map (\f -> ( f, 4 )) quaternary
                 ]
     , variables = Trie.fromList <| List.map (\v -> ( v, () )) <| letters ++ Dict.keys greeks
     }

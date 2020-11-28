@@ -2,6 +2,7 @@ module Expression.Simplify exposing (simplify)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), UnaryOperation(..), getFreeVariables)
+import Expression.Derivative
 import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
 import List exposing (concatMap)
 import List.Extra as List
@@ -148,6 +149,9 @@ innerSimplifyApply context name args =
 
                 Nothing ->
                     Apply name sargs
+
+        ( "dd", [ expr, Variable var ] ) ->
+            innerSimplify context <| Expression.Derivative.derivative var expr
 
         ( _, sargs ) ->
             Apply name sargs
