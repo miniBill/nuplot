@@ -2,7 +2,7 @@ module ParserTest exposing (suite)
 
 import Dict
 import Expect
-import Expression exposing (Expression(..))
+import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Parser as Parser exposing (Problem(..))
 import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, cos_, cosh_, d, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, vector, x, y, z)
 import Parser
@@ -256,6 +256,10 @@ tests =
     , ( "atan22,3²"
       , atan2_ (Integer 2) (square <| Integer 3)
       , "atan2(2, 3²)"
+      )
+    , ( "y = sin x"
+      , RelationOperation Equals y (sin_ x)
+      , "y = sin(x)"
       )
     ]
 
