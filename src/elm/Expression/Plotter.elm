@@ -291,14 +291,21 @@ contour bounds e =
             in
             r * 0x01000000 + g * 0x00010000 + b * 0x0100 + 0xFF
     in
-    axes2 bounds
-        |> sweepX bounds
-            (\sx x ->
-                sweepY bounds
-                    (\sy y ->
-                        set sx sy <| valueToColor <| cvalue x y e
-                    )
-            )
+    Array.initialize bounds.steps
+        (\sy ->
+            let
+                y =
+                    screenToY bounds sy
+            in
+            Array.initialize bounds.steps
+                (\sx ->
+                    let
+                        x =
+                            screenToX bounds sx
+                    in
+                    valueToColor <| cvalue x y e
+                )
+        )
 
 
 dvalue : Float -> Float -> Expression -> Float
