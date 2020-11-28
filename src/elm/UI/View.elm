@@ -1,6 +1,6 @@
 module UI.View exposing (view)
 
-import Dict exposing (Dict)
+import Dict exposing (get)
 import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, scale, spacing, text, width, wrappedRow)
 import Element.Border as Border
 import Element.Font as Font
@@ -86,7 +86,23 @@ statusLine row =
                     none
 
                 Ok tree ->
-                    Theme.row [] [ text "Interpreted as:", viewExpression tree ]
+                    Element.row []
+                        [ text "Interpreted as: "
+                        , viewExpression tree
+                        , text <|
+                            case Expression.Parser.parseGraph tree of
+                                Explicit2D _ ->
+                                    ", explicit 2D"
+
+                                Implicit2D _ _ ->
+                                    ", implicit 2D"
+
+                                Contour _ ->
+                                    ", contour plot"
+
+                                Relation2D _ _ _ ->
+                                    ", relation 2D"
+                        ]
 
 
 type alias Block msg =
@@ -257,7 +273,7 @@ innerViewPower b e =
             viewAtom b
     in
     { elements =
-        [ Theme.grid [ spacing 0 ]
+        [ Theme.grid [ alignBottom, spacing 0 ]
             [ [ none, row [] <| eBlock.elements ]
             , [ row [] <| bBlock.elements, none ]
             ]
@@ -379,26 +395,26 @@ bracketed sl ul cl exl bl sr ur cr exr br =
         (\{ height, elements } ->
             case height of
                 0 ->
-                    text sl :: elements ++ [ text sr ]
+                    el [ alignBottom ] (text sl) :: elements ++ [ el [ alignBottom ] (text sr) ]
 
                 1 ->
-                    text sl :: elements ++ [ text sr ]
+                    el [ alignBottom ] (text sl) :: elements ++ [ el [ alignBottom ] (text sr) ]
 
                 2 ->
                     if cl == exl then
-                        column [] [ text ul, text bl ]
+                        column [ alignBottom ] [ text ul, text bl ]
                             :: elements
-                            ++ [ column [] [ text ur, text br ] ]
+                            ++ [ column [ alignBottom ] [ text ur, text br ] ]
 
                     else
-                        el [ scale <| toFloat height ] (text sl)
+                        el [ alignBottom, scale <| toFloat height ] (text sl)
                             :: elements
-                            ++ [ el [ scale <| toFloat height ] (text sr) ]
+                            ++ [ el [ alignBottom, scale <| toFloat height ] (text sr) ]
 
                 _ ->
                     let
                         col u c e b =
-                            column [] <|
+                            column [ alignBottom ] <|
                                 List.concat <|
                                     let
                                         halfway =
