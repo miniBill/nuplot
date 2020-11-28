@@ -241,6 +241,22 @@ tests =
       , atan2_ (Integer 2) (Integer 3)
       , "atan2(2, 3)"
       )
+    , ( "atan22,3"
+      , atan2_ (Integer 2) (Integer 3)
+      , "atan2(2, 3)"
+      )
+    , ( "atan22,3x"
+      , by [ atan2_ (Integer 2) (Integer 3), x ]
+      , "atan2(2, 3)*x"
+      )
+    , ( "atan2(2,3x)"
+      , atan2_ (Integer 2) (by [ Integer 3, x ])
+      , "atan2(2, 3x)"
+      )
+    , ( "atan22,3²"
+      , atan2_ (Integer 2) (square <| Integer 3)
+      , "atan2(2, 3²)"
+      )
     ]
 
 
