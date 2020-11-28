@@ -3,7 +3,7 @@ module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToStrin
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables, isFunction, visit)
 import Expression.Cleaner as Cleaner
-import Expression.Utils exposing (by, div, minus, negate_, plus, pow, unaryFunc)
+import Expression.Utils exposing (by, div, minus, negate_, plus, pow, unaryFunc, vector)
 import List
 import List.Extra as List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
@@ -124,8 +124,8 @@ parseGraph expr =
             parseGraph (RelationOperation rop (Replace ctx l) (Replace ctx r))
 
         RelationOperation rop l r ->
-            case ( l, rop, Set.toList <| getFreeVariables r ) of
-                ( Variable "y", Equals, [ "x" ] ) ->
+            case ( l, rop, Set.member "y" <| getFreeVariables r ) of
+                ( Variable "y", Equals, False ) ->
                     Explicit2D r
 
                 ( _, Equals, _ ) ->
@@ -135,16 +135,15 @@ parseGraph expr =
                     Relation2D rop l r
 
         _ ->
-            case Set.toList <| getFreeVariables expr of
-                [ "x" ] ->
-                    Explicit2D expr
+            let
+                free =
+                    getFreeVariables expr
+            in
+            if Set.member "y" free then
+                Contour expr
 
-                [ "x", "y" ] ->
-                    Contour expr
-
-                _ ->
-                    -- Probably?
-                    Contour expr
+            else
+                Explicit2D expr
 
 
 combineContext : Context -> Dict String Expression -> Context
@@ -462,10 +461,23 @@ multiSequenceHelp { separators, item } acc =
 atomParser : ExpressionParser Expression
 atomParser =
     Parser.oneOf
-        [ Parser.succeed identity
-            |. Parser.symbol (token "(")
-            |. whitespace
-            |= Parser.lazy (\_ -> mainParser)
+        [ Parser.succeed
+            (\es ->
+                case es of
+                    [ x ] ->
+                        x
+
+                    _ ->
+                        vector es
+            )
+            |= Parser.sequence
+                { start = token "("
+                , separator = token ","
+                , end = token ""
+                , spaces = whitespace
+                , item = Parser.lazy (\_ -> mainParser)
+                , trailing = Parser.Forbidden
+                }
             |. whitespace
             |. Parser.oneOf
                 -- closed parens are optional

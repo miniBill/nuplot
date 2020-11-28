@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, associativeOperation, b, by, c, complex, cos_, cosh_, d, div, double, f, g, i, icomplex, int, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, squashHarder, triple, two, unaryFunc, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, associativeOperation, b, by, c, complex, cos_, cosh_, d, div, double, f, g, i, icomplex, int, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, squashHarder, triple, two, unaryFunc, vector, x, y, z, zero)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), visit)
 
@@ -178,6 +178,11 @@ triple num =
 int : Int -> Expression
 int =
     Integer
+
+
+vector : List Expression -> Expression
+vector =
+    Expression.List << List.map (\e -> Expression.List [ e ])
 
 
 associativeOperation : AssociativeOperation -> Expression -> List Expression -> Expression

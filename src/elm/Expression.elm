@@ -20,6 +20,7 @@ module Expression exposing
 
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)
+import List
 import Set exposing (Set)
 
 
@@ -302,6 +303,26 @@ toStringPrec p e =
 
         infixr_ n op l r =
             paren (p > n) <| toStringPrec (n + 1) l ++ op ++ toStringPrec n r
+
+        asVector l =
+            let
+                opened =
+                    l
+                        |> List.filterMap
+                            (\el ->
+                                case el of
+                                    PList [ x ] ->
+                                        Just x
+
+                                    _ ->
+                                        Nothing
+                            )
+            in
+            if List.length opened == List.length l then
+                Just opened
+
+            else
+                Nothing
     in
     case e of
         PAtom v ->
@@ -358,7 +379,12 @@ toStringPrec p e =
             paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (toStringPrec 0) ex) ++ ")"
 
         PList es ->
-            "{" ++ String.join ", " (List.map (toStringPrec 0) es) ++ "}"
+            case asVector es of
+                Nothing ->
+                    "{" ++ String.join ", " (List.map (toStringPrec 0) es) ++ "}"
+
+                Just rs ->
+                    "(" ++ String.join ", " (List.map (toStringPrec 0) rs) ++ ")"
 
         PReplace var expr ->
             "["
@@ -490,7 +516,17 @@ getFreeVariables expr =
             Set.empty
 
         Replace vars e ->
-            Set.diff (getFreeVariables e) (Set.fromList <| Dict.keys vars)
+            let
+                efree =
+                    getFreeVariables e
+
+                efreeNotBound =
+                    Set.diff efree (Set.fromList <| Dict.keys vars)
+
+                usedExprs =
+                    Dict.values <| Dict.filter (\k _ -> Set.member k efree) vars
+            in
+            List.foldl Set.union efreeNotBound <| List.map getFreeVariables usedExprs
 
         List es ->
             concatMap es
@@ -523,20 +559,8 @@ innerValue context expr =
         BinaryOperation Power l r ->
             Complex.power (innerValue context l) (innerValue context r)
 
-        RelationOperation LessThan l r ->
-            Complex.minus (innerValue context r) (innerValue context l)
-
-        RelationOperation LessThanOrEquals l r ->
-            Complex.minus (innerValue context r) (innerValue context l)
-
-        RelationOperation Equals l r ->
-            Complex.minus (innerValue context r) (innerValue context l)
-
-        RelationOperation GreaterThanOrEquals l r ->
-            Complex.minus (innerValue context l) (innerValue context r)
-
-        RelationOperation GreaterThan l r ->
-            Complex.minus (innerValue context l) (innerValue context r)
+        RelationOperation o l r ->
+            relationValue o (innerValue context l) (innerValue context r)
 
         AssociativeOperation Addition l r o ->
             List.foldl Complex.plus Complex.zero <| List.map (innerValue context) (l :: r :: o)
@@ -558,6 +582,33 @@ innerValue context expr =
 
         Replace ctx e ->
             innerValue context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
+
+
+relationValue : RelationOperation -> Complex -> Complex -> Complex
+relationValue o ((Complex lv _) as lc) ((Complex rv _) as rc) =
+    let
+        toComplex check =
+            if check then
+                Complex.one
+
+            else
+                Complex.zero
+    in
+    case o of
+        LessThan ->
+            toComplex <| lv < rv
+
+        LessThanOrEquals ->
+            toComplex <| lv <= rv
+
+        Equals ->
+            Complex.minus lc rc
+
+        GreaterThanOrEquals ->
+            toComplex <| lv >= rv
+
+        GreaterThan ->
+            toComplex <| lv > rv
 
 
 applyValue : Dict String Complex -> String -> List Expression -> Complex

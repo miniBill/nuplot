@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, b, by, c, cos_, cosh_, d, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, x, y, z)
+import Expression.Utils exposing (a, abs_, asin_, b, by, c, cos_, cosh_, d, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, vector, x, y, z)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -231,12 +231,15 @@ tests =
       , "3/10/a"
       )
     , ( "b²3x", by [ square b, Integer 3, x ], "b²*3*x" )
-
-    -- , ( "1/sqrt5"
-    --   , div one
-    --         (sqrt_ (Integer 5))
-    --   , "1/sqrt5"
-    --   )
+    , ( "1/sqrt5"
+      , div one
+            (sqrt_ (Integer 5))
+      , "1/sqrt5"
+      )
+    , ( "sqrt(2,3)"
+      , sqrt_ <| vector [ Integer 2, Integer 3 ]
+      , "sqrt(2, 3)"
+      )
     ]
 
 
