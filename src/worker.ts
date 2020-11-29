@@ -6,8 +6,8 @@ const ctx: Worker = self as any;
 ctx.document = { body: {} };
 
 var worker = Elm.Worker.init();
-worker.ports.fromWorker.subscribe(msg => ctx.postMessage(msg));
+worker.ports.fromWorker.subscribe((msg) => ctx.postMessage(msg));
 
-self.addEventListener('message', function (e) {
-    worker.ports.toWorker.send(e.data);
-})
+self.addEventListener("message", function (e) {
+  worker.ports.toWorker.send(e.data);
+});

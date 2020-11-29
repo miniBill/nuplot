@@ -1,4 +1,4 @@
-import { Elm } from "./optimized.js";
+import { Elm } from "./elm/UI.elm";
 
 function init() {
   var worker: Worker = new Worker("/worker.ts");
@@ -15,7 +15,7 @@ function init() {
     node: node,
     flags: 1,
   });
-  app.ports.toWorker.subscribe((json: any) => {
+  app.ports.toWorker.subscribe((json) => {
     worker.postMessage(json);
   });
   worker.addEventListener("message", function (e) {
