@@ -9,17 +9,20 @@ import Element.Keyed
 import Element.Lazy
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), Graph(..), RelationOperation(..), UnaryOperation(..), greeks)
 import Expression.Parser
+import Html
+import Html.Attributes
 import List.MyExtra as List
 import Model exposing (Model, Msg(..), Row, RowResult(..))
 import UI.Theme as Theme
 
 
 draw : String -> Element msg
-draw png =
-    Element.image [ width <| px Theme.imageSize ]
-        { src = png
-        , description = "Plot"
-        }
+draw expr =
+    Element.html <|
+        Html.node "nu-plot"
+            [ Html.Attributes.attribute "src" expr
+            ]
+            []
 
 
 viewRow : Int -> Row -> Element Msg
@@ -66,11 +69,8 @@ statusLine row =
         Empty ->
             none
 
-        Waiting ->
+        Typing ->
             text "Typing..."
-
-        Calculating ->
-            text "Calculating..."
 
         ParseError e ->
             el
@@ -80,7 +80,7 @@ statusLine row =
             <|
                 text e
 
-        Plotted _ ->
+        Plotted ->
             case Expression.Parser.parse row.input of
                 Err _ ->
                     none
@@ -451,17 +451,14 @@ outputBlock row =
                 Empty ->
                     ( " ", none )
 
-                Waiting ->
-                    ( "W", none )
-
-                Calculating ->
-                    ( "C", none )
-
                 ParseError _ ->
                     ( "E", none )
 
-                Plotted png ->
-                    ( "P", draw png )
+                Typing ->
+                    ( "W", draw row.plotting )
+
+                Plotted ->
+                    ( "P", draw row.plotting )
     in
     Element.Keyed.el [ centerX ]
         ( row.input ++ resultTag

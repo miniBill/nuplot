@@ -1,35 +1,13 @@
-port module UI exposing (main)
+module UI exposing (main)
 
 import Bounce
 import Browser
-import Codec
 import Element exposing (fill, height, width)
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import List.Extra as List
-import Model exposing (Flags, Model, Msg(..), RowResult(..), WorkerRequest(..), WorkerResponse(..), workerRequestCodec, workerResponseCodec)
-import Process
-import Task
+import Model exposing (Flags, Model, Msg(..), RowResult(..))
 import UI.Theme as Theme
 import UI.View exposing (view)
-import Worker
-
-
-port toWorker : String -> Cmd msg
-
-
-send : WorkerRequest -> Cmd Msg
-send request =
-    case ( request, Theme.paintInForegroud ) of
-        ( PlotRequest input, True ) ->
-            Process.sleep 10
-                |> Task.map (\_ -> Worker.doPlot input)
-                |> Task.perform WorkerResponse
-
-        _ ->
-            toWorker <| Codec.encodeToString 0 workerRequestCodec request
-
-
-port fromWorker : (String -> msg) -> Sub msg
 
 
 main : Program Flags Model Msg
@@ -48,22 +26,25 @@ main =
         }
 
 
-init : Flags -> ( Model, Cmd Msg )
+init : Flags -> ( Model, Cmd msg )
 init _ =
     let
+        ex x =
+            { input = x
+            , result = Plotted
+            , plotting = x
+            , bounce = Bounce.init
+            }
+
         raw =
-            [ { input = "y = sin x", result = Calculating, bounce = Bounce.init }
-            , { input = "x² + y² = 25", result = Calculating, bounce = Bounce.init }
-            , { input = "x² + y² < 25", result = Calculating, bounce = Bounce.init }
-            , { input = "", result = Empty, bounce = Bounce.init }
+            [ ex "y = sin x"
+            , ex "x² + y² = 25"
+            , ex "x² + y² < 25"
+            , Model.emptyRow
             ]
     in
     ( raw
-    , raw
-        |> List.map .input
-        |> List.filterNot String.isEmpty
-        |> List.map (PlotRequest >> send)
-        |> Cmd.batch
+    , Cmd.none
     )
 
 
@@ -73,10 +54,11 @@ update msg model =
         Input { row, input } ->
             model
                 |> List.updateAt row
-                    (\{ bounce } ->
+                    (\{ bounce, plotting } ->
                         { input = input
-                        , result = Waiting
+                        , result = Typing
                         , bounce = Bounce.push bounce
+                        , plotting = plotting
                         }
                     )
                 |> List.filter (not << String.isEmpty << .input)
@@ -97,7 +79,7 @@ update msg model =
                     , Cmd.none
                     )
 
-                Just { input, bounce } ->
+                Just { input, bounce, plotting } ->
                     let
                         newBounce =
                             Bounce.pop bounce
@@ -108,47 +90,21 @@ update msg model =
                             , bounce = newBounce
                             , result =
                                 if Bounce.steady newBounce then
-                                    Calculating
+                                    Plotted
 
                                 else
-                                    Waiting
+                                    Typing
+                            , plotting =
+                                if Bounce.steady newBounce then
+                                    input
+
+                                else
+                                    plotting
                             }
-                    , if Bounce.steady newBounce then
-                        send <| PlotRequest input
-
-                      else
-                        Cmd.none
+                    , Cmd.none
                     )
-
-        WorkerResponse (PlotResponse { input, result }) ->
-            ( model
-                |> List.updateIf (.input >> (==) input)
-                    (\r ->
-                        { r
-                            | result = toRowResult result
-                        }
-                    )
-            , Cmd.none
-            )
-
-        WorkerResponseDecodingFailed ->
-            ( model, Cmd.none )
-
-
-toRowResult : Result String String -> RowResult
-toRowResult result =
-    case result of
-        Err e ->
-            ParseError e
-
-        Ok r ->
-            Plotted r
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    fromWorker
-        (Codec.decodeString workerResponseCodec
-            >> Result.map WorkerResponse
-            >> Result.withDefault WorkerResponseDecodingFailed
-        )
+    Sub.none

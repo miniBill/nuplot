@@ -4,13 +4,4 @@ export const Elm: {
   };
 };
 
-export type UIInstance = {
-  ports: {
-    toWorker: {
-      subscribe: (callback: (json: string) => void) => void;
-    };
-    fromWorker: {
-      send: (json: string) => void;
-    };
-  };
-};
+export type UIInstance = {};
