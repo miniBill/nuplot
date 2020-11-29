@@ -1,11 +1,6 @@
-module UI.Theme exposing (column, grid, imageHeight, imageWidth, paintInForegroud, row, spacing)
+module UI.Theme exposing (column, grid, imageHeight, imageWidth, row, spacing)
 
 import Element exposing (Attribute, Element, none, shrink)
-
-
-paintInForegroud : Bool
-paintInForegroud =
-    True
 
 
 spacing : number

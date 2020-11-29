@@ -469,7 +469,7 @@ groupStepAddition curr last =
             else
                 Nothing
 
-        ( _, _ ) ->
+        _ ->
             if Expression.equals curr last then
                 Just <| by [ two, last ]
 
@@ -502,7 +502,7 @@ groupStepMultiplication curr last =
                 else
                     Nothing
 
-            ( _, _ ) ->
+            _ ->
                 if Expression.equals curr last then
                     Just <| ipow last 2
 

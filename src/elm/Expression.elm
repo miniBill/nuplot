@@ -297,20 +297,8 @@ toPrintExpression e =
         BinaryOperation Division l r ->
             PDiv (toPrintExpression l) (toPrintExpression r)
 
-        RelationOperation LessThan l r ->
-            PRel "<" (toPrintExpression l) (toPrintExpression r)
-
-        RelationOperation LessThanOrEquals l r ->
-            PRel "⩽" (toPrintExpression l) (toPrintExpression r)
-
-        RelationOperation Equals l r ->
-            PRel "=" (toPrintExpression l) (toPrintExpression r)
-
-        RelationOperation GreaterThanOrEquals l r ->
-            PRel "⩾" (toPrintExpression l) (toPrintExpression r)
-
-        RelationOperation GreaterThan l r ->
-            PRel ">" (toPrintExpression l) (toPrintExpression r)
+        RelationOperation op l r ->
+            PRel (relationToString op) (toPrintExpression l) (toPrintExpression r)
 
         AssociativeOperation Addition l r o ->
             List.foldl (\el a -> PAdd a el)

@@ -25,11 +25,6 @@ fromReal r =
     Complex r 0
 
 
-real : Complex -> Float
-real (Complex r _) =
-    r
-
-
 plus : Complex -> Complex -> Complex
 plus (Complex lr li) (Complex rr ri) =
     Complex (lr + rr) (li + ri)

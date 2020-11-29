@@ -1,7 +1,6 @@
 module Expression.Derivative exposing (derivative)
 
-import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), fullSubstitute, partialSubstitute)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), fullSubstitute)
 import Expression.Utils exposing (by, div, ipow, ln_, minus, one, plus, pow, square, zero)
 
 

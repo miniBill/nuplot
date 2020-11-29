@@ -11,7 +11,6 @@ import Expression.Parser
 import Expression.Utils
 import Html
 import Html.Attributes
-import List.MyExtra as List
 import Model exposing (Model, Msg(..), PlotStatus(..), Row)
 import UI.Theme as Theme
 
@@ -107,9 +106,8 @@ toSrcContour e =
 
 viewRow : Int -> Row -> Element Msg
 viewRow index row =
-    column
-        [ spacing Theme.spacing
-        , width fill
+    Theme.column
+        [ width fill
         , alignTop
         ]
         [ inputLine index row
@@ -233,21 +231,7 @@ innerViewRelation o l r =
 
 viewRelation : RelationOperation -> Block msg
 viewRelation op =
-    case op of
-        LessThan ->
-            label "<"
-
-        LessThanOrEquals ->
-            label "⩽"
-
-        Equals ->
-            label "="
-
-        GreaterThanOrEquals ->
-            label "⩾"
-
-        GreaterThan ->
-            label ">"
+    label <| Expression.relationToString op
 
 
 viewAddSubtraction : Expression -> Block msg

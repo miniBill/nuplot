@@ -15,3 +15,8 @@ forBenchmark: clean
 build: clean
 	elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js
 	parcel build src/index.html --public-url .
+
+.PHONY: test
+test:
+	elm-test
+

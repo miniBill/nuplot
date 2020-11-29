@@ -1,4 +1,4 @@
-module Trie exposing (Trie, empty, fromList, get, getLongestPrefix, insert, isPrefix, union)
+module Trie exposing (Trie, empty, fromList, getLongestPrefix, union)
 
 import Dict exposing (Dict)
 
@@ -120,18 +120,3 @@ getLongestPrefix s =
                                     tryClose acc value
     in
     go (String.toList s) []
-
-
-isPrefix : List Char -> Trie a -> Bool
-isPrefix cs (Trie { children }) =
-    case cs of
-        [] ->
-            True
-
-        s :: ss ->
-            case Dict.get s children of
-                Nothing ->
-                    False
-
-                Just child ->
-                    isPrefix ss child
