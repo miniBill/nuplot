@@ -1,4 +1,4 @@
-module Complex exposing (Complex(..), abs, acos, arg, asin, atan, by, cos, cosh, div, fromReal, i, im, invert, ln, minus, negate, one, plus, power, re, real, sin, sinh, sqrt, tan, tanh, zero)
+module Complex exposing (Complex(..), abs, acos, arg, asin, atan, by, cos, cosh, div, fromReal, i, im, ln, minus, negate, one, plus, power, re, sin, sinh, sqrt, tan, tanh, zero)
 
 
 type Complex
