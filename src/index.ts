@@ -1,4 +1,5 @@
 import { Elm } from "./optimized.js";
+import { NuPlot } from "./nuplot";
 
 function init() {
   const node = document.getElementById("main");
@@ -8,6 +9,8 @@ function init() {
     );
     return;
   }
+
+  customElements.define("nu-plot", NuPlot);
 
   Elm.UI.init({
     node: node,

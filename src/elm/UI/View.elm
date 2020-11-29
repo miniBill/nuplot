@@ -31,7 +31,7 @@ draw expr =
                     toSrcImplicit <| Expression.Utils.minus l r
 
                 Relation2D op l r ->
-                    toSrcImplicit <| RelationOperation op l r
+                    toSrcRelation <| RelationOperation op l r
 
                 Contour e ->
                     toSrcContour e
@@ -63,6 +63,16 @@ toSrcImplicit e =
     """
 
 
+toSrcRelation : Expression -> String
+toSrcRelation e =
+    """
+    vec3 pixel(float deltaX, float deltaY, float x, float y) {
+        vec2 complex = """ ++ Expression.toGLString e ++ """;
+        return complex.x > 0.0 ? vec3(0.8,0.5,0.5) : vec3(0,0,0);
+    }
+    """
+
+
 toSrcContour : Expression -> String
 toSrcContour e =
     """
@@ -73,16 +83,23 @@ toSrcContour e =
         return l + (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
     }
 
-    vec3 pixel(float deltaX, float deltaY, float x, float y) {
-        vec2 z = """ ++ Expression.toGLString e ++ """;
-        float theta = atan(z.y, z.x) / radians(360.0);
-        float logRadius = log2(sqrt(z.x*z.x + z.y*z.y));
+    float thetaDelta(float theta) {
         float thetaSix = theta * 12.0;
         float thetaNeigh = 0.05;
-        float thetaDelta = abs(thetaSix - floor(thetaSix + 0.5)) / thetaNeigh;
+        return abs(thetaSix - floor(thetaSix + 0.5)) / thetaNeigh;
+    }
+
+    vec3 pixel(float deltaX, float deltaY, float x, float y) {
+        vec2 z = """ ++ Expression.toGLString e ++ """;
+        
+        float theta = atan(z.y, z.x) / radians(360.0);
+        float td = thetaDelta(theta);
+        
+        float logRadius = log2(sqrt(z.x*z.x + z.y*z.y));
         float powerRemainder = logRadius - floor(logRadius);
         float squished = powerRemainder * 0.4 + 0.3;
-        float l = thetaDelta < 1.0 ? squished * thetaDelta + (1.0 - thetaDelta) : squished;
+        
+        float l = td < 1.0 ? squished * td + (1.0 - td) : squished;
         return hl2rgb(theta, l);
     }
     """
@@ -96,8 +113,8 @@ viewRow index row =
         , alignTop
         ]
         [ inputLine index row
-        , statusLine row
         , outputBlock row
+        , statusLine row
         ]
 
 
@@ -140,7 +157,9 @@ statusLine row =
                 [ Font.family [ Font.monospace ]
                 , Font.color <| rgb 1 0 0
                 ]
-                (text e)
+            <|
+                Element.html <|
+                    Html.pre [] [ Html.text e ]
 
         Plotting e ->
             Element.row []

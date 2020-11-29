@@ -171,6 +171,7 @@ replacementParser context =
         |> Parser.andThen
             (\list ->
                 Parser.succeed (Replace list)
+                    |. whitespace
                     |= mainParser (combineContext context (toContext list))
             )
         |> Parser.inContext Replacement
@@ -391,6 +392,7 @@ atomParser context =
                 ]
         , replacementParser context
         , listParser context
+        , variableParser context
         , Parser.number
             { binary = Ok Integer
             , float = Ok Float
@@ -400,7 +402,6 @@ atomParser context =
             , invalid = Expected "a valid number"
             , expecting = Expected "a number"
             }
-        , variableParser context
         ]
 
 

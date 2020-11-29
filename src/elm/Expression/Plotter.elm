@@ -1,4 +1,4 @@
-module Expression.Plotter exposing (Bounds, defaultBounds, getPng, screenToX, screenToY, xToScreen, yToScreen)
+module Expression.Plotter exposing (screenToX)
 
 import Array exposing (Array)
 import Array.Extra as Array
@@ -25,7 +25,7 @@ defaultBounds =
     , maxx = 5
     , miny = -5
     , maxy = 5
-    , steps = Theme.imageSize
+    , steps = Theme.imageWidth
     }
 
 

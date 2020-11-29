@@ -524,7 +524,7 @@ defaultContext =
                 ]
 
         power =
-            [ "abs", "sqrt", "ln" ]
+            [ "abs", "sqrt", "ln", "log", "exp" ]
 
         complex =
             [ "re", "im", "arg" ]
@@ -765,6 +765,9 @@ toGLStringPrec p expr =
     case expr of
         PAtom "i" ->
             "vec2(0,1)"
+
+        PAtom "e" ->
+            "vec2(exp(1.0),0)"
 
         PAtom v ->
             "vec2(" ++ v ++ ",0)"

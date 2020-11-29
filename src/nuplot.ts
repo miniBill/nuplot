@@ -43,7 +43,6 @@ export class NuPlot extends HTMLElement {
   }
 
   private initCanvas() {
-    this.canvas.style.border = "1px solid black";
     this.canvas.width = this.canvas.height = 400;
 
     this.gl = this.canvas.getContext("webgl");
@@ -165,6 +164,10 @@ export class NuPlot extends HTMLElement {
 
     vec2 ccos(vec2 z) {
       return vec2(cos(z.x) * cosh(z.y), sin(z.x) * sinh(z.y));
+    }
+
+    vec2 ctan(vec2 z) {
+      return div(csin(z),ccos(z));
     }
 
     vec2 csinh(vec2 z) {
