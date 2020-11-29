@@ -60,3 +60,7 @@ suite =
                     |> Plotter.yToScreen bounds
                     |> Expect.equal (bounds.steps - 1)
         ]
+
+
+
+-- [zx+iy](z²-1)(z-2-i)²/(z²+2+2i)

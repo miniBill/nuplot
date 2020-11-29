@@ -4,8 +4,9 @@ import Bounce
 import Browser
 import Element exposing (fill, height, width)
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
+import Expression.Parser
 import List.Extra as List
-import Model exposing (Flags, Model, Msg(..), RowResult(..))
+import Model exposing (Flags, Model, Msg(..), PlotStatus(..))
 import UI.Theme as Theme
 import UI.View exposing (view)
 
@@ -31,16 +32,16 @@ init _ =
     let
         ex x =
             { input = x
-            , result = Plotted
-            , plotting = x
+            , plotStatus = Plotting <| Result.withDefault (Integer 0) <| Expression.Parser.parse x
             , bounce = Bounce.init
             }
 
         raw =
             [ ex "y = sin x"
-            , ex "x² + y² = 25"
-            , ex "x² + y² < 25"
-            , Model.emptyRow
+
+            --, ex "x² + y² = 25"
+            --, ex "x² + y² < 25"
+            --, Model.emptyRow
             ]
     in
     ( raw
@@ -54,11 +55,10 @@ update msg model =
         Input { row, input } ->
             model
                 |> List.updateAt row
-                    (\{ bounce, plotting } ->
+                    (\{ bounce, plotStatus } ->
                         { input = input
-                        , result = Typing
+                        , plotStatus = toTyping plotStatus
                         , bounce = Bounce.push bounce
-                        , plotting = plotting
                         }
                     )
                 |> List.filter (not << String.isEmpty << .input)
@@ -79,7 +79,7 @@ update msg model =
                     , Cmd.none
                     )
 
-                Just { input, bounce, plotting } ->
+                Just { input, bounce, plotStatus } ->
                     let
                         newBounce =
                             Bounce.pop bounce
@@ -88,21 +88,37 @@ update msg model =
                         |> List.setAt row
                             { input = input
                             , bounce = newBounce
-                            , result =
+                            , plotStatus =
                                 if Bounce.steady newBounce then
-                                    Plotted
+                                    case Expression.Parser.parse input of
+                                        Ok r ->
+                                            Plotting r
+
+                                        Err e ->
+                                            ParseError <| Expression.Parser.errorsToString input e
 
                                 else
-                                    Typing
-                            , plotting =
-                                if Bounce.steady newBounce then
-                                    input
-
-                                else
-                                    plotting
+                                    toTyping plotStatus
                             }
                     , Cmd.none
                     )
+
+
+toTyping : PlotStatus -> PlotStatus
+toTyping plotStatus =
+    Typing <|
+        case plotStatus of
+            Plotting e ->
+                Just e
+
+            Typing e ->
+                e
+
+            Empty ->
+                Nothing
+
+            ParseError _ ->
+                Nothing
 
 
 subscriptions : Model -> Sub Msg

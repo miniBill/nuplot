@@ -1,7 +1,7 @@
 module Expression.Derivative exposing (derivative)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), partialSubstitute)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), fullSubstitute, partialSubstitute)
 import Expression.Utils exposing (by, div, ipow, ln_, minus, one, plus, pow, square, zero)
 
 
@@ -75,7 +75,7 @@ derivative var expr =
             zero
 
         Replace ctx e ->
-            derivative var <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
+            derivative var <| fullSubstitute ctx e
 
         Apply _ _ ->
             zero

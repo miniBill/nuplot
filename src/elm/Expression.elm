@@ -8,10 +8,12 @@ module Expression exposing
     , UnaryOperation(..)
     , defaultContext
     , equals
+    , fullSubstitute
     , getFreeVariables
     , greeks
     , partialSubstitute
     , relationToString
+    , toGLString
     , toString
     , value
     , visit
@@ -125,6 +127,51 @@ visit f expr =
                     List <| List.map (visit f) es
 
 
+pvisit : (PrintExpression -> Maybe PrintExpression) -> PrintExpression -> PrintExpression
+pvisit f expr =
+    case f expr of
+        Just r ->
+            r
+
+        Nothing ->
+            case expr of
+                PAtom s ->
+                    PAtom s
+
+                PInteger i ->
+                    PInteger i
+
+                PFloat f_ ->
+                    PFloat f_
+
+                PNegate l ->
+                    PNegate (pvisit f l)
+
+                PAdd l r ->
+                    PAdd (pvisit f l) (pvisit f r)
+
+                PBy l r ->
+                    PBy (pvisit f l) (pvisit f r)
+
+                PDiv l r ->
+                    PDiv (pvisit f l) (pvisit f r)
+
+                PPower l r ->
+                    PPower (pvisit f l) (pvisit f r)
+
+                PRel o l r ->
+                    PRel o (pvisit f l) (pvisit f r)
+
+                PApply func e ->
+                    PApply func <| List.map (pvisit f) e
+
+                PReplace vars e ->
+                    PReplace (Dict.map (\_ -> pvisit f) vars) (pvisit f e)
+
+                PList es ->
+                    PList <| List.map (pvisit f) es
+
+
 partialSubstitute : String -> Expression -> Expression -> Expression
 partialSubstitute var val =
     visit <|
@@ -149,6 +196,11 @@ partialSubstitute var val =
 
                 _ ->
                     Nothing
+
+
+fullSubstitute : Dict String Expression -> Expression -> Expression
+fullSubstitute ctx e =
+    List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
 
 
 equals : Expression -> Expression -> Bool
@@ -211,6 +263,7 @@ toString =
 
 type PrintExpression
     = PInteger Int
+    | PFloat Float
     | PAtom String
     | PAdd PrintExpression PrintExpression
     | PNegate PrintExpression
@@ -233,7 +286,7 @@ toPrintExpression e =
             PInteger i
 
         Float f ->
-            PAtom <| String.fromFloat f
+            PFloat f
 
         UnaryOperation Negate expression ->
             PNegate <| toPrintExpression expression
@@ -328,6 +381,9 @@ toStringPrec p e =
     case e of
         PAtom v ->
             v
+
+        PFloat f ->
+            String.fromFloat f
 
         PInteger v ->
             String.fromInt v
@@ -679,3 +735,103 @@ applyValue context name args =
 
         _ ->
             Complex.zero
+
+
+toGLString : Expression -> String
+toGLString =
+    toPrintExpression
+        >> toGLStringPrec 0
+
+
+toGLStringPrec : Int -> PrintExpression -> String
+toGLStringPrec p expr =
+    let
+        paren b c =
+            if b then
+                "(" ++ c ++ ")"
+
+            else
+                c
+
+        noninfix op c =
+            paren (p > 10) <| op ++ toGLStringPrec 11 c
+
+        infixl_ n op l r =
+            paren (p > n) <| toGLStringPrec n l ++ op ++ toGLStringPrec (n + 1) r
+
+        apply name ex =
+            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (toGLStringPrec 0) ex) ++ ")"
+    in
+    case expr of
+        PAtom "i" ->
+            "vec2(0,1)"
+
+        PAtom v ->
+            "vec2(" ++ v ++ ",0)"
+
+        PInteger v ->
+            "vec2(" ++ String.fromInt v ++ ",0)"
+
+        PFloat f ->
+            "vec2(" ++ String.fromFloat f ++ ",0)"
+
+        PNegate expression ->
+            noninfix "-" expression
+
+        PAdd l (PNegate r) ->
+            infixl_ 6 " - " l r
+
+        PAdd l r ->
+            infixl_ 6 " + " l r
+
+        PRel rel l r ->
+            "vec2((" ++ toGLStringPrec 10 l ++ ".x " ++ rel ++ " " ++ toGLStringPrec 10 r ++ ".x) ? 1.0 : 0.0,0.0)"
+
+        PBy l r ->
+            apply "by" [ l, r ]
+
+        PDiv l r ->
+            apply "div" [ l, r ]
+
+        PPower l r ->
+            apply "cpow" [ l, r ]
+
+        PApply name ex ->
+            apply ("c" ++ name) ex
+
+        PList es ->
+            "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (toGLStringPrec 0) es) ++ ")"
+
+        PReplace var e ->
+            toGLStringPrec p (pfullSubstitute var e)
+
+
+ppartialSubstitute : String -> PrintExpression -> PrintExpression -> PrintExpression
+ppartialSubstitute var val =
+    pvisit <|
+        \expr ->
+            case expr of
+                PReplace vars e ->
+                    Just <|
+                        PReplace (Dict.map (\_ v -> ppartialSubstitute var val v) vars) <|
+                            if Dict.member var vars then
+                                e
+
+                            else
+                                ppartialSubstitute var val e
+
+                PAtom string ->
+                    Just <|
+                        if string == var then
+                            val
+
+                        else
+                            expr
+
+                _ ->
+                    Nothing
+
+
+pfullSubstitute : Dict String PrintExpression -> PrintExpression -> PrintExpression
+pfullSubstitute ctx e =
+    List.foldl (\( k, v ) -> ppartialSubstitute k v) e (Dict.toList ctx)

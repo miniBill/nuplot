@@ -1,4 +1,4 @@
-module UI.Theme exposing (column, grid, imageSize, paintInForegroud, row, spacing)
+module UI.Theme exposing (column, grid, imageHeight, imageWidth, paintInForegroud, row, spacing)
 
 import Element exposing (Attribute, Element, none, shrink)
 
@@ -13,9 +13,14 @@ spacing =
     10
 
 
-imageSize : number
-imageSize =
-    400
+imageWidth : number
+imageWidth =
+    1024
+
+
+imageHeight : number
+imageHeight =
+    768
 
 
 row : List (Attribute msg) -> List (Element msg) -> Element msg

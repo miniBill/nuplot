@@ -5,24 +5,87 @@ import Element exposing (Element, alignBottom, alignTop, centerX, centerY, colum
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Element.Keyed
 import Element.Lazy
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), Graph(..), RelationOperation(..), UnaryOperation(..), greeks)
 import Expression.Parser
+import Expression.Utils
 import Html
 import Html.Attributes
 import List.MyExtra as List
-import Model exposing (Model, Msg(..), Row, RowResult(..))
+import Model exposing (Model, Msg(..), PlotStatus(..), Row)
 import UI.Theme as Theme
 
 
-draw : String -> Element msg
+draw : Expression -> Element msg
 draw expr =
+    let
+        graph =
+            Expression.Parser.parseGraph expr
+
+        srcExpr =
+            case graph of
+                Explicit2D e ->
+                    toSrcImplicit <| Expression.Utils.minus Expression.Utils.y e
+
+                Implicit2D l r ->
+                    toSrcImplicit <| Expression.Utils.minus l r
+
+                Relation2D op l r ->
+                    toSrcImplicit <| RelationOperation op l r
+
+                Contour e ->
+                    toSrcContour e
+    in
     Element.html <|
         Html.node "nu-plot"
-            [ Html.Attributes.attribute "src" expr
+            [ Html.Attributes.attribute "expr-src" <| srcExpr
+            , Html.Attributes.attribute "canvas-width" <| String.fromInt Theme.imageWidth
+            , Html.Attributes.attribute "canvas-height" <| String.fromInt Theme.imageHeight
             ]
             []
+
+
+toSrcImplicit : Expression -> String
+toSrcImplicit e =
+    """
+    bool f(float x, float y) {
+        vec2 complex = """ ++ Expression.toGLString e ++ """;
+        return complex.x > 0.0;
+    }
+
+    vec3 pixel(float deltaX, float deltaY, float x, float y) {
+        bool h = f(x,y);
+        bool l = f(x - deltaX,y);
+        bool ul = f(x - deltaX,y - deltaY);
+        bool u = f(x,y - deltaY);
+        return (h != l || h != u || h != ul) ? vec3(1,1,1) : vec3(0,0,0);
+    }
+    """
+
+
+toSrcContour : Expression -> String
+toSrcContour e =
+    """
+    vec3 hl2rgb(float h, float l)
+    {
+        vec3 rgb = clamp(abs(mod(h*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);
+
+        return l + (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
+    }
+
+    vec3 pixel(float deltaX, float deltaY, float x, float y) {
+        vec2 z = """ ++ Expression.toGLString e ++ """;
+        float theta = atan(z.y, z.x) / radians(360.0);
+        float logRadius = log2(sqrt(z.x*z.x + z.y*z.y));
+        float thetaSix = theta * 12.0;
+        float thetaNeigh = 0.05;
+        float thetaDelta = abs(thetaSix - floor(thetaSix + 0.5)) / thetaNeigh;
+        float powerRemainder = logRadius - floor(logRadius);
+        float squished = powerRemainder * 0.4 + 0.3;
+        float l = thetaDelta < 1.0 ? squished * thetaDelta + (1.0 - thetaDelta) : squished;
+        return hl2rgb(theta, l);
+    }
+    """
 
 
 viewRow : Int -> Row -> Element Msg
@@ -65,11 +128,11 @@ inputLine index row =
 
 statusLine : Row -> Element msg
 statusLine row =
-    case row.result of
+    case row.plotStatus of
         Empty ->
             none
 
-        Typing ->
+        Typing _ ->
             text "Typing..."
 
         ParseError e ->
@@ -77,32 +140,26 @@ statusLine row =
                 [ Font.family [ Font.monospace ]
                 , Font.color <| rgb 1 0 0
                 ]
-            <|
-                text e
+                (text e)
 
-        Plotted ->
-            case Expression.Parser.parse row.input of
-                Err _ ->
-                    none
+        Plotting e ->
+            Element.row []
+                [ text "Interpreted as: "
+                , viewExpression e
+                , text <|
+                    case Expression.Parser.parseGraph e of
+                        Explicit2D _ ->
+                            ", explicit 2D"
 
-                Ok tree ->
-                    Element.row []
-                        [ text "Interpreted as: "
-                        , viewExpression tree
-                        , text <|
-                            case Expression.Parser.parseGraph tree of
-                                Explicit2D _ ->
-                                    ", explicit 2D"
+                        Implicit2D _ _ ->
+                            ", implicit 2D"
 
-                                Implicit2D _ _ ->
-                                    ", implicit 2D"
+                        Contour _ ->
+                            ", contour plot"
 
-                                Contour _ ->
-                                    ", contour plot"
-
-                                Relation2D _ _ _ ->
-                                    ", relation 2D"
-                        ]
+                        Relation2D _ _ _ ->
+                            ", relation 2D"
+                ]
 
 
 type alias Block msg =
@@ -121,7 +178,7 @@ blockRow blocks =
 blockColumn : List (Block msg) -> Block msg
 blockColumn blocks =
     { elements =
-        [ column [] <|
+        [ column [ alignBottom ] <|
             List.map (\{ elements } -> row [] elements) blocks
         ]
     , height = List.sum <| List.map .height blocks
@@ -445,22 +502,15 @@ bracketed sl ul cl exl bl sr ur cr exr br =
 
 outputBlock : Row -> Element msg
 outputBlock row =
-    let
-        ( resultTag, image ) =
-            case row.result of
-                Empty ->
-                    ( " ", none )
+    case row.plotStatus of
+        Empty ->
+            none
 
-                ParseError _ ->
-                    ( "E", none )
+        ParseError _ ->
+            none
 
-                Typing ->
-                    ( "W", draw row.plotting )
+        Typing e ->
+            Maybe.map draw e |> Maybe.withDefault none |> el [ centerX ]
 
-                Plotted ->
-                    ( "P", draw row.plotting )
-    in
-    Element.Keyed.el [ centerX ]
-        ( row.input ++ resultTag
-        , image
-        )
+        Plotting e ->
+            draw e |> el [ centerX ]

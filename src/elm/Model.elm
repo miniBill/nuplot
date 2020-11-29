@@ -1,6 +1,7 @@
-module Model exposing (Flags, Model, Msg(..), Row, RowResult(..), emptyRow)
+module Model exposing (Flags, Model, Msg(..), PlotStatus(..), Row, emptyRow)
 
 import Bounce exposing (Bounce)
+import Expression exposing (Expression)
 
 
 type alias Flags =
@@ -13,8 +14,7 @@ type alias Model =
 
 type alias Row =
     { input : String
-    , result : RowResult
-    , plotting : String
+    , plotStatus : PlotStatus
     , bounce : Bounce
     }
 
@@ -22,16 +22,15 @@ type alias Row =
 emptyRow : Row
 emptyRow =
     { input = ""
-    , result = Empty
-    , plotting = ""
+    , plotStatus = Empty
     , bounce = Bounce.init
     }
 
 
-type RowResult
+type PlotStatus
     = Empty
-    | Typing
-    | Plotted
+    | Typing (Maybe Expression)
+    | Plotting Expression
     | ParseError String
 
 
