@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, e, f, g, i, icomplex, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, squashHarder, triple, two, unaryFunc, vector, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, e, f, g, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, quaternaryFunc, sin_, sinh_, sqrt_, square, squash, squashHarder, ternaryFunc, triple, two, unaryFunc, vector, x, y, z, zero)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), visit)
 
@@ -100,6 +100,16 @@ binaryFunc name arg1 arg2 =
     Apply name [ arg1, arg2 ]
 
 
+ternaryFunc : String -> Expression -> Expression -> Expression -> Expression
+ternaryFunc name arg1 arg2 arg3 =
+    Apply name [ arg1, arg2, arg3 ]
+
+
+quaternaryFunc : String -> Expression -> Expression -> Expression -> Expression -> Expression
+quaternaryFunc name arg1 arg2 arg3 arg4 =
+    Apply name [ arg1, arg2, arg3, arg4 ]
+
+
 plus : List Expression -> Expression
 plus =
     associativeOperation Addition zero
@@ -198,6 +208,11 @@ triple num =
 dd : Expression -> Expression -> Expression
 dd =
     binaryFunc "dd"
+
+
+ii : Expression -> Expression -> Expression -> Expression -> Expression
+ii =
+    quaternaryFunc "ii"
 
 
 int : Int -> Expression

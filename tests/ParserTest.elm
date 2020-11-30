@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, f, g, i, icomplex, int, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, vector, x, y, z)
+import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, f, g, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, vector, x, y, z)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -263,26 +263,34 @@ tests =
       )
     , straight "asin(x)" (asin_ x)
     , ( "a sin x", by [ a, sin_ x ], "a*sin(x)" )
-    , ( "ddx²,x"
-      , dd (square x) x
-      , "dd(x², x)"
-      )
     , ( "[zx+y*i]e^z"
       , Replace (Dict.singleton "z" <| complex x y) <| pow Expression.Utils.e z
       , "[z = x + y*i] e^z"
       )
+    , ( "(3-2x)/(1-x)^2"
+      , div
+            (minus (int 3) (double x))
+            (square <| minus one x)
+      , "(3 - 2x)/(1 - x)²"
+      )
+    , ( "ddx^2,x"
+      , dd (square x) x
+      , "dd(x², x)"
+      )
+    , ( "ddx²,x"
+      , dd (square x) x
+      , "dd(x², x)"
+      )
+    , straight "dd(x², x)" <|
+        dd (square x) x
+    , ( "ddxsinx,x", dd (by [ x, sin_ x ]) x, "dd(x*sin(x), x)" )
+    , ( "ddsin(x^2),x", dd (sin_ <| square x) x, "dd(sin(x²), x)" )
+    , straight "ii(ln(a), a, b, c)" <| ii (ln_ a) a b c
     ]
 
 
 
 {-
-   assertSimplify("(3-2x)/(1-x)^2)", "(3+-2x)/((1+-x)^2)");
-   assertSimplify("ddx^2,x", "2x");
-   assertSimplify("dd(x^2,x)", "2x");
-   assertSimplify("ddxsinx,x", "sin(x)+xcos(x)");
-   assertSimplify("ddsin(x^2),x", "2xcos(x^2)");
-   assertSimplify("ddsin(x^2),x", "2xcos(x^2)");
-   justParse("ii(ln(a),a,b,c)");
    Expression integral = parseOrFail("ii(ln(t),t,1,a)");
    assertEquals("Fundamental theorem", "ln(a)", SimplificationHelper.simplify(derivativeOrFail(integral, 'a'))
    .toString());
