@@ -104,6 +104,7 @@ export class NuPlot extends HTMLElement {
     this.canvas.onmousedown = this.canvasOnmousedown.bind(this);
     this.canvas.oncontextmenu = (e) => false;
     this.canvas.onmouseup = this.canvasOnmouseup.bind(this);
+    this.canvas.onmousemove = this.canvasOnmousemove.bind(this);
 
     /* display initial frame */
     window.requestAnimationFrame(this.renderFrame.bind(this));
@@ -233,6 +234,18 @@ export class NuPlot extends HTMLElement {
       this.zoom_factor = e.buttons & 1 ? 1 - zoom_speed : 1 + 2 * zoom_speed;
     }
     this.renderFrame();
+    return true;
+  }
+
+  canvasOnmousemove(e: MouseEvent) {
+    if (this.stop_zooming) return;
+    var x_part = e.offsetX / this.canvas.width;
+    var y_part = e.offsetY / this.canvas.height;
+    this.target_zoom_center[0] =
+      this.zoom_center[0] - this.zoom_size / 2.0 + x_part * this.zoom_size;
+    this.target_zoom_center[1] =
+      this.zoom_center[1] + this.zoom_size / 2.0 - y_part * this.zoom_size;
+
     return true;
   }
 
