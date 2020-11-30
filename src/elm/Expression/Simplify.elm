@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), UnaryOperation(..), getFreeVariables)
 import Expression.Derivative
 import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
-import List exposing (concatMap)
+import List
 import List.Extra as List
 import Maybe.Extra as Maybe
 import Set

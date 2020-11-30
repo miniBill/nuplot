@@ -1,6 +1,6 @@
 module UI.View exposing (view)
 
-import Dict exposing (get)
+import Dict
 import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, scale, spacing, text, width, wrappedRow)
 import Element.Border as Border
 import Element.Font as Font

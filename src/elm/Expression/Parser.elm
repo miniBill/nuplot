@@ -6,7 +6,7 @@ import Expression.Cleaner as Cleaner
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
 import List
 import List.Extra as List
-import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), backtrackable)
+import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
 import Set
 import Trie
 

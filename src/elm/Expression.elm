@@ -11,11 +11,9 @@ module Expression exposing
     , fullSubstitute
     , getFreeVariables
     , greeks
-    , partialSubstitute
     , relationToString
     , toGLString
     , toString
-    , value
     , visit
     )
 

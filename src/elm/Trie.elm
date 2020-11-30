@@ -80,21 +80,6 @@ union (Trie l) (Trie r) =
         }
 
 
-get : List Char -> Trie a -> Maybe a
-get cs (Trie { value, children }) =
-    case cs of
-        [] ->
-            value
-
-        s :: ss ->
-            case Dict.get s children of
-                Nothing ->
-                    Nothing
-
-                Just child ->
-                    get ss child
-
-
 getLongestPrefix : String -> Trie a -> Maybe ( String, a )
 getLongestPrefix s =
     let

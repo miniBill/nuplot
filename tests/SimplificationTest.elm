@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..))
 import Expression.Simplify
-import Expression.Utils exposing (a, abs_, asin_, b, by, c, complex, cos_, cosh_, d, div, double, f, g, i, icomplex, ipow, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, x, y, z)
+import Expression.Utils exposing (a, b, by, c, complex, cos_, cosh_, div, double, i, ipow, minus, n, negate_, one, plus, sin_, sinh_, sqrt_, square, triple, two, x, z)
 import Test exposing (Test, describe, test)
 
 
