@@ -3,12 +3,15 @@ module Expression exposing
     , BinaryOperation(..)
     , Context
     , Expression(..)
+    , FunctionName(..)
     , Graph(..)
+    , KnownFunction(..)
     , RelationOperation(..)
     , UnaryOperation(..)
     , defaultContext
     , equals
     , fullSubstitute
+    , functionNameToString
     , getFreeVariables
     , greeks
     , relationToString
@@ -37,12 +40,48 @@ type Expression
     | BinaryOperation BinaryOperation Expression Expression
     | RelationOperation RelationOperation Expression Expression
     | AssociativeOperation AssociativeOperation Expression Expression (List Expression)
-    | Apply String (List Expression)
+    | Apply FunctionName (List Expression)
     | Variable String
     | Integer Int
     | Float Float
     | Replace (Dict String Expression) Expression
     | List (List Expression)
+
+
+type FunctionName
+    = KnownFunction KnownFunction
+    | UserFunction String
+
+
+type KnownFunction
+    = -- Trig
+      Sin
+    | Cos
+    | Tan
+    | Asin
+    | Acos
+    | Atan
+    | Atan2
+    | Sinh
+    | Cosh
+    | Tanh
+      -- Power
+    | Abs
+    | Sqrt
+    | Ln
+    | Log10
+    | Exp
+      -- Complex
+    | Re
+    | Im
+    | Arg
+      -- Matrix
+    | Gra
+      -- Derivative
+    | Dd
+    | Ii
+      -- Misc
+    | Pw
 
 
 type UnaryOperation
@@ -271,7 +310,7 @@ type PrintExpression
     | PPower PrintExpression PrintExpression
     | PReplace (Dict String PrintExpression) PrintExpression
     | PList (List PrintExpression)
-    | PApply String (List PrintExpression)
+    | PApply FunctionName (List PrintExpression)
 
 
 toPrintExpression : Expression -> PrintExpression
@@ -416,10 +455,10 @@ toStringPrec p e =
             infixr_ 8 "^" l r
 
         PApply name [ (PList _) as ex ] ->
-            paren (p > 10) <| name ++ toStringPrec 0 ex
+            paren (p > 10) <| functionNameToString name ++ toStringPrec 0 ex
 
         PApply name ex ->
-            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (toStringPrec 0) ex) ++ ")"
+            paren (p > 10) <| functionNameToString name ++ "(" ++ String.join ", " (List.map (toStringPrec 0) ex) ++ ")"
 
         PList es ->
             case asVector es of
@@ -493,51 +532,85 @@ greeks =
 
 
 type alias Context =
-    { functions : Trie Int
+    { functions : Trie ( FunctionName, Int )
     , variables : Trie ()
     }
+
+
+unaryFunctions : List ( String, KnownFunction )
+unaryFunctions =
+    let
+        trig =
+            [ ( "sin", Sin )
+            , ( "cos", Cos )
+            , ( "tan", Tan )
+            , ( "asin", Asin )
+            , ( "acos", Acos )
+            , ( "atan", Atan )
+            , ( "sinh", Sinh )
+            , ( "cosh", Cosh )
+            , ( "tanh", Tanh )
+            ]
+
+        power =
+            [ ( "abs", Abs )
+            , ( "sqrt", Sqrt )
+            , ( "ln", Ln )
+            , ( "log10", Log10 )
+            , ( "exp", Exp )
+            ]
+
+        complex =
+            [ ( "re", Re )
+            , ( "im", Im )
+            , ( "arg", Arg )
+            ]
+
+        matrix =
+            [ ( "gra", Gra ) ]
+    in
+    List.concat
+        [ power
+        , trig
+        , complex
+        , matrix
+        ]
+
+
+binaryFunctions : List ( String, KnownFunction )
+binaryFunctions =
+    [ ( "atan2", Atan2 )
+    , ( "dd", Dd )
+    ]
+
+
+ternaryFunctions : List ( String, KnownFunction )
+ternaryFunctions =
+    [ ( "pw", Pw ) ]
+
+
+quaternaryFunctions : List ( String, KnownFunction )
+quaternaryFunctions =
+    [ ( "ii", Ii ) ]
 
 
 defaultContext : Context
 defaultContext =
     let
-        unary =
-            List.concat
-                [ power
-                , trig
-                , complex
-                , [ "gra" ]
-                ]
-
-        power =
-            [ "abs", "sqrt", "ln", "log", "exp" ]
-
-        complex =
-            [ "re", "im", "arg" ]
-
-        trig =
-            [ "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh" ]
-
-        binary =
-            [ "atan2", "dd" ]
-
-        ternary =
-            [ "pw" ]
-
-        quaternary =
-            [ "ii" ]
-
         letters =
             List.range (Char.toCode 'a') (Char.toCode 'z')
                 |> List.map (Char.fromCode >> String.fromChar)
+
+        map i =
+            List.map (\( f, n ) -> ( f, ( KnownFunction n, i ) ))
     in
     { functions =
         Trie.fromList <|
             List.concat
-                [ List.map (\f -> ( f, 1 )) unary
-                , List.map (\f -> ( f, 2 )) binary
-                , List.map (\f -> ( f, 3 )) ternary
-                , List.map (\f -> ( f, 4 )) quaternary
+                [ map 1 unaryFunctions
+                , map 2 binaryFunctions
+                , map 3 ternaryFunctions
+                , map 4 quaternaryFunctions
                 ]
     , variables = Trie.fromList <| List.map (\v -> ( v, () )) <| letters ++ Dict.keys greeks
     }
@@ -671,53 +744,71 @@ relationValue o ((Complex lv _) as lc) ((Complex rv _) as rc) =
             toComplex <| lv > rv
 
 
-applyValue : Dict String Complex -> String -> List Expression -> Complex
+applyValue : Dict String Complex -> FunctionName -> List Expression -> Complex
 applyValue context name args =
     case ( name, args ) of
-        ( "sin", [ e ] ) ->
+        ( KnownFunction Sin, [ e ] ) ->
             Complex.sin <| innerValue context e
 
-        ( "cos", [ e ] ) ->
+        ( KnownFunction Cos, [ e ] ) ->
             Complex.cos <| innerValue context e
 
-        ( "tan", [ e ] ) ->
+        ( KnownFunction Tan, [ e ] ) ->
             Complex.tan <| innerValue context e
 
-        ( "sinh", [ e ] ) ->
+        ( KnownFunction Sinh, [ e ] ) ->
             Complex.sinh <| innerValue context e
 
-        ( "cosh", [ e ] ) ->
+        ( KnownFunction Cosh, [ e ] ) ->
             Complex.cosh <| innerValue context e
 
-        ( "tanh", [ e ] ) ->
+        ( KnownFunction Tanh, [ e ] ) ->
             Complex.tanh <| innerValue context e
 
-        ( "asin", [ e ] ) ->
+        ( KnownFunction Asin, [ e ] ) ->
             Complex.asin <| innerValue context e
 
-        ( "acos", [ e ] ) ->
+        ( KnownFunction Acos, [ e ] ) ->
             Complex.acos <| innerValue context e
 
-        ( "atan", [ e ] ) ->
+        ( KnownFunction Atan, [ e ] ) ->
             Complex.atan <| innerValue context e
 
-        ( "sqrt", [ e ] ) ->
+        ( KnownFunction Atan2, [ y, x ] ) ->
+            Complex.atan2 (innerValue context y) (innerValue context x)
+
+        ( KnownFunction Sqrt, [ e ] ) ->
             Complex.sqrt <| innerValue context e
 
-        ( "ln", [ e ] ) ->
+        ( KnownFunction Ln, [ e ] ) ->
             Complex.ln <| innerValue context e
 
-        ( "arg", [ e ] ) ->
+        ( KnownFunction Arg, [ e ] ) ->
             Complex.fromReal <| Complex.arg <| innerValue context e
 
-        ( "re", [ e ] ) ->
+        ( KnownFunction Re, [ e ] ) ->
             Complex.re <| innerValue context e
 
-        ( "im", [ e ] ) ->
+        ( KnownFunction Im, [ e ] ) ->
             Complex.im <| innerValue context e
 
-        ( "abs", [ e ] ) ->
+        ( KnownFunction Abs, [ e ] ) ->
             Complex.fromReal <| Complex.abs <| innerValue context e
+
+        ( KnownFunction Log10, [ e ] ) ->
+            Complex.div
+                (Complex.ln <| innerValue context e)
+                (Complex.ln <| Complex.fromReal 10)
+
+        ( KnownFunction Exp, [ e ] ) ->
+            Complex.exp <| innerValue context e
+
+        ( KnownFunction Pw, [ c, t, f ] ) ->
+            if Complex.zero == innerValue context c then
+                innerValue context f
+
+            else
+                innerValue context t
 
         _ ->
             Complex.zero
@@ -786,13 +877,86 @@ toGLStringPrec p expr =
             apply "cpow" [ l, r ]
 
         PApply name ex ->
-            apply ("c" ++ name) ex
+            apply ("c" ++ functionNameToString name) ex
 
         PList es ->
             "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (toGLStringPrec 0) es) ++ ")"
 
         PReplace var e ->
             toGLStringPrec p (pfullSubstitute var e)
+
+
+functionNameToString : FunctionName -> String
+functionNameToString name =
+    case name of
+        KnownFunction Sin ->
+            "sin"
+
+        KnownFunction Cos ->
+            "cos"
+
+        KnownFunction Tan ->
+            "tan"
+
+        KnownFunction Asin ->
+            "asin"
+
+        KnownFunction Acos ->
+            "acos"
+
+        KnownFunction Atan ->
+            "atan"
+
+        KnownFunction Atan2 ->
+            "atan2"
+
+        KnownFunction Sinh ->
+            "sinh"
+
+        KnownFunction Cosh ->
+            "cosh"
+
+        KnownFunction Tanh ->
+            "tanh"
+
+        KnownFunction Abs ->
+            "abs"
+
+        KnownFunction Sqrt ->
+            "sqrt"
+
+        KnownFunction Ln ->
+            "ln"
+
+        KnownFunction Log10 ->
+            "log10"
+
+        KnownFunction Exp ->
+            "exp"
+
+        KnownFunction Re ->
+            "re"
+
+        KnownFunction Im ->
+            "im"
+
+        KnownFunction Arg ->
+            "arg"
+
+        KnownFunction Gra ->
+            "gra"
+
+        KnownFunction Dd ->
+            "dd"
+
+        KnownFunction Ii ->
+            "ii"
+
+        KnownFunction Pw ->
+            "pw"
+
+        UserFunction u ->
+            u
 
 
 ppartialSubstitute : String -> PrintExpression -> PrintExpression -> PrintExpression

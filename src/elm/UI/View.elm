@@ -6,7 +6,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Lazy
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), Graph(..), RelationOperation(..), UnaryOperation(..), greeks)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), greeks)
 import Expression.Parser
 import Expression.Utils
 import Html
@@ -40,6 +40,7 @@ draw expr =
             [ Html.Attributes.attribute "expr-src" <| srcExpr
             , Html.Attributes.attribute "canvas-width" <| String.fromInt Theme.imageWidth
             , Html.Attributes.attribute "canvas-height" <| String.fromInt Theme.imageHeight
+            , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
             ]
             []
 
@@ -370,10 +371,10 @@ viewAtom expr =
         Variable v ->
             label <| Maybe.withDefault v <| Dict.get v greeks
 
-        Apply "abs" [ arg ] ->
+        Apply (KnownFunction Abs) [ arg ] ->
             absBracketed <| viewRelationExpression arg
 
-        Apply "sqrt" [ arg ] ->
+        Apply (KnownFunction Sqrt) [ arg ] ->
             blockRow
                 [ label "√"
                 , viewRelationExpression arg
@@ -394,7 +395,7 @@ viewAtom expr =
 
         Apply name args ->
             blockRow
-                [ { elements = [ el [ centerY ] <| text name ]
+                [ { elements = [ el [ centerY ] <| text <| Expression.functionNameToString name ]
                   , height = 1
                   }
                 , roundBracketed <| blockRow <| List.intersperse (label ",") (List.map viewRelationExpression args)

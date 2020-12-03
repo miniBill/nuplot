@@ -1,6 +1,6 @@
 module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, e, f, g, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, quaternaryFunc, sin_, sinh_, sqrt_, square, squash, squashHarder, ternaryFunc, triple, two, unaryFunc, vector, x, y, z, zero)
 
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), visit)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), visit)
 
 
 
@@ -90,24 +90,24 @@ z =
 -- Functions
 
 
-unaryFunc : String -> Expression -> Expression
+unaryFunc : KnownFunction -> Expression -> Expression
 unaryFunc name arg =
-    Apply name [ arg ]
+    Apply (KnownFunction name) [ arg ]
 
 
-binaryFunc : String -> Expression -> Expression -> Expression
+binaryFunc : KnownFunction -> Expression -> Expression -> Expression
 binaryFunc name arg1 arg2 =
-    Apply name [ arg1, arg2 ]
+    Apply (KnownFunction name) [ arg1, arg2 ]
 
 
-ternaryFunc : String -> Expression -> Expression -> Expression -> Expression
+ternaryFunc : KnownFunction -> Expression -> Expression -> Expression -> Expression
 ternaryFunc name arg1 arg2 arg3 =
-    Apply name [ arg1, arg2, arg3 ]
+    Apply (KnownFunction name) [ arg1, arg2, arg3 ]
 
 
-quaternaryFunc : String -> Expression -> Expression -> Expression -> Expression -> Expression
+quaternaryFunc : KnownFunction -> Expression -> Expression -> Expression -> Expression -> Expression
 quaternaryFunc name arg1 arg2 arg3 arg4 =
-    Apply name [ arg1, arg2, arg3, arg4 ]
+    Apply (KnownFunction name) [ arg1, arg2, arg3, arg4 ]
 
 
 plus : List Expression -> Expression
@@ -147,7 +147,7 @@ ipow base exponent =
 
 sqrt_ : Expression -> Expression
 sqrt_ =
-    unaryFunc "sqrt"
+    unaryFunc Sqrt
 
 
 square : Expression -> Expression
@@ -157,42 +157,42 @@ square base =
 
 abs_ : Expression -> Expression
 abs_ =
-    unaryFunc "abs"
+    unaryFunc Abs
 
 
 sin_ : Expression -> Expression
 sin_ =
-    unaryFunc "sin"
+    unaryFunc Sin
 
 
 cos_ : Expression -> Expression
 cos_ =
-    unaryFunc "cos"
+    unaryFunc Cos
 
 
 atan2_ : Expression -> Expression -> Expression
 atan2_ =
-    binaryFunc "atan2"
+    binaryFunc Atan2
 
 
 sinh_ : Expression -> Expression
 sinh_ =
-    unaryFunc "sinh"
+    unaryFunc Sinh
 
 
 cosh_ : Expression -> Expression
 cosh_ =
-    unaryFunc "cosh"
+    unaryFunc Cosh
 
 
 asin_ : Expression -> Expression
 asin_ =
-    unaryFunc "asin"
+    unaryFunc Asin
 
 
 ln_ : Expression -> Expression
 ln_ =
-    unaryFunc "ln"
+    unaryFunc Ln
 
 
 double : Expression -> Expression
@@ -207,12 +207,12 @@ triple num =
 
 dd : Expression -> Expression -> Expression
 dd =
-    binaryFunc "dd"
+    binaryFunc Dd
 
 
 ii : Expression -> Expression -> Expression -> Expression -> Expression
 ii =
-    quaternaryFunc "ii"
+    quaternaryFunc Ii
 
 
 int : Int -> Expression

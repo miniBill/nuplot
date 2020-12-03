@@ -424,9 +424,9 @@ variableParser context =
         |> Parser.andThen
             (\rest ->
                 case Trie.getLongestPrefix rest context.functions of
-                    Just ( name, arity ) ->
+                    Just ( nameString, ( name, arity ) ) ->
                         Parser.succeed (Apply name)
-                            |. chomp (String.length name)
+                            |. chomp (String.length nameString)
                             |. whitespace
                             |= Parser.oneOf
                                 [ Parser.succeed identity
