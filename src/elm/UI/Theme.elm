@@ -1,4 +1,4 @@
-module UI.Theme exposing (column, grid, imageHeight, imageWidth, row, spacing)
+module UI.Theme exposing (column, grid, imageHeight, imageWidth, row, spacing, whiteLines)
 
 import Element exposing (Attribute, Element, none, shrink)
 
@@ -16,6 +16,11 @@ imageWidth =
 imageHeight : number
 imageHeight =
     768
+
+
+whiteLines : number
+whiteLines =
+    0
 
 
 row : List (Attribute msg) -> List (Element msg) -> Element msg

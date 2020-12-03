@@ -11,12 +11,15 @@ export class NuPlot extends HTMLElement {
   src =
     "vec3 pixel(float deltaX, float deltaY, float x, float y) { return vec3(0,0,0); }";
 
+  whiteLines = 6;
+
   /* these hold the state of zoom operation */
   zoom_center!: number[];
   target_zoom_center!: number[];
   zoom_size!: number;
   stop_zooming!: boolean;
   zoom_factor!: number;
+  label: HTMLElement;
 
   constructor() {
     super();
@@ -27,7 +30,7 @@ export class NuPlot extends HTMLElement {
     const shadowRoow = this.attachShadow({ mode: "open" }); // sets and returns 'this.shadowRoot'
 
     this.wrapper = document.createElement("div");
-
+    this.label = this.wrapper.appendChild(document.createElement("div"));
     this.canvas = this.wrapper.appendChild(document.createElement("canvas"));
 
     this.initCanvas();
@@ -114,9 +117,10 @@ export class NuPlot extends HTMLElement {
 
   private buildFragmentShader(expr: string) {
     return `
-    ${utils}
+${utils}
 
-    ${expr}
+${expr}
+
     void main() {
       float minsize = min(u_canvasWidth, u_canvasHeight);
       vec2 uv_centered = gl_FragCoord.xy - vec2(u_canvasWidth / 2.0, u_canvasHeight / 2.0);
@@ -126,7 +130,12 @@ export class NuPlot extends HTMLElement {
       float y = c.y;
       bool escaped = false;
       int iterations = 0;
-      gl_FragColor = vec4(palette(x, y),1.0);
+
+      float deltaX = u_zoomSize / u_canvasWidth;
+      float deltaY = u_zoomSize / u_canvasHeight;
+      vec3 px = pixel(deltaX, deltaY, x, y);
+
+      gl_FragColor = vec4(palette(deltaX, deltaY, x, y, px), 1.0);
     }`;
   }
 
@@ -187,6 +196,7 @@ export class NuPlot extends HTMLElement {
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
 
     /* bind inputs & render frame */
+    this.uniform1f("u_whiteLines", this.whiteLines);
     this.uniform1f("u_zoomSize", this.zoom_size);
     this.uniform1f("u_canvasWidth", this.canvas.width);
     this.uniform1f("u_canvasHeight", this.canvas.height);
@@ -235,6 +245,11 @@ export class NuPlot extends HTMLElement {
         this.canvas.height = +newValue;
         break;
 
+      case "white-lines":
+        if (!newValue) return;
+        this.whiteLines = +newValue;
+        break;
+
       case "expr-src":
         if (newValue == this.src) return;
 
@@ -264,15 +279,23 @@ export class NuPlot extends HTMLElement {
 
     var compiled = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
     if (!compiled) {
-      console.error("Error compiling shader");
-      console.error("Source:\n", built);
+      this.label.innerHTML = `<pre>
+Error compiling shader, log:
+${this.gl.getShaderInfoLog(shader)}
+
+Source:
+${built}
+      </pre>`;
+      console.error("Error compiling shader, source:\n", built);
       console.error("Log:\n", this.gl.getShaderInfoLog(shader));
       return null;
     }
+
+    this.label.innerHTML = "";
     return compiled;
   }
 
   static get observedAttributes() {
-    return ["expr-src", "canvas-width", "canvas-height"];
+    return ["expr-src", "canvas-width", "canvas-height", "white-lines"];
   }
 }

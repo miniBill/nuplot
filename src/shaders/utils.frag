@@ -4,6 +4,7 @@ uniform vec2 u_zoomCenter;
 uniform float u_zoomSize;
 uniform float u_canvasWidth;
 uniform float u_canvasHeight;
+uniform float u_whiteLines;
 
 vec2 i(){
     return vec2(0,1);
@@ -25,17 +26,21 @@ vec2 to_polar(vec2 c) {
     return vec2(sqrt(c.x*c.x+c.y*c.y), atan(c.y, c.x));
 }
 
+vec2 from_polar(vec2 p) {
+    return vec2(p.x * cos(p.y), p.x * sin(p.y));
+}
+
 vec2 cexp(vec2 v) {
     return vec2(cos(v.y) * exp(v.x), sin(v.y) * exp(v.x));
 }
 
-vec2 clog(vec2 b) {
+vec2 cln(vec2 b) {
     vec2 polar_b = to_polar(b);
     return vec2(log(polar_b.x), polar_b.y);
 }
 
 vec2 cpow(vec2 b, vec2 e) {
-    return cexp(by(clog(b), e));
+    return cexp(by(cln(b), e));
 }
 
 float sinh(float x) {
@@ -58,6 +63,11 @@ vec2 ctan(vec2 z) {
     return div(csin(z),ccos(z));
 }
 
+vec2 catan2(vec2 y, vec2 x) {
+    vec2 z = x + i() * y;
+    return vec2(atan(z.y, z.x), 0.0);
+}
+
 vec2 csinh(vec2 z) {
     return -(by(i(), csin(by(i(), z))));
 }
@@ -66,11 +76,18 @@ vec2 ccosh(vec2 z) {
     return ccos(by(i(), z));
 }
 
-vec3 palette(float x, float y) {
-    float deltaX = u_zoomSize / u_canvasWidth;
-    float deltaY = u_zoomSize / u_canvasHeight;
-    vec3 white = pixel(deltaX, deltaY, x, y);
+vec2 csqrt(vec2 z) {
+    vec2 polar_z = to_polar(z);
+    vec2 polar_sqrt = vec2(sqrt(polar_z.x), polar_z.y * 0.5);
+    return from_polar(polar_sqrt);
+}
+
+vec2 cpw(vec2 c, vec2 t, vec2 f) {
+    return c.x > 0.0 ? t : f;
+}
+
+vec3 palette(float deltaX, float deltaY, float x, float y, vec3 pixel) {
     vec3 yax = (x * (x - deltaX)) < 0.0 ? vec3(1,0,0) : vec3(0,0,0);
     vec3 xax = (y * (y - deltaY)) < 0.0 ? vec3(0,1,0) : vec3(0,0,0);
-    return max(white, max(yax, xax));
+    return max(pixel, max(yax, xax));
 }

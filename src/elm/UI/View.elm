@@ -83,7 +83,9 @@ toSrcContour e =
     }
 
     float thetaDelta(float theta) {
-        float thetaSix = theta * 12.0;
+        if(u_whiteLines < 1.0)
+            return 100.0;
+        float thetaSix = theta * u_whiteLines;
         float thetaNeigh = 0.05;
         return abs(thetaSix - floor(thetaSix + 0.5)) / thetaNeigh;
     }
