@@ -6,7 +6,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Lazy
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), greeks)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), greeks, isCompletelyReal)
 import Expression.Parser
 import Expression.Utils
 import Html
@@ -21,19 +21,25 @@ draw expr =
         graph =
             Expression.Parser.parseGraph expr
 
-        srcExpr =
+        ( srcExpr, isCompletelyReal ) =
             case graph of
                 Explicit2D e ->
-                    toSrcImplicit <| Expression.Utils.minus Expression.Utils.y e
+                    ( toSrcImplicit <| Expression.Utils.minus Expression.Utils.y e, "0" )
 
                 Implicit2D l r ->
-                    toSrcImplicit <| Expression.Utils.minus l r
+                    ( toSrcImplicit <| Expression.Utils.minus l r, "0" )
 
                 Relation2D op l r ->
-                    toSrcRelation <| RelationOperation op l r
+                    ( toSrcRelation <| RelationOperation op l r, "0" )
 
                 Contour e ->
-                    toSrcContour e
+                    ( toSrcContour e
+                    , if Expression.isCompletelyReal e then
+                        "1"
+
+                      else
+                        "0"
+                    )
     in
     Element.html <|
         Html.node "nu-plot"
@@ -41,6 +47,7 @@ draw expr =
             , Html.Attributes.attribute "canvas-width" <| String.fromInt Theme.imageWidth
             , Html.Attributes.attribute "canvas-height" <| String.fromInt Theme.imageHeight
             , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
+            , Html.Attributes.attribute "completely-real" isCompletelyReal
             ]
             []
 
@@ -93,14 +100,19 @@ toSrcContour e =
 
     vec3 pixel(float deltaX, float deltaY, float x, float y) {
         vec2 z = """ ++ Expression.toGLString e ++ """;
-        
+
         float theta = atan(z.y, z.x) / radians(360.0);
         float td = thetaDelta(theta);
-        
-        float logRadius = log2(sqrt(z.x*z.x + z.y*z.y));
+
+        float radius = sqrt(z.x*z.x + z.y*z.y);
+        float logRadius = log2(radius);
         float powerRemainder = logRadius - floor(logRadius);
-        float squished = powerRemainder * 0.4 + 0.3;
-        
+        float squished = 0.7 - powerRemainder * 0.4;
+
+        if(u_completelyReal > 0.0) {
+            return hl2rgb(theta, squished);
+        }
+
         float l = td < 1.0 ? squished * td + (1.0 - td) : squished;
         return hl2rgb(theta, l);
     }
@@ -175,7 +187,7 @@ statusLine row =
                             ", implicit 2D"
 
                         Contour _ ->
-                            ", contour plot"
+                            ", domain coloring plot"
 
                         Relation2D _ _ _ ->
                             ", relation 2D"

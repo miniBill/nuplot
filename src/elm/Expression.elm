@@ -14,6 +14,7 @@ module Expression exposing
     , functionNameToString
     , getFreeVariables
     , greeks
+    , isCompletelyReal
     , relationToString
     , toGLString
     , toString
@@ -843,6 +844,9 @@ toGLStringPrec p expr =
         PAtom "i" ->
             "vec2(0,1)"
 
+        PAtom "pi" ->
+            "vec2(radians(180.0),0.0)"
+
         PAtom "e" ->
             "vec2(exp(1.0),0)"
 
@@ -988,3 +992,53 @@ ppartialSubstitute var val =
 pfullSubstitute : Dict String PrintExpression -> PrintExpression -> PrintExpression
 pfullSubstitute ctx e =
     List.foldl (\( k, v ) -> ppartialSubstitute k v) e (Dict.toList ctx)
+
+
+isCompletelyReal : Expression -> Bool
+isCompletelyReal =
+    let
+        go ctx e =
+            case e of
+                Variable v ->
+                    Dict.get v ctx |> Maybe.withDefault True
+
+                Integer _ ->
+                    True
+
+                Float _ ->
+                    True
+
+                UnaryOperation Negate c ->
+                    go ctx c
+
+                BinaryOperation Power b ex ->
+                    go ctx b && go ctx ex
+
+                BinaryOperation Division n d ->
+                    go ctx n && go ctx d
+
+                RelationOperation _ _ _ ->
+                    True
+
+                AssociativeOperation _ l m o ->
+                    go ctx l && go ctx m && List.all (go ctx) o
+
+                List es ->
+                    List.all (go ctx) es
+
+                Apply (KnownFunction Abs) [ _ ] ->
+                    True
+
+                Apply (KnownFunction Arg) [ _ ] ->
+                    True
+
+                Apply (KnownFunction _) [ c ] ->
+                    go ctx c
+
+                Apply _ _ ->
+                    False
+
+                Replace variables c ->
+                    go (List.foldl (\( k, v ) -> Dict.insert k (go ctx v)) ctx (Dict.toList variables)) c
+    in
+    go <| Dict.fromList [ ( "i", False ), ( "e", True ), ( "pi", True ) ]

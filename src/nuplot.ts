@@ -1,4 +1,5 @@
 import utils from "./shaders/utils.frag";
+import main from "./shaders/main.frag";
 
 export class NuPlot extends HTMLElement {
   wrapper: HTMLElement;
@@ -12,11 +13,12 @@ export class NuPlot extends HTMLElement {
     "vec3 pixel(float deltaX, float deltaY, float x, float y) { return vec3(0,0,0); }";
 
   whiteLines = 6;
+  completelyReal = 0;
 
   /* these hold the state of zoom operation */
   zoom_center!: number[];
   target_zoom_center!: number[];
-  zoom_size!: number;
+  viewport_width!: number;
   stop_zooming!: boolean;
   zoom_factor!: number;
   label: HTMLElement;
@@ -42,9 +44,9 @@ export class NuPlot extends HTMLElement {
   reinit_zoom() {
     this.zoom_center = [0.0, 0.0];
     this.target_zoom_center = [0.0, 0.0];
-    this.zoom_size = 2 * Math.PI;
+    this.viewport_width = 2 * Math.PI;
     this.stop_zooming = true;
-    this.zoom_factor = 5.0;
+    this.zoom_factor = 1;
   }
 
   private initCanvas() {
@@ -121,22 +123,7 @@ ${utils}
 
 ${expr}
 
-    void main() {
-      float minsize = min(u_canvasWidth, u_canvasHeight);
-      vec2 uv_centered = gl_FragCoord.xy - vec2(u_canvasWidth / 2.0, u_canvasHeight / 2.0);
-      vec2 uv = uv_centered / vec2(minsize, minsize);
-      vec2 c = u_zoomCenter - vec2(0.0,0.0) + uv * u_zoomSize;
-      float x = c.x;
-      float y = c.y;
-      bool escaped = false;
-      int iterations = 0;
-
-      float deltaX = u_zoomSize / u_canvasWidth;
-      float deltaY = u_zoomSize / u_canvasHeight;
-      vec3 px = pixel(deltaX, deltaY, x, y);
-
-      gl_FragColor = vec4(palette(deltaX, deltaY, x, y, px), 1.0);
-    }`;
+${main}`;
   }
 
   compileAndAttachShader(type: number, src: string): WebGLShader | null {
@@ -160,28 +147,17 @@ ${expr}
       // central wheel
       this.reinit_zoom();
     } else {
-      var x_part = e.offsetX / this.canvas.width;
-      var y_part = e.offsetY / this.canvas.height;
-      this.target_zoom_center[0] =
-        this.zoom_center[0] - this.zoom_size / 2.0 + x_part * this.zoom_size;
-      this.target_zoom_center[1] =
-        this.zoom_center[1] + this.zoom_size / 2.0 - y_part * this.zoom_size;
       this.stop_zooming = false;
       const zoom_speed = 0.02;
-      this.zoom_factor = e.buttons & 1 ? 1 - zoom_speed : 1 + 2 * zoom_speed;
+      this.zoom_factor = e.buttons & 1 ? 1 - zoom_speed : 1 + zoom_speed;
     }
     this.renderFrame();
     return true;
   }
 
   canvasOnmousemove(e: MouseEvent) {
-    if (this.stop_zooming) return;
-    var x_part = e.offsetX / this.canvas.width;
-    var y_part = e.offsetY / this.canvas.height;
-    this.target_zoom_center[0] =
-      this.zoom_center[0] - this.zoom_size / 2.0 + x_part * this.zoom_size;
-    this.target_zoom_center[1] =
-      this.zoom_center[1] + this.zoom_size / 2.0 - y_part * this.zoom_size;
+    this.target_zoom_center[0] = e.offsetX / this.canvas.width;
+    this.target_zoom_center[1] = 1 - e.offsetY / this.canvas.height;
 
     return true;
   }
@@ -197,7 +173,8 @@ ${expr}
 
     /* bind inputs & render frame */
     this.uniform1f("u_whiteLines", this.whiteLines);
-    this.uniform1f("u_zoomSize", this.zoom_size);
+    this.uniform1f("u_completelyReal", this.completelyReal);
+    this.uniform1f("u_viewportWidth", this.viewport_width);
     this.uniform1f("u_canvasWidth", this.canvas.width);
     this.uniform1f("u_canvasHeight", this.canvas.height);
     this.uniform2f("u_zoomCenter", this.zoom_center[0], this.zoom_center[1]);
@@ -208,13 +185,27 @@ ${expr}
 
     if (this.stop_zooming) return;
 
-    this.zoom_size *= this.zoom_factor;
+    const minx = this.zoom_center[0] - this.viewport_width / 2;
 
-    /* move zoom center towards target */
-    this.zoom_center[0] +=
-      0.1 * (this.target_zoom_center[0] - this.zoom_center[0]);
-    this.zoom_center[1] +=
-      0.1 * (this.target_zoom_center[1] - this.zoom_center[1]);
+    let viewport_height =
+      (this.viewport_width * this.gl.canvas.height) / this.gl.canvas.width;
+
+    const miny = this.zoom_center[1] - viewport_height / 2;
+
+    const targetX = this.target_zoom_center[0] * this.viewport_width + minx;
+    const targetY = this.target_zoom_center[1] * viewport_height + miny;
+
+    this.viewport_width *= this.zoom_factor;
+    viewport_height *= this.zoom_factor;
+
+    if (this.zoom_factor < 1) {
+      const newMinx =
+        targetX - this.target_zoom_center[0] * this.viewport_width;
+      this.zoom_center[0] = newMinx + this.viewport_width / 2;
+
+      const newMiny = targetY - this.target_zoom_center[1] * viewport_height;
+      this.zoom_center[1] = newMiny + viewport_height / 2;
+    }
 
     window.requestAnimationFrame(this.renderFrame.bind(this));
   }
@@ -248,6 +239,11 @@ ${expr}
       case "white-lines":
         if (!newValue) return;
         this.whiteLines = +newValue;
+        break;
+
+      case "completely-real":
+        if (!newValue) return;
+        this.completelyReal = +newValue;
         break;
 
       case "expr-src":
@@ -296,6 +292,12 @@ ${built}
   }
 
   static get observedAttributes() {
-    return ["expr-src", "canvas-width", "canvas-height", "white-lines"];
+    return [
+      "expr-src",
+      "canvas-width",
+      "canvas-height",
+      "white-lines",
+      "completely-real",
+    ];
   }
 }

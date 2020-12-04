@@ -1,13 +1,18 @@
 precision highp float;
 
 uniform vec2 u_zoomCenter;
-uniform float u_zoomSize;
+uniform float u_viewportWidth;
 uniform float u_canvasWidth;
 uniform float u_canvasHeight;
 uniform float u_whiteLines;
+uniform float u_completelyReal;
 
 vec2 i(){
     return vec2(0,1);
+}
+
+vec2 pi() {
+    return vec2(radians(180.0), 0.0);
 }
 
 vec2 by(vec2 a, vec2 b) {
@@ -32,6 +37,14 @@ vec2 from_polar(vec2 p) {
 
 vec2 cexp(vec2 v) {
     return vec2(cos(v.y) * exp(v.x), sin(v.y) * exp(v.x));
+}
+
+vec2 cabs(vec2 v) {
+    return vec2(sqrt(v.x*v.x + v.y*v.y), 0.0);
+}
+
+vec2 carg(vec2 v) {
+    return vec2(atan(v.y, v.x), 0);
 }
 
 vec2 cln(vec2 b) {
@@ -87,7 +100,7 @@ vec2 cpw(vec2 c, vec2 t, vec2 f) {
 }
 
 vec3 palette(float deltaX, float deltaY, float x, float y, vec3 pixel) {
-    vec3 yax = (x * (x - deltaX)) < 0.0 ? vec3(1,0,0) : vec3(0,0,0);
-    vec3 xax = (y * (y - deltaY)) < 0.0 ? vec3(0,1,0) : vec3(0,0,0);
+    vec3 yax = (x * (x - deltaX)) < 0.0 ? vec3(0,1,0) : vec3(0,0,0);
+    vec3 xax = (y * (y - deltaY)) < 0.0 ? vec3(1,0,0) : vec3(0,0,0);
     return max(pixel, max(yax, xax));
 }

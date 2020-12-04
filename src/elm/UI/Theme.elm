@@ -20,7 +20,7 @@ imageHeight =
 
 whiteLines : number
 whiteLines =
-    0
+    6
 
 
 row : List (Attribute msg) -> List (Element msg) -> Element msg

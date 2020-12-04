@@ -37,7 +37,7 @@ init _ =
             }
 
         raw =
-            [ ex "y = sin x"
+            [ ex "[zx+iy]z"
 
             --, ex "x² + y² = 25"
             --, ex "x² + y² < 25"
