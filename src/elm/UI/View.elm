@@ -1,13 +1,13 @@
 module UI.View exposing (view)
 
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, scale, scrollbarX, shrink, spacing, text, width, wrappedRow)
+import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, scale, shrink, spacing, text, width, wrappedRow)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Lazy
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), greeks)
-import Expression.NumericRange exposing (isCompletelyReal)
+import Expression.NumericRange
 import Expression.Parser
 import Expression.Utils
 import Html
