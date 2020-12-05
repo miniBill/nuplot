@@ -1,12 +1,13 @@
 module UI.View exposing (view)
 
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, scale, spacing, text, width, wrappedRow)
+import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, scale, scrollbarX, shrink, spacing, text, width, wrappedRow)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Lazy
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), greeks, isCompletelyReal)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), greeks)
+import Expression.NumericRange exposing (isCompletelyReal)
 import Expression.Parser
 import Expression.Utils
 import Html
@@ -34,7 +35,7 @@ draw expr =
 
                 Contour e ->
                     ( toSrcContour e
-                    , if Expression.isCompletelyReal e then
+                    , if Expression.NumericRange.isCompletelyReal e then
                         "1"
 
                       else
@@ -175,7 +176,7 @@ statusLine row =
                     Html.pre [] [ Html.text e ]
 
         Plotting e ->
-            Element.row []
+            Element.row [ width <| Element.maximum 200 shrink ]
                 [ text "Interpreted as: "
                 , viewExpression e
                 , text <|

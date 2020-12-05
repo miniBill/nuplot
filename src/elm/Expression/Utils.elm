@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, e, f, g, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, quaternaryFunc, sin_, sinh_, sqrt_, square, squash, squashHarder, ternaryFunc, triple, two, unaryFunc, vector, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, e, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, quaternaryFunc, sin_, sinh_, sqrt_, square, squash, squashHarder, ternaryFunc, triple, two, unaryFunc, vector, x, y, z, zero)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), visit)
 
@@ -148,6 +148,11 @@ ipow base exponent =
 sqrt_ : Expression -> Expression
 sqrt_ =
     unaryFunc Sqrt
+
+
+gra_ : Expression -> Expression
+gra_ =
+    unaryFunc Gra
 
 
 square : Expression -> Expression

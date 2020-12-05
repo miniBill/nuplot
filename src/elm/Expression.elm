@@ -14,10 +14,10 @@ module Expression exposing
     , functionNameToString
     , getFreeVariables
     , greeks
-    , isCompletelyReal
     , relationToString
     , toGLString
     , toString
+    , value
     , visit
     )
 
@@ -37,14 +37,14 @@ type Graph
 
 
 type Expression
-    = UnaryOperation UnaryOperation Expression
+    = Integer Int
+    | Float Float
+    | Variable String
+    | UnaryOperation UnaryOperation Expression
     | BinaryOperation BinaryOperation Expression Expression
     | RelationOperation RelationOperation Expression Expression
     | AssociativeOperation AssociativeOperation Expression Expression (List Expression)
     | Apply FunctionName (List Expression)
-    | Variable String
-    | Integer Int
-    | Float Float
     | Replace (Dict String Expression) Expression
     | List (List Expression)
 
@@ -748,68 +748,95 @@ relationValue o ((Complex lv _) as lc) ((Complex rv _) as rc) =
 applyValue : Dict String Complex -> FunctionName -> List Expression -> Complex
 applyValue context name args =
     case ( name, args ) of
-        ( KnownFunction Sin, [ e ] ) ->
-            Complex.sin <| innerValue context e
+        ( KnownFunction Sin, e ) ->
+            simple context e Complex.sin
 
-        ( KnownFunction Cos, [ e ] ) ->
-            Complex.cos <| innerValue context e
+        ( KnownFunction Cos, e ) ->
+            simple context e Complex.cos
 
-        ( KnownFunction Tan, [ e ] ) ->
-            Complex.tan <| innerValue context e
+        ( KnownFunction Tan, e ) ->
+            simple context e Complex.tan
 
-        ( KnownFunction Sinh, [ e ] ) ->
-            Complex.sinh <| innerValue context e
+        ( KnownFunction Sinh, e ) ->
+            simple context e Complex.sinh
 
-        ( KnownFunction Cosh, [ e ] ) ->
-            Complex.cosh <| innerValue context e
+        ( KnownFunction Cosh, e ) ->
+            simple context e Complex.cosh
 
-        ( KnownFunction Tanh, [ e ] ) ->
-            Complex.tanh <| innerValue context e
+        ( KnownFunction Tanh, e ) ->
+            simple context e Complex.tanh
 
-        ( KnownFunction Asin, [ e ] ) ->
-            Complex.asin <| innerValue context e
+        ( KnownFunction Asin, e ) ->
+            simple context e Complex.asin
 
-        ( KnownFunction Acos, [ e ] ) ->
-            Complex.acos <| innerValue context e
+        ( KnownFunction Acos, e ) ->
+            simple context e Complex.acos
 
-        ( KnownFunction Atan, [ e ] ) ->
-            Complex.atan <| innerValue context e
+        ( KnownFunction Atan, e ) ->
+            simple context e Complex.atan
 
-        ( KnownFunction Atan2, [ y, x ] ) ->
-            Complex.atan2 (innerValue context y) (innerValue context x)
+        ( KnownFunction Atan2, e ) ->
+            case e of
+                [ y, x ] ->
+                    Complex.atan2 (innerValue context y) (innerValue context x)
 
-        ( KnownFunction Sqrt, [ e ] ) ->
-            Complex.sqrt <| innerValue context e
+                _ ->
+                    Complex.zero
 
-        ( KnownFunction Ln, [ e ] ) ->
-            Complex.ln <| innerValue context e
+        ( KnownFunction Sqrt, e ) ->
+            simple context e Complex.sqrt
 
-        ( KnownFunction Arg, [ e ] ) ->
-            Complex.fromReal <| Complex.arg <| innerValue context e
+        ( KnownFunction Ln, e ) ->
+            simple context e Complex.ln
 
-        ( KnownFunction Re, [ e ] ) ->
-            Complex.re <| innerValue context e
+        ( KnownFunction Arg, e ) ->
+            simple context e (Complex.fromReal << Complex.arg)
 
-        ( KnownFunction Im, [ e ] ) ->
-            Complex.im <| innerValue context e
+        ( KnownFunction Re, e ) ->
+            simple context e Complex.re
 
-        ( KnownFunction Abs, [ e ] ) ->
-            Complex.fromReal <| Complex.abs <| innerValue context e
+        ( KnownFunction Im, e ) ->
+            simple context e Complex.im
 
-        ( KnownFunction Log10, [ e ] ) ->
-            Complex.div
-                (Complex.ln <| innerValue context e)
-                (Complex.ln <| Complex.fromReal 10)
+        ( KnownFunction Abs, e ) ->
+            simple context e (Complex.fromReal << Complex.abs)
 
-        ( KnownFunction Exp, [ e ] ) ->
-            Complex.exp <| innerValue context e
+        ( KnownFunction Log10, e ) ->
+            simple context e <| \v -> Complex.div v (Complex.ln <| Complex.fromReal 10)
 
-        ( KnownFunction Pw, [ c, t, f ] ) ->
-            if Complex.zero == innerValue context c then
-                innerValue context f
+        ( KnownFunction Exp, e ) ->
+            simple context e Complex.exp
 
-            else
-                innerValue context t
+        ( KnownFunction Pw, e ) ->
+            case e of
+                [ c, t, f ] ->
+                    if Complex.zero == innerValue context c then
+                        innerValue context f
+
+                    else
+                        innerValue context t
+
+                _ ->
+                    Complex.zero
+
+        ( KnownFunction Gra, _ ) ->
+            Complex.zero
+
+        ( KnownFunction Dd, _ ) ->
+            Complex.zero
+
+        ( KnownFunction Ii, _ ) ->
+            Complex.zero
+
+        ( UserFunction _, _ ) ->
+            Complex.zero
+
+
+simple : Dict String Complex -> List Expression -> (Complex -> Complex) -> Complex
+simple context args f =
+    case args of
+        [ e ] ->
+            f <| innerValue context e
 
         _ ->
             Complex.zero
@@ -992,53 +1019,3 @@ ppartialSubstitute var val =
 pfullSubstitute : Dict String PrintExpression -> PrintExpression -> PrintExpression
 pfullSubstitute ctx e =
     List.foldl (\( k, v ) -> ppartialSubstitute k v) e (Dict.toList ctx)
-
-
-isCompletelyReal : Expression -> Bool
-isCompletelyReal =
-    let
-        go ctx e =
-            case e of
-                Variable v ->
-                    Dict.get v ctx |> Maybe.withDefault True
-
-                Integer _ ->
-                    True
-
-                Float _ ->
-                    True
-
-                UnaryOperation Negate c ->
-                    go ctx c
-
-                BinaryOperation Power b ex ->
-                    go ctx b && go ctx ex
-
-                BinaryOperation Division n d ->
-                    go ctx n && go ctx d
-
-                RelationOperation _ _ _ ->
-                    True
-
-                AssociativeOperation _ l m o ->
-                    go ctx l && go ctx m && List.all (go ctx) o
-
-                List es ->
-                    List.all (go ctx) es
-
-                Apply (KnownFunction Abs) [ _ ] ->
-                    True
-
-                Apply (KnownFunction Arg) [ _ ] ->
-                    True
-
-                Apply (KnownFunction _) [ c ] ->
-                    go ctx c
-
-                Apply _ _ ->
-                    False
-
-                Replace variables c ->
-                    go (List.foldl (\( k, v ) -> Dict.insert k (go ctx v)) ctx (Dict.toList variables)) c
-    in
-    go <| Dict.fromList [ ( "i", False ), ( "e", True ), ( "pi", True ) ]

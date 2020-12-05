@@ -60,12 +60,16 @@ div l r =
 
 
 power : Complex -> Complex -> Complex
-power b z =
-    let
-        ( r, t ) =
-            toPolar b
-    in
-    exp <| by z <| Complex (logBase e r) t
+power ((Complex br bi) as b) ((Complex zr zi) as z) =
+    if bi == 0 && zi == 0 then
+        fromReal (br ^ zr)
+
+    else
+        let
+            ( r, t ) =
+                toPolar b
+        in
+        exp <| by z <| Complex (logBase e r) t
 
 
 abs : Complex -> Float

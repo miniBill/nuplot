@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, f, g, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, vector, x, y, z)
+import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, unaryFunc, vector, x, y, z)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -143,7 +143,7 @@ tests =
                   )
                 ]
             )
-            (unaryFunc "gra" <| List [ div x gg, div y gg ])
+            (gra_ <| List [ div x gg, div y gg ])
       , "[g = (x*x - y*y)^(3/2) + 1/10] gra{x/(g*g), y/(g*g)}"
       )
     , straight "2x" (by [ two, x ])

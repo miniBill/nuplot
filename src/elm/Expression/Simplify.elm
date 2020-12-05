@@ -1,7 +1,7 @@
 module Expression.Simplify exposing (simplify)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), UnaryOperation(..), getFreeVariables)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), getFreeVariables)
 import Expression.Derivative
 import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
 import List
@@ -107,54 +107,63 @@ innerSimplify context expr =
                 expr
 
 
-innerSimplifyApply : Dict String Expression -> String -> List Expression -> Expression
-innerSimplifyApply context name args =
-    case ( name, List.map (innerSimplify context) args ) of
-        ( "sqrt", [ Integer i ] as sargs ) ->
-            let
-                a =
-                    abs i
+innerSimplifyApply : Dict String Expression -> FunctionName -> List Expression -> Expression
+innerSimplifyApply context fname args =
+    let
+        sargs =
+            List.map (innerSimplify context) args
+    in
+    case fname of
+        UserFunction _ ->
+            Apply fname sargs
 
-                f =
-                    toFloat a
+        KnownFunction name ->
+            case ( name, sargs ) of
+                ( Sqrt, [ Integer i ] ) ->
+                    let
+                        a =
+                            abs i
 
-                s =
-                    sqrt f
+                        f =
+                            toFloat a
 
-                r =
-                    truncate s
-            in
-            if r * r == a then
-                if i < 0 then
-                    icomplex 0 r
+                        s =
+                            sqrt f
 
-                else
-                    Integer r
+                        r =
+                            truncate s
+                    in
+                    if r * r == a then
+                        if i < 0 then
+                            icomplex 0 r
 
-            else
-                Apply name sargs
+                        else
+                            Integer r
 
-        ( "sinh", [ AssociativeOperation Multiplication l r o ] as sargs ) ->
-            case extract (findSpecificVariable "i") (l :: r :: o) of
-                Just ( _, rest ) ->
-                    innerSimplify context <| by [ i, sin_ <| by rest ]
+                    else
+                        Apply fname sargs
 
-                Nothing ->
-                    Apply name sargs
+                ( Sinh, [ AssociativeOperation Multiplication l r o ] ) ->
+                    case extract (findSpecificVariable "i") (l :: r :: o) of
+                        Just ( _, rest ) ->
+                            innerSimplify context <| by [ i, sin_ <| by rest ]
 
-        ( "cosh", [ AssociativeOperation Multiplication l r o ] as sargs ) ->
-            case extract (findSpecificVariable "i") (l :: r :: o) of
-                Just ( _, rest ) ->
-                    innerSimplify context <| cos_ <| by rest
+                        Nothing ->
+                            Apply fname sargs
 
-                Nothing ->
-                    Apply name sargs
+                ( Cosh, [ AssociativeOperation Multiplication l r o ] ) ->
+                    case extract (findSpecificVariable "i") (l :: r :: o) of
+                        Just ( _, rest ) ->
+                            innerSimplify context <| cos_ <| by rest
 
-        ( "dd", [ expr, Variable var ] ) ->
-            innerSimplify context <| Expression.Derivative.derivative var expr
+                        Nothing ->
+                            Apply fname sargs
 
-        ( _, sargs ) ->
-            Apply name sargs
+                ( Dd, [ expr, Variable var ] ) ->
+                    innerSimplify context <| Expression.Derivative.derivative var expr
+
+                _ ->
+                    Apply fname sargs
 
 
 innerSimplifyDivision : Dict String Expression -> Expression -> Expression -> Expression
