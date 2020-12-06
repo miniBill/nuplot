@@ -12,41 +12,41 @@ getGlsl graph =
         ( requirements, srcExpr ) =
             extract "" graph
 
-        extract f g =
+        extract prefix g =
             case g of
                 Explicit2D c ->
                     let
                         e =
                             Expression.Utils.minus Expression.Utils.y c
                     in
-                    ( e, toSrcImplicit f e )
+                    ( e, toSrcImplicit prefix e )
 
                 Implicit2D l r ->
                     let
                         e =
                             Expression.Utils.minus l r
                     in
-                    ( e, toSrcImplicit f e )
+                    ( e, toSrcImplicit prefix e )
 
                 Relation2D op l r ->
                     let
                         e =
                             RelationOperation op l r
                     in
-                    ( e, toSrcRelation f e )
+                    ( e, toSrcRelation prefix e )
 
                 Contour e ->
-                    ( e, toSrcContour f e )
+                    ( e, toSrcContour prefix e )
 
                 GraphList l ->
                     let
                         ( es, srcs ) =
                             l
-                                |> List.indexedMap (\i -> extract (f ++ "_" ++ String.fromInt i))
+                                |> List.indexedMap (\i -> extract (prefix ++ "_" ++ String.fromInt i))
                                 |> List.unzip
 
                         addPixel i =
-                            "res = max(res, pixel" ++ f ++ "_" ++ String.fromInt i ++ "(deltaX, deltaY, x, y));"
+                            "res = max(res, pixel" ++ prefix ++ "_" ++ String.fromInt i ++ "(deltaX, deltaY, x, y));"
 
                         inner =
                             l
@@ -55,7 +55,7 @@ getGlsl graph =
 
                         src =
                             """
-                                vec3 pixel(float deltaX, float deltaY, float x, float y) {
+                                vec3 pixel""" ++ prefix ++ """(float deltaX, float deltaY, float x, float y) {
                                     vec3 res = vec3(0,0,0);
                                     """ ++ inner ++ """
                                     return res;
@@ -576,20 +576,28 @@ knownFunctionDeps =
     go
 
 
+epsilon : Float
+epsilon =
+    0.00001
+
+
 toSrcImplicit : String -> Expression -> String
 toSrcImplicit suffix e =
     """
-    bool f""" ++ suffix ++ """(float x, float y) {
+    float f""" ++ suffix ++ """(float x, float y) {
         vec2 complex = """ ++ Expression.toGLString e ++ """;
-        return complex.x > 0.0;
+        if(abs(complex.y) > """ ++ String.fromFloat epsilon ++ """) {
+            return -1.0;
+        }
+        return complex.x > 0.0 ? 1.0 : 0.0;
     }
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        bool h = f""" ++ suffix ++ """(x,y);
-        bool l = f""" ++ suffix ++ """(x - deltaX,y);
-        bool ul = f""" ++ suffix ++ """(x - deltaX,y - deltaY);
-        bool u = f""" ++ suffix ++ """(x,y - deltaY);
-        return (h != l || h != u || h != ul) ? vec3(1,1,1) : vec3(0,0,0);
+        float h = f""" ++ suffix ++ """(x,y);
+        float l = f""" ++ suffix ++ """(x - deltaX,y);
+        float ul = f""" ++ suffix ++ """(x - deltaX,y - deltaY);
+        float u = f""" ++ suffix ++ """(x,y - deltaY);
+        return (h != l || h != u || h != ul) && (h >= 0.0 && l >= 0.0 && ul >= 0.0 && u >= 0.0) ? vec3(1,1,1) : vec3(0,0,0);
     }
     """
 
@@ -599,7 +607,7 @@ toSrcRelation suffix e =
     """
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
         vec2 complex = """ ++ Expression.toGLString e ++ """;
-        return complex.x > 0.0 ? vec3(0.8,0.5,0.5) : vec3(0,0,0);
+        return complex.x > 0.0 && abs(complex.y) < """ ++ String.fromFloat epsilon ++ """ ? vec3(0.8,0.5,0.5) : vec3(0,0,0);
     }
     """
 
