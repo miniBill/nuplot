@@ -68,8 +68,28 @@ innerValue context expr =
 
 plus : Value -> Value -> Value
 plus =
+    let
+        inner u v =
+            case ( u, v ) of
+                ( Float f, _ ) ->
+                    if f == 0 then
+                        v
+
+                    else
+                        AssociativeOperation Addition u v []
+
+                ( _, Float f ) ->
+                    if f == 0 then
+                        u
+
+                    else
+                        AssociativeOperation Addition u v []
+
+                _ ->
+                    AssociativeOperation Addition u v []
+    in
     complexMap2
-        { symbolic = \u v -> AssociativeOperation Addition u v []
+        { symbolic = inner
         , complex = Complex.plus
         , list = Nothing
         }
@@ -77,8 +97,34 @@ plus =
 
 by : Value -> Value -> Value
 by =
+    let
+        inner u v =
+            case ( u, v ) of
+                ( Float f, _ ) ->
+                    if f == 0 then
+                        Float 0
+
+                    else if f == 1 then
+                        v
+
+                    else
+                        AssociativeOperation Multiplication u v []
+
+                ( _, Float f ) ->
+                    if f == 0 then
+                        Float 0
+
+                    else if f == 1 then
+                        u
+
+                    else
+                        AssociativeOperation Multiplication u v []
+
+                _ ->
+                    AssociativeOperation Multiplication u v []
+    in
     complexMap2
-        { symbolic = \u v -> AssociativeOperation Multiplication u v []
+        { symbolic = inner
         , complex = Complex.by
         , list = Just matrixMultiplication
         }
