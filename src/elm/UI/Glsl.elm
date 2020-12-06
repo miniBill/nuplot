@@ -81,9 +81,8 @@ getFunctionsGlsl e =
 
         functionsGlsl =
             functions
-                |> List.sortBy (KnownFunction >> Expression.functionNameToString)
-                |> List.uniqueBy (KnownFunction >> Expression.functionNameToString)
-                |> List.map (getFunctionGlsl >> deindent 12)
+                |> List.gatherEqualsBy (KnownFunction >> Expression.functionNameToString)
+                |> List.map (Tuple.first >> getFunctionGlsl >> deindent 12)
                 |> withHeader "Functions"
 
         constantsGlsl =
@@ -328,7 +327,13 @@ getFunctionGlsl name =
             """
 
         Asin ->
-            Debug.todo "Asin"
+            """
+            vec2 casin(vec2 z) {
+                vec2 s = csqrt(vec2(1, 0) - by(z, z));
+                vec2 arg = s - by(i(), z);
+                return by(i(), cln(arg));
+            }
+            """
 
         Acos ->
             Debug.todo "Acos"
@@ -485,6 +490,12 @@ knownFunctionDeps =
                             , operations = [ OpDivision ]
                             }
 
+                        Asin ->
+                            { constants = [ "i" ]
+                            , functions = [ Sqrt, Ln ]
+                            , operations = [ OpMultiplication ]
+                            }
+
                         Atan2 ->
                             { emptyRequirements | constants = [ "i" ] }
 
@@ -497,9 +508,9 @@ knownFunctionDeps =
                         _ ->
                             emptyRequirements
             in
-            List.foldl mergeRequirements
+            mergeRequirements
+                (List.foldl mergeRequirements emptyRequirements (List.map go base.functions))
                 { base | functions = name :: base.functions }
-                (List.map go base.functions)
     in
     go
 
