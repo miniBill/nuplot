@@ -130,6 +130,9 @@ operationToString op =
         OpCosh ->
             "cosh"
 
+        OpTanh ->
+            "tanh"
+
 
 type alias Requirements =
     { constants : List String
@@ -234,6 +237,7 @@ type Operation
     | OpPower
     | OpSinh
     | OpCosh
+    | OpTanh
 
 
 getOperationGlsl : Operation -> String
@@ -280,6 +284,13 @@ getOperationGlsl op =
             }
             """
 
+        OpTanh ->
+            """
+            float tanh(float x) {
+                return (exp(x) - exp(-x)) / (exp(x) + exp(-x));
+            }
+            """
+
 
 getConstantGlsl : String -> String
 getConstantGlsl c =
@@ -308,6 +319,9 @@ getFunctionGlsl name =
         Sin ->
             """
             vec2 csin(vec2 z) {
+                if(z.y == 0.0) {
+                    return vec2(sin(z.x), 0);
+                }
                 return vec2(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y));
             }
             """
@@ -315,6 +329,9 @@ getFunctionGlsl name =
         Cos ->
             """
             vec2 ccos(vec2 z) {
+                if(z.y == 0.0) {
+                    return vec2(cos(z.x), 0);
+                }
                 return vec2(cos(z.x) * cosh(z.y), sin(z.x) * sinh(z.y));
             }
             """
@@ -322,6 +339,9 @@ getFunctionGlsl name =
         Tan ->
             """
             vec2 ctan(vec2 z) {
+                if(z.y == 0.0) {
+                    return vec2(tan(z.x), 0);
+                }
                 return div(csin(z), ccos(z));
             }
             """
@@ -336,10 +356,24 @@ getFunctionGlsl name =
             """
 
         Acos ->
-            Debug.todo "Acos"
+            """
+            vec2 cacos(vec2 z) {
+                return pi() * 0.5 - casin(z);
+            }
+            """
 
         Atan ->
-            Debug.todo "Atan"
+            """
+            vec2 catan(vec2 z) {
+                if(z.y == 0.0) {
+                    return vec2(atan(z.x), 0);
+                }
+                vec2 o = vec2(1, 0);
+                vec2 iz = by(i(), z);
+                vec2 l = div(o + iz, o - iz);
+                return -0.5 * by(i(), l);
+            }
+            """
 
         Atan2 ->
             """
@@ -352,6 +386,9 @@ getFunctionGlsl name =
         Sinh ->
             """
             vec2 csinh(vec2 z) {
+                if(z.y == 0.0) {
+                    return vec2(sinh(z.x), 0);
+                }
                 return by(-i(), csin(by(i(), z)));
             }
             """
@@ -359,6 +396,9 @@ getFunctionGlsl name =
         Cosh ->
             """
             vec2 ccosh(vec2 z) {
+                if(z.y == 0.0) {
+                    return vec2(cosh(z.x), 0);
+                }
                 return ccos(by(i(), z));
             }
             """
@@ -366,20 +406,29 @@ getFunctionGlsl name =
         Tanh ->
             """
             vec2 ctanh(vec2 z) {
+                if(z.y == 0.0) {
+                    return vec2(tanh(z.x), 0);
+                }
                 return div(csinh(z), ccosh(z));
             }
             """
 
         Abs ->
             """
-            vec2 cabs(vec2 v) {
-                return vec2(sqrt(v.x*v.x + v.y*v.y), 0.0);
+            vec2 cabs(vec2 z) {
+                if(z.y == 0.0) {
+                    return vec2(abs(z.x), 0);
+                }
+                return vec2(sqrt(z.x*z.x + z.y*z.y), 0.0);
             }
             """
 
         Sqrt ->
             """
             vec2 csqrt(vec2 z) {
+                if(z.y == 0.0 && z.x >= 0.0) {
+                    return vec2(sqrt(z.x), 0);
+                }
                 float r = pow(z.x*z.x+z.y*z.y, 0.25);
                 float t = atan(z.y, z.x) * 0.5;
                 return vec2(r * cos(t), r * sin(t));
@@ -469,31 +518,43 @@ knownFunctionDeps =
                         Tan ->
                             { constants = []
                             , functions = [ Sin, Cos ]
-                            , operations = [ OpDivision ]
+                            , operations = [ OpDivision, OpTanh ]
                             }
 
                         Sinh ->
                             { constants = [ "i" ]
                             , functions = [ Sin ]
-                            , operations = [ OpMultiplication ]
+                            , operations = [ OpMultiplication, OpSinh ]
                             }
 
                         Cosh ->
                             { constants = [ "i" ]
                             , functions = [ Cos ]
-                            , operations = [ OpMultiplication ]
+                            , operations = [ OpMultiplication, OpCosh ]
                             }
 
                         Tanh ->
                             { constants = []
                             , functions = [ Sinh, Cosh ]
-                            , operations = [ OpDivision ]
+                            , operations = [ OpDivision, OpTanh ]
                             }
 
                         Asin ->
                             { constants = [ "i" ]
                             , functions = [ Sqrt, Ln ]
                             , operations = [ OpMultiplication ]
+                            }
+
+                        Acos ->
+                            { constants = [ "pi" ]
+                            , functions = [ Asin ]
+                            , operations = []
+                            }
+
+                        Atan ->
+                            { constants = [ "i" ]
+                            , functions = [ Ln ]
+                            , operations = [ OpDivision, OpMultiplication ]
                             }
 
                         Atan2 ->
