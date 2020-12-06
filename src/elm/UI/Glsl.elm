@@ -200,56 +200,6 @@ mergeRequirements l r =
     }
 
 
-knownFunctionDeps : KnownFunction -> Requirements
-knownFunctionDeps =
-    let
-        go name =
-            let
-                base =
-                    case name of
-                        Sin ->
-                            { emptyRequirements | operations = [ OpSinh, OpCosh ] }
-
-                        Cos ->
-                            { emptyRequirements | operations = [ OpSinh, OpCosh ] }
-
-                        Tan ->
-                            { constants = []
-                            , functions = [ Sin, Cos ]
-                            , operations = [ OpDivision ]
-                            }
-
-                        Sinh ->
-                            { constants = [ "i" ]
-                            , functions = [ Sin ]
-                            , operations = [ OpMultiplication ]
-                            }
-
-                        Cosh ->
-                            { constants = [ "i" ]
-                            , functions = [ Cos ]
-                            , operations = [ OpMultiplication ]
-                            }
-
-                        Tanh ->
-                            { constants = []
-                            , functions = [ Sinh, Cosh ]
-                            , operations = [ OpDivision ]
-                            }
-
-                        Atan2 ->
-                            { emptyRequirements | constants = [ "i" ] }
-
-                        _ ->
-                            emptyRequirements
-            in
-            List.foldl mergeRequirements
-                { base | functions = name :: base.functions }
-                (List.map go base.functions)
-    in
-    go
-
-
 type Operation
     = OpAddition
     | OpMultiplication
@@ -413,7 +363,11 @@ getFunctionGlsl name =
             """
 
         Log10 ->
-            Debug.todo "Log10"
+            """
+            vec2 clog10(vec2 b) {
+                return div(cln(b), cln(vec2(10, 0)));
+            }
+            """
 
         Exp ->
             """
@@ -444,13 +398,13 @@ getFunctionGlsl name =
             """
 
         Gra ->
-            Debug.todo "Gra"
+            ""
 
         Dd ->
-            Debug.todo "Dd"
+            ""
 
         Ii ->
-            Debug.todo "Ii"
+            ""
 
         Pw ->
             """
@@ -460,10 +414,66 @@ getFunctionGlsl name =
             """
 
         Plot ->
-            Debug.todo "Plot"
+            ""
 
         Simplify ->
-            Debug.todo "Simplify"
+            ""
+
+
+knownFunctionDeps : KnownFunction -> Requirements
+knownFunctionDeps =
+    let
+        go name =
+            let
+                base =
+                    case name of
+                        Sin ->
+                            { emptyRequirements | operations = [ OpSinh, OpCosh ] }
+
+                        Cos ->
+                            { emptyRequirements | operations = [ OpSinh, OpCosh ] }
+
+                        Tan ->
+                            { constants = []
+                            , functions = [ Sin, Cos ]
+                            , operations = [ OpDivision ]
+                            }
+
+                        Sinh ->
+                            { constants = [ "i" ]
+                            , functions = [ Sin ]
+                            , operations = [ OpMultiplication ]
+                            }
+
+                        Cosh ->
+                            { constants = [ "i" ]
+                            , functions = [ Cos ]
+                            , operations = [ OpMultiplication ]
+                            }
+
+                        Tanh ->
+                            { constants = []
+                            , functions = [ Sinh, Cosh ]
+                            , operations = [ OpDivision ]
+                            }
+
+                        Atan2 ->
+                            { emptyRequirements | constants = [ "i" ] }
+
+                        Log10 ->
+                            { constants = []
+                            , functions = [ Ln ]
+                            , operations = [ OpDivision ]
+                            }
+
+                        _ ->
+                            emptyRequirements
+            in
+            List.foldl mergeRequirements
+                { base | functions = name :: base.functions }
+                (List.map go base.functions)
+    in
+    go
 
 
 toSrcImplicit : Expression -> String
