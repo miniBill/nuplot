@@ -81,21 +81,25 @@ inputLine index row =
 
 statusLine : Row -> Element msg
 statusLine row =
-    case row.output of
-        Empty ->
-            none
+    if String.isEmpty row.input then
+        none
 
-        Typing _ ->
-            text "Typing..."
+    else
+        case row.output of
+            Empty ->
+                none
 
-        ParseError e ->
-            viewError e
+            Typing _ ->
+                text "Typing..."
 
-        Parsed e ->
-            Element.row [ width <| Element.maximum 200 shrink ]
-                [ text "Interpreted as: "
-                , viewExpression e
-                ]
+            ParseError e ->
+                viewError e
+
+            Parsed e ->
+                Element.row [ width <| Element.maximum 200 shrink ]
+                    [ text "Interpreted as: "
+                    , viewExpression e
+                    ]
 
 
 viewError : String -> Element msg

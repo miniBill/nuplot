@@ -9,8 +9,21 @@ export function init(Elm: ElmType) {
     return;
   }
 
-  Elm.UI.init({
+  var saved: { [key: string]: string } = {};
+  for (var i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key === null) continue;
+    const value = localStorage.getItem(key);
+    if (value === null) continue;
+    saved[key] = value;
+  }
+
+  var app = Elm.UI.init({
     node: node,
-    flags: {},
+    flags: saved,
+  });
+  app.ports.save.subscribe((param) => {
+    const { key, value } = param;
+    localStorage.setItem(key, value);
   });
 }

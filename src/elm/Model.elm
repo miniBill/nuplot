@@ -2,10 +2,11 @@ module Model exposing (Flags, Model, Msg(..), Output(..), Row, emptyRow)
 
 import Bounce exposing (Bounce)
 import Expression exposing (Expression)
+import Json.Decode as JD
 
 
 type alias Flags =
-    {}
+    JD.Value
 
 
 type alias Model =

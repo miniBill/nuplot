@@ -1,19 +1,23 @@
-module UI exposing (main)
+port module UI exposing (main)
 
 import Bounce
 import Browser
 import Browser.Dom
 import Browser.Events
+import Dict
 import Element exposing (Element, fill, height, width)
 import Element.Lazy
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import Expression.Parser
-import Expression.Utils exposing (zero)
+import Json.Decode as JD
 import List.Extra as List
 import Model exposing (Flags, Model, Msg(..), Output(..))
 import Task
 import UI.RowView
 import UI.Theme as Theme
+
+
+port save : { key : String, value : String } -> Cmd msg
 
 
 main : Program Flags Model Msg
@@ -33,24 +37,41 @@ main =
 
 
 init : Flags -> ( Model, Cmd Msg )
-init _ =
+init flags =
     let
+        parsed =
+            flags
+                |> JD.decodeValue (JD.dict JD.string)
+                |> Result.map (Dict.filter (\k _ -> String.toInt k /= Nothing))
+                |> Result.map Dict.values
+
         ex x =
             { input = x
-            , output = Parsed <| Result.withDefault zero <| Expression.Parser.parse x
+            , output = parseOrError x
             , bounce = Bounce.init
             }
 
-        raw =
-            [ ex "{{plotsinx, plot(x<y)}, {plot(x²+y²=3), [zx+iy]plotexp(1/z)}}"
-            , Model.emptyRow
+        default =
+            [ "{{plotsinx, plot(x<y)}, {plot(x²+y²=3), [zx+iy]plotexp(1/z)}}"
             ]
 
         measure =
             Browser.Dom.getViewport
                 |> Task.map (.viewport >> .width >> floor)
     in
-    ( { rows = raw
+    ( { rows =
+            parsed
+                |> Result.withDefault []
+                |> List.filterNot String.isEmpty
+                |> (\l ->
+                        if List.isEmpty l then
+                            default
+
+                        else
+                            l
+                   )
+                |> (\l -> l ++ [ "" ])
+                |> List.map ex
       , pageWidth = 1024
       }
     , Task.perform Width measure
@@ -82,11 +103,7 @@ update msg model =
                 |> List.filter (not << String.isEmpty << .input)
                 |> (\l ->
                         ( { model | rows = l ++ [ Model.emptyRow ] }
-                        , if String.isEmpty input then
-                            Cmd.none
-
-                          else
-                            Bounce.delay 1000 (BounceMsg row)
+                        , Bounce.delay 1000 (BounceMsg row)
                         )
                    )
 
@@ -110,22 +127,33 @@ update msg model =
                                     , bounce = newBounce
                                     , output =
                                         if Bounce.steady newBounce then
-                                            case Expression.Parser.parse input of
-                                                Ok e ->
-                                                    Parsed e
-
-                                                Err e ->
-                                                    ParseError <| Expression.Parser.errorsToString input e
+                                            parseOrError input
 
                                         else
                                             toTyping output
                                     }
                       }
-                    , Cmd.none
+                    , model.rows
+                        |> List.indexedMap (\i r -> save { key = String.fromInt i, value = r.input })
+                        |> Cmd.batch
                     )
 
         Width width ->
             ( { model | pageWidth = width }, Cmd.none )
+
+
+parseOrError : String -> Output
+parseOrError input =
+    if String.isEmpty input then
+        Empty
+
+    else
+        case Expression.Parser.parse input of
+            Ok e ->
+                Parsed e
+
+            Err e ->
+                ParseError <| Expression.Parser.errorsToString input e
 
 
 toTyping : Output -> Output
