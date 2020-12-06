@@ -8,7 +8,6 @@ import Element.Font as Font
 import Element.Input as Input
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), greeks)
 import Expression.NumericRange
-import Expression.Utils
 import Expression.Value
 import Html
 import Html.Attributes

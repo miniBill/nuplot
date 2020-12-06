@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, e, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, quaternaryFunc, sin_, sinh_, sqrt_, square, squash, ternaryFunc, triple, two, unaryFunc, vector, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, e, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, triple, two, vector, x, y, z, zero)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), visit)
 
@@ -98,11 +98,6 @@ unaryFunc name arg =
 binaryFunc : KnownFunction -> Expression -> Expression -> Expression
 binaryFunc name arg1 arg2 =
     Apply (KnownFunction name) [ arg1, arg2 ]
-
-
-ternaryFunc : KnownFunction -> Expression -> Expression -> Expression -> Expression
-ternaryFunc name arg1 arg2 arg3 =
-    Apply (KnownFunction name) [ arg1, arg2, arg3 ]
 
 
 quaternaryFunc : KnownFunction -> Expression -> Expression -> Expression -> Expression -> Expression

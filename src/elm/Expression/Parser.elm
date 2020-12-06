@@ -3,10 +3,10 @@ module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToStrin
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables)
 import Expression.Cleaner as Cleaner
-import Expression.Utils exposing (by, div, minus, negate_, plus, pow, squash, vector)
+import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
 import List
 import List.Extra as List
-import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), symbol)
+import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
 import Set
 import Trie
 

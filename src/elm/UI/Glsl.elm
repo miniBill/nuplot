@@ -1,7 +1,7 @@
 module UI.Glsl exposing (getGlsl)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), toGLString)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..))
 import Expression.Utils
 import List.Extra as List
 
