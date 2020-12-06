@@ -42,8 +42,7 @@ init _ =
             }
 
         raw =
-            [ ex "plotsqrtx"
-            , ex "plot{2x,3x}"
+            [ ex "{{plotsinx, plot(x<y)}, {plot(x²+y²=3), [zx+iy]plotexp(1/z)}}"
             , Model.emptyRow
             ]
 
