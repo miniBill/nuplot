@@ -177,20 +177,21 @@ collectRequirements e =
         UnaryOperation _ c ->
             collectRequirements c
 
-        BinaryOperation op l r ->
+        BinaryOperation Power l r ->
             let
                 c =
                     collectRequirementsOnList [ l, r ]
-
-                op_ =
-                    case op of
-                        Power ->
-                            OpPower
-
-                        Division ->
-                            OpDivision
             in
-            { c | operations = op_ :: c.operations }
+            mergeRequirements
+                (knownFunctionDeps Ln)
+                { c | operations = OpPower :: c.operations }
+
+        BinaryOperation Division l r ->
+            let
+                c =
+                    collectRequirementsOnList [ l, r ]
+            in
+            { c | operations = OpDivision :: c.operations }
 
         RelationOperation _ l r ->
             collectRequirementsOnList [ l, r ]
@@ -264,9 +265,14 @@ getOperationGlsl op =
 
         OpPower ->
             """
-            vec2 cpow(vec2 b, vec2 e) {
-                vec2 v = by(cln(b), e);
-                return vec2(cos(v.y) * exp(v.x), sin(v.y) * exp(v.x));
+            vec2 cpow(vec2 w, vec2 z) {
+                if(w.y == 0.0 && z.y == 0.0) {
+                    return vec2(pow(w.x, z.y), 0);
+                }
+                float r = sqrt(w.x*w.x + w.y*w.y);
+                float t = atan(w.y, w.x);
+                float u = z.y * log(r) + z.x * t;
+                return (pow(r, z.x) * exp(-z.y * t)) * vec2(cos(u), sin(u));
             }
             """
 

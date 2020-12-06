@@ -17,16 +17,9 @@ import UI.Glsl exposing (getGlsl)
 import UI.Theme as Theme
 
 
-draw : Bool -> Graph -> Element msg
-draw inList graph =
+draw : Int -> Graph -> Element msg
+draw coeff graph =
     let
-        coeff =
-            if inList then
-                4
-
-            else
-                1
-
         isCompletelyReal =
             case graph of
                 Contour e ->
@@ -284,7 +277,7 @@ viewAtom expr =
     case expr of
         Replace rs e ->
             blockRow
-                [ squareBracketed (blockColumn <| List.map viewReplacement <| Dict.toList rs)
+                [ squareBracketed <| List.map (\r -> [ viewReplacement r ]) <| Dict.toList rs
                 , viewRelationExpression e
                 ]
 
@@ -302,15 +295,12 @@ viewAtom expr =
                                         Nothing
                             )
 
-                viewRow us =
-                    blockRow <| List.intersperse (label " ") <| List.map viewRelationExpression us
-
                 block =
                     if List.length ls == List.length childLists then
-                        roundBracketed <| (blockColumn <| List.map viewRow childLists)
+                        roundBracketed <| List.map (List.map viewRelationExpression) childLists
 
                     else
-                        curlyBracketed <| blockRow <| List.intersperse (label ", ") <| List.map viewRelationExpression ls
+                        curlyBracketed [ List.intersperse (label ", ") <| List.map viewRelationExpression ls ]
             in
             block
 
@@ -324,7 +314,7 @@ viewAtom expr =
             label <| Maybe.withDefault v <| Dict.get v greeks
 
         Apply (KnownFunction Abs) [ arg ] ->
-            absBracketed <| viewRelationExpression arg
+            absBracketed [ [ viewRelationExpression arg ] ]
 
         Apply (KnownFunction Sqrt) [ arg ] ->
             blockRow
@@ -350,26 +340,26 @@ viewAtom expr =
                 [ { elements = [ el [ centerY ] <| text <| Expression.functionNameToString name ]
                   , height = 1
                   }
-                , roundBracketed <| blockRow <| List.intersperse (label ",") (List.map viewRelationExpression args)
+                , roundBracketed [ List.intersperse (label ",") (List.map viewRelationExpression args) ]
                 ]
 
         BinaryOperation Power b e ->
-            roundBracketed <| innerViewPower b e
+            roundBracketed [ [ innerViewPower b e ] ]
 
         UnaryOperation Negate e ->
-            roundBracketed <| innerViewNegate e
+            roundBracketed [ [ innerViewNegate e ] ]
 
         AssociativeOperation Addition l m r ->
-            roundBracketed <| innerViewAddition l m r
+            roundBracketed [ [ innerViewAddition l m r ] ]
 
         AssociativeOperation Multiplication l m r ->
-            roundBracketed <| innerViewMultiplication l m r
+            roundBracketed [ [ innerViewMultiplication l m r ] ]
 
         BinaryOperation Division n d ->
-            roundBracketed <| innerViewDivision n d
+            roundBracketed [ [ innerViewDivision n d ] ]
 
         RelationOperation o l r ->
-            roundBracketed <| innerViewRelation o l r
+            roundBracketed [ [ innerViewRelation o l r ] ]
 
 
 viewReplacement : ( String, Expression ) -> Block msg
@@ -384,46 +374,58 @@ viewReplacement ( name, value ) =
         ]
 
 
-roundBracketed : Block msg -> Block msg
+roundBracketed : List (List (Block msg)) -> Block msg
 roundBracketed =
     bracketed "(" "⎛" "⎜" "⎜" "⎝" ")" "⎞" "⎟" "⎟" "⎠"
 
 
-squareBracketed : Block msg -> Block msg
+squareBracketed : List (List (Block msg)) -> Block msg
 squareBracketed =
     bracketed "[" "⎡" "⎢" "⎢" "⎣" "]" "⎤" "⎥" "⎥" "⎦"
 
 
-curlyBracketed : Block msg -> Block msg
+curlyBracketed : List (List (Block msg)) -> Block msg
 curlyBracketed =
     bracketed "{" "⎧" "⎨" "⎪" "⎩" "}" "⎫" "⎬" "⎪" "⎭"
 
 
-absBracketed : Block msg -> Block msg
+absBracketed : List (List (Block msg)) -> Block msg
 absBracketed =
     bracketed "⎪" "⎪" "⎪" "⎪" "⎪" "⎪" "⎪" "⎪" "⎪" "⎪"
 
 
-bracketed : String -> String -> String -> String -> String -> String -> String -> String -> String -> String -> Block msg -> Block msg
-bracketed sl ul cl exl bl sr ur cr exr br =
-    wrap
-        (\{ height, elements } ->
+bracketed : String -> String -> String -> String -> String -> String -> String -> String -> String -> String -> List (List (Block msg)) -> Block msg
+bracketed sl ul cl exl bl sr ur cr exr br blocks =
+    let
+        height =
+            List.sum <| List.map (Maybe.withDefault 0 << List.maximum << List.map .height) blocks
+
+        unwrapRow =
+            List.map (\{ elements } -> row [ width shrink ] elements)
+
+        grid =
+            blocks
+                |> List.map unwrapRow
+                |> Theme.grid [ alignBottom ]
+                |> (\g -> [ g ])
+
+        bracketedElements =
             case height of
                 0 ->
-                    el [ alignBottom ] (text sl) :: elements ++ [ el [ alignBottom ] (text sr) ]
+                    el [ alignBottom ] (text sl) :: grid ++ [ el [ alignBottom ] (text sr) ]
 
                 1 ->
-                    el [ alignBottom ] (text sl) :: elements ++ [ el [ alignBottom ] (text sr) ]
+                    el [ alignBottom ] (text sl) :: grid ++ [ el [ alignBottom ] (text sr) ]
 
                 2 ->
                     if cl == exl then
                         column [ alignBottom ] [ text ul, text bl ]
-                            :: elements
+                            :: grid
                             ++ [ column [ alignBottom ] [ text ur, text br ] ]
 
                     else
                         el [ alignBottom, scale <| toFloat height ] (text sl)
-                            :: elements
+                            :: grid
                             ++ [ el [ alignBottom, scale <| toFloat height ] (text sr) ]
 
                 _ ->
@@ -453,9 +455,12 @@ bracketed sl ul cl exl bl sr ur cr exr br =
                                         ]
                     in
                     col ul cl exl bl
-                        :: elements
+                        :: grid
                         ++ [ col ur cr exr br ]
-        )
+    in
+    { elements = bracketedElements
+    , height = height
+    }
 
 
 blockToElement : Block msg -> Element msg
@@ -468,7 +473,7 @@ outputBlock row =
     let
         showExpr =
             Expression.Value.value Dict.empty
-                >> showValue False
+                >> showValue 1
                 >> blockToElement
 
         showValue inList v =
@@ -503,15 +508,23 @@ outputBlock row =
                                                 Nothing
                                     )
 
-                        viewRow us =
-                            blockRow <| List.intersperse (label " ") <| List.map (showValue True) us
-
                         block =
                             if List.length ls == List.length childLists then
-                                roundBracketed <| (blockColumn <| List.map viewRow childLists)
+                                let
+                                    width =
+                                        childLists
+                                            |> List.map List.length
+                                            |> List.maximum
+                                            |> Maybe.withDefault 0
+                                in
+                                roundBracketed <| List.map (List.map (showValue width)) childLists
 
                             else
-                                curlyBracketed <| blockRow <| List.intersperse (label ", ") <| List.map (showValue True) ls
+                                let
+                                    width =
+                                        List.length ls
+                                in
+                                curlyBracketed [ List.intersperse (label ", ") <| List.map (showValue width) ls ]
                     in
                     block
     in
