@@ -39,7 +39,8 @@ init _ =
             }
 
         raw =
-            [ ex "plot([zx+iy]z)"
+            [ ex "plotsqrtx"
+            , ex "plot{2x,3x}"
             , Model.emptyRow
             ]
     in

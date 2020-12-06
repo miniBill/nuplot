@@ -12,109 +12,43 @@ import Expression.Utils
 import Expression.Value
 import Html
 import Html.Attributes
+import List.Extra as List
 import Model exposing (Msg(..), Output(..), Row)
+import UI.Glsl exposing (getGlsl)
 import UI.Theme as Theme
 
 
-draw : Graph -> Element msg
-draw graph =
+draw : Bool -> Graph -> Element msg
+draw inList graph =
     let
-        ( srcExpr, isCompletelyReal ) =
+        coeff =
+            if inList then
+                4
+
+            else
+                1
+
+        isCompletelyReal =
             case graph of
-                Explicit2D e ->
-                    ( toSrcImplicit <| Expression.Utils.minus Expression.Utils.y e, "0" )
-
-                Implicit2D l r ->
-                    ( toSrcImplicit <| Expression.Utils.minus l r, "0" )
-
-                Relation2D op l r ->
-                    ( toSrcRelation <| RelationOperation op l r, "0" )
-
                 Contour e ->
-                    ( toSrcContour e
-                    , if Expression.NumericRange.isCompletelyReal e then
+                    if Expression.NumericRange.isCompletelyReal e then
                         "1"
 
-                      else
+                    else
                         "0"
-                    )
+
+                _ ->
+                    "0"
     in
     Element.html <|
         Html.node "nu-plot"
-            [ Html.Attributes.attribute "expr-src" <| srcExpr
-            , Html.Attributes.attribute "canvas-width" <| String.fromInt Theme.imageWidth
-            , Html.Attributes.attribute "canvas-height" <| String.fromInt Theme.imageHeight
+            [ Html.Attributes.attribute "expr-src" <| getGlsl graph
+            , Html.Attributes.attribute "canvas-width" <| String.fromInt <| Theme.imageWidth // coeff
+            , Html.Attributes.attribute "canvas-height" <| String.fromInt <| Theme.imageHeight // coeff
             , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
             , Html.Attributes.attribute "completely-real" isCompletelyReal
             ]
             []
-
-
-toSrcImplicit : Expression -> String
-toSrcImplicit e =
-    """
-    bool f(float x, float y) {
-        vec2 complex = """ ++ Expression.toGLString e ++ """;
-        return complex.x > 0.0;
-    }
-
-    vec3 pixel(float deltaX, float deltaY, float x, float y) {
-        bool h = f(x,y);
-        bool l = f(x - deltaX,y);
-        bool ul = f(x - deltaX,y - deltaY);
-        bool u = f(x,y - deltaY);
-        return (h != l || h != u || h != ul) ? vec3(1,1,1) : vec3(0,0,0);
-    }
-    """
-
-
-toSrcRelation : Expression -> String
-toSrcRelation e =
-    """
-    vec3 pixel(float deltaX, float deltaY, float x, float y) {
-        vec2 complex = """ ++ Expression.toGLString e ++ """;
-        return complex.x > 0.0 ? vec3(0.8,0.5,0.5) : vec3(0,0,0);
-    }
-    """
-
-
-toSrcContour : Expression -> String
-toSrcContour e =
-    """
-    vec3 hl2rgb(float h, float l)
-    {
-        vec3 rgb = clamp(abs(mod(h*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);
-
-        return l + (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
-    }
-
-    float thetaDelta(float theta) {
-        if(u_whiteLines < 1.0)
-            return 100.0;
-        float thetaSix = theta * u_whiteLines;
-        float thetaNeigh = 0.05;
-        return abs(thetaSix - floor(thetaSix + 0.5)) / thetaNeigh;
-    }
-
-    vec3 pixel(float deltaX, float deltaY, float x, float y) {
-        vec2 z = """ ++ Expression.toGLString e ++ """;
-
-        float theta = atan(z.y, z.x) / radians(360.0);
-        float td = thetaDelta(theta);
-
-        float radius = sqrt(z.x*z.x + z.y*z.y);
-        float logRadius = log2(radius);
-        float powerRemainder = logRadius - floor(logRadius);
-        float squished = 0.7 - powerRemainder * 0.4;
-
-        if(u_completelyReal > 0.0) {
-            return hl2rgb(theta, squished);
-        }
-
-        float l = td < 1.0 ? squished * td + (1.0 - td) : squished;
-        return hl2rgb(theta, l);
-    }
-    """
 
 
 view : Int -> Row -> Element Msg
@@ -209,7 +143,8 @@ label x =
 
 viewExpression : Expression -> Element msg
 viewExpression expr =
-    blockToElement <| viewRelationExpression expr
+    blockToElement <|
+        viewRelationExpression expr
 
 
 viewRelationExpression : Expression -> Block msg
@@ -354,8 +289,31 @@ viewAtom expr =
                 , viewRelationExpression e
                 ]
 
-        List l ->
-            curlyBracketed <| blockRow <| List.intersperse (label ",") (List.map viewRelationExpression l)
+        List ls ->
+            let
+                childLists =
+                    ls
+                        |> List.filterMap
+                            (\l ->
+                                case l of
+                                    List u ->
+                                        Just u
+
+                                    _ ->
+                                        Nothing
+                            )
+
+                viewRow us =
+                    blockRow <| List.intersperse (label " ") <| List.map viewRelationExpression us
+
+                block =
+                    if List.length ls == List.length childLists then
+                        roundBracketed <| (blockColumn <| List.map viewRow childLists)
+
+                    else
+                        curlyBracketed <| blockRow <| List.intersperse (label ", ") <| List.map viewRelationExpression ls
+            in
+            block
 
         Integer n ->
             label <| String.fromInt n
@@ -511,16 +469,16 @@ outputBlock row =
     let
         showExpr =
             Expression.Value.value Dict.empty
-                >> showValue
+                >> showValue False
                 >> blockToElement
 
-        showValue v =
+        showValue inList v =
             case v of
                 SymbolicValue s ->
                     viewRelationExpression s
 
                 GraphValue g ->
-                    { elements = [ el [ centerX ] <| draw g ]
+                    { elements = [ el [ centerX ] <| draw inList g ]
                     , height = 1
                     }
 
@@ -547,14 +505,14 @@ outputBlock row =
                                     )
 
                         viewRow us =
-                            blockRow <| List.intersperse (label " ") <| List.map showValue us
+                            blockRow <| List.intersperse (label " ") <| List.map (showValue True) us
 
                         block =
                             if List.length ls == List.length childLists then
                                 roundBracketed <| (blockColumn <| List.map viewRow childLists)
 
                             else
-                                curlyBracketed <| blockRow <| List.intersperse (label ", ") <| List.map showValue ls
+                                curlyBracketed <| blockRow <| List.intersperse (label ", ") <| List.map (showValue True) ls
                     in
                     block
     in
@@ -573,5 +531,6 @@ outputBlock row =
         Parsed e ->
             Theme.column []
                 [ showExpr e
-                , Element.paragraph [] [ text <| Debug.toString <| Expression.Value.value Dict.empty e ]
+
+                --, Element.paragraph [] [ text <| Debug.toString <| Expression.Value.value Dict.empty e ]
                 ]

@@ -1,4 +1,4 @@
-import utils from "./shaders/utils.frag";
+import declarations from "./shaders/declarations.frag";
 import main from "./shaders/main.frag";
 
 export class NuPlot extends HTMLElement {
@@ -118,12 +118,7 @@ export class NuPlot extends HTMLElement {
   }
 
   private buildFragmentShader(expr: string) {
-    return `
-${utils}
-
-${expr}
-
-${main}`;
+    return `${declarations}\n${expr}\n/* Main */\n${main}`;
   }
 
   compileAndAttachShader(type: number, src: string): WebGLShader | null {

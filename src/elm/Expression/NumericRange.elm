@@ -90,6 +90,12 @@ getRange ctx e =
                 Apply (KnownFunction Sqrt) [ c ] ->
                     sqrtRange <| getRange ctx c
 
+                Apply (KnownFunction Re) [ _ ] ->
+                    Real
+
+                Apply (KnownFunction Im) [ _ ] ->
+                    Real
+
                 Apply (KnownFunction _) [ c ] ->
                     if getRange ctx c == Complex then
                         Complex
