@@ -8,16 +8,17 @@ module Expression exposing
     , KnownFunction(..)
     , RelationOperation(..)
     , UnaryOperation(..)
+    , Value(..)
     , defaultContext
     , equals
     , fullSubstitute
     , functionNameToString
     , getFreeVariables
     , greeks
+    , partialSubstitute
     , relationToString
     , toGLString
     , toString
-    , value
     , visit
     )
 
@@ -47,6 +48,14 @@ type Expression
     | Apply FunctionName (List Expression)
     | Replace (Dict String Expression) Expression
     | List (List Expression)
+
+
+type Value
+    = ErrorValue String
+    | SymbolicValue Expression
+    | ComplexValue Complex
+    | GraphValue Graph
+    | ListValue (List Value)
 
 
 type FunctionName
@@ -83,6 +92,8 @@ type KnownFunction
     | Ii
       -- Misc
     | Pw
+    | Plot
+    | Simplify
 
 
 type UnaryOperation
@@ -569,12 +580,18 @@ unaryFunctions =
 
         matrix =
             [ ( "gra", Gra ) ]
+
+        other =
+            [ ( "plot", Plot )
+            , ( "simplify", Simplify )
+            ]
     in
     List.concat
         [ power
         , trig
         , complex
         , matrix
+        , other
         ]
 
 
@@ -664,182 +681,6 @@ getFreeVariables expr =
 
         List es ->
             concatMap es
-
-
-value : Dict String Complex -> Expression -> Complex
-value context =
-    innerValue
-        (Dict.insert "e" (Complex.fromReal e) <|
-            Dict.insert "pi" (Complex.fromReal pi) <|
-                Dict.insert "π" (Complex.fromReal pi) context
-        )
-
-
-innerValue : Dict String Complex -> Expression -> Complex
-innerValue context expr =
-    case expr of
-        Variable "i" ->
-            Complex.i
-
-        Variable v ->
-            Dict.get v context |> Maybe.withDefault Complex.zero
-
-        UnaryOperation Negate e ->
-            Complex.negate <| innerValue context e
-
-        BinaryOperation Division l r ->
-            Complex.div (innerValue context l) (innerValue context r)
-
-        BinaryOperation Power l r ->
-            Complex.power (innerValue context l) (innerValue context r)
-
-        RelationOperation o l r ->
-            relationValue o (innerValue context l) (innerValue context r)
-
-        AssociativeOperation Addition l r o ->
-            List.foldl Complex.plus Complex.zero <| List.map (innerValue context) (l :: r :: o)
-
-        AssociativeOperation Multiplication l r o ->
-            List.foldl Complex.by Complex.one <| List.map (innerValue context) (l :: r :: o)
-
-        Apply name args ->
-            applyValue context name args
-
-        Integer i ->
-            Complex.fromReal <| toFloat i
-
-        Float f ->
-            Complex.fromReal f
-
-        List _ ->
-            Complex.zero
-
-        Replace ctx e ->
-            innerValue context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
-
-
-relationValue : RelationOperation -> Complex -> Complex -> Complex
-relationValue o ((Complex lv _) as lc) ((Complex rv _) as rc) =
-    let
-        toComplex check =
-            if check then
-                Complex.one
-
-            else
-                Complex.zero
-    in
-    case o of
-        LessThan ->
-            toComplex <| lv < rv
-
-        LessThanOrEquals ->
-            toComplex <| lv <= rv
-
-        Equals ->
-            Complex.minus lc rc
-
-        GreaterThanOrEquals ->
-            toComplex <| lv >= rv
-
-        GreaterThan ->
-            toComplex <| lv > rv
-
-
-applyValue : Dict String Complex -> FunctionName -> List Expression -> Complex
-applyValue context name args =
-    case ( name, args ) of
-        ( KnownFunction Sin, e ) ->
-            simple context e Complex.sin
-
-        ( KnownFunction Cos, e ) ->
-            simple context e Complex.cos
-
-        ( KnownFunction Tan, e ) ->
-            simple context e Complex.tan
-
-        ( KnownFunction Sinh, e ) ->
-            simple context e Complex.sinh
-
-        ( KnownFunction Cosh, e ) ->
-            simple context e Complex.cosh
-
-        ( KnownFunction Tanh, e ) ->
-            simple context e Complex.tanh
-
-        ( KnownFunction Asin, e ) ->
-            simple context e Complex.asin
-
-        ( KnownFunction Acos, e ) ->
-            simple context e Complex.acos
-
-        ( KnownFunction Atan, e ) ->
-            simple context e Complex.atan
-
-        ( KnownFunction Atan2, e ) ->
-            case e of
-                [ y, x ] ->
-                    Complex.atan2 (innerValue context y) (innerValue context x)
-
-                _ ->
-                    Complex.zero
-
-        ( KnownFunction Sqrt, e ) ->
-            simple context e Complex.sqrt
-
-        ( KnownFunction Ln, e ) ->
-            simple context e Complex.ln
-
-        ( KnownFunction Arg, e ) ->
-            simple context e (Complex.fromReal << Complex.arg)
-
-        ( KnownFunction Re, e ) ->
-            simple context e Complex.re
-
-        ( KnownFunction Im, e ) ->
-            simple context e Complex.im
-
-        ( KnownFunction Abs, e ) ->
-            simple context e (Complex.fromReal << Complex.abs)
-
-        ( KnownFunction Log10, e ) ->
-            simple context e <| \v -> Complex.div v (Complex.ln <| Complex.fromReal 10)
-
-        ( KnownFunction Exp, e ) ->
-            simple context e Complex.exp
-
-        ( KnownFunction Pw, e ) ->
-            case e of
-                [ c, t, f ] ->
-                    if Complex.zero == innerValue context c then
-                        innerValue context f
-
-                    else
-                        innerValue context t
-
-                _ ->
-                    Complex.zero
-
-        ( KnownFunction Gra, _ ) ->
-            Complex.zero
-
-        ( KnownFunction Dd, _ ) ->
-            Complex.zero
-
-        ( KnownFunction Ii, _ ) ->
-            Complex.zero
-
-        ( UserFunction _, _ ) ->
-            Complex.zero
-
-
-simple : Dict String Complex -> List Expression -> (Complex -> Complex) -> Complex
-simple context args f =
-    case args of
-        [ e ] ->
-            f <| innerValue context e
-
-        _ ->
-            Complex.zero
 
 
 toGLString : Expression -> String
@@ -985,6 +826,12 @@ functionNameToString name =
 
         KnownFunction Pw ->
             "pw"
+
+        KnownFunction Plot ->
+            "plot"
+
+        KnownFunction Simplify ->
+            "simplify"
 
         UserFunction u ->
             u

@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, e, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, quaternaryFunc, sin_, sinh_, sqrt_, square, squash, squashHarder, ternaryFunc, triple, two, unaryFunc, vector, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, e, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, quaternaryFunc, sin_, sinh_, sqrt_, square, squash, ternaryFunc, triple, two, unaryFunc, vector, x, y, z, zero)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), visit)
 
@@ -249,41 +249,9 @@ squash =
         \expr ->
             case expr of
                 AssociativeOperation Addition ol or oo ->
-                    Just <|
-                        plus <|
-                            List.concatMap
-                                (\el ->
-                                    case squash el of
-                                        AssociativeOperation Addition il ir io ->
-                                            il :: ir :: io
-
-                                        s ->
-                                            [ s ]
-                                )
-                                (ol :: or :: oo)
-
-                AssociativeOperation Multiplication ol or oo ->
-                    Just <|
-                        case squash ol of
-                            AssociativeOperation Multiplication il ir io ->
-                                squash <| AssociativeOperation Multiplication il ir (io ++ or :: oo)
-
-                            sl ->
-                                AssociativeOperation Multiplication sl (squash or) (List.map squash oo)
-
-                _ ->
-                    Nothing
-
-
-squashHarder : Expression -> Expression
-squashHarder =
-    visit <|
-        \expr ->
-            case expr of
-                AssociativeOperation Addition ol or oo ->
                     let
                         extract el =
-                            case squashHarder el of
+                            case squash el of
                                 AssociativeOperation Addition il ir io ->
                                     List.concatMap extract <| il :: ir :: io
 
@@ -295,7 +263,7 @@ squashHarder =
                 AssociativeOperation Multiplication ol or oo ->
                     let
                         extract el =
-                            case squashHarder el of
+                            case squash el of
                                 AssociativeOperation Multiplication il ir io ->
                                     List.concatMap extract <| il :: ir :: io
 

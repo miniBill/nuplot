@@ -2,13 +2,15 @@ module UI exposing (main)
 
 import Bounce
 import Browser
-import Element exposing (fill, height, width)
+import Element exposing (Element, fill, height, width)
+import Element.Lazy
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import Expression.Parser
+import Expression.Utils exposing (zero)
 import List.Extra as List
-import Model exposing (Flags, Model, Msg(..), PlotStatus(..))
+import Model exposing (Flags, Model, Msg(..), Output(..))
+import UI.RowView
 import UI.Theme as Theme
-import UI.View exposing (view)
 
 
 main : Program Flags Model Msg
@@ -32,21 +34,28 @@ init _ =
     let
         ex x =
             { input = x
-            , plotStatus = Plotting <| Result.withDefault (Integer 0) <| Expression.Parser.parse x
+            , output = Parsed <| Result.withDefault zero <| Expression.Parser.parse x
             , bounce = Bounce.init
             }
 
         raw =
-            [ ex "[zx+iy]z"
-
-            --, ex "x² + y² = 25"
-            --, ex "x² + y² < 25"
-            --, Model.emptyRow
+            [ ex "plot([zx+iy]z)"
+            , Model.emptyRow
             ]
     in
     ( raw
     , Cmd.none
     )
+
+
+view : Model -> Element Msg
+view model =
+    Element.column
+        [ Element.spacing <| 2 * Theme.spacing
+        , width fill
+        ]
+    <|
+        List.indexedMap (\index row -> Element.Lazy.lazy2 UI.RowView.view index row) model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -55,9 +64,9 @@ update msg model =
         Input { row, input } ->
             model
                 |> List.updateAt row
-                    (\{ bounce, plotStatus } ->
+                    (\{ bounce, output } ->
                         { input = input
-                        , plotStatus = toTyping plotStatus
+                        , output = toTyping output
                         , bounce = Bounce.push bounce
                         }
                     )
@@ -79,7 +88,7 @@ update msg model =
                     , Cmd.none
                     )
 
-                Just { input, bounce, plotStatus } ->
+                Just { input, bounce, output } ->
                     let
                         newBounce =
                             Bounce.pop bounce
@@ -88,37 +97,37 @@ update msg model =
                         |> List.setAt row
                             { input = input
                             , bounce = newBounce
-                            , plotStatus =
+                            , output =
                                 if Bounce.steady newBounce then
                                     case Expression.Parser.parse input of
-                                        Ok r ->
-                                            Plotting r
+                                        Ok e ->
+                                            Parsed e
 
                                         Err e ->
                                             ParseError <| Expression.Parser.errorsToString input e
 
                                 else
-                                    toTyping plotStatus
+                                    toTyping output
                             }
                     , Cmd.none
                     )
 
 
-toTyping : PlotStatus -> PlotStatus
-toTyping plotStatus =
+toTyping : Output -> Output
+toTyping output =
     Typing <|
-        case plotStatus of
-            Plotting e ->
-                Just e
-
-            Typing e ->
-                e
-
+        case output of
             Empty ->
                 Nothing
 
             ParseError _ ->
                 Nothing
+
+            Typing e ->
+                e
+
+            Parsed e ->
+                Just e
 
 
 subscriptions : Model -> Sub Msg

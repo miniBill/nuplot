@@ -1,27 +1,24 @@
-module UI.View exposing (view)
+module UI.RowView exposing (view)
 
+import Complex
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, scale, shrink, spacing, text, width, wrappedRow)
+import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, scale, shrink, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Element.Lazy
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), greeks)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), greeks)
 import Expression.NumericRange
-import Expression.Parser
 import Expression.Utils
+import Expression.Value
 import Html
 import Html.Attributes
-import Model exposing (Model, Msg(..), PlotStatus(..), Row)
+import Model exposing (Msg(..), Output(..), Row)
 import UI.Theme as Theme
 
 
-draw : Expression -> Element msg
-draw expr =
+draw : Graph -> Element msg
+draw graph =
     let
-        graph =
-            Expression.Parser.parseGraph expr
-
         ( srcExpr, isCompletelyReal ) =
             case graph of
                 Explicit2D e ->
@@ -120,46 +117,39 @@ toSrcContour e =
     """
 
 
-viewRow : Int -> Row -> Element Msg
-viewRow index row =
+view : Int -> Row -> Element Msg
+view index row =
     Theme.column
         [ width fill
         , alignTop
         ]
         [ inputLine index row
-        , outputBlock row
         , statusLine row
+        , outputBlock row
         ]
-
-
-view : Model -> Element Msg
-view model =
-    wrappedRow
-        [ spacing <| 2 * Theme.spacing
-        , width fill
-        ]
-    <|
-        List.indexedMap (\index row -> Element.Lazy.lazy2 viewRow index row) model
 
 
 inputLine : Int -> Row -> Element Msg
 inputLine index row =
-    Input.text [ width <| Element.minimum 600 fill ]
-        { label = Input.labelHidden "Input"
-        , onChange =
-            \newValue ->
-                Input
-                    { row = index
-                    , input = newValue
-                    }
-        , placeholder = Just <| Input.placeholder [] <| text "y = f(x)"
-        , text = row.input
-        }
+    Theme.row [ width fill ]
+        [ text <| "In[" ++ String.fromInt index ++ "]"
+        , Input.text [ width <| Element.minimum 600 fill ]
+            { label = Input.labelHidden "Input"
+            , onChange =
+                \newValue ->
+                    Input
+                        { row = index
+                        , input = newValue
+                        }
+            , placeholder = Just <| Input.placeholder [] <| text "y = f(x)"
+            , text = row.input
+            }
+        ]
 
 
 statusLine : Row -> Element msg
 statusLine row =
-    case row.plotStatus of
+    case row.output of
         Empty ->
             none
 
@@ -167,32 +157,24 @@ statusLine row =
             text "Typing..."
 
         ParseError e ->
-            el
-                [ Font.family [ Font.monospace ]
-                , Font.color <| rgb 1 0 0
-                ]
-            <|
-                Element.html <|
-                    Html.pre [] [ Html.text e ]
+            viewError e
 
-        Plotting e ->
+        Parsed e ->
             Element.row [ width <| Element.maximum 200 shrink ]
                 [ text "Interpreted as: "
                 , viewExpression e
-                , text <|
-                    case Expression.Parser.parseGraph e of
-                        Explicit2D _ ->
-                            ", explicit 2D"
-
-                        Implicit2D _ _ ->
-                            ", implicit 2D"
-
-                        Contour _ ->
-                            ", domain coloring plot"
-
-                        Relation2D _ _ _ ->
-                            ", relation 2D"
                 ]
+
+
+viewError : String -> Element msg
+viewError e =
+    el
+        [ Font.family [ Font.monospace ]
+        , Font.color <| rgb 1 0 0
+        ]
+        (Element.html <|
+            Html.pre [] [ Html.text e ]
+        )
 
 
 type alias Block msg =
@@ -227,7 +209,7 @@ label x =
 
 viewExpression : Expression -> Element msg
 viewExpression expr =
-    row [ Font.italic ] (viewRelationExpression expr).elements
+    blockToElement <| viewRelationExpression expr
 
 
 viewRelationExpression : Expression -> Block msg
@@ -519,9 +501,64 @@ bracketed sl ul cl exl bl sr ur cr exr br =
         )
 
 
+blockToElement : Block msg -> Element msg
+blockToElement { elements } =
+    Element.row [ Font.italic ] elements
+
+
 outputBlock : Row -> Element msg
 outputBlock row =
-    case row.plotStatus of
+    let
+        showExpr =
+            Expression.Value.value Dict.empty
+                >> showValue
+                >> blockToElement
+
+        showValue v =
+            case v of
+                SymbolicValue s ->
+                    viewRelationExpression s
+
+                GraphValue g ->
+                    { elements = [ el [ centerX ] <| draw g ]
+                    , height = 1
+                    }
+
+                ComplexValue c ->
+                    label <| Complex.toString c
+
+                ErrorValue err ->
+                    { elements = [ viewError err ]
+                    , height = 1
+                    }
+
+                ListValue ls ->
+                    let
+                        childLists =
+                            ls
+                                |> List.filterMap
+                                    (\l ->
+                                        case l of
+                                            ListValue u ->
+                                                Just u
+
+                                            _ ->
+                                                Nothing
+                                    )
+
+                        viewRow us =
+                            blockRow <| List.intersperse (label ",") <| List.map showValue us
+
+                        block =
+                            if List.length ls == List.length childLists then
+                                squareBracketed <| (blockColumn <| List.map viewRow childLists)
+
+                            else
+                                curlyBracketed <| viewRow ls
+                    in
+                    block
+    in
+    case row.output of
         Empty ->
             none
 
@@ -529,7 +566,9 @@ outputBlock row =
             none
 
         Typing e ->
-            Maybe.map draw e |> Maybe.withDefault none |> el [ centerX ]
+            Maybe.map showExpr e
+                |> Maybe.withDefault none
+                |> el [ centerX ]
 
-        Plotting e ->
-            draw e |> el [ centerX ]
+        Parsed e ->
+            showExpr e

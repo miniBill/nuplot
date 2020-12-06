@@ -5,6 +5,7 @@ import Dict
 import Expect
 import Expression exposing (BinaryOperation(..), Expression(..))
 import Expression.NumericRange exposing (NumericRange(..))
+import Expression.Value
 import ExpressionFuzzer exposing (expressionFuzzer)
 import Fuzz
 import Test exposing (Test, describe, fuzz3)
@@ -20,7 +21,7 @@ suite =
                         Expression.NumericRange.get e
 
                     actual =
-                        Expression.value
+                        Expression.Value.value
                             (Dict.fromList
                                 [ ( "x", Complex.fromReal x )
                                 , ( "y", Complex.fromReal y )

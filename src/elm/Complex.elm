@@ -1,4 +1,4 @@
-module Complex exposing (Complex(..), abs, acos, arg, asin, atan, atan2, by, cos, cosh, div, exp, fromReal, i, im, ln, minus, negate, one, plus, power, re, sin, sinh, sqrt, tan, tanh, zero)
+module Complex exposing (Complex(..), abs, acos, arg, asin, atan, atan2, by, cos, cosh, div, exp, fromReal, i, im, ln, minus, negate, one, plus, power, re, sin, sinh, sqrt, tan, tanh, toString, zero)
 
 
 type Complex
@@ -191,3 +191,24 @@ sqrt (Complex x y) =
                 -mi
     in
     Complex r si
+
+
+toString : Complex -> String
+toString (Complex x y) =
+    if y == 0 then
+        String.fromFloat x
+
+    else if x == 0 then
+        String.fromFloat y ++ "i"
+
+    else if y == 1 then
+        String.fromFloat x ++ " + i"
+
+    else if y == -1 then
+        String.fromFloat x ++ " - i"
+
+    else if y > 0 then
+        String.fromFloat x ++ " + " ++ String.fromFloat y ++ "i"
+
+    else
+        String.fromFloat x ++ " - " ++ String.fromFloat -y ++ "i"

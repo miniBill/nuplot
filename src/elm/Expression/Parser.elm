@@ -1,12 +1,12 @@
-module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, parse, parseGraph)
+module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, expressionToGraph, parse)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables)
 import Expression.Cleaner as Cleaner
-import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
+import Expression.Utils exposing (by, div, minus, negate_, plus, pow, squash, vector)
 import List
 import List.Extra as List
-import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
+import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), symbol)
 import Set
 import Trie
 
@@ -108,15 +108,14 @@ parse input =
                     |> log "raw"
                     |> Expression.Utils.squash
                     |> log "after squash"
-                    |> Expression.Utils.squashHarder
             )
 
 
-parseGraph : Expression -> Graph
-parseGraph expr =
+expressionToGraph : Expression -> Graph
+expressionToGraph expr =
     case expr of
         Replace ctx (RelationOperation rop l r) ->
-            parseGraph (RelationOperation rop (Replace ctx l) (Replace ctx r))
+            expressionToGraph (RelationOperation rop (Replace ctx l) (Replace ctx r))
 
         RelationOperation rop l r ->
             case ( l, rop, Set.member "y" <| getFreeVariables r ) of
@@ -385,11 +384,7 @@ atomParser context =
                 , trailing = Parser.Forbidden
                 }
             |. whitespace
-            |. Parser.oneOf
-                -- closed parens are optional
-                [ Parser.symbol (token ")")
-                , Parser.succeed ()
-                ]
+            |. optional (Parser.symbol (token ")"))
         , replacementParser context
         , listParser context
         , variableParser context
@@ -402,6 +397,14 @@ atomParser context =
             , invalid = Expected "a valid number"
             , expecting = Expected "a number"
             }
+        ]
+
+
+optional : Parser c x () -> Parser c x ()
+optional p =
+    Parser.oneOf
+        [ p
+        , Parser.succeed ()
         ]
 
 
