@@ -526,11 +526,6 @@ outputBlock row =
         Typing e ->
             Maybe.map showExpr e
                 |> Maybe.withDefault none
-                |> el [ centerX ]
 
         Parsed e ->
-            Theme.column []
-                [ showExpr e
-
-                --, Element.paragraph [] [ text <| Debug.toString <| Expression.Value.value Dict.empty e ]
-                ]
+            showExpr e
