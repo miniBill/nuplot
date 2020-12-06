@@ -547,14 +547,14 @@ outputBlock row =
                                     )
 
                         viewRow us =
-                            blockRow <| List.intersperse (label ",") <| List.map showValue us
+                            blockRow <| List.intersperse (label " ") <| List.map showValue us
 
                         block =
                             if List.length ls == List.length childLists then
-                                squareBracketed <| (blockColumn <| List.map viewRow childLists)
+                                roundBracketed <| (blockColumn <| List.map viewRow childLists)
 
                             else
-                                curlyBracketed <| viewRow ls
+                                curlyBracketed <| blockRow <| List.intersperse (label ", ") <| List.map showValue ls
                     in
                     block
     in
@@ -571,4 +571,7 @@ outputBlock row =
                 |> el [ centerX ]
 
         Parsed e ->
-            showExpr e
+            Theme.column []
+                [ showExpr e
+                , Element.paragraph [] [ text <| Debug.toString <| Expression.Value.value Dict.empty e ]
+                ]

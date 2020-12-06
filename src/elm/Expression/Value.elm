@@ -5,7 +5,7 @@ import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), partialSubstitute)
 import Expression.Parser
 import Expression.Simplify
-import Expression.Utils exposing (by, plus)
+import Expression.Utils as Utils
 
 
 defaultValueContext : Dict String Value
@@ -33,29 +33,22 @@ innerValue context expr =
                 |> Maybe.withDefault (SymbolicValue expr)
 
         UnaryOperation Negate e ->
-            complexMap (UnaryOperation Negate) Complex.negate <| innerValue context e
+            complexMap { symbolic = UnaryOperation Negate, complex = Complex.negate, list = Nothing } <| innerValue context e
 
         BinaryOperation Division l r ->
-            complexMap2 (BinaryOperation Division) Complex.div (innerValue context l) (innerValue context r)
+            complexMap2 { symbolic = BinaryOperation Division, complex = Complex.div, list = Nothing } (innerValue context l) (innerValue context r)
 
         BinaryOperation Power l r ->
-            complexMap2 (BinaryOperation Power) Complex.power (innerValue context l) (innerValue context r)
+            complexMap2 { symbolic = BinaryOperation Power, complex = Complex.power, list = Nothing } (innerValue context l) (innerValue context r)
 
         RelationOperation o l r ->
-            complexMap2 (RelationOperation o) (relationValue o) (innerValue context l) (innerValue context r)
+            complexMap2 { symbolic = RelationOperation o, complex = relationValue o, list = Nothing } (innerValue context l) (innerValue context r)
 
         AssociativeOperation Addition l r o ->
-            List.foldl
-                (complexMap2 (\u v -> AssociativeOperation Addition u v []) Complex.plus)
-                (innerValue context l)
-            <|
-                List.map (innerValue context) (r :: o)
+            List.foldl plus (innerValue context l) <| List.map (innerValue context) (r :: o)
 
         AssociativeOperation Multiplication l r o ->
-            List.foldl (complexMap2 (\u v -> AssociativeOperation Multiplication u v []) Complex.by)
-                (innerValue context l)
-            <|
-                List.map (innerValue context) (r :: o)
+            List.foldl by (innerValue context l) <| List.map (innerValue context) (r :: o)
 
         Apply name args ->
             applyValue context name args
@@ -71,6 +64,101 @@ innerValue context expr =
 
         Replace ctx e ->
             innerValue context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
+
+
+plus : Value -> Value -> Value
+plus =
+    complexMap2
+        { symbolic = \u v -> AssociativeOperation Addition u v []
+        , complex = Complex.plus
+        , list = Nothing
+        }
+
+
+by : Value -> Value -> Value
+by =
+    complexMap2
+        { symbolic = \u v -> AssociativeOperation Multiplication u v []
+        , complex = Complex.by
+        , list = Just matrixMultiplication
+        }
+
+
+matrixMultiplication : List Value -> List Value -> Value
+matrixMultiplication l r =
+    let
+        getRow j m =
+            m
+                |> List.drop j
+                |> List.head
+                |> Maybe.withDefault []
+
+        getCol j m =
+            m
+                |> List.filterMap
+                    (List.drop j >> List.head)
+
+        size m =
+            let
+                rows =
+                    List.length m
+
+                asLists =
+                    m
+                        |> List.filterMap
+                            (\w ->
+                                case w of
+                                    ListValue us ->
+                                        Just us
+
+                                    _ ->
+                                        Nothing
+                            )
+            in
+            case asLists of
+                [] ->
+                    Nothing
+
+                h :: t ->
+                    let
+                        cols =
+                            List.length h
+                    in
+                    if List.length t < rows - 1 || List.any (List.length >> (/=) cols) asLists then
+                        Nothing
+
+                    else
+                        Just ( rows, cols, asLists )
+
+        dot x y =
+            case List.map2 by x y of
+                [] ->
+                    ComplexValue Complex.zero
+
+                h :: t ->
+                    List.foldl plus h t
+
+        inner ( lr, lc, lm ) ( rr, rc, rm ) =
+            if lc /= rr then
+                ErrorValue "Cannot multiply matrices, wrong size"
+
+            else
+                List.range 0 (lr - 1)
+                    |> List.map
+                        (\row ->
+                            List.range 0 (rc - 1)
+                                |> List.map
+                                    (\col ->
+                                        dot
+                                            (getRow row lm)
+                                            (getCol col rm)
+                                    )
+                                |> ListValue
+                        )
+                    |> ListValue
+    in
+    Maybe.map2 inner (size l) (size r)
+        |> Maybe.withDefault (ErrorValue "Can only multiply rectangular matrices")
 
 
 applyValue : Dict String Value -> FunctionName -> List Expression -> Value
@@ -106,7 +194,13 @@ applyValue context name args =
         KnownFunction Atan2 ->
             case args of
                 [ y, x ] ->
-                    complexMap2 (\l r -> Apply name [ l, r ]) Complex.atan2 (innerValue context y) (innerValue context x)
+                    complexMap2
+                        { symbolic = \l r -> Apply name [ l, r ]
+                        , complex = Complex.atan2
+                        , list = Nothing
+                        }
+                        (innerValue context y)
+                        (innerValue context x)
 
                 _ ->
                     ErrorValue "Unexpected number of args to atan2, expected 2"
@@ -188,7 +282,15 @@ unaryFunctionValue context args s f =
                     SymbolicValue <| Apply (KnownFunction s) [ w ]
 
                 ListValue ls ->
-                    ListValue <| List.map (complexMap (\w -> Apply (KnownFunction s) [ w ]) f) ls
+                    ListValue <|
+                        List.map
+                            (complexMap
+                                { symbolic = \w -> Apply (KnownFunction s) [ w ]
+                                , complex = f
+                                , list = Nothing
+                                }
+                            )
+                            ls
 
                 ErrorValue err ->
                     ErrorValue err
@@ -227,27 +329,45 @@ relationValue o ((Complex lv _) as lc) ((Complex rv _) as rc) =
             toComplex <| lv > rv
 
 
-complexMap : (Expression -> Expression) -> (Complex -> Complex) -> Value -> Value
-complexMap s f v =
+complexMap :
+    { symbolic : Expression -> Expression
+    , complex : Complex -> Complex
+    , list : Maybe (List Value -> Value)
+    }
+    -> Value
+    -> Value
+complexMap ({ symbolic, complex, list } as fs) v =
     case v of
         ErrorValue _ ->
             v
 
         ListValue ls ->
-            ListValue <| List.map (complexMap s f) ls
+            case list of
+                Just lf ->
+                    lf ls
+
+                Nothing ->
+                    ListValue <| List.map (complexMap fs) ls
 
         ComplexValue c ->
-            ComplexValue <| f c
+            ComplexValue <| complex c
 
         GraphValue _ ->
             ErrorValue "Tried to apply function to graph"
 
         SymbolicValue w ->
-            SymbolicValue <| s w
+            SymbolicValue <| symbolic w
 
 
-complexMap2 : (Expression -> Expression -> Expression) -> (Complex -> Complex -> Complex) -> Value -> Value -> Value
-complexMap2 s f v w =
+complexMap2 :
+    { symbolic : Expression -> Expression -> Expression
+    , complex : Complex -> Complex -> Complex
+    , list : Maybe (List Value -> List Value -> Value)
+    }
+    -> Value
+    -> Value
+    -> Value
+complexMap2 ({ symbolic, complex, list } as fs) v w =
     case ( v, w ) of
         ( ErrorValue _, _ ) ->
             v
@@ -256,19 +376,24 @@ complexMap2 s f v w =
             w
 
         ( ListValue ls, ListValue rs ) ->
-            ListValue <| List.map2 (complexMap2 s f) ls rs
+            case list of
+                Just lf ->
+                    lf ls rs
+
+                Nothing ->
+                    ListValue <| List.map2 (complexMap2 fs) ls rs
 
         ( ComplexValue l, ComplexValue r ) ->
-            ComplexValue <| f l r
+            ComplexValue <| complex l r
 
         ( SymbolicValue l, SymbolicValue r ) ->
-            SymbolicValue <| s l r
+            SymbolicValue <| symbolic l r
 
         ( SymbolicValue l, ComplexValue r ) ->
-            SymbolicValue <| s l (complexToSymbolic r)
+            SymbolicValue <| symbolic l (complexToSymbolic r)
 
         ( ComplexValue l, SymbolicValue r ) ->
-            SymbolicValue <| s (complexToSymbolic l) r
+            SymbolicValue <| symbolic (complexToSymbolic l) r
 
         _ ->
             ErrorValue <| "Incompatible: " ++ Debug.toString { v = v, w = w }
@@ -284,7 +409,7 @@ complexToSymbolic (Complex r i) =
             Variable "i"
 
         else
-            by [ Float i, Variable "i" ]
+            Utils.by [ Float i, Variable "i" ]
 
     else
-        plus [ Float r, by [ Float i, Variable "i" ] ]
+        Utils.plus [ Float r, Utils.by [ Float i, Variable "i" ] ]
