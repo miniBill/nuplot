@@ -16,10 +16,10 @@ type alias ExpressionParser a =
 
 
 type ParserContext
-    = Expression
-    | List
-    | Replacement
-    | ReplacementList
+    = ExpressionContext
+    | ListContext
+    | ReplacementContext
+    | ReplacementListContext
 
 
 type Problem
@@ -128,6 +128,9 @@ expressionToGraph expr =
                 _ ->
                     Relation2D rop l r
 
+        List ls ->
+            GraphList <| List.map expressionToGraph ls
+
         _ ->
             let
                 free =
@@ -173,7 +176,7 @@ replacementParser context =
                     |. whitespace
                     |= mainParser (combineContext context (toContext list))
             )
-        |> Parser.inContext Replacement
+        |> Parser.inContext ReplacementContext
 
 
 replacementListParser : ExpressionParser (Dict String Expression)
@@ -216,7 +219,7 @@ replacementListParser context =
                 |. whitespace
                 |= Parser.lazy (\_ -> mainParser context)
     in
-    Parser.inContext ReplacementList <|
+    Parser.inContext ReplacementListContext <|
         (Parser.map Dict.fromList <|
             Parser.sequence
                 { start = token "["
@@ -242,7 +245,7 @@ whitespace =
 
 listParser : ExpressionParser Expression
 listParser context =
-    Parser.inContext List <|
+    Parser.inContext ListContext <|
         Parser.map Expression.List <|
             Parser.sequence
                 { start = token "{"
@@ -256,7 +259,7 @@ listParser context =
 
 relationParser : ExpressionParser Expression
 relationParser context =
-    Parser.inContext Expression <|
+    Parser.inContext ExpressionContext <|
         Parser.succeed (\a f -> f a)
             |= addsubtractionParser context
             |. whitespace

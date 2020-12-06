@@ -9,33 +9,61 @@ import List.Extra as List
 getGlsl : Graph -> String
 getGlsl graph =
     let
-        ( utils, srcExpr ) =
-            case graph of
-                Explicit2D f ->
+        ( requirements, srcExpr ) =
+            extract "" graph
+
+        extract f g =
+            case g of
+                Explicit2D c ->
                     let
                         e =
-                            Expression.Utils.minus Expression.Utils.y f
+                            Expression.Utils.minus Expression.Utils.y c
                     in
-                    ( getFunctionsGlsl e, toSrcImplicit e )
+                    ( e, toSrcImplicit f e )
 
                 Implicit2D l r ->
                     let
                         e =
                             Expression.Utils.minus l r
                     in
-                    ( getFunctionsGlsl e, toSrcImplicit e )
+                    ( e, toSrcImplicit f e )
 
                 Relation2D op l r ->
                     let
                         e =
                             RelationOperation op l r
                     in
-                    ( getFunctionsGlsl e, toSrcRelation e )
+                    ( e, toSrcRelation f e )
 
                 Contour e ->
-                    ( getFunctionsGlsl e, toSrcContour e )
+                    ( e, toSrcContour f e )
+
+                GraphList l ->
+                    let
+                        ( es, srcs ) =
+                            l
+                                |> List.indexedMap (\i -> extract (f ++ "_" ++ String.fromInt i))
+                                |> List.unzip
+
+                        addPixel i =
+                            "res = max(res, pixel" ++ f ++ "_" ++ String.fromInt i ++ "(deltaX, deltaY, x, y));"
+
+                        inner =
+                            l
+                                |> List.indexedMap (\i _ -> addPixel i)
+                                |> String.join "\n                                    "
+
+                        src =
+                            """
+                                vec3 pixel(float deltaX, float deltaY, float x, float y) {
+                                    vec3 res = vec3(0,0,0);
+                                    """ ++ inner ++ """
+                                    return res;
+                                }"""
+                    in
+                    ( List es, String.join "\n" srcs ++ deindent 8 src )
     in
-    utils ++ "\n/* Expression */" ++ deindent 4 srcExpr
+    getFunctionsGlsl requirements ++ "\n/* Expression */" ++ deindent 4 srcExpr
 
 
 getFunctionsGlsl : Expression -> String
@@ -476,53 +504,38 @@ knownFunctionDeps =
     go
 
 
-toSrcImplicit : Expression -> String
-toSrcImplicit e =
+toSrcImplicit : String -> Expression -> String
+toSrcImplicit suffix e =
     """
-    bool f(float x, float y) {
+    bool f""" ++ suffix ++ """(float x, float y) {
         vec2 complex = """ ++ Expression.toGLString e ++ """;
         return complex.x > 0.0;
     }
 
-    vec3 pixel(float deltaX, float deltaY, float x, float y) {
-        bool h = f(x,y);
-        bool l = f(x - deltaX,y);
-        bool ul = f(x - deltaX,y - deltaY);
-        bool u = f(x,y - deltaY);
+    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
+        bool h = f""" ++ suffix ++ """(x,y);
+        bool l = f""" ++ suffix ++ """(x - deltaX,y);
+        bool ul = f""" ++ suffix ++ """(x - deltaX,y - deltaY);
+        bool u = f""" ++ suffix ++ """(x,y - deltaY);
         return (h != l || h != u || h != ul) ? vec3(1,1,1) : vec3(0,0,0);
     }
     """
 
 
-toSrcRelation : Expression -> String
-toSrcRelation e =
+toSrcRelation : String -> Expression -> String
+toSrcRelation suffix e =
     """
-    vec3 pixel(float deltaX, float deltaY, float x, float y) {
+    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
         vec2 complex = """ ++ Expression.toGLString e ++ """;
         return complex.x > 0.0 ? vec3(0.8,0.5,0.5) : vec3(0,0,0);
     }
     """
 
 
-toSrcContour : Expression -> String
-toSrcContour e =
+toSrcContour : String -> Expression -> String
+toSrcContour suffix e =
     """
-    vec3 hl2rgb(float h, float l)
-    {
-        vec3 rgb = clamp(abs(mod(h*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);
-
-        return l + (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
-    }
-
-    float thetaDelta(float theta) {
-        if(u_whiteLines < 1.0)
-            return 100.0;
-        float thetaSix = theta * u_whiteLines;
-        float thetaNeigh = 0.05;
-        return abs(thetaSix - floor(thetaSix + 0.5)) / thetaNeigh;
-    }
-
-    vec3 pixel(float deltaX, float deltaY, float x, float y) {
+    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
         vec2 z = """ ++ Expression.toGLString e ++ """;
 
         float theta = atan(z.y, z.x) / radians(360.0);

@@ -35,6 +35,7 @@ type Graph
     | Relation2D RelationOperation Expression Expression
     | Implicit2D Expression Expression
     | Contour Expression
+    | GraphList (List Graph)
 
 
 type Expression
