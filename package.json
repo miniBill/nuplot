@@ -18,7 +18,7 @@
         "node-elm-compiler": "^5.0.5",
         "parcel-bundler": "^1.12.4",
         "parcel-plugin-inliner": "^1.0.14",
-        "typescript": "^4.0.5"
+        "typescript": "^4.1.2"
     },
     "scripts": {
         "build": "rm -rf .cache dist elm-stuff; elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js && parcel build src/index.html --public-url .",
