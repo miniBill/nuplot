@@ -2,7 +2,7 @@ module Expression.Value exposing (value)
 
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), partialSubstitute)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), partialSubstitute)
 import Expression.Parser
 import Expression.Simplify
 import Expression.Utils as Utils
@@ -342,10 +342,29 @@ unaryFunctionValue context args s f =
                     ErrorValue err
 
                 u ->
-                    ErrorValue <| "Unexpected argument: " ++ Debug.toString u
+                    ErrorValue <| "Unexpected argument: " ++ toString u
 
         _ ->
             ErrorValue "Unexpected number of arguments, expected 1"
+
+
+toString : Value -> String
+toString v =
+    case v of
+        ComplexValue z ->
+            Complex.toString z
+
+        ListValue ls ->
+            "{" ++ String.join ", " (List.map toString ls) ++ "}"
+
+        ErrorValue e ->
+            "Error: " ++ e
+
+        SymbolicValue s ->
+            Expression.toString s
+
+        GraphValue g ->
+            "Graph: " ++ Expression.graphToString g
 
 
 relationValue : RelationOperation -> Complex -> Complex -> Complex
@@ -432,17 +451,60 @@ complexMap2 ({ symbolic, complex, list } as fs) v w =
         ( ComplexValue l, ComplexValue r ) ->
             ComplexValue <| complex l r
 
-        ( SymbolicValue l, SymbolicValue r ) ->
-            SymbolicValue <| symbolic l r
+        ( SymbolicValue l, _ ) ->
+            SymbolicValue <| symbolic l (toSymbolic w)
 
-        ( SymbolicValue l, ComplexValue r ) ->
-            SymbolicValue <| symbolic l (complexToSymbolic r)
+        ( _, SymbolicValue r ) ->
+            SymbolicValue <| symbolic (toSymbolic v) r
 
-        ( ComplexValue l, SymbolicValue r ) ->
-            SymbolicValue <| symbolic (complexToSymbolic l) r
+        ( ListValue l, ComplexValue _ ) ->
+            ListValue <| List.map (\le -> complexMap2 fs le w) l
 
-        _ ->
-            ErrorValue <| "Incompatible: " ++ Debug.toString { v = v, w = w }
+        ( ComplexValue _, ListValue r ) ->
+            ListValue <| List.map (\re -> complexMap2 fs v re) r
+
+        ( GraphValue _, _ ) ->
+            ErrorValue "Cannot perform calculations on graphs"
+
+        ( _, GraphValue _ ) ->
+            ErrorValue "Cannot perform calculations on graphs"
+
+
+toSymbolic : Value -> Expression
+toSymbolic v =
+    let
+        graphToExpression g =
+            case g of
+                Explicit2D e ->
+                    e
+
+                Relation2D o l r ->
+                    RelationOperation o l r
+
+                Implicit2D l r ->
+                    RelationOperation Equals l r
+
+                Contour e ->
+                    e
+
+                GraphList gs ->
+                    List <| List.map graphToExpression gs
+    in
+    case v of
+        SymbolicValue s ->
+            s
+
+        ComplexValue c ->
+            complexToSymbolic c
+
+        ListValue l ->
+            List <| List.map toSymbolic l
+
+        GraphValue g ->
+            Apply (KnownFunction Plot) [ graphToExpression g ]
+
+        ErrorValue _ ->
+            Integer 0
 
 
 complexToSymbolic : Complex -> Expression

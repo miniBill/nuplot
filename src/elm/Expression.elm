@@ -14,6 +14,7 @@ module Expression exposing
     , fullSubstitute
     , functionNameToString
     , getFreeVariables
+    , graphToString
     , greeks
     , partialSubstitute
     , relationToString
@@ -309,6 +310,25 @@ toString : Expression -> String
 toString =
     toPrintExpression
         >> toStringPrec 0
+
+
+graphToString : Graph -> String
+graphToString g =
+    case g of
+        Explicit2D e ->
+            "Explicit2D " ++ toString e
+
+        Relation2D o l r ->
+            "Relation2D " ++ toString (RelationOperation o l r)
+
+        Implicit2D l r ->
+            "Implicit2D " ++ toString (RelationOperation Equals l r)
+
+        Contour c ->
+            "Contour " ++ toString c
+
+        GraphList gs ->
+            "GraphList [" ++ String.join ", " (List.map graphToString gs) ++ "]"
 
 
 type PrintExpression
