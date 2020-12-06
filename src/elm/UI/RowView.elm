@@ -17,8 +17,8 @@ import UI.Glsl exposing (getGlsl)
 import UI.Theme as Theme
 
 
-draw : Int -> Graph -> Element msg
-draw coeff graph =
+draw : { a | pageWidth : Int } -> Int -> Graph -> Element msg
+draw { pageWidth } coeff graph =
     let
         isCompletelyReal =
             case graph of
@@ -31,27 +31,33 @@ draw coeff graph =
 
                 _ ->
                     "0"
+
+        imageWidth =
+            pageWidth - (1 + coeff) * 3 * Theme.spacing
+
+        imageHeight =
+            imageWidth * 3 // 4
     in
     Element.html <|
         Html.node "nu-plot"
             [ Html.Attributes.attribute "expr-src" <| getGlsl graph
-            , Html.Attributes.attribute "canvas-width" <| String.fromInt <| Theme.imageWidth // coeff
-            , Html.Attributes.attribute "canvas-height" <| String.fromInt <| Theme.imageHeight // coeff
+            , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // coeff
+            , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // coeff
             , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
             , Html.Attributes.attribute "completely-real" isCompletelyReal
             ]
             []
 
 
-view : Int -> Row -> Element Msg
-view index row =
+view : Int -> Int -> Row -> Element Msg
+view pageWidth index row =
     Theme.column
         [ width fill
         , alignTop
         ]
         [ inputLine index row
         , statusLine row
-        , outputBlock row
+        , outputBlock { pageWidth = pageWidth } row
         ]
 
 
@@ -468,8 +474,8 @@ blockToElement { elements } =
     Element.row [ Font.italic ] elements
 
 
-outputBlock : Row -> Element msg
-outputBlock row =
+outputBlock : { a | pageWidth : Int } -> Row -> Element msg
+outputBlock model row =
     let
         showExpr =
             Expression.Value.value Dict.empty
@@ -482,7 +488,7 @@ outputBlock row =
                     viewRelationExpression s
 
                 GraphValue g ->
-                    { elements = [ el [ centerX ] <| draw inList g ]
+                    { elements = [ el [ centerX ] <| draw model inList g ]
                     , height = 1
                     }
 

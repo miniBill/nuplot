@@ -9,7 +9,9 @@ type alias Flags =
 
 
 type alias Model =
-    List Row
+    { rows : List Row
+    , pageWidth : Int
+    }
 
 
 type alias Row =
@@ -36,4 +38,5 @@ type Output
 
 type Msg
     = Input { row : Int, input : String }
+    | Width Int
     | BounceMsg Int

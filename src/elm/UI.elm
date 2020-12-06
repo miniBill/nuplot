@@ -2,6 +2,8 @@ module UI exposing (main)
 
 import Bounce
 import Browser
+import Browser.Dom
+import Browser.Events
 import Element exposing (Element, fill, height, width)
 import Element.Lazy
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
@@ -9,6 +11,7 @@ import Expression.Parser
 import Expression.Utils exposing (zero)
 import List.Extra as List
 import Model exposing (Flags, Model, Msg(..), Output(..))
+import Task
 import UI.RowView
 import UI.Theme as Theme
 
@@ -29,7 +32,7 @@ main =
         }
 
 
-init : Flags -> ( Model, Cmd msg )
+init : Flags -> ( Model, Cmd Msg )
 init _ =
     let
         ex x =
@@ -43,9 +46,15 @@ init _ =
             , ex "plot{2x,3x}"
             , Model.emptyRow
             ]
+
+        measure =
+            Browser.Dom.getViewport
+                |> Task.map (.viewport >> .width >> floor)
     in
-    ( raw
-    , Cmd.none
+    ( { rows = raw
+      , pageWidth = 1024
+      }
+    , Task.perform Width measure
     )
 
 
@@ -56,14 +65,14 @@ view model =
         , width fill
         ]
     <|
-        List.indexedMap (\index row -> Element.Lazy.lazy2 UI.RowView.view index row) model
+        List.indexedMap (\index row -> Element.Lazy.lazy3 UI.RowView.view model.pageWidth index row) model.rows
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Input { row, input } ->
-            model
+            model.rows
                 |> List.updateAt row
                     (\{ bounce, output } ->
                         { input = input
@@ -73,7 +82,7 @@ update msg model =
                     )
                 |> List.filter (not << String.isEmpty << .input)
                 |> (\l ->
-                        ( l ++ [ Model.emptyRow ]
+                        ( { model | rows = l ++ [ Model.emptyRow ] }
                         , if String.isEmpty input then
                             Cmd.none
 
@@ -83,7 +92,7 @@ update msg model =
                    )
 
         BounceMsg row ->
-            case List.getAt row model of
+            case List.getAt row model.rows of
                 Nothing ->
                     ( model
                     , Cmd.none
@@ -94,24 +103,30 @@ update msg model =
                         newBounce =
                             Bounce.pop bounce
                     in
-                    ( model
-                        |> List.setAt row
-                            { input = input
-                            , bounce = newBounce
-                            , output =
-                                if Bounce.steady newBounce then
-                                    case Expression.Parser.parse input of
-                                        Ok e ->
-                                            Parsed e
+                    ( { model
+                        | rows =
+                            model.rows
+                                |> List.setAt row
+                                    { input = input
+                                    , bounce = newBounce
+                                    , output =
+                                        if Bounce.steady newBounce then
+                                            case Expression.Parser.parse input of
+                                                Ok e ->
+                                                    Parsed e
 
-                                        Err e ->
-                                            ParseError <| Expression.Parser.errorsToString input e
+                                                Err e ->
+                                                    ParseError <| Expression.Parser.errorsToString input e
 
-                                else
-                                    toTyping output
-                            }
+                                        else
+                                            toTyping output
+                                    }
+                      }
                     , Cmd.none
                     )
+
+        Width width ->
+            ( { model | pageWidth = width }, Cmd.none )
 
 
 toTyping : Output -> Output
@@ -133,4 +148,4 @@ toTyping output =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    Browser.Events.onResize (\w _ -> Width w)

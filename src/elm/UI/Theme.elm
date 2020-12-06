@@ -1,4 +1,4 @@
-module UI.Theme exposing (column, grid, imageHeight, imageWidth, row, spacing, whiteLines)
+module UI.Theme exposing (column, grid, row, spacing, whiteLines)
 
 import Element exposing (Attribute, Element, none, shrink)
 
@@ -6,16 +6,6 @@ import Element exposing (Attribute, Element, none, shrink)
 spacing : number
 spacing =
     10
-
-
-imageWidth : number
-imageWidth =
-    1024
-
-
-imageHeight : number
-imageHeight =
-    768
 
 
 whiteLines : number
@@ -50,6 +40,7 @@ grid attrs rows =
                                 |> List.drop i
                                 |> List.head
                                 |> Maybe.withDefault none
+                                |> Element.el [ Element.alignBottom ]
                     }
             in
             Element.table (Element.spacing spacing :: attrs)

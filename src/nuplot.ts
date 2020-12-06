@@ -224,11 +224,13 @@ export class NuPlot extends HTMLElement {
       case "canvas-width":
         if (!newValue) return;
         this.canvas.width = +newValue;
+        window.requestAnimationFrame(this.renderFrame.bind(this));
         break;
 
       case "canvas-height":
         if (!newValue) return;
         this.canvas.height = +newValue;
+        window.requestAnimationFrame(this.renderFrame.bind(this));
         break;
 
       case "white-lines":
