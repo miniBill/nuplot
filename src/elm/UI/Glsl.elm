@@ -437,24 +437,30 @@ getFunctionGlsl name =
 
         Ln ->
             """
-            vec2 cln(vec2 b) {
-                float px = sqrt(b.x*b.x+b.y*b.y);
-                float py = atan(b.y, b.x);
+            vec2 cln(vec2 z) {
+                if(z.y == 0.0 && z.x >= 0.0) {
+                    return vec2(log(z.x), 0);
+                }
+                float px = sqrt(z.x*z.x+z.y*z.y);
+                float py = atan(z.y, z.x);
                 return vec2(log(px), py);
             }
             """
 
         Log10 ->
             """
-            vec2 clog10(vec2 b) {
-                return div(cln(b), cln(vec2(10, 0)));
+            vec2 clog10(vec2 z) {
+                return div(cln(z), cln(vec2(10, 0)));
             }
             """
 
         Exp ->
             """
-            vec2 cexp(vec2 v) {
-                return vec2(cos(v.y) * exp(v.x), sin(v.y) * exp(v.x));
+            vec2 cexp(vec2 z) {
+                if(z.y == 0.0) {
+                    return vec2(exp(z.x), 0);
+                }
+                return vec2(cos(z.y) * exp(z.x), sin(z.y) * exp(z.x));
             }
             """
 
