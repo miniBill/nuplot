@@ -267,7 +267,7 @@ getOperationGlsl op =
             """
             vec2 cpow(vec2 w, vec2 z) {
                 if(w.y == 0.0 && z.y == 0.0) {
-                    return vec2(pow(w.x, z.y), 0);
+                    return vec2(pow(w.x, z.x), 0);
                 }
                 float r = sqrt(w.x*w.x + w.y*w.y);
                 float t = atan(w.y, w.x);
