@@ -17,6 +17,7 @@ export function init(Elm: ElmType) {
     if (value === null) continue;
     saved[key] = value;
   }
+  console.log("init with flags: ", saved);
 
   var app = Elm.UI.init({
     node: node,
@@ -24,6 +25,7 @@ export function init(Elm: ElmType) {
   });
   app.ports.save.subscribe((param) => {
     const { key, value } = param;
+    console.log("localStorage.setItem(", key, ",", value, ")");
     localStorage.setItem(key, value);
   });
 }

@@ -92,20 +92,20 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Input { row, input } ->
-            model.rows
-                |> List.updateAt row
-                    (\{ bounce, output } ->
-                        { input = input
-                        , output = toTyping output
-                        , bounce = Bounce.push bounce
-                        }
-                    )
-                |> List.filter (not << String.isEmpty << .input)
-                |> (\l ->
-                        ( { model | rows = l ++ [ Model.emptyRow ] }
-                        , Bounce.delay 1000 (BounceMsg row)
-                        )
-                   )
+            let
+                rows_ =
+                    model.rows
+                        |> List.updateAt row
+                            (\{ bounce, output } ->
+                                { input = input
+                                , output = toTyping output
+                                , bounce = Bounce.push bounce
+                                }
+                            )
+            in
+            ( { model | rows = rows_ }
+            , Bounce.delay 1000 (BounceMsg row)
+            )
 
         BounceMsg row ->
             case List.getAt row model.rows of
@@ -118,9 +118,8 @@ update msg model =
                     let
                         newBounce =
                             Bounce.pop bounce
-                    in
-                    ( { model
-                        | rows =
+
+                        rows_ =
                             model.rows
                                 |> List.setAt row
                                     { input = input
@@ -132,8 +131,10 @@ update msg model =
                                         else
                                             toTyping output
                                     }
-                      }
-                    , model.rows
+                                |> List.filterNot (\r -> String.isEmpty r.input && Bounce.steady r.bounce)
+                    in
+                    ( { model | rows = rows_ ++ [ Model.emptyRow ] }
+                    , rows_
                         |> List.indexedMap (\i r -> save { key = String.fromInt i, value = r.input })
                         |> Cmd.batch
                     )
