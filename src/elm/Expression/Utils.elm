@@ -332,22 +332,66 @@ determinant expr =
 
             else
                 genericDeterminant { add = plus, negate = negate_, multiply = by } rows
+                    |> Maybe.withDefault (Apply (KnownFunction Det) [ expr ])
 
         _ ->
             Apply (KnownFunction Det) [ expr ]
 
 
-genericDeterminant : { add : List a -> a, negate : a -> a, multiply : List a -> a } -> List (List a) -> a
+genericDeterminant : { add : List a -> a, negate : a -> a, multiply : List a -> a } -> List (List a) -> Maybe a
 genericDeterminant { add, negate, multiply } mat =
     case mat of
         [] ->
-            add []
+            Just <|
+                add []
 
         [ [ single ] ] ->
-            single
+            Just <|
+                single
 
         [ [ a_, b_ ], [ c_, d_ ] ] ->
-            add [ multiply [ a_, d_ ], negate <| multiply [ b_, c_ ] ]
+            Just <|
+                add [ multiply [ a_, d_ ], negate <| multiply [ b_, c_ ] ]
+
+        [ [ a_, b_, c_ ], [ d_, e_, f_ ], [ g_, h_, i_ ] ] ->
+            Just <|
+                add
+                    [ multiply [ a_, e_, i_ ]
+                    , negate <| multiply [ a_, f_, h_ ]
+                    , negate <| multiply [ b_, d_, i_ ]
+                    , multiply [ b_, f_, g_ ]
+                    , multiply [ c_, d_, h_ ]
+                    , negate <| multiply [ c_, e_, g_ ]
+                    ]
+
+        [ [ a_, b_, c_, d_ ], [ e_, f_, g_, h_ ], [ i_, j_, k_, l_ ], [ m_, n_, o_, p_ ] ] ->
+            Just <|
+                add
+                    [ multiply [ a_, f_, k_, p_ ]
+                    , negate <| multiply [ a_, f_, l_, o_ ]
+                    , negate <| multiply [ a_, g_, j_, p_ ]
+                    , multiply [ a_, g_, l_, n_ ]
+                    , multiply [ a_, h_, j_, o_ ]
+                    , negate <| multiply [ a_, h_, k_, n_ ]
+                    , negate <| multiply [ b_, e_, k_, p_ ]
+                    , multiply [ b_, e_, l_, o_ ]
+                    , multiply [ b_, g_, i_, p_ ]
+                    , negate <| multiply [ b_, g_, l_, m_ ]
+                    , negate <| multiply [ b_, h_, i_, o_ ]
+                    , multiply [ b_, h_, k_, m_ ]
+                    , multiply [ c_, e_, j_, p_ ]
+                    , negate <| multiply [ c_, e_, l_, n_ ]
+                    , negate <| multiply [ c_, f_, i_, p_ ]
+                    , multiply [ c_, f_, l_, m_ ]
+                    , multiply [ c_, h_, i_, n_ ]
+                    , negate <| multiply [ c_, h_, j_, m_ ]
+                    , negate <| multiply [ d_, e_, j_, o_ ]
+                    , multiply [ d_, e_, k_, n_ ]
+                    , multiply [ d_, f_, i_, o_ ]
+                    , negate <| multiply [ d_, f_, k_, m_ ]
+                    , negate <| multiply [ d_, g_, i_, n_ ]
+                    , multiply [ d_, g_, j_, m_ ]
+                    ]
 
         _ ->
-            add []
+            Nothing

@@ -372,12 +372,13 @@ determinant val =
                         ++ String.fromInt cols
 
             else
-                Utils.genericDeterminant
-                    { add = fromList (ComplexValue Complex.zero) plus
-                    , multiply = fromList (ComplexValue <| Complex.fromReal 1) by
-                    , negate = complexMap { symbolic = UnaryOperation Negate, complex = Complex.negate, list = Nothing }
-                    }
-                    rows
+                rows
+                    |> Utils.genericDeterminant
+                        { add = fromList (ComplexValue Complex.zero) plus
+                        , multiply = fromList (ComplexValue <| Complex.fromReal 1) by
+                        , negate = complexMap { symbolic = UnaryOperation Negate, complex = Complex.negate, list = Nothing }
+                        }
+                    |> Maybe.withDefault (ErrorValue "Error in calculating the determinant")
 
         SymbolicValue s ->
             SymbolicValue <| Utils.determinant s
