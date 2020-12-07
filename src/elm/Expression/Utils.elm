@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, e, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, triple, two, vector, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, determinant, div, double, e, f, g, genericDeterminant, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, triple, two, vector, x, y, z, zero)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), visit)
 
@@ -293,3 +293,61 @@ complex real immaginary =
 icomplex : Int -> Int -> Expression
 icomplex real immaginary =
     complex (Integer real) (Integer immaginary)
+
+
+determinant : Expression -> Expression
+determinant expr =
+    case expr of
+        List ls ->
+            let
+                rows =
+                    ls
+                        |> List.filterMap
+                            (\r ->
+                                case r of
+                                    List cs ->
+                                        Just cs
+
+                                    _ ->
+                                        Nothing
+                            )
+
+                cols =
+                    rows
+                        |> List.map List.length
+                        |> (\lens ->
+                                if List.minimum lens == List.maximum lens then
+                                    List.minimum lens
+
+                                else
+                                    Nothing
+                           )
+                        |> Maybe.withDefault -1
+            in
+            if List.length rows < List.length ls then
+                Apply (KnownFunction Det) [ expr ]
+
+            else if List.length rows /= cols then
+                Apply (KnownFunction Det) [ expr ]
+
+            else
+                genericDeterminant { add = plus, negate = negate_, multiply = by } rows
+
+        _ ->
+            Apply (KnownFunction Det) [ expr ]
+
+
+genericDeterminant : { add : List a -> a, negate : a -> a, multiply : List a -> a } -> List (List a) -> a
+genericDeterminant { add, negate, multiply } mat =
+    case mat of
+        [] ->
+            add []
+
+        [ [ single ] ] ->
+            single
+
+        [ [ a_, b_ ], [ c_, d_ ] ] ->
+            add [ multiply [ a_, d_ ], negate <| multiply [ b_, c_ ] ]
+
+        _ ->
+            add []

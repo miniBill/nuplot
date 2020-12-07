@@ -272,6 +272,14 @@ applyValue context name args =
         KnownFunction Log10 ->
             unaryFunctionValue context args Log10 <| \v -> Complex.div v (Complex.ln <| Complex.fromReal 10)
 
+        KnownFunction Det ->
+            case args of
+                [ c ] ->
+                    determinant <| innerValue context c
+
+                _ ->
+                    ErrorValue "Unexpected number of args to pw, expected 1"
+
         KnownFunction Exp ->
             unaryFunctionValue context args Exp Complex.exp
 
@@ -314,6 +322,74 @@ applyValue context name args =
 
         UserFunction _ ->
             ErrorValue "TODO"
+
+
+determinant : Value -> Value
+determinant val =
+    case val of
+        ListValue ls ->
+            let
+                rows =
+                    ls
+                        |> List.filterMap
+                            (\r ->
+                                case r of
+                                    ListValue cs ->
+                                        Just cs
+
+                                    _ ->
+                                        Nothing
+                            )
+
+                cols =
+                    rows
+                        |> List.map List.length
+                        |> (\lens ->
+                                if List.minimum lens == List.maximum lens then
+                                    List.minimum lens
+
+                                else
+                                    Nothing
+                           )
+                        |> Maybe.withDefault -1
+
+                fromList default f xs =
+                    case List.reverse xs of
+                        [] ->
+                            default
+
+                        h :: t ->
+                            List.foldr (\e a -> f a e) h t
+            in
+            if List.length rows < List.length ls then
+                ErrorValue "Can only calculate the determinant of matrices"
+
+            else if List.length rows /= cols then
+                ErrorValue <|
+                    "Can only calculate the determinant of square matrices, but the size was "
+                        ++ String.fromInt (List.length ls)
+                        ++ "x"
+                        ++ String.fromInt cols
+
+            else
+                Utils.genericDeterminant
+                    { add = fromList (ComplexValue Complex.zero) plus
+                    , multiply = fromList (ComplexValue <| Complex.fromReal 1) by
+                    , negate = complexMap { symbolic = UnaryOperation Negate, complex = Complex.negate, list = Nothing }
+                    }
+                    rows
+
+        SymbolicValue s ->
+            SymbolicValue <| Utils.determinant s
+
+        GraphValue _ ->
+            ErrorValue "Cannot calculate the determinant of a graph"
+
+        ComplexValue _ ->
+            val
+
+        ErrorValue _ ->
+            val
 
 
 unaryFunctionValue : Dict String Value -> List Expression -> KnownFunction -> (Complex -> Complex) -> Value

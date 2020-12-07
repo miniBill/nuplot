@@ -89,6 +89,7 @@ type KnownFunction
     | Arg
       -- Matrix
     | Gra
+    | Det
       -- Derivative
     | Dd
     | Ii
@@ -600,7 +601,9 @@ unaryFunctions =
             ]
 
         matrix =
-            [ ( "gra", Gra ) ]
+            [ ( "gra", Gra )
+            , ( "det", Det )
+            ]
 
         other =
             [ ( "plot", Plot )
@@ -823,6 +826,9 @@ functionNameToString name =
 
         KnownFunction Log10 ->
             "log10"
+
+        KnownFunction Det ->
+            "det"
 
         KnownFunction Exp ->
             "exp"

@@ -491,6 +491,9 @@ getFunctionGlsl name =
             }
             """
 
+        Det ->
+            ""
+
         Gra ->
             ""
 
