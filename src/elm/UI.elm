@@ -6,6 +6,7 @@ import Browser.Dom
 import Browser.Events
 import Dict
 import Element exposing (Element, fill, height, width)
+import Element.Font as Font
 import Element.Lazy
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import Expression.Parser
@@ -28,6 +29,7 @@ main =
             Element.layout
                 [ width fill
                 , height fill
+                , Font.size Theme.fontSize
                 , Element.padding Theme.spacing
                 ]
                 << view

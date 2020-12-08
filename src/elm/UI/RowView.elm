@@ -2,7 +2,7 @@ module UI.RowView exposing (view)
 
 import Complex
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, scale, shrink, spacing, text, width)
+import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, shrink, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -382,89 +382,143 @@ viewReplacement ( name, value ) =
 
 roundBracketed : List (List (Block msg)) -> Block msg
 roundBracketed =
-    bracketed "(" "⎛" "⎜" "⎜" "⎝" ")" "⎞" "⎟" "⎟" "⎠"
+    simplyBracketed
+        "("
+        { left = Theme.bracketBorderWidth, top = 0, bottom = 0, right = 0 }
+        { topLeft = 999, bottomLeft = 999, topRight = 0, bottomRight = 0 }
+        ")"
+        { left = 0, top = 0, bottom = 0, right = Theme.bracketBorderWidth }
+        { topRight = 999, bottomRight = 999, topLeft = 0, bottomLeft = 0 }
 
 
 squareBracketed : List (List (Block msg)) -> Block msg
 squareBracketed =
-    bracketed "[" "⎡" "⎢" "⎢" "⎣" "]" "⎤" "⎥" "⎥" "⎦"
-
-
-curlyBracketed : List (List (Block msg)) -> Block msg
-curlyBracketed =
-    bracketed "{" "⎧" "⎨" "⎪" "⎩" "}" "⎫" "⎬" "⎪" "⎭"
+    simplyBracketed
+        "["
+        { left = Theme.bracketBorderWidth, top = Theme.bracketBorderWidth, bottom = Theme.bracketBorderWidth, right = 0 }
+        { topLeft = 0, bottomLeft = 0, topRight = 0, bottomRight = 0 }
+        "]"
+        { left = 0, top = Theme.bracketBorderWidth, bottom = Theme.bracketBorderWidth, right = Theme.bracketBorderWidth }
+        { topLeft = 0, bottomLeft = 0, topRight = 0, bottomRight = 0 }
 
 
 absBracketed : List (List (Block msg)) -> Block msg
 absBracketed =
-    bracketed "⎪" "⎪" "⎪" "⎪" "⎪" "⎪" "⎪" "⎪" "⎪" "⎪"
+    simplyBracketed
+        "|"
+        { left = Theme.bracketBorderWidth, top = 0, bottom = 0, right = 0 }
+        { topLeft = 0, bottomLeft = 0, topRight = 0, bottomRight = 0 }
+        "|"
+        { left = 0, top = 0, bottom = 0, right = Theme.bracketBorderWidth }
+        { topLeft = 0, bottomLeft = 0, topRight = 0, bottomRight = 0 }
 
 
-bracketed : String -> String -> String -> String -> String -> String -> String -> String -> String -> String -> List (List (Block msg)) -> Block msg
-bracketed sl ul cl exl bl sr ur cr exr br blocks =
+curlyBracketed : List (List (Block msg)) -> Block msg
+curlyBracketed blocks =
     let
-        height =
+        e =
+            el [ height fill, width <| px <| Theme.bracketWidth // 2 - 1 ] none
+
+        no =
+            { topLeft = 0, bottomLeft = 0, topRight = 0, bottomRight = 0 }
+
+        l =
+            { left = Theme.bracketBorderWidth, right = 0, top = 0, bottom = 0 }
+
+        r =
+            { right = Theme.bracketBorderWidth, left = 0, top = 0, bottom = 0 }
+
+        blocksHeight =
             List.sum <| List.map (Maybe.withDefault 0 << List.maximum << List.map .height) blocks
 
-        unwrapRow =
+        piece we re =
+            el
+                [ Border.widthEach we
+                , Border.roundEach re
+                , width <| px <| Theme.bracketWidth // 2 + 1
+                , height <| px <| (Theme.fontSize + 4) * blocksHeight // 4
+                ]
+                none
+
+        ur =
+            piece l { no | topLeft = 999 }
+
+        ul =
+            piece r { no | topRight = 999 }
+
+        br =
+            piece l { no | bottomLeft = 999 }
+
+        bl =
+            piece r { no | bottomRight = 999 }
+
+        bra =
+            column [ height fill, width <| px Theme.bracketWidth ] << List.map (row [])
+
+        lbra =
+            bra
+                [ [ e, ur ], [ bl, e ], [ ul, e ], [ e, br ] ]
+
+        rbra =
+            bra
+                [ [ ul, e ], [ e, br ], [ e, ur ], [ bl, e ] ]
+    in
+    bracketed "{" lbra "}" rbra blocks
+
+
+simplyBracketed :
+    String
+    -> { bottom : Int, left : Int, right : Int, top : Int }
+    -> { topLeft : Int, topRight : Int, bottomLeft : Int, bottomRight : Int }
+    -> String
+    -> { bottom : Int, left : Int, right : Int, top : Int }
+    -> { topLeft : Int, topRight : Int, bottomLeft : Int, bottomRight : Int }
+    -> List (List (Block msg))
+    -> Block msg
+simplyBracketed ls lw lr rs rw rr blocks =
+    let
+        bracket we re =
+            el
+                [ width <| px Theme.bracketWidth
+                , Element.height fill
+                , Border.widthEach we
+                , Border.roundEach re
+                ]
+                none
+    in
+    bracketed ls (bracket lw lr) rs (bracket rw rr) blocks
+
+
+bracketed : String -> Element msg -> String -> Element msg -> List (List (Block msg)) -> Block msg
+bracketed ls l rs r blocks =
+    let
+        rowHeight =
+            Maybe.withDefault 0 << List.maximum << List.map .height
+
+        height =
+            List.sum <| List.map rowHeight blocks
+
+        prepareRow =
             List.map (\{ elements } -> row [ width shrink ] elements)
 
         grid =
             blocks
-                |> List.map unwrapRow
+                |> List.map prepareRow
                 |> Theme.grid [ alignBottom ]
-                |> (\g -> [ g ])
 
-        bracketedElements =
-            case height of
-                0 ->
-                    el [ alignBottom ] (text sl) :: grid ++ [ el [ alignBottom ] (text sr) ]
+        wrapped =
+            if height == 1 then
+                [ row [ spacing 2 ]
+                    [ el [ alignBottom, Font.unitalicized ] <| text ls
+                    , grid
+                    , el [ alignBottom, Font.unitalicized ] <| text rs
+                    ]
+                ]
 
-                1 ->
-                    el [ alignBottom ] (text sl) :: grid ++ [ el [ alignBottom ] (text sr) ]
-
-                2 ->
-                    if cl == exl then
-                        column [ alignBottom ] [ text ul, text bl ]
-                            :: grid
-                            ++ [ column [ alignBottom ] [ text ur, text br ] ]
-
-                    else
-                        el [ alignBottom, scale <| toFloat height ] (text sl)
-                            :: grid
-                            ++ [ el [ alignBottom, scale <| toFloat height ] (text sr) ]
-
-                _ ->
-                    let
-                        col u c e b =
-                            column [ alignBottom ] <|
-                                List.concat <|
-                                    let
-                                        halfway =
-                                            List.repeat ((height - 3) // 2) (text e)
-                                    in
-                                    if modBy 2 height == 1 then
-                                        [ [ text u ]
-                                        , halfway
-                                        , [ text c ]
-                                        , halfway
-                                        , [ text b ]
-                                        ]
-
-                                    else
-                                        [ [ text u ]
-                                        , halfway
-                                        , [ text e ]
-                                        , [ text c ]
-                                        , halfway
-                                        , [ text b ]
-                                        ]
-                    in
-                    col ul cl exl bl
-                        :: grid
-                        ++ [ col ur cr exr br ]
+            else
+                [ row [] [ l, grid, r ] ]
     in
-    { elements = bracketedElements
+    { elements = wrapped
     , height = height
     }
 
