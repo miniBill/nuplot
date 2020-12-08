@@ -2,7 +2,7 @@ module UI.RowView exposing (view)
 
 import Complex
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, px, rgb, row, shrink, spacing, text, width)
+import Element exposing (Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, none, paddingEach, paddingXY, px, rgb, row, shrink, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -92,7 +92,7 @@ statusLine row =
             viewError e
 
         Parsed e ->
-            Element.row [ width <| Element.maximum 200 shrink ]
+            Theme.column [ width <| Element.maximum 200 shrink ]
                 [ text "Interpreted as: "
                 , viewExpression e
                 ]
@@ -141,8 +141,12 @@ label x =
 
 viewExpression : Expression -> Element msg
 viewExpression expr =
-    blockToElement <|
-        viewRelationExpression expr
+    el [ height shrink, width shrink ] <|
+        Element.html <|
+            Html.node "math-jax"
+                [ Html.Attributes.attribute "tex-src" <| Expression.toTeXString expr
+                ]
+                []
 
 
 viewRelationExpression : Expression -> Block msg
@@ -403,7 +407,13 @@ squareBracketed =
 
 
 absBracketed : List (List (Block msg)) -> Block msg
-absBracketed =
+absBracketed blocks =
+    let
+        space =
+            { height = 1
+            , elements = [ el [ height <| px 4 ] none ]
+            }
+    in
     simplyBracketed
         "|"
         { left = Theme.bracketBorderWidth, top = 0, bottom = 0, right = 0 }
@@ -411,6 +421,7 @@ absBracketed =
         "|"
         { left = 0, top = 0, bottom = 0, right = Theme.bracketBorderWidth }
         { topLeft = 0, bottomLeft = 0, topRight = 0, bottomRight = 0 }
+        [ [ blockColumn <| [ space ] ++ List.map blockRow blocks ++ [ space ] ] ]
 
 
 curlyBracketed : List (List (Block msg)) -> Block msg
@@ -516,7 +527,7 @@ bracketed ls l rs r blocks =
                 ]
 
             else
-                [ row [] [ l, grid, r ] ]
+                [ row [ spacing 1, paddingXY 2 0 ] [ l, grid, r ] ]
     in
     { elements = wrapped
     , height = height
@@ -600,4 +611,7 @@ outputBlock model row =
                 |> Maybe.withDefault none
 
         Parsed e ->
-            showExpr e
+            Theme.column []
+                [ text "Output:"
+                , showExpr e
+                ]

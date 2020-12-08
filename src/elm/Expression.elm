@@ -20,6 +20,7 @@ module Expression exposing
     , relationToString
     , toGLString
     , toString
+    , toTeXString
     , visit
     )
 
@@ -187,8 +188,8 @@ pvisit f expr =
 
         Nothing ->
             case expr of
-                PAtom s ->
-                    PAtom s
+                PVariable s ->
+                    PVariable s
 
                 PInteger i ->
                     PInteger i
@@ -335,7 +336,7 @@ graphToString g =
 type PrintExpression
     = PInteger Int
     | PFloat Float
-    | PAtom String
+    | PVariable String
     | PAdd PrintExpression PrintExpression
     | PNegate PrintExpression
     | PBy PrintExpression PrintExpression
@@ -351,7 +352,7 @@ toPrintExpression : Expression -> PrintExpression
 toPrintExpression e =
     case e of
         Variable v ->
-            PAtom v
+            PVariable v
 
         Integer i ->
             PInteger i
@@ -438,7 +439,7 @@ toStringPrec p e =
                 Nothing
     in
     case e of
-        PAtom v ->
+        PVariable v ->
             v
 
         PFloat f ->
@@ -464,7 +465,7 @@ toStringPrec p e =
                 PPower _ _ ->
                     infixl_ 7 "" l r
 
-                PAtom _ ->
+                PVariable _ ->
                     infixl_ 7 "" l r
 
                 PApply _ _ ->
@@ -733,16 +734,16 @@ toGLStringPrec p expr =
             paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (toGLStringPrec 0) ex) ++ ")"
     in
     case expr of
-        PAtom "i" ->
+        PVariable "i" ->
             "vec2(0,1)"
 
-        PAtom "pi" ->
+        PVariable "pi" ->
             "vec2(radians(180.0),0.0)"
 
-        PAtom "e" ->
+        PVariable "e" ->
             "vec2(exp(1.0),0)"
 
-        PAtom v ->
+        PVariable v ->
             "vec2(" ++ v ++ ",0)"
 
         PInteger v ->
@@ -878,7 +879,7 @@ ppartialSubstitute var val =
                             else
                                 ppartialSubstitute var val e
 
-                PAtom string ->
+                PVariable string ->
                     Just <|
                         if string == var then
                             val
@@ -893,3 +894,160 @@ ppartialSubstitute var val =
 pfullSubstitute : Dict String PrintExpression -> PrintExpression -> PrintExpression
 pfullSubstitute ctx e =
     List.foldl (\( k, v ) -> ppartialSubstitute k v) e (Dict.toList ctx)
+
+
+toTeXString : Expression -> String
+toTeXString =
+    toPrintExpression
+        >> toTeXStringPrec 0
+
+
+toTeXStringPrec : Int -> PrintExpression -> String
+toTeXStringPrec p e =
+    let
+        paren b c =
+            if b then
+                "(" ++ c ++ ")"
+
+            else
+                c
+
+        noninfix op c =
+            paren (p > 10) <| op ++ toTeXStringPrec 11 c
+
+        infixl_ n op l r =
+            paren (p > n) <| toTeXStringPrec n l ++ op ++ toTeXStringPrec (n + 1) r
+
+        infixr_ n op l r =
+            paren (p > n) <| toTeXStringPrec (n + 1) l ++ op ++ toTeXStringPrec n r
+
+        wrp x =
+            if p > 0 then
+                "{" ++ x ++ "}"
+
+            else
+                x
+
+        asMatrix mx =
+            case mx of
+                PList ls ->
+                    let
+                        childLists =
+                            ls
+                                |> List.filterMap
+                                    (\l ->
+                                        case l of
+                                            PList u ->
+                                                Just u
+
+                                            _ ->
+                                                Nothing
+                                    )
+                    in
+                    if List.length ls == List.length childLists then
+                        Just childLists
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+    in
+    wrp <|
+        case e of
+            PVariable v ->
+                Dict.get v greeks |> Maybe.withDefault v
+
+            PFloat f ->
+                String.fromFloat f
+
+            PInteger v ->
+                String.fromInt v
+
+            PNegate expression ->
+                noninfix "-" expression
+
+            PAdd l (PNegate r) ->
+                infixl_ 6 " - " l r
+
+            PAdd l r ->
+                infixl_ 6 " + " l r
+
+            PRel rel l r ->
+                infixl_ 5 (" " ++ rel ++ " ") l r
+
+            PBy ((PInteger _) as l) r ->
+                case r of
+                    PPower _ _ ->
+                        infixl_ 7 "" l r
+
+                    PVariable _ ->
+                        infixl_ 7 "" l r
+
+                    PApply (KnownFunction Abs) _ ->
+                        infixl_ 7 "\\cdot" l r
+
+                    PApply _ _ ->
+                        infixl_ 7 "" l r
+
+                    _ ->
+                        infixl_ 7 "\\cdot" l r
+
+            PBy l r ->
+                infixl_ 7 "\\cdot" l r
+
+            PDiv l r ->
+                paren (p > 7) <| "\\frac" ++ toTeXStringPrec 7 l ++ toTeXStringPrec 8 r
+
+            PPower l r ->
+                infixr_ 8 "^" l r
+
+            PApply (KnownFunction Abs) [ ex ] ->
+                paren (p > 10) <| "\\left|" ++ toTeXStringPrec 0 ex ++ "\\right|"
+
+            PApply name [ (PList _) as ex ] ->
+                paren (p > 10) <| "\\mathrm{" ++ functionNameToString name ++ "}" ++ toTeXStringPrec 0 ex
+
+            PApply name ex ->
+                paren (p > 10) <|
+                    "\\mathrm{"
+                        ++ functionNameToString name
+                        ++ "}\\left("
+                        ++ String.join ", " (List.map (toTeXStringPrec 0) ex)
+                        ++ "\\right)"
+
+            PList es ->
+                case asMatrix e of
+                    Just childLists ->
+                        let
+                            viewRow =
+                                String.join " & " << List.map (\cell -> "{" ++ toTeXStringPrec 0 cell ++ "}")
+                        in
+                        "\\begin{pmatrix}" ++ String.join " \\\\ " (List.map viewRow childLists) ++ "\\end{pmatrix}"
+
+                    Nothing ->
+                        "\\begin{Bmatrix}" ++ String.join ", & " (List.map (\cell -> "{" ++ toTeXStringPrec 0 cell ++ "}") es) ++ " \\end{Bmatrix}"
+
+            PReplace var expr ->
+                "\\begin{bmatrix}"
+                    ++ String.join " \\\\ "
+                        (List.map
+                            (\( k, v ) ->
+                                let
+                                    r =
+                                        toTeXStringPrec 0 v
+                                in
+                                String.join
+                                    (if String.contains " " r then
+                                        " "
+
+                                     else
+                                        ""
+                                    )
+                                    [ k, "=", r ]
+                            )
+                         <|
+                            Dict.toList var
+                        )
+                    ++ "\\end{bmatrix} "
+                    ++ toTeXStringPrec 0 expr

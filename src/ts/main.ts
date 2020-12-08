@@ -1,4 +1,9 @@
-import { ElmType } from "./elm/UI.elm";
+import { ElmType } from "../elm/UI.elm";
+import { NuPlot } from "./nuplot";
+import { MathJaxElement } from "./mathjax";
+
+customElements.define("nu-plot", NuPlot);
+customElements.define("math-jax", MathJaxElement);
 
 export function init(Elm: ElmType) {
   const node = document.getElementById("main");
@@ -17,7 +22,6 @@ export function init(Elm: ElmType) {
     if (value === null) continue;
     saved[key] = value;
   }
-  console.log("init with flags: ", saved);
 
   var app = Elm.UI.init({
     node: node,
@@ -25,7 +29,6 @@ export function init(Elm: ElmType) {
   });
   app.ports.save.subscribe((param) => {
     const { key, value } = param;
-    console.log("localStorage.setItem(", key, ",", value, ")");
     localStorage.setItem(key, value);
   });
 }

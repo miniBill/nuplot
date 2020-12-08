@@ -1,5 +1,5 @@
-import declarations from "./shaders/declarations.frag";
-import main from "./shaders/main.frag";
+import declarations from "../shaders/declarations.frag";
+import main from "../shaders/main.frag";
 
 export class NuPlot extends HTMLElement {
   wrapper: HTMLElement;
