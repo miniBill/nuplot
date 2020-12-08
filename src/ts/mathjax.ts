@@ -49,7 +49,7 @@ export class MathJaxElement extends HTMLElement {
     }
   }
 
-  async render() {
+  render() {
     this.wrapper.innerHTML = "Rendering...";
     if (!window.MathJax) {
       requestAnimationFrame(this.render.bind(this));
@@ -60,20 +60,21 @@ export class MathJaxElement extends HTMLElement {
     options.scale = 1;
     options.display = false;
 
-    try {
-      var node = await window.MathJax.tex2svgPromise(this.src, options);
-      this.wrapper.innerHTML =
-        "<style>mjx-assistive-mml { display: none !important; }</style>";
-      this.wrapper.appendChild(node);
-      window.MathJax.startup.document.clear();
-      window.MathJax.startup.document.updateDocument();
-    } catch (err) {
-      this.wrapper.innerHTML = "";
-      const errorNode = document
-        .createElement("pre")
-        .appendChild(document.createTextNode(err.message));
-      this.wrapper.appendChild(errorNode);
-    }
+    window.MathJax.tex2svgPromise(this.src, options)
+      .then((node) => {
+        this.wrapper.innerHTML =
+          "<style>mjx-assistive-mml { display: none !important; }</style>";
+        this.wrapper.appendChild(node);
+        window.MathJax.startup.document.clear();
+        window.MathJax.startup.document.updateDocument();
+      })
+      .catch((err) => {
+        this.wrapper.innerHTML = "";
+        const errorNode = document
+          .createElement("pre")
+          .appendChild(document.createTextNode(err.message));
+        this.wrapper.appendChild(errorNode);
+      });
   }
 
   static get observedAttributes() {
