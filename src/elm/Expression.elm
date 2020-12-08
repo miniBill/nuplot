@@ -928,30 +928,29 @@ toTeXStringPrec p e =
             else
                 x
 
-        asMatrix mx =
-            case mx of
-                PList ls ->
-                    let
-                        childLists =
-                            ls
-                                |> List.filterMap
-                                    (\l ->
-                                        case l of
-                                            PList u ->
-                                                Just u
-
-                                            _ ->
-                                                Nothing
-                                    )
-                    in
-                    if List.length ls == List.length childLists then
-                        Just childLists
-
-                    else
-                        Nothing
+        asList l =
+            case l of
+                PList u ->
+                    Just u
 
                 _ ->
                     Nothing
+
+        asMatrix mx =
+            mx
+                |> asList
+                |> Maybe.andThen
+                    (\ls ->
+                        let
+                            childLists =
+                                List.filterMap asList ls
+                        in
+                        if List.length ls == List.length childLists then
+                            Just childLists
+
+                        else
+                            Nothing
+                    )
     in
     wrp <|
         case e of
