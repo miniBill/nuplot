@@ -2,9 +2,9 @@ module SimplificationTest exposing (suite)
 
 import Dict
 import Expect
-import Expression exposing (Expression(..))
+import Expression exposing (AssociativeOperation(..), Expression(..))
 import Expression.Simplify
-import Expression.Utils exposing (a, b, by, c, complex, cos_, cosh_, div, double, f, g, i, ipow, m, minus, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, triple, two, x, z, zero)
+import Expression.Utils exposing (a, b, by, c, complex, cos_, cosh_, div, double, f, g, i, int, ipow, m, minus, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, triple, two, x, z, zero)
 import Test exposing (Test, describe, test)
 
 
@@ -31,12 +31,12 @@ suite =
                         (Expression.toString doublySimplified ++ " = " ++ Debug.toString doublySimplified)
             ]
 
-        toTest ( from, to ) =
+        toTest ( aop, from, to ) =
             let
                 sorted =
-                    Expression.Simplify.sortByDegree from
+                    Expression.Simplify.sortByDegree aop from
             in
-            test (Expression.toString (List from) ++ " sorts to " ++ Expression.toString (List to)) <|
+            test (Expression.toString (List from) ++ " sorts (" ++ Debug.toString aop ++ ") to " ++ Expression.toString (List to)) <|
                 \_ ->
                     Expect.equal
                         (Expression.toString (List to) ++ " = " ++ Debug.toString to)
@@ -240,14 +240,20 @@ simplificationTests =
     ]
 
 
-sortTests : List ( List Expression, List Expression )
+sortTests : List ( AssociativeOperation, List Expression, List Expression )
 sortTests =
-    [ let
+    [ ( Addition, [ a, b ], [ a, b ] )
+    , ( Addition, [ square x, x ], [ square x, x ] )
+    , ( Addition, [ by [ a, x ], by [ b, x ] ], [ by [ a, x ], by [ b, x ] ] )
+    , ( Addition, [ square a, square b ], [ square a, square b ] )
+    , ( Multiplication, [ c, b, a ], [ a, b, c ] )
+    , ( Multiplication, [ int 3, i ], [ int 3, i ] )
+    , let
         afmn =
             by [ a, f, m, n ]
 
         agmr =
             by [ a, g, m, r ]
       in
-      ( [ afmn, agmr, negate_ afmn ], [ afmn, negate_ afmn, agmr ] )
+      ( Addition, [ afmn, agmr, negate_ afmn ], [ afmn, negate_ afmn, agmr ] )
     ]

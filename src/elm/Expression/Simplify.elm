@@ -252,6 +252,7 @@ stepSimplifyAssociative aop args =
                         >> tryExtract findNegate (\( negated, rest ) -> [ negate_ <| build <| negated :: rest ])
                         >> tryExtract findAdditionList (\( adds, rest ) -> [ plus <| List.map (\x -> by <| x :: rest) adds ])
            )
+        |> sortByDegree aop
         |> build
 
 
@@ -335,28 +336,50 @@ findNegate expr =
             Nothing
 
 
-sortByDegree : List Expression -> List Expression
-sortByDegree ee =
+sortByDegree : AssociativeOperation -> List Expression -> List Expression
+sortByDegree aop ee =
     let
         letters =
-            getFreeVariables <| List ee
+            List ee
+                |> getFreeVariables
+                |> Set.toList
+                |> (\l ->
+                        if aop == Addition then
+                            List.reverse l
+
+                        else
+                            l
+                   )
 
         by f x y =
-            compare (f x) (f y)
+            if aop == Addition then
+                compare -(f x) -(f y)
+
+            else
+                compare (f x) (f y)
     in
-    List.foldr
+    List.foldl
         (\var ->
-            List.stableSortWith (by <| Maybe.withDefault -1 << polyDegree var)
+            List.stableSortWith
+                (by <|
+                    \e ->
+                        -- "i" doesn't have higher nonsimplified powers, and we want it later
+                        if var == "i" && aop == Addition then
+                            negate <| Maybe.withDefault -1 <| polyDegree var e
+
+                        else
+                            Maybe.withDefault -1 <| polyDegree var e
+                )
         )
         ee
-        (List.reverse <| Set.toList letters)
+        letters
 
 
 squashAndGroupAssociative : AssociativeOperation -> List Expression -> List Expression
 squashAndGroupAssociative aop extracted =
     let
         grouped =
-            case List.reverse (sortByDegree extracted) of
+            case sortByDegree aop extracted of
                 [] ->
                     []
 
