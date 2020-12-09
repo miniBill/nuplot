@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asMatrix, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, determinant, div, double, e, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, triple, two, vector, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asMatrix, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, det, determinant, div, double, e, f, g, gra_, h, i, icomplex, ii, int, ipow, j, k, l, ln_, m, minus, n, negate_, o, one, p, plus, pow, q, r, s, sin_, sinh_, sqrt_, square, squash, t, triple, two, u, v, vector, w, x, y, z, zero)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), genericAsMatrix, genericAsSquareMatrix, genericDeterminant, visit)
 
@@ -61,14 +61,84 @@ g =
     Variable "g"
 
 
+h : Expression
+h =
+    Variable "h"
+
+
 i : Expression
 i =
     Variable "i"
 
 
+j : Expression
+j =
+    Variable "j"
+
+
+k : Expression
+k =
+    Variable "k"
+
+
+l : Expression
+l =
+    Variable "l"
+
+
+m : Expression
+m =
+    Variable "m"
+
+
 n : Expression
 n =
     Variable "n"
+
+
+o : Expression
+o =
+    Variable "o"
+
+
+p : Expression
+p =
+    Variable "p"
+
+
+q : Expression
+q =
+    Variable "q"
+
+
+r : Expression
+r =
+    Variable "r"
+
+
+s : Expression
+s =
+    Variable "s"
+
+
+t : Expression
+t =
+    Variable "t"
+
+
+u : Expression
+u =
+    Variable "u"
+
+
+v : Expression
+v =
+    Variable "v"
+
+
+w : Expression
+w =
+    Variable "w"
 
 
 x : Expression
@@ -123,6 +193,11 @@ minus x_ y_ =
 by : List Expression -> Expression
 by =
     associativeOperation Multiplication one
+
+
+det : Expression -> Expression
+det =
+    unaryFunc Det
 
 
 div : Expression -> Expression -> Expression
@@ -222,7 +297,7 @@ int =
 
 vector : List Expression -> Expression
 vector =
-    Expression.List << List.map (\v -> Expression.List [ v ])
+    Expression.List << List.map (\el -> Expression.List [ el ])
 
 
 associativeOperation : AssociativeOperation -> Expression -> List Expression -> Expression
@@ -250,8 +325,8 @@ squash =
                                 AssociativeOperation Addition il ir io ->
                                     List.concatMap extract <| il :: ir :: io
 
-                                s ->
-                                    [ s ]
+                                ex ->
+                                    [ ex ]
                     in
                     Just <| plus <| List.concatMap extract (ol :: or :: oo)
 
@@ -262,8 +337,8 @@ squash =
                                 AssociativeOperation Multiplication il ir io ->
                                     List.concatMap extract <| il :: ir :: io
 
-                                s ->
-                                    [ s ]
+                                ex ->
+                                    [ ex ]
                     in
                     Just <| by <| List.concatMap extract (ol :: or :: oo)
 
@@ -323,4 +398,8 @@ determinant expr =
                 |> Maybe.withDefault (Apply (KnownFunction Det) [ expr ])
 
         _ ->
+            let
+                _ =
+                    Debug.log "Wasn't a square matrix" expr
+            in
             Apply (KnownFunction Det) [ expr ]

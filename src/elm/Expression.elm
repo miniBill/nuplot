@@ -945,7 +945,7 @@ genericAsSquareMatrix asList =
     genericAsMatrix asList
         >> Maybe.andThen
             (\rows ->
-                if Just (List.length rows) /= Maybe.map List.length (List.head rows) then
+                if Just (List.length rows) == Maybe.map List.length (List.head rows) then
                     Just rows
 
                 else
