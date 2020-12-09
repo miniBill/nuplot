@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..))
 import Expression.Simplify
-import Expression.Utils exposing (a, b, by, c, complex, cos_, cosh_, div, double, f, i, ipow, m, minus, n, negate_, one, plus, sin_, sinh_, sqrt_, square, triple, two, x, z, zero)
+import Expression.Utils exposing (a, b, by, c, complex, cos_, cosh_, div, double, f, g, i, ipow, m, minus, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, triple, two, x, z, zero)
 import Test exposing (Test, describe, test)
 
 
@@ -30,15 +30,28 @@ suite =
                         (Expression.toString simplified ++ " = " ++ Debug.toString simplified)
                         (Expression.toString doublySimplified ++ " = " ++ Debug.toString doublySimplified)
             ]
+
+        toTest ( from, to ) =
+            let
+                sorted =
+                    Expression.Simplify.sortByDegree from
+            in
+            test (Expression.toString (List from) ++ " sorts to " ++ Expression.toString (List to)) <|
+                \_ ->
+                    Expect.equal
+                        (Expression.toString (List to) ++ " = " ++ Debug.toString to)
+                        (Expression.toString (List sorted) ++ " = " ++ Debug.toString sorted)
     in
     describe "The Expression.Simplify module"
         [ describe "Expression.Simplify.simplify" <|
-            List.concatMap toTests tests
+            List.concatMap toTests simplificationTests
+        , describe "Expression.Simplify.sortByDegree" <|
+            List.map toTest sortTests
         ]
 
 
-tests : List ( Expression, Expression )
-tests =
+simplificationTests : List ( Expression, Expression )
+simplificationTests =
     let
         byself var =
             by [ var, var ]
@@ -92,9 +105,9 @@ tests =
     , ( by [ complex a b, minus a <| by [ i, b ] ], plus [ square a, square b ] )
     , simplified <|
         div
-            (plus [ by [ b, x ], by [ a, x ] ])
+            (plus [ by [ a, x ], by [ b, x ] ])
             (by [ a, b, n ])
-    , ( sinh_ <| by [ i, x ], by [ i, sin_ x ] )
+    , ( sinh_ <| by [ i, x ], by [ sin_ x, i ] )
     , ( cosh_ <| by [ i, x ], cos_ x )
     , simplified <| plus [ Float 0.5, triple i ]
     , ( div one i, negate_ i )
@@ -224,4 +237,17 @@ tests =
          , "[g = (x*x - y*y)^(3/2) + 1/10] gra{x/(g*g), y/(g*g)}"
          )
     -}
+    ]
+
+
+sortTests : List ( List Expression, List Expression )
+sortTests =
+    [ let
+        afmn =
+            by [ a, f, m, n ]
+
+        agmr =
+            by [ a, g, m, r ]
+      in
+      ( [ afmn, agmr, negate_ afmn ], [ afmn, negate_ afmn, agmr ] )
     ]

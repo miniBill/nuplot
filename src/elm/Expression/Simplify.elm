@@ -1,4 +1,4 @@
-module Expression.Simplify exposing (simplify)
+module Expression.Simplify exposing (simplify, sortByDegree)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables)
@@ -62,10 +62,10 @@ stepSimplify context expr =
             in
             case bop of
                 Division ->
-                    stepSimplifyDivision context ls rs
+                    stepSimplifyDivision ls rs
 
                 Power ->
-                    stepSimplifyPower context ls rs
+                    stepSimplifyPower ls rs
 
         RelationOperation rop l r ->
             let
@@ -78,10 +78,10 @@ stepSimplify context expr =
             RelationOperation rop ls rs
 
         AssociativeOperation aop l r o ->
-            stepSimplifyAssociative context aop <| List.map (stepSimplify context) (l :: r :: o)
+            stepSimplifyAssociative aop <| List.map (stepSimplify context) (l :: r :: o)
 
         Apply name args ->
-            stepSimplifyApply context name <| List.map (stepSimplify context) args
+            stepSimplifyApply name <| List.map (stepSimplify context) args
 
         List es ->
             List <| List.map (stepSimplify context) es
@@ -93,8 +93,8 @@ stepSimplify context expr =
             expr
 
 
-stepSimplifyApply : Dict String Expression -> FunctionName -> List Expression -> Expression
-stepSimplifyApply context fname sargs =
+stepSimplifyApply : FunctionName -> List Expression -> Expression
+stepSimplifyApply fname sargs =
     case fname of
         UserFunction _ ->
             Apply fname sargs
@@ -153,8 +153,8 @@ stepSimplifyApply context fname sargs =
                     Apply fname sargs
 
 
-stepSimplifyDivision : Dict String Expression -> Expression -> Expression -> Expression
-stepSimplifyDivision context ls rs =
+stepSimplifyDivision : Expression -> Expression -> Expression
+stepSimplifyDivision ls rs =
     case ( ls, rs ) of
         ( BinaryOperation Division lsn lsd, _ ) ->
             div lsn <| by [ lsd, rs ]
@@ -170,8 +170,8 @@ stepSimplifyDivision context ls rs =
                 div ls rs
 
 
-stepSimplifyPower : Dict String Expression -> Expression -> Expression -> Expression
-stepSimplifyPower context ls rs =
+stepSimplifyPower : Expression -> Expression -> Expression
+stepSimplifyPower ls rs =
     case ( ls, rs ) of
         ( AssociativeOperation Multiplication lm rm om, Integer rsi ) ->
             AssociativeOperation Multiplication
@@ -205,8 +205,8 @@ stepSimplifyPower context ls rs =
             pow ls rs
 
 
-stepSimplifyAssociative : Dict String Expression -> AssociativeOperation -> List Expression -> Expression
-stepSimplifyAssociative context aop args =
+stepSimplifyAssociative : AssociativeOperation -> List Expression -> Expression
+stepSimplifyAssociative aop args =
     let
         extractop e =
             case e of
@@ -242,7 +242,7 @@ stepSimplifyAssociative context aop args =
     in
     args
         |> List.concatMap extractop
-        |> squashAndGroupAssociative context aop
+        |> squashAndGroupAssociative aop
         |> (case aop of
                 Addition ->
                     tryExtract (findSpecificInteger 0) (\( _, rest ) -> rest)
@@ -340,23 +340,20 @@ sortByDegree ee =
     let
         letters =
             getFreeVariables <| List ee
+
+        by f x y =
+            compare (f x) (f y)
     in
     List.foldr
         (\var ->
-            List.stableSortWith
-                (\lm rm ->
-                    Maybe.withDefault EQ <|
-                        Maybe.map2 compare
-                            (polyDegree var lm)
-                            (polyDegree var rm)
-                )
+            List.stableSortWith (by <| Maybe.withDefault -1 << polyDegree var)
         )
         ee
         (List.reverse <| Set.toList letters)
 
 
-squashAndGroupAssociative : Dict String Expression -> AssociativeOperation -> List Expression -> List Expression
-squashAndGroupAssociative context aop extracted =
+squashAndGroupAssociative : AssociativeOperation -> List Expression -> List Expression
+squashAndGroupAssociative aop extracted =
     let
         grouped =
             case List.reverse (sortByDegree extracted) of
@@ -577,58 +574,62 @@ denominatorLcm le =
 
 polyDegree : String -> Expression -> Maybe Int
 polyDegree var expr =
-    case expr of
-        Integer _ ->
-            Just 0
+    let
+        res =
+            case expr of
+                Integer _ ->
+                    Just 0
 
-        UnaryOperation Negate e ->
-            polyDegree var e
+                UnaryOperation Negate e ->
+                    polyDegree var e
 
-        BinaryOperation Division l r ->
-            Maybe.map2 (-) (polyDegree var l) (polyDegree var r)
+                BinaryOperation Division l r ->
+                    Maybe.map2 (-) (polyDegree var l) (polyDegree var r)
 
-        BinaryOperation Power base (Integer i) ->
-            Maybe.map ((*) i) <| polyDegree var base
+                BinaryOperation Power base (Integer i) ->
+                    Maybe.map ((*) i) <| polyDegree var base
 
-        BinaryOperation Power _ _ ->
-            Nothing
+                BinaryOperation Power _ _ ->
+                    Nothing
 
-        RelationOperation LessThan _ _ ->
-            Nothing
+                RelationOperation LessThan _ _ ->
+                    Nothing
 
-        RelationOperation LessThanOrEquals _ _ ->
-            Nothing
+                RelationOperation LessThanOrEquals _ _ ->
+                    Nothing
 
-        RelationOperation Equals _ _ ->
-            Nothing
+                RelationOperation Equals _ _ ->
+                    Nothing
 
-        RelationOperation GreaterThan _ _ ->
-            Nothing
+                RelationOperation GreaterThan _ _ ->
+                    Nothing
 
-        RelationOperation GreaterThanOrEquals _ _ ->
-            Nothing
+                RelationOperation GreaterThanOrEquals _ _ ->
+                    Nothing
 
-        AssociativeOperation Addition l r o ->
-            Maybe.andThen List.maximum <| Maybe.traverse (polyDegree var) (l :: r :: o)
+                AssociativeOperation Addition l r o ->
+                    Maybe.andThen List.maximum <| Maybe.traverse (polyDegree var) (l :: r :: o)
 
-        AssociativeOperation Multiplication l r o ->
-            Maybe.map List.product <| Maybe.traverse (polyDegree var) (l :: r :: o)
+                AssociativeOperation Multiplication l r o ->
+                    Maybe.map List.sum <| Maybe.traverse (polyDegree var) (l :: r :: o)
 
-        Variable v ->
-            if v == var then
-                Just 1
+                Variable v ->
+                    if v == var then
+                        Just 1
 
-            else
-                Just 0
+                    else
+                        Just 0
 
-        Float _ ->
-            Just 0
+                Float _ ->
+                    Just 0
 
-        Apply _ _ ->
-            Nothing
+                Apply _ _ ->
+                    Nothing
 
-        Replace _ _ ->
-            Nothing
+                Replace _ _ ->
+                    Nothing
 
-        List _ ->
-            Nothing
+                List _ ->
+                    Nothing
+    in
+    res
