@@ -185,7 +185,7 @@ outputBlock model row =
     let
         showExpr =
             Expression.Value.value Dict.empty
-                >> showValue 1
+                >> viewValue 1
                 >> blockToElement
 
         asExpression v =
@@ -205,7 +205,7 @@ outputBlock model row =
                 GraphValue _ ->
                     Nothing
 
-        showValue inList v =
+        viewValue inList v =
             case asExpression v of
                 Just ex ->
                     [ viewExpression ex ]
@@ -246,14 +246,14 @@ outputBlock model row =
                                                     |> List.maximum
                                                     |> Maybe.withDefault 0
                                         in
-                                        roundBracketed <| List.map (List.map (showValue <| inList * width)) childLists
+                                        roundBracketed <| List.map (List.map (viewValue <| inList * width)) childLists
 
                                     else
                                         let
                                             width =
                                                 List.length ls
                                         in
-                                        roundBracketed [ List.intersperse (label ", ") <| List.map (showValue <| inList * width) ls ]
+                                        roundBracketed [ List.intersperse (label ", ") <| List.map (viewValue <| inList * width) ls ]
                             in
                             block
     in
