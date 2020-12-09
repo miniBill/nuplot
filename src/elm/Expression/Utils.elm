@@ -398,8 +398,4 @@ determinant expr =
                 |> Maybe.withDefault (Apply (KnownFunction Det) [ expr ])
 
         _ ->
-            let
-                _ =
-                    Debug.log "Wasn't a square matrix" expr
-            in
             Apply (KnownFunction Det) [ expr ]

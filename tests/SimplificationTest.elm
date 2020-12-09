@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..))
 import Expression.Simplify
-import Expression.Utils exposing (a, b, by, c, complex, cos_, cosh_, div, double, i, ipow, minus, n, negate_, one, plus, sin_, sinh_, sqrt_, square, triple, two, x, z)
+import Expression.Utils exposing (a, b, by, c, complex, cos_, cosh_, div, double, f, i, ipow, m, minus, n, negate_, one, plus, sin_, sinh_, sqrt_, square, triple, two, x, z, zero)
 import Test exposing (Test, describe, test)
 
 
@@ -88,9 +88,8 @@ tests =
     , simplified <| by [ two, x ]
     , ( square i, Integer -1 )
     , ( ipow i 69, i )
-    , ( by [ complex a b, minus a <| by [ i, b ] ]
-      , plus [ square a, square b ]
-      )
+    , ( by [ a, negate_ <| by [ b, i ] ], negate_ <| by [ a, b, i ] )
+    , ( by [ complex a b, minus a <| by [ i, b ] ], plus [ square a, square b ] )
     , simplified <|
         div
             (plus [ by [ b, x ], by [ a, x ] ])
@@ -102,6 +101,13 @@ tests =
     , ( byself i, Integer -1 )
     , simplified <| negate_ a
     , ( sqrt_ <| negate_ one, i )
+    , ( let
+            afmn =
+                by [ a, f, m, n ]
+        in
+        plus [ afmn, negate_ afmn ]
+      , zero
+      )
 
     {-
        , ( "5+10i", icomplex 5 10, "5 + 10i" )

@@ -16,6 +16,7 @@ module Expression exposing
     , genericAsMatrix
     , genericAsSquareMatrix
     , genericDeterminant
+    , genericMatrixAddition
     , genericMatrixMultiplication
     , getFreeVariables
     , graphToString
@@ -953,6 +954,42 @@ genericAsSquareMatrix asList =
             )
 
 
+matrixSize : List (List a) -> ( Int, Int )
+matrixSize m =
+    ( List.length m, List.length <| Maybe.withDefault [] <| List.head m )
+
+
+genericMatrixAddition :
+    { plus : List a -> a
+    , asList : a -> Maybe (List a)
+    , toList : List a -> a
+    }
+    -> a
+    -> a
+    -> Maybe a
+genericMatrixAddition { plus, asList, toList } l r =
+    case Maybe.map2 Tuple.pair (genericAsMatrix asList l) (genericAsMatrix asList r) of
+        Just ( lm, rm ) ->
+            if matrixSize lm /= matrixSize rm then
+                Nothing
+
+            else
+                Just <|
+                    toList <|
+                        List.map2
+                            (\le re ->
+                                toList <|
+                                    List.map2 (\lc rc -> plus [ lc, rc ])
+                                        le
+                                        re
+                            )
+                            lm
+                            rm
+
+        _ ->
+            Nothing
+
+
 genericMatrixMultiplication :
     { by : List a -> a
     , plus : List a -> a
@@ -977,14 +1014,11 @@ genericMatrixMultiplication { by, plus, asList, toList } l r =
                         |> List.filterMap
                             (List.drop j >> List.head)
 
-                size m =
-                    ( List.length m, List.length <| Maybe.withDefault [] <| List.head m )
-
                 ( lr, lc ) =
-                    size lm
+                    matrixSize lm
 
                 ( rr, rc ) =
-                    size rm
+                    matrixSize rm
 
                 dot x y =
                     plus <| List.map2 (\xe ye -> by [ xe, ye ]) x y
