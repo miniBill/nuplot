@@ -2,7 +2,7 @@ module Expression.Value exposing (complexToSymbolic, value)
 
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), partialSubstitute)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), genericAsMatrix, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication, partialSubstitute)
 import Expression.Parser
 import Expression.Simplify
 import Expression.Utils as Utils
@@ -45,10 +45,10 @@ innerValue context expr =
             complexMap2 { symbolic = RelationOperation o, complex = relationValue o, list = Nothing } (innerValue context l) (innerValue context r)
 
         AssociativeOperation Addition l r o ->
-            List.foldl plus (innerValue context l) <| List.map (innerValue context) (r :: o)
+            plus <| List.map (innerValue context) (l :: r :: o)
 
         AssociativeOperation Multiplication l r o ->
-            List.foldl by (innerValue context l) <| List.map (innerValue context) (r :: o)
+            by <| List.map (innerValue context) (l :: r :: o)
 
         Apply name args ->
             applyValue context name args
@@ -66,8 +66,8 @@ innerValue context expr =
             innerValue context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
 
 
-plus : Value -> Value -> Value
-plus =
+plusTwo : Value -> Value -> Value
+plusTwo =
     let
         inner u v =
             case ( u, v ) of
@@ -95,8 +95,8 @@ plus =
         }
 
 
-by : Value -> Value -> Value
-by =
+byTwo : Value -> Value -> Value
+byTwo =
     let
         inner u v =
             case ( u, v ) of
@@ -132,79 +132,8 @@ by =
 
 matrixMultiplication : List Value -> List Value -> Value
 matrixMultiplication l r =
-    let
-        getRow j m =
-            m
-                |> List.drop j
-                |> List.head
-                |> Maybe.withDefault []
-
-        getCol j m =
-            m
-                |> List.filterMap
-                    (List.drop j >> List.head)
-
-        size m =
-            let
-                rows =
-                    List.length m
-
-                asLists =
-                    m
-                        |> List.filterMap
-                            (\w ->
-                                case w of
-                                    ListValue us ->
-                                        Just us
-
-                                    _ ->
-                                        Nothing
-                            )
-            in
-            case asLists of
-                [] ->
-                    Nothing
-
-                h :: t ->
-                    let
-                        cols =
-                            List.length h
-                    in
-                    if List.length t < rows - 1 || List.any (List.length >> (/=) cols) asLists then
-                        Nothing
-
-                    else
-                        Just ( rows, cols, asLists )
-
-        dot x y =
-            case List.map2 by x y of
-                [] ->
-                    ComplexValue Complex.zero
-
-                h :: t ->
-                    List.foldl plus h t
-
-        inner ( lr, lc, lm ) ( rr, rc, rm ) =
-            if lc /= rr then
-                ErrorValue "Cannot multiply matrices, wrong size"
-
-            else
-                List.range 0 (lr - 1)
-                    |> List.map
-                        (\row ->
-                            List.range 0 (rc - 1)
-                                |> List.map
-                                    (\col ->
-                                        dot
-                                            (getRow row lm)
-                                            (getCol col rm)
-                                    )
-                                |> ListValue
-                        )
-                    |> ListValue
-    in
-    Maybe.map2 inner (size l) (size r)
-        |> Maybe.withDefault (ErrorValue "Can only multiply rectangular matrices")
+    genericMatrixMultiplication { asList = asList, by = by, plus = plus, toList = ListValue } (ListValue l) (ListValue r)
+        |> Maybe.withDefault (ErrorValue "Cannot multiply matrices")
 
 
 applyValue : Dict String Value -> FunctionName -> List Expression -> Value
@@ -324,61 +253,57 @@ applyValue context name args =
             ErrorValue "TODO"
 
 
+asList : Value -> Maybe (List Value)
+asList v =
+    case v of
+        ListValue ls ->
+            Just ls
+
+        _ ->
+            Nothing
+
+
+asSquareMatrix : Value -> Maybe (List (List Value))
+asSquareMatrix =
+    genericAsSquareMatrix asList
+
+
+assocToList : a -> (a -> a -> a) -> List a -> a
+assocToList default f xs =
+    case List.reverse xs of
+        [] ->
+            default
+
+        h :: t ->
+            List.foldr (\e a -> f a e) h t
+
+
+plus : List Value -> Value
+plus =
+    assocToList (ComplexValue Complex.zero) plusTwo
+
+
+by : List Value -> Value
+by =
+    assocToList (ComplexValue <| Complex.fromReal 1) byTwo
+
+
 determinant : Value -> Value
 determinant val =
     case val of
-        ListValue ls ->
-            let
-                rows =
-                    ls
-                        |> List.filterMap
-                            (\r ->
-                                case r of
-                                    ListValue cs ->
-                                        Just cs
-
-                                    _ ->
-                                        Nothing
-                            )
-
-                cols =
+        ListValue _ ->
+            case asSquareMatrix val of
+                Just rows ->
                     rows
-                        |> List.map List.length
-                        |> (\lens ->
-                                if List.minimum lens == List.maximum lens then
-                                    List.minimum lens
+                        |> genericDeterminant
+                            { plus = plus
+                            , by = by
+                            , negate = complexMap { symbolic = UnaryOperation Negate, complex = Complex.negate, list = Nothing }
+                            }
+                        |> Maybe.withDefault (ErrorValue "Error in calculating the determinant")
 
-                                else
-                                    Nothing
-                           )
-                        |> Maybe.withDefault -1
-
-                fromList default f xs =
-                    case List.reverse xs of
-                        [] ->
-                            default
-
-                        h :: t ->
-                            List.foldr (\e a -> f a e) h t
-            in
-            if List.length rows < List.length ls then
-                ErrorValue "Can only calculate the determinant of matrices"
-
-            else if List.length rows /= cols then
-                ErrorValue <|
-                    "Can only calculate the determinant of square matrices, but the size was "
-                        ++ String.fromInt (List.length ls)
-                        ++ "x"
-                        ++ String.fromInt cols
-
-            else
-                rows
-                    |> Utils.genericDeterminant
-                        { add = fromList (ComplexValue Complex.zero) plus
-                        , multiply = fromList (ComplexValue <| Complex.fromReal 1) by
-                        , negate = complexMap { symbolic = UnaryOperation Negate, complex = Complex.negate, list = Nothing }
-                        }
-                    |> Maybe.withDefault (ErrorValue "Error in calculating the determinant")
+                Nothing ->
+                    ErrorValue "Cannot calculate the determinant of a nonquare matrix"
 
         SymbolicValue s ->
             SymbolicValue <| Utils.determinant s

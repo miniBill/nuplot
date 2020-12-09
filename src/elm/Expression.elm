@@ -13,6 +13,10 @@ module Expression exposing
     , equals
     , fullSubstitute
     , functionNameToString
+    , genericAsMatrix
+    , genericAsSquareMatrix
+    , genericDeterminant
+    , genericMatrixMultiplication
     , getFreeVariables
     , graphToString
     , greeks
@@ -902,6 +906,171 @@ toTeXString =
         >> toTeXStringPrec 0
 
 
+asMatrixPrint : PrintExpression -> Maybe (List (List PrintExpression))
+asMatrixPrint =
+    genericAsMatrix
+        (\l ->
+            case l of
+                PList u ->
+                    Just u
+
+                _ ->
+                    Nothing
+        )
+
+
+genericAsMatrix : (a -> Maybe (List a)) -> a -> Maybe (List (List a))
+genericAsMatrix asList mx =
+    mx
+        |> asList
+        |> Maybe.andThen
+            (\ls ->
+                let
+                    childLists =
+                        List.filterMap asList ls
+
+                    lens =
+                        List.map List.length childLists
+                in
+                if List.length ls == List.length childLists && List.minimum lens == List.maximum lens then
+                    Just childLists
+
+                else
+                    Nothing
+            )
+
+
+genericAsSquareMatrix : (a -> Maybe (List a)) -> a -> Maybe (List (List a))
+genericAsSquareMatrix asList =
+    genericAsMatrix asList
+        >> Maybe.andThen
+            (\rows ->
+                if Just (List.length rows) /= Maybe.map List.length (List.head rows) then
+                    Just rows
+
+                else
+                    Nothing
+            )
+
+
+genericMatrixMultiplication :
+    { by : List a -> a
+    , plus : List a -> a
+    , asList : a -> Maybe (List a)
+    , toList : List a -> a
+    }
+    -> a
+    -> a
+    -> Maybe a
+genericMatrixMultiplication { by, plus, asList, toList } l r =
+    case Maybe.map2 Tuple.pair (genericAsMatrix asList l) (genericAsMatrix asList r) of
+        Just ( lm, rm ) ->
+            let
+                getRow j m =
+                    m
+                        |> List.drop j
+                        |> List.head
+                        |> Maybe.withDefault []
+
+                getCol j m =
+                    m
+                        |> List.filterMap
+                            (List.drop j >> List.head)
+
+                size m =
+                    ( List.length m, List.length <| Maybe.withDefault [] <| List.head m )
+
+                ( lr, lc ) =
+                    size lm
+
+                ( rr, rc ) =
+                    size rm
+
+                dot x y =
+                    plus <| List.map2 (\xe ye -> by [ xe, ye ]) x y
+            in
+            if lc /= rr then
+                Nothing
+
+            else
+                List.range 0 (lr - 1)
+                    |> List.map
+                        (\row ->
+                            List.range 0 (rc - 1)
+                                |> List.map
+                                    (\col ->
+                                        dot
+                                            (getRow row lm)
+                                            (getCol col rm)
+                                    )
+                                |> toList
+                        )
+                    |> toList
+                    |> Just
+
+        _ ->
+            Nothing
+
+
+genericDeterminant : { plus : List a -> a, negate : a -> a, by : List a -> a } -> List (List a) -> Maybe a
+genericDeterminant { plus, negate, by } mat =
+    case mat of
+        [] ->
+            Just <|
+                plus []
+
+        [ [ single ] ] ->
+            Just <|
+                single
+
+        [ [ a_, b_ ], [ c_, d_ ] ] ->
+            Just <|
+                plus [ by [ a_, d_ ], negate <| by [ b_, c_ ] ]
+
+        [ [ a_, b_, c_ ], [ d_, e_, f_ ], [ g_, h_, i_ ] ] ->
+            Just <|
+                plus
+                    [ by [ a_, e_, i_ ]
+                    , negate <| by [ a_, f_, h_ ]
+                    , negate <| by [ b_, d_, i_ ]
+                    , by [ b_, f_, g_ ]
+                    , by [ c_, d_, h_ ]
+                    , negate <| by [ c_, e_, g_ ]
+                    ]
+
+        [ [ a_, b_, c_, d_ ], [ e_, f_, g_, h_ ], [ i_, j_, k_, l_ ], [ m_, n_, o_, p_ ] ] ->
+            Just <|
+                plus
+                    [ by [ a_, f_, k_, p_ ]
+                    , negate <| by [ a_, f_, l_, o_ ]
+                    , negate <| by [ a_, g_, j_, p_ ]
+                    , by [ a_, g_, l_, n_ ]
+                    , by [ a_, h_, j_, o_ ]
+                    , negate <| by [ a_, h_, k_, n_ ]
+                    , negate <| by [ b_, e_, k_, p_ ]
+                    , by [ b_, e_, l_, o_ ]
+                    , by [ b_, g_, i_, p_ ]
+                    , negate <| by [ b_, g_, l_, m_ ]
+                    , negate <| by [ b_, h_, i_, o_ ]
+                    , by [ b_, h_, k_, m_ ]
+                    , by [ c_, e_, j_, p_ ]
+                    , negate <| by [ c_, e_, l_, n_ ]
+                    , negate <| by [ c_, f_, i_, p_ ]
+                    , by [ c_, f_, l_, m_ ]
+                    , by [ c_, h_, i_, n_ ]
+                    , negate <| by [ c_, h_, j_, m_ ]
+                    , negate <| by [ d_, e_, j_, o_ ]
+                    , by [ d_, e_, k_, n_ ]
+                    , by [ d_, f_, i_, o_ ]
+                    , negate <| by [ d_, f_, k_, m_ ]
+                    , negate <| by [ d_, g_, i_, n_ ]
+                    , by [ d_, g_, j_, m_ ]
+                    ]
+
+        _ ->
+            Nothing
+
+
 toTeXStringPrec : Int -> PrintExpression -> String
 toTeXStringPrec p e =
     let
@@ -927,35 +1096,15 @@ toTeXStringPrec p e =
 
             else
                 x
-
-        asList l =
-            case l of
-                PList u ->
-                    Just u
-
-                _ ->
-                    Nothing
-
-        asMatrix mx =
-            mx
-                |> asList
-                |> Maybe.andThen
-                    (\ls ->
-                        let
-                            childLists =
-                                List.filterMap asList ls
-                        in
-                        if List.length ls == List.length childLists then
-                            Just childLists
-
-                        else
-                            Nothing
-                    )
     in
     wrp <|
         case e of
             PVariable v ->
-                Dict.get v greeks |> Maybe.withDefault v
+                if Dict.member v greeks then
+                    "\\" ++ v
+
+                else
+                    v
 
             PFloat f ->
                 String.fromFloat f
@@ -1016,7 +1165,7 @@ toTeXStringPrec p e =
                         ++ "\\right)"
 
             PList es ->
-                case asMatrix e of
+                case asMatrixPrint e of
                     Just childLists ->
                         let
                             viewRow =

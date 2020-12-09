@@ -1,7 +1,7 @@
 module Expression.Simplify exposing (simplify)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), getFreeVariables)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), genericAsMatrix, genericMatrixMultiplication, getFreeVariables)
 import Expression.Derivative
 import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
 import List
@@ -22,96 +22,100 @@ log =
 
 simplify : Expression -> Expression
 simplify =
-    innerSimplify Dict.empty
+    innerSimplify 100 Dict.empty
 
 
 {-| Preconditions: context contains simplified expressions
 -}
-innerSimplify : Dict String Expression -> Expression -> Expression
-innerSimplify context expr =
-    let
-        _ =
-            if True || Dict.isEmpty context then
-                { context = ""
-                , expr = log "innerSimplify" <| Expression.toString expr
-                }
+innerSimplify : Int -> Dict String Expression -> Expression -> Expression
+innerSimplify safety context expr =
+    if safety < 0 then
+        expr
 
-            else
-                log "innerSimplify" <|
-                    { context =
-                        Dict.toList context
-                            |> List.map (\( k, v ) -> k ++ " = " ++ Expression.toString v)
-                            |> String.join "; "
-                    , expr = Expression.toString expr
+    else
+        let
+            _ =
+                if True || Dict.isEmpty context then
+                    { context = ""
+                    , expr = log "innerSimplify" <| Expression.toString expr
                     }
-    in
-    log ("innerSimplify " ++ Expression.toString expr) <|
-        case expr of
-            Variable v ->
-                Dict.get v context |> Maybe.withDefault expr
 
-            Replace vars e ->
-                let
-                    simplifiedVars =
-                        Dict.map (\_ -> innerSimplify context) vars
-                in
-                innerSimplify simplifiedVars e
+                else
+                    log "innerSimplify" <|
+                        { context =
+                            Dict.toList context
+                                |> List.map (\( k, v ) -> k ++ " = " ++ Expression.toString v)
+                                |> String.join "; "
+                        , expr = Expression.toString expr
+                        }
+        in
+        log ("innerSimplify " ++ Expression.toString expr) <|
+            case expr of
+                Variable v ->
+                    Dict.get v context |> Maybe.withDefault expr
 
-            UnaryOperation Negate (UnaryOperation Negate e) ->
-                innerSimplify context e
+                Replace vars e ->
+                    let
+                        simplifiedVars =
+                            Dict.map (\_ -> innerSimplify (safety - 1) context) vars
+                    in
+                    innerSimplify (safety - 1) simplifiedVars e
 
-            UnaryOperation Negate (Integer ni) ->
-                Integer -ni
+                UnaryOperation Negate (UnaryOperation Negate e) ->
+                    innerSimplify (safety - 1) context e
 
-            UnaryOperation uop e ->
-                UnaryOperation uop <| innerSimplify context e
+                UnaryOperation Negate (Integer ni) ->
+                    Integer -ni
 
-            BinaryOperation bop l r ->
-                let
-                    ls =
-                        innerSimplify context l
+                UnaryOperation uop e ->
+                    UnaryOperation uop <| innerSimplify (safety - 1) context e
 
-                    rs =
-                        innerSimplify context r
-                in
-                case bop of
-                    Division ->
-                        innerSimplifyDivision context ls rs
+                BinaryOperation bop l r ->
+                    let
+                        ls =
+                            innerSimplify (safety - 1) context l
 
-                    Power ->
-                        innerSimplifyPower context ls rs
+                        rs =
+                            innerSimplify (safety - 1) context r
+                    in
+                    case bop of
+                        Division ->
+                            innerSimplifyDivision (safety - 1) context ls rs
 
-            RelationOperation rop l r ->
-                let
-                    ls =
-                        innerSimplify context l
+                        Power ->
+                            innerSimplifyPower (safety - 1) context ls rs
 
-                    rs =
-                        innerSimplify context r
-                in
-                RelationOperation rop ls rs
+                RelationOperation rop l r ->
+                    let
+                        ls =
+                            innerSimplify (safety - 1) context l
 
-            AssociativeOperation aop l r o ->
-                innerSimplifyAssociative context aop l r o
+                        rs =
+                            innerSimplify (safety - 1) context r
+                    in
+                    RelationOperation rop ls rs
 
-            Apply name args ->
-                innerSimplifyApply context name args
+                AssociativeOperation aop l r o ->
+                    innerSimplifyAssociative (safety - 1) context aop l r o
 
-            List es ->
-                List <| List.map (innerSimplify context) es
+                Apply name args ->
+                    innerSimplifyApply (safety - 1) context name args
 
-            Integer _ ->
-                expr
+                List es ->
+                    List <| List.map (innerSimplify (safety - 1) context) es
 
-            Float _ ->
-                expr
+                Integer _ ->
+                    expr
+
+                Float _ ->
+                    expr
 
 
-innerSimplifyApply : Dict String Expression -> FunctionName -> List Expression -> Expression
-innerSimplifyApply context fname args =
+innerSimplifyApply : Int -> Dict String Expression -> FunctionName -> List Expression -> Expression
+innerSimplifyApply safety context fname args =
     let
         sargs =
-            List.map (innerSimplify context) args
+            List.map (innerSimplify (safety - 1) context) args
     in
     case fname of
         UserFunction _ ->
@@ -139,6 +143,8 @@ innerSimplifyApply context fname args =
 
                         else
                             Integer r
+                        --simplifydetdet{{{{a,b},{f,g}},{{c,d},{h,j}}},{{{k,l},{o,p}},{{m,n},{q,r}}}}
+                        --simplifydet{{a,b,c,d},{f,g,h,j},{k,l,m,n},{o,p,q,r}}
 
                     else
                         Apply fname sargs
@@ -146,7 +152,7 @@ innerSimplifyApply context fname args =
                 ( Sinh, [ AssociativeOperation Multiplication l r o ] ) ->
                     case extract (findSpecificVariable "i") (l :: r :: o) of
                         Just ( _, rest ) ->
-                            innerSimplify context <| by [ i, sin_ <| by rest ]
+                            innerSimplify (safety - 1) context <| by [ i, sin_ <| by rest ]
 
                         Nothing ->
                             Apply fname sargs
@@ -154,26 +160,29 @@ innerSimplifyApply context fname args =
                 ( Cosh, [ AssociativeOperation Multiplication l r o ] ) ->
                     case extract (findSpecificVariable "i") (l :: r :: o) of
                         Just ( _, rest ) ->
-                            innerSimplify context <| cos_ <| by rest
+                            innerSimplify (safety - 1) context <| cos_ <| by rest
 
                         Nothing ->
                             Apply fname sargs
 
                 ( Dd, [ expr, Variable var ] ) ->
-                    innerSimplify context <| Expression.Derivative.derivative var expr
+                    innerSimplify (safety - 1) context <| Expression.Derivative.derivative var expr
+
+                ( Det, [ expr ] ) ->
+                    innerSimplify (safety - 1) context <| Expression.Utils.determinant <| innerSimplify (safety - 1) context expr
 
                 _ ->
                     Apply fname sargs
 
 
-innerSimplifyDivision : Dict String Expression -> Expression -> Expression -> Expression
-innerSimplifyDivision context ls rs =
+innerSimplifyDivision : Int -> Dict String Expression -> Expression -> Expression -> Expression
+innerSimplifyDivision safety context ls rs =
     case ( ls, rs ) of
         ( BinaryOperation Division lsn lsd, _ ) ->
-            innerSimplify context <| div lsn <| by [ lsd, rs ]
+            innerSimplify (safety - 1) context <| div lsn <| by [ lsd, rs ]
 
         ( _, Variable "i" ) ->
-            innerSimplify context <| by [ ls, negate_ i ]
+            innerSimplify (safety - 1) context <| by [ ls, negate_ i ]
 
         _ ->
             if Expression.equals ls rs then
@@ -183,11 +192,11 @@ innerSimplifyDivision context ls rs =
                 div ls rs
 
 
-innerSimplifyPower : Dict String Expression -> Expression -> Expression -> Expression
-innerSimplifyPower context ls rs =
+innerSimplifyPower : Int -> Dict String Expression -> Expression -> Expression -> Expression
+innerSimplifyPower safety context ls rs =
     case ( ls, rs ) of
         ( AssociativeOperation Multiplication lm rm om, Integer rsi ) ->
-            innerSimplify context <|
+            innerSimplify (safety - 1) context <|
                 AssociativeOperation Multiplication
                     (ipow lm rsi)
                     (ipow rm rsi)
@@ -219,8 +228,8 @@ innerSimplifyPower context ls rs =
             pow ls rs
 
 
-innerSimplifyAssociative : Dict String Expression -> AssociativeOperation -> Expression -> Expression -> List Expression -> Expression
-innerSimplifyAssociative context aop l r o =
+innerSimplifyAssociative : Int -> Dict String Expression -> AssociativeOperation -> Expression -> Expression -> List Expression -> Expression
+innerSimplifyAssociative safety context aop l r o =
     let
         extractop e =
             case e of
@@ -244,7 +253,7 @@ innerSimplifyAssociative context aop l r o =
                     by
     in
     (l :: r :: o)
-        |> List.map (innerSimplify context)
+        |> List.map (innerSimplify (safety - 1) context)
         |> List.concatMap extractop
         |> Trying
         |> try
@@ -256,7 +265,7 @@ innerSimplifyAssociative context aop l r o =
                     Nothing
             )
             build
-        |> mapTrying (squashAndGroupAssociative context aop)
+        |> mapTrying (squashAndGroupAssociative (safety - 1) context aop)
         |> (case aop of
                 Addition ->
                     tryExtract (findSpecificInteger 0) (\( _, rest ) -> build rest)
@@ -266,7 +275,7 @@ innerSimplifyAssociative context aop l r o =
                         >> tryExtract findNegate (\( negated, rest ) -> negate_ <| build <| negated :: rest)
                         >> tryExtract findAdditionList (\( adds, rest ) -> plus <| List.map (\x -> by <| x :: rest) adds)
            )
-        |> mapFound (innerSimplify context)
+        |> mapFound (innerSimplify (safety - 1) context)
         |> tryingToExpression build
 
 
@@ -397,8 +406,8 @@ findNegate expr =
             Nothing
 
 
-squashAndGroupAssociative : Dict String Expression -> AssociativeOperation -> List Expression -> List Expression
-squashAndGroupAssociative context aop extracted =
+squashAndGroupAssociative : Int -> Dict String Expression -> AssociativeOperation -> List Expression -> List Expression
+squashAndGroupAssociative safety context aop extracted =
     let
         letters =
             getFreeVariables <| List extracted
@@ -435,7 +444,7 @@ squashAndGroupAssociative context aop extracted =
                         ( shead, [] )
                         stail
                         |> (\( last, acc ) -> last :: acc)
-                        |> List.map (innerSimplify context)
+                        |> List.map (innerSimplify (safety - 1) context)
 
         groupStep =
             case aop of
@@ -486,6 +495,21 @@ groupStepAddition curr last =
                 Nothing
 
 
+asList : Expression -> Maybe (List Expression)
+asList l =
+    case l of
+        List u ->
+            Just u
+
+        _ ->
+            Nothing
+
+
+asMatrix : Expression -> Maybe (List (List Expression))
+asMatrix =
+    genericAsMatrix asList
+
+
 groupStepMultiplication : Expression -> Expression -> Maybe Expression
 groupStepMultiplication curr last =
     log ("groupStepMultiplication \"" ++ Expression.toString curr ++ "\" \"" ++ Expression.toString last ++ "\"") <|
@@ -511,6 +535,9 @@ groupStepMultiplication curr last =
                 else
                     Nothing
 
+            ( List _, List _ ) ->
+                multiplyMatrices curr last
+
             _ ->
                 if Expression.equals curr last then
                     Just <| ipow last 2
@@ -519,9 +546,19 @@ groupStepMultiplication curr last =
                     Nothing
 
 
-transformAssociativeToDivision : Dict String Expression -> AssociativeOperation -> Expression -> List Expression -> Expression
-transformAssociativeToDivision context aop divLcm extracted =
-    innerSimplify context <|
+multiplyMatrices : Expression -> Expression -> Maybe Expression
+multiplyMatrices =
+    genericMatrixMultiplication
+        { asList = asList
+        , by = by
+        , plus = plus
+        , toList = List
+        }
+
+
+transformAssociativeToDivision : Int -> Dict String Expression -> AssociativeOperation -> Expression -> List Expression -> Expression
+transformAssociativeToDivision safety context aop divLcm extracted =
+    innerSimplify (safety - 1) context <|
         case aop of
             Addition ->
                 let

@@ -1,6 +1,6 @@
-module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, determinant, div, double, e, f, g, genericDeterminant, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, triple, two, vector, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asMatrix, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, determinant, div, double, e, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, squash, triple, two, vector, x, y, z, zero)
 
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), visit)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), genericAsMatrix, genericAsSquareMatrix, genericDeterminant, visit)
 
 
 
@@ -295,103 +295,32 @@ icomplex real immaginary =
     complex (Integer real) (Integer immaginary)
 
 
-determinant : Expression -> Expression
-determinant expr =
-    case expr of
+asList : Expression -> Maybe (List Expression)
+asList ex =
+    case ex of
         List ls ->
-            let
-                rows =
-                    ls
-                        |> List.filterMap
-                            (\r ->
-                                case r of
-                                    List cs ->
-                                        Just cs
-
-                                    _ ->
-                                        Nothing
-                            )
-
-                cols =
-                    rows
-                        |> List.map List.length
-                        |> (\lens ->
-                                if List.minimum lens == List.maximum lens then
-                                    List.minimum lens
-
-                                else
-                                    Nothing
-                           )
-                        |> Maybe.withDefault -1
-            in
-            if List.length rows < List.length ls then
-                Apply (KnownFunction Det) [ expr ]
-
-            else if List.length rows /= cols then
-                Apply (KnownFunction Det) [ expr ]
-
-            else
-                genericDeterminant { add = plus, negate = negate_, multiply = by } rows
-                    |> Maybe.withDefault (Apply (KnownFunction Det) [ expr ])
-
-        _ ->
-            Apply (KnownFunction Det) [ expr ]
-
-
-genericDeterminant : { add : List a -> a, negate : a -> a, multiply : List a -> a } -> List (List a) -> Maybe a
-genericDeterminant { add, negate, multiply } mat =
-    case mat of
-        [] ->
-            Just <|
-                add []
-
-        [ [ single ] ] ->
-            Just <|
-                single
-
-        [ [ a_, b_ ], [ c_, d_ ] ] ->
-            Just <|
-                add [ multiply [ a_, d_ ], negate <| multiply [ b_, c_ ] ]
-
-        [ [ a_, b_, c_ ], [ d_, e_, f_ ], [ g_, h_, i_ ] ] ->
-            Just <|
-                add
-                    [ multiply [ a_, e_, i_ ]
-                    , negate <| multiply [ a_, f_, h_ ]
-                    , negate <| multiply [ b_, d_, i_ ]
-                    , multiply [ b_, f_, g_ ]
-                    , multiply [ c_, d_, h_ ]
-                    , negate <| multiply [ c_, e_, g_ ]
-                    ]
-
-        [ [ a_, b_, c_, d_ ], [ e_, f_, g_, h_ ], [ i_, j_, k_, l_ ], [ m_, n_, o_, p_ ] ] ->
-            Just <|
-                add
-                    [ multiply [ a_, f_, k_, p_ ]
-                    , negate <| multiply [ a_, f_, l_, o_ ]
-                    , negate <| multiply [ a_, g_, j_, p_ ]
-                    , multiply [ a_, g_, l_, n_ ]
-                    , multiply [ a_, h_, j_, o_ ]
-                    , negate <| multiply [ a_, h_, k_, n_ ]
-                    , negate <| multiply [ b_, e_, k_, p_ ]
-                    , multiply [ b_, e_, l_, o_ ]
-                    , multiply [ b_, g_, i_, p_ ]
-                    , negate <| multiply [ b_, g_, l_, m_ ]
-                    , negate <| multiply [ b_, h_, i_, o_ ]
-                    , multiply [ b_, h_, k_, m_ ]
-                    , multiply [ c_, e_, j_, p_ ]
-                    , negate <| multiply [ c_, e_, l_, n_ ]
-                    , negate <| multiply [ c_, f_, i_, p_ ]
-                    , multiply [ c_, f_, l_, m_ ]
-                    , multiply [ c_, h_, i_, n_ ]
-                    , negate <| multiply [ c_, h_, j_, m_ ]
-                    , negate <| multiply [ d_, e_, j_, o_ ]
-                    , multiply [ d_, e_, k_, n_ ]
-                    , multiply [ d_, f_, i_, o_ ]
-                    , negate <| multiply [ d_, f_, k_, m_ ]
-                    , negate <| multiply [ d_, g_, i_, n_ ]
-                    , multiply [ d_, g_, j_, m_ ]
-                    ]
+            Just ls
 
         _ ->
             Nothing
+
+
+asMatrix : Expression -> Maybe (List (List Expression))
+asMatrix =
+    genericAsMatrix asList
+
+
+asSquareMatrix : Expression -> Maybe (List (List Expression))
+asSquareMatrix =
+    genericAsSquareMatrix asList
+
+
+determinant : Expression -> Expression
+determinant expr =
+    case asSquareMatrix expr of
+        Just rows ->
+            genericDeterminant { plus = plus, negate = negate_, by = by } rows
+                |> Maybe.withDefault (Apply (KnownFunction Det) [ expr ])
+
+        _ ->
+            Apply (KnownFunction Det) [ expr ]
