@@ -56,10 +56,8 @@ view pageWidth index row =
         , alignTop
         ]
         [ inputLine index row
-        , Theme.wrappedRow [ width fill ]
-            [ statusLine pageWidth row
-            , outputBlock { pageWidth = pageWidth } row
-            ]
+        , statusLine pageWidth row
+        , outputBlock { pageWidth = pageWidth } row
         ]
 
 
