@@ -133,9 +133,12 @@ update msg model =
                                         else
                                             toTyping output
                                     }
-                                |> List.filterNot (\r -> String.isEmpty r.input && Bounce.steady r.bounce)
                     in
-                    ( { model | rows = rows_ ++ [ Model.emptyRow ] }
+                    ( { model
+                        | rows =
+                            List.filterNot (\r -> String.isEmpty r.input && Bounce.steady r.bounce) rows_
+                                ++ [ Model.emptyRow ]
+                      }
                     , rows_
                         |> List.indexedMap (\i r -> save { key = String.fromInt i, value = r.input })
                         |> Cmd.batch
