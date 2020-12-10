@@ -1,16 +1,27 @@
+import { debug } from "console";
+
 declare global {
   interface Window {
     MathJax: {
       texReset(): void;
 
-      getMetricsFor(node: HTMLElement): Options;
+      svgStylesheet(): string;
+
+      getMetricsFor(node: HTMLElement, display: boolean): Options;
 
       tex2svgPromise(src: string, options: Options): Promise<HTMLElement>;
 
+      tex2chtmlPromise(src: string, options: Options): Promise<HTMLElement>;
+
       startup: {
+        typeset: boolean;
+
         document: {
           clear(): void;
           updateDocument(): void;
+          outputJax: {
+            svgStyles: HTMLStyleElement;
+          };
         };
       };
     };
@@ -20,18 +31,21 @@ declare global {
 export type Options = {
   display: boolean;
   scale: number;
+  lineWidth: number;
+  containerWidth: number;
 };
 
 export class MathJaxElement extends HTMLElement {
   wrapper: HTMLElement;
 
   src = "";
+  containerWidth = 1024;
 
   constructor() {
     super();
 
     // Create a shadow root
-    const shadowRoow = this.attachShadow({ mode: "closed" }); // sets and returns 'this.shadowRoot'
+    const shadowRoow = this.attachShadow({ mode: "open" }); // sets and returns 'this.shadowRoot'
 
     this.wrapper = document.createElement("div");
 
@@ -46,38 +60,47 @@ export class MathJaxElement extends HTMLElement {
         this.src = newValue || "";
         this.render();
         break;
+      case "container-width":
+        if (!newValue) return;
+        this.containerWidth = +newValue;
+        this.render();
+        break;
     }
   }
 
   render() {
+    if (this.src == "") return;
     this.wrapper.innerHTML = "Rendering...";
-    if (!window.MathJax) {
+    if (!window.MathJax || !("texReset" in window.MathJax)) {
       requestAnimationFrame(this.render.bind(this));
       return;
     }
     window.MathJax.texReset();
-    var options = window.MathJax.getMetricsFor(this.wrapper);
-    options.scale = 1;
-    options.display = false;
+    this.wrapper.style.width = this.containerWidth / 2 + "px";
+    this.wrapper.style.maxWidth = this.containerWidth + "px";
+    requestAnimationFrame(() => {
+      var options = window.MathJax.getMetricsFor(this.wrapper, false);
 
-    window.MathJax.tex2svgPromise(this.src, options)
-      .then((node) => {
-        this.wrapper.innerHTML =
-          "<style>mjx-assistive-mml { display: none !important; }</style>";
-        this.wrapper.appendChild(node);
-        window.MathJax.startup.document.clear();
-        window.MathJax.startup.document.updateDocument();
-      })
-      .catch((err) => {
-        this.wrapper.innerHTML = "";
-        const errorNode = document
-          .createElement("pre")
-          .appendChild(document.createTextNode(err.message));
-        this.wrapper.appendChild(errorNode);
-      });
+      window.MathJax.tex2svgPromise(this.src, options)
+        .then((node) => {
+          this.wrapper.innerHTML =
+            "<style>mjx-assistive-mml { display: none !important; }</style>";
+          this.wrapper.appendChild(node);
+          window.MathJax.startup.document.clear();
+          window.MathJax.startup.document.updateDocument();
+          this.wrapper.style.width = "";
+        })
+        .catch((err) => {
+          this.wrapper.innerHTML = "";
+          const errorNode = document
+            .createElement("pre")
+            .appendChild(document.createTextNode(err.message));
+          this.wrapper.appendChild(errorNode);
+        });
+    });
   }
 
   static get observedAttributes() {
-    return ["tex-src"];
+    return ["tex-src", "container-width"];
   }
 }

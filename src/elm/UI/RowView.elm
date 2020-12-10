@@ -56,8 +56,8 @@ view pageWidth index row =
         , alignTop
         ]
         [ inputLine index row
-        , Theme.wrappedRow [ width fill, spacingXY (20 * Theme.spacing) Theme.spacing ]
-            [ statusLine row
+        , Theme.wrappedRow [ width fill ]
+            [ statusLine pageWidth row
             , outputBlock { pageWidth = pageWidth } row
             ]
         ]
@@ -81,8 +81,8 @@ inputLine index row =
         ]
 
 
-statusLine : Row -> Element msg
-statusLine row =
+statusLine : Int -> Row -> Element msg
+statusLine pageWidth row =
     case row.output of
         Empty ->
             none
@@ -96,7 +96,7 @@ statusLine row =
         Parsed e ->
             Theme.column [ alignTop, width <| Element.maximum 200 fill ]
                 [ text "Interpreted as: "
-                , viewExpression e
+                , viewExpression pageWidth e
                 ]
 
 
@@ -117,12 +117,13 @@ label x =
     el [ alignBottom ] <| text x
 
 
-viewExpression : Expression -> Element msg
-viewExpression expr =
+viewExpression : Int -> Expression -> Element msg
+viewExpression pageWidth expr =
     el [ height shrink, width shrink ] <|
         Element.html <|
             Html.node "math-jax"
                 [ Html.Attributes.attribute "tex-src" <| Expression.toTeXString expr
+                , Html.Attributes.attribute "container-width" <| String.fromInt <| pageWidth - 2 * Theme.spacing
                 ]
                 []
 
@@ -174,7 +175,6 @@ outputBlock model row =
             e
                 |> Expression.Value.value Dict.empty
                 |> viewValue 1
-                |> el [ Font.italic ]
 
         asExpression v =
             case v of
@@ -196,12 +196,12 @@ outputBlock model row =
         viewValue inList v =
             case asExpression v of
                 Just ex ->
-                    viewExpression ex
+                    viewExpression model.pageWidth ex
 
                 Nothing ->
                     case v of
                         SymbolicValue s ->
-                            viewExpression s
+                            viewExpression model.pageWidth s
 
                         GraphValue g ->
                             el [ centerX ] <| draw model inList g

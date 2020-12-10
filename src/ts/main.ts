@@ -2,6 +2,13 @@ import { ElmType } from "../elm/UI.elm";
 import { NuPlot } from "./nuplot";
 import { MathJaxElement } from "./mathjax";
 
+window.MathJax = {
+  // @ts-ignore
+  startup: {
+    typeset: false,
+  },
+};
+
 customElements.define("nu-plot", NuPlot);
 customElements.define("math-jax", MathJaxElement);
 
