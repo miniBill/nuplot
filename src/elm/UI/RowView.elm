@@ -2,7 +2,7 @@ module UI.RowView exposing (view)
 
 import Complex
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, column, el, fill, height, none, paddingXY, px, rgb, row, shrink, spacing, text, width)
+import Element exposing (Element, alignBottom, alignTop, centerX, column, el, fill, height, none, paddingXY, px, rgb, row, shrink, spacing, spacingXY, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -56,8 +56,10 @@ view pageWidth index row =
         , alignTop
         ]
         [ inputLine index row
-        , statusLine row
-        , outputBlock { pageWidth = pageWidth } row
+        , Theme.wrappedRow [ width fill, spacingXY (20 * Theme.spacing) Theme.spacing ]
+            [ statusLine row
+            , outputBlock { pageWidth = pageWidth } row
+            ]
         ]
 
 
@@ -86,13 +88,13 @@ statusLine row =
             none
 
         Typing _ ->
-            text "Typing..."
+            el [ alignTop ] <| text "Typing..."
 
         ParseError e ->
             viewError e
 
         Parsed e ->
-            Theme.column [ width <| Element.maximum 200 shrink ]
+            Theme.column [ alignTop, width <| Element.maximum 200 fill ]
                 [ text "Interpreted as: "
                 , viewExpression e
                 ]
@@ -101,7 +103,8 @@ statusLine row =
 viewError : String -> Element msg
 viewError e =
     el
-        [ Font.family [ Font.monospace ]
+        [ alignTop
+        , Font.family [ Font.monospace ]
         , Font.color <| rgb 1 0 0
         ]
         (Element.html <|
@@ -109,13 +112,9 @@ viewError e =
         )
 
 
-type alias Block msg =
-    List (Element msg)
-
-
-label : String -> Block msg
+label : String -> Element msg
 label x =
-    [ el [ alignBottom ] <| text x ]
+    el [ alignBottom ] <| text x
 
 
 viewExpression : Expression -> Element msg
@@ -128,7 +127,7 @@ viewExpression expr =
                 []
 
 
-roundBracketed : List (List (Block msg)) -> Block msg
+roundBracketed : List (List (Element msg)) -> Element msg
 roundBracketed =
     simplyBracketed
         { left = Theme.bracketBorderWidth, top = 0, bottom = 0, right = 0 }
@@ -142,8 +141,8 @@ simplyBracketed :
     -> { topLeft : Int, topRight : Int, bottomLeft : Int, bottomRight : Int }
     -> { bottom : Int, left : Int, right : Int, top : Int }
     -> { topLeft : Int, topRight : Int, bottomLeft : Int, bottomRight : Int }
-    -> List (List (Block msg))
-    -> Block msg
+    -> List (List (Element msg))
+    -> Element msg
 simplyBracketed lw lr rw rr blocks =
     let
         bracket we re =
@@ -158,35 +157,24 @@ simplyBracketed lw lr rw rr blocks =
     bracketed (bracket lw lr) (bracket rw rr) blocks
 
 
-bracketed : Element msg -> Element msg -> List (List (Block msg)) -> Block msg
+bracketed : Element msg -> Element msg -> List (List (Element msg)) -> Element msg
 bracketed l r blocks =
     let
-        prepareRow =
-            List.map (row [ width shrink ])
-
         grid =
             blocks
-                |> List.map prepareRow
                 |> Theme.grid [ alignBottom ]
-
-        wrapped =
-            [ row [ spacing 1, paddingXY 2 0 ] [ l, grid, r ] ]
     in
-    wrapped
-
-
-blockToElement : Block msg -> Element msg
-blockToElement =
-    Element.row [ Font.italic ]
+    row [ spacing 1, paddingXY 2 0 ] [ l, grid, r ]
 
 
 outputBlock : { a | pageWidth : Int } -> Row -> Element msg
 outputBlock model row =
     let
-        showExpr =
-            Expression.Value.value Dict.empty
-                >> viewValue 1
-                >> blockToElement
+        showExpr e =
+            e
+                |> Expression.Value.value Dict.empty
+                |> viewValue 1
+                |> el [ Font.italic ]
 
         asExpression v =
             case v of
@@ -208,21 +196,21 @@ outputBlock model row =
         viewValue inList v =
             case asExpression v of
                 Just ex ->
-                    [ viewExpression ex ]
+                    viewExpression ex
 
                 Nothing ->
                     case v of
                         SymbolicValue s ->
-                            [ viewExpression s ]
+                            viewExpression s
 
                         GraphValue g ->
-                            [ el [ centerX ] <| draw model inList g ]
+                            el [ centerX ] <| draw model inList g
 
                         ComplexValue c ->
-                            [ text <| Complex.toString c ]
+                            text <| Complex.toString c
 
                         ErrorValue err ->
-                            [ viewError err ]
+                            viewError err
 
                         ListValue ls ->
                             let
@@ -269,7 +257,7 @@ outputBlock model row =
                 |> Maybe.withDefault none
 
         Parsed e ->
-            Theme.column []
-                [ text "Output:"
+            Theme.column [ alignTop, width fill ]
+                [ text "Value:"
                 , showExpr e
                 ]

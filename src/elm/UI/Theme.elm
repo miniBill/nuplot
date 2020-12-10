@@ -1,4 +1,4 @@
-module UI.Theme exposing (bracketBorderWidth, bracketWidth, column, fontSize, grid, row, spacing, whiteLines)
+module UI.Theme exposing (bracketBorderWidth, bracketWidth, column, fontSize, grid, row, spacing, whiteLines, wrappedRow)
 
 import Element exposing (Attribute, Element, none, shrink)
 
@@ -31,6 +31,11 @@ bracketBorderWidth =
 row : List (Attribute msg) -> List (Element msg) -> Element msg
 row attrs =
     Element.row (Element.spacing spacing :: attrs)
+
+
+wrappedRow : List (Attribute msg) -> List (Element msg) -> Element msg
+wrappedRow attrs =
+    Element.wrappedRow (Element.spacing spacing :: attrs)
 
 
 column : List (Attribute msg) -> List (Element msg) -> Element msg
