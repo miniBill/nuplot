@@ -270,12 +270,12 @@ asSquareMatrix =
 
 assocToList : a -> (a -> a -> a) -> List a -> a
 assocToList default f xs =
-    case List.reverse xs of
+    case xs of
         [] ->
             default
 
         h :: t ->
-            List.foldr (\e a -> f a e) h t
+            List.foldl (\e a -> f a e) h t
 
 
 plus : List Value -> Value
