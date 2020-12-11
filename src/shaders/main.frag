@@ -1,6 +1,17 @@
+precision highp float;
+
+uniform vec2 u_zoomCenter;
+uniform float u_viewportWidth;
+uniform float u_canvasWidth;
+uniform float u_canvasHeight;
+
+float ax(float coord, float delta) {
+  return max(0.0, 1.0 - abs(coord/delta));
+}
+
 vec3 palette(float deltaX, float deltaY, float x, float y, vec3 pixel) {
-    vec3 yax = (x * (x - deltaX)) < 0.0 ? vec3(0,1,0) : vec3(0,0,0);
-    vec3 xax = (y * (y - deltaY)) < 0.0 ? vec3(1,0,0) : vec3(0,0,0);
+    vec3 yax = ax(x, deltaX * 2.0) * vec3(0,1,0);
+    vec3 xax = ax(y, deltaY * 2.0) * vec3(1,0,0);
     return max(pixel, max(yax, xax));
 }
 
