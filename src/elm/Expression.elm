@@ -1245,7 +1245,7 @@ toTeXStringPrec p e =
                             (\( k, mv ) ->
                                 case mv of
                                     Nothing ->
-                                        "\\!" ++ k
+                                        "!" ++ k
 
                                     Just v ->
                                         let

@@ -343,6 +343,7 @@ sortByDegree aop ee =
             List ee
                 |> getFreeVariables
                 |> Set.toList
+                |> List.sortBy (\s -> ( String.length s, s ))
                 |> (\l ->
                         if aop == Addition then
                             List.reverse l
@@ -470,6 +471,18 @@ groupStepMultiplication curr last =
 
         ( Integer il, Integer ir ) ->
             Just <| Integer <| il * ir
+
+        ( BinaryOperation Power pb pe, _ ) ->
+            if Expression.equals last pb then
+                case pe of
+                    Integer pei ->
+                        Just (ipow pb <| pei + 1)
+
+                    _ ->
+                        Just (BinaryOperation Power pb <| plus [ one, pe ])
+
+            else
+                Nothing
 
         ( _, BinaryOperation Power pb pe ) ->
             if Expression.equals curr pb then
