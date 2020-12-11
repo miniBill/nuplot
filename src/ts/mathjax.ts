@@ -48,6 +48,7 @@ export class MathJaxElement extends HTMLElement {
     const shadowRoow = this.attachShadow({ mode: "open" }); // sets and returns 'this.shadowRoot'
 
     this.wrapper = document.createElement("div");
+    this.wrapper.style.overflowX = "auto";
 
     // attach the created elements to the shadow DOM
     shadowRoow.append(this.wrapper);
@@ -76,7 +77,6 @@ export class MathJaxElement extends HTMLElement {
       return;
     }
     window.MathJax.texReset();
-    this.wrapper.style.width = this.containerWidth / 2 + "px";
     this.wrapper.style.maxWidth = this.containerWidth + "px";
     requestAnimationFrame(() => {
       var options = window.MathJax.getMetricsFor(this.wrapper, false);
@@ -88,7 +88,6 @@ export class MathJaxElement extends HTMLElement {
           this.wrapper.appendChild(node);
           window.MathJax.startup.document.clear();
           window.MathJax.startup.document.updateDocument();
-          this.wrapper.style.width = "";
         })
         .catch((err) => {
           this.wrapper.innerHTML = "";
