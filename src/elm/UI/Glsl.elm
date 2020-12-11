@@ -1,7 +1,7 @@
 module UI.Glsl exposing (getGlsl)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..))
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), filterContext)
 import Expression.Utils
 import List.Extra as List
 
@@ -212,7 +212,7 @@ collectRequirements e =
             { c | operations = op_ :: c.operations }
 
         Replace ctx c ->
-            collectRequirementsOnList <| c :: Dict.values ctx
+            collectRequirementsOnList <| c :: List.filterMap identity (Dict.values ctx)
 
         List args ->
             collectRequirementsOnList args

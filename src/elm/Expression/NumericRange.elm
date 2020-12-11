@@ -1,7 +1,7 @@
 module Expression.NumericRange exposing (NumericRange(..), get, isCompletelyReal)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..))
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), filterContext)
 
 
 type NumericRange
@@ -107,7 +107,12 @@ getRange ctx e =
                     Complex
 
                 Replace variables c ->
-                    getRange (List.foldl (\( k, v ) -> Dict.insert k (getRange ctx v)) ctx (Dict.toList variables)) c
+                    getRange
+                        (List.foldl (\( k, v ) -> Dict.insert k (getRange ctx v))
+                            ctx
+                            (Dict.toList <| filterContext variables)
+                        )
+                        c
     in
     result
 

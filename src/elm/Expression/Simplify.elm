@@ -1,7 +1,7 @@
 module Expression.Simplify exposing (simplify, sortByDegree)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables)
 import Expression.Derivative
 import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
 import List
@@ -38,7 +38,7 @@ stepSimplify context expr =
             Dict.get v context |> Maybe.withDefault expr
 
         Replace vars e ->
-            fullSubstitute vars e
+            fullSubstitute (filterContext vars) e
 
         UnaryOperation Negate (UnaryOperation Negate e) ->
             e

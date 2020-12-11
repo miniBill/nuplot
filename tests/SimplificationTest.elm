@@ -74,8 +74,8 @@ simplificationTests =
     , ( div a a, one )
     , ( Replace
             (Dict.fromList
-                [ ( "a", double x )
-                , ( "b", triple z )
+                [ ( "a", Just <| double x )
+                , ( "b", Just <| triple z )
                 ]
             )
             (plus [ double a, square b ])
@@ -85,14 +85,14 @@ simplificationTests =
             ]
       )
     , ( Replace
-            (Dict.singleton "a" b)
+            (Dict.singleton "a" <| Just b)
             (by [ a, a, a ])
       , ipow b 3
       )
-    , ( Replace (Dict.singleton "a" one) a, one )
+    , ( Replace (Dict.singleton "a" <| Just one) a, one )
     , ( Replace
             (Dict.fromList
-                [ ( "cov", Integer 3 )
+                [ ( "cov", Just <| Integer 3 )
                 ]
             )
             (byself <| Variable "cov")

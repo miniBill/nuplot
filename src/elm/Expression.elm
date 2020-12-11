@@ -11,6 +11,7 @@ module Expression exposing
     , Value(..)
     , defaultContext
     , equals
+    , filterContext
     , fullSubstitute
     , functionNameToString
     , genericAsMatrix
@@ -54,7 +55,7 @@ type Expression
     | RelationOperation RelationOperation Expression Expression
     | AssociativeOperation AssociativeOperation Expression Expression (List Expression)
     | Apply FunctionName (List Expression)
-    | Replace (Dict String Expression) Expression
+    | Replace (Dict String (Maybe Expression)) Expression
     | List (List Expression)
 
 
@@ -179,7 +180,7 @@ visit f expr =
                     Float fl
 
                 Replace vars e ->
-                    Replace (Dict.map (\_ -> visit f) vars) (visit f e)
+                    Replace (Dict.map (\_ -> Maybe.map (visit f)) vars) (visit f e)
 
                 List es ->
                     List <| List.map (visit f) es
@@ -224,7 +225,7 @@ pvisit f expr =
                     PApply func <| List.map (pvisit f) e
 
                 PReplace vars e ->
-                    PReplace (Dict.map (\_ -> pvisit f) vars) (pvisit f e)
+                    PReplace (Dict.map (\_ -> Maybe.map <| pvisit f) vars) (pvisit f e)
 
                 PList es ->
                     PList <| List.map (pvisit f) es
@@ -237,7 +238,7 @@ partialSubstitute var val =
             case expr of
                 Replace vars e ->
                     Just <|
-                        Replace (Dict.map (\_ v -> partialSubstitute var val v) vars) <|
+                        Replace (Dict.map (\_ -> Maybe.map (partialSubstitute var val)) vars) <|
                             if Dict.member var vars then
                                 e
 
@@ -291,11 +292,23 @@ equals l r =
             lf == rf
 
         ( Replace ls le, Replace rs re ) ->
+            let
+                maybeEquals ln rn =
+                    case ( ln, rn ) of
+                        ( Just lne, Just rne ) ->
+                            equals lne rne
+
+                        ( Nothing, Nothing ) ->
+                            True
+
+                        _ ->
+                            False
+            in
             (Dict.size ls == Dict.size rs)
                 && equals le re
                 && List.all identity
                     (List.map2
-                        (\( lc, ln ) ( rc, rn ) -> lc == rc && equals ln rn)
+                        (\( lc, ln ) ( rc, rn ) -> lc == rc && maybeEquals ln rn)
                         (Dict.toList ls)
                         (Dict.toList rs)
                     )
@@ -348,7 +361,7 @@ type PrintExpression
     | PDiv PrintExpression PrintExpression
     | PRel String PrintExpression PrintExpression
     | PPower PrintExpression PrintExpression
-    | PReplace (Dict String PrintExpression) PrintExpression
+    | PReplace (Dict String (Maybe PrintExpression)) PrintExpression
     | PList (List PrintExpression)
     | PApply FunctionName (List PrintExpression)
 
@@ -388,7 +401,7 @@ toPrintExpression e =
                 (List.map toPrintExpression o)
 
         Replace vars expr ->
-            PReplace (Dict.map (\_ -> toPrintExpression) vars) <|
+            PReplace (Dict.map (\_ -> Maybe.map toPrintExpression) vars) <|
                 toPrintExpression expr
 
         List es ->
@@ -512,19 +525,24 @@ toStringPrec p e =
             "["
                 ++ String.join "; "
                     (List.map
-                        (\( k, v ) ->
-                            let
-                                r =
-                                    toStringPrec 0 v
-                            in
-                            String.join
-                                (if String.contains " " r then
-                                    " "
+                        (\( k, mv ) ->
+                            case mv of
+                                Nothing ->
+                                    "!" ++ k
 
-                                 else
-                                    ""
-                                )
-                                [ k, "=", r ]
+                                Just v ->
+                                    let
+                                        r =
+                                            toStringPrec 0 v
+                                    in
+                                    String.join
+                                        (if String.contains " " r then
+                                            " "
+
+                                         else
+                                            ""
+                                        )
+                                        [ k, "=", r ]
                         )
                      <|
                         Dict.toList var
@@ -705,7 +723,7 @@ getFreeVariables expr =
                     Set.diff efree (Set.fromList <| Dict.keys vars)
 
                 usedExprs =
-                    Dict.values <| Dict.filter (\k _ -> Set.member k efree) vars
+                    List.filterMap identity <| Dict.values <| Dict.filter (\k _ -> Set.member k efree) vars
             in
             List.foldl Set.union efreeNotBound <| List.map getFreeVariables usedExprs
 
@@ -877,7 +895,7 @@ ppartialSubstitute var val =
             case expr of
                 PReplace vars e ->
                     Just <|
-                        PReplace (Dict.map (\_ v -> ppartialSubstitute var val v) vars) <|
+                        PReplace (Dict.map (\_ -> Maybe.map <| ppartialSubstitute var val) vars) <|
                             if Dict.member var vars then
                                 e
 
@@ -896,9 +914,19 @@ ppartialSubstitute var val =
                     Nothing
 
 
-pfullSubstitute : Dict String PrintExpression -> PrintExpression -> PrintExpression
+pfullSubstitute : Dict String (Maybe PrintExpression) -> PrintExpression -> PrintExpression
 pfullSubstitute ctx e =
-    List.foldl (\( k, v ) -> ppartialSubstitute k v) e (Dict.toList ctx)
+    List.foldl
+        (\( k, mv ) ->
+            case mv of
+                Nothing ->
+                    identity
+
+                Just v ->
+                    ppartialSubstitute k v
+        )
+        e
+        (Dict.toList ctx)
 
 
 toTeXString : Expression -> String
@@ -1214,22 +1242,34 @@ toTeXStringPrec p e =
                 "\\begin{bmatrix}"
                     ++ String.join " \\\\ "
                         (List.map
-                            (\( k, v ) ->
-                                let
-                                    r =
-                                        toTeXStringPrec 0 v
-                                in
-                                String.join
-                                    (if String.contains " " r then
-                                        " "
+                            (\( k, mv ) ->
+                                case mv of
+                                    Nothing ->
+                                        "\\!" ++ k
 
-                                     else
-                                        ""
-                                    )
-                                    [ k, "=", r ]
+                                    Just v ->
+                                        let
+                                            r =
+                                                toTeXStringPrec 0 v
+                                        in
+                                        String.join
+                                            (if String.contains " " r then
+                                                " "
+
+                                             else
+                                                ""
+                                            )
+                                            [ k, "=", r ]
                             )
                          <|
                             Dict.toList var
                         )
                     ++ "\\end{bmatrix} "
                     ++ toTeXStringPrec 0 expr
+
+
+filterContext : Dict comparable (Maybe v) -> Dict comparable v
+filterContext =
+    Dict.toList
+        >> List.filterMap (\( k, mv ) -> Maybe.map (Tuple.pair k) mv)
+        >> Dict.fromList

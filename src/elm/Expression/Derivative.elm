@@ -1,6 +1,6 @@
 module Expression.Derivative exposing (derivative)
 
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), fullSubstitute)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), filterContext, fullSubstitute)
 import Expression.Utils exposing (by, div, ipow, ln_, minus, one, plus, pow, square, zero)
 
 
@@ -74,7 +74,7 @@ derivative var expr =
             zero
 
         Replace ctx e ->
-            derivative var <| fullSubstitute ctx e
+            derivative var <| fullSubstitute (filterContext ctx) e
 
         Apply _ _ ->
             zero

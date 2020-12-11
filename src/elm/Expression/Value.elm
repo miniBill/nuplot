@@ -2,7 +2,7 @@ module Expression.Value exposing (complexToSymbolic, value)
 
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), genericAsMatrix, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication, partialSubstitute)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), filterContext, genericAsMatrix, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication, partialSubstitute)
 import Expression.Parser
 import Expression.Simplify
 import Expression.Utils as Utils
@@ -63,7 +63,7 @@ innerValue context expr =
             ListValue <| List.map (innerValue context) ls
 
         Replace ctx e ->
-            innerValue context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
+            innerValue context <| List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList <| filterContext ctx)
 
 
 plusTwo : Value -> Value -> Value

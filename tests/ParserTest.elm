@@ -59,8 +59,8 @@ tests =
     , ( "[a=2x;b=3z]2a+b^2"
       , Replace
             (Dict.fromList
-                [ ( "a", double x )
-                , ( "b", triple z )
+                [ ( "a", Just <| double x )
+                , ( "b", Just <| triple z )
                 ]
             )
             (plus [ double a, square b ])
@@ -69,8 +69,8 @@ tests =
     , ( "[a2x;b3z]2a+b^2"
       , Replace
             (Dict.fromList
-                [ ( "a", double x )
-                , ( "b", triple z )
+                [ ( "a", Just <| double x )
+                , ( "b", Just <| triple z )
                 ]
             )
             (plus [ double a, square b ])
@@ -78,7 +78,7 @@ tests =
       )
     , ( "[ab]aaa"
       , Replace
-            (Dict.singleton "a" b)
+            (Dict.singleton "a" <| Just b)
             (by [ a, a, a ])
       , "[a=b] a*a*a"
       )
@@ -91,8 +91,8 @@ tests =
     , ( "[cx/a+x/b;f(y-1)/a+(y+1)/b]{c/n,f/n}"
       , Replace
             (Dict.fromList
-                [ ( "c", plus [ div x a, div x b ] )
-                , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
+                [ ( "c", Just <| plus [ div x a, div x b ] )
+                , ( "f", Just <| plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
                 ]
             )
             (List [ div c n, div f n ])
@@ -100,15 +100,15 @@ tests =
       )
     , ( "[nsqrt(cc+ff)][cx/a+x/b;f(y-1)/a+(y+1)/b]{c/n,f/n}"
       , Replace
-            (Dict.fromList
-                [ ( "n", sqrt_ (plus [ byself c, byself f ]) )
-                ]
+            (Dict.singleton "n" <|
+                Just <|
+                    sqrt_ (plus [ byself c, byself f ])
             )
         <|
             Replace
                 (Dict.fromList
-                    [ ( "c", plus [ div x a, div x b ] )
-                    , ( "f", plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
+                    [ ( "c", Just <| plus [ div x a, div x b ] )
+                    , ( "f", Just <| plus [ div (minus y one) a, div (plus [ y, one ]) b ] )
                     ]
                 )
             <|
@@ -117,15 +117,12 @@ tests =
       )
     , ( "[cov=3]covcov"
       , Replace
-            (Dict.fromList
-                [ ( "cov", int 3 )
-                ]
-            )
+            (Dict.singleton "cov" (Just <| int 3))
             (byself <| Variable "cov")
       , "[cov=3] cov*cov"
       )
     , ( "[a=1]a"
-      , Replace (Dict.singleton "a" one) a
+      , Replace (Dict.singleton "a" <| Just one) a
       , "[a=1] a"
       )
     , ( "[g(xx-yy)^(3/2)+1/10]gra{x/(gg),y/(gg)}"
@@ -134,14 +131,12 @@ tests =
                 byself g
         in
         Replace
-            (Dict.fromList
-                [ ( "g"
-                  , plus
+            (Dict.singleton "g" <|
+                Just <|
+                    plus
                         [ pow (minus (byself x) (byself y)) (div (int 3) two)
                         , div one <| int 10
                         ]
-                  )
-                ]
             )
             (gra_ <| List [ div x gg, div y gg ])
       , "[g = (x*x - y*y)^(3/2) + 1/10] gra{x/(g*g), y/(g*g)}"
@@ -264,7 +259,7 @@ tests =
     , straight "asin(x)" (asin_ x)
     , ( "a sin x", by [ a, sin_ x ], "a*sin(x)" )
     , ( "[zx+y*i]e^z"
-      , Replace (Dict.singleton "z" <| complex x y) <| pow Expression.Utils.e z
+      , Replace (Dict.singleton "z" <| Just <| complex x y) <| pow Expression.Utils.e z
       , "[z = x + y*i] e^z"
       )
     , ( "(3-2x)/(1-x)^2"

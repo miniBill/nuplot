@@ -143,7 +143,7 @@ expressionToGraph expr =
                 Explicit2D expr
 
 
-toContext : Dict String Expression -> Context
+toContext : Dict String (Maybe Expression) -> Context
 toContext d =
     { variables = Trie.fromList <| List.map (\v -> ( v, () )) <| Dict.keys d
     , functions = Trie.empty
@@ -179,12 +179,12 @@ replacementParser context =
         |> Parser.inContext ReplacementContext
 
 
-replacementListParser : ExpressionParser (Dict String Expression)
+replacementListParser : ExpressionParser (Dict String (Maybe Expression))
 replacementListParser context =
     let
         longVariable =
             Parser.backtrackable
-                (Parser.succeed Tuple.pair
+                (Parser.succeed (\v e -> ( v, Just e ))
                     |= (Parser.chompWhile isVariableLetter
                             |> Parser.getChompedString
                             |> Parser.andThen
@@ -203,7 +203,8 @@ replacementListParser context =
                 )
 
         shortVariable =
-            Parser.succeed (\e -> ( "", e ))
+            Parser.succeed (\p e -> ( p, Just e ))
+                |= Parser.getChompedString (Parser.chompIf isVariableLetter (Expected "a letter"))
                 |. whitespace
                 |. (Parser.chompWhile ((==) '=')
                         |> Parser.getChompedString
@@ -218,6 +219,21 @@ replacementListParser context =
                    )
                 |. whitespace
                 |= Parser.lazy (\_ -> mainParser context)
+
+        declaration =
+            Parser.succeed (\v -> ( v, Nothing ))
+                |. Parser.symbol (token "!")
+                |= (Parser.chompWhile isVariableLetter
+                        |> Parser.getChompedString
+                        |> Parser.andThen
+                            (\s ->
+                                if String.isEmpty s then
+                                    Parser.problem <| Expected "a letter"
+
+                                else
+                                    Parser.succeed s
+                            )
+                   )
     in
     Parser.inContext ReplacementListContext <|
         (Parser.map Dict.fromList <|
@@ -227,12 +243,11 @@ replacementListParser context =
                 , end = token "]"
                 , spaces = whitespace
                 , item =
-                    Parser.succeed (\h ( t, v ) -> ( h ++ t, v ))
-                        |= Parser.getChompedString (Parser.chompIf isVariableLetter (Expected "a letter"))
-                        |= Parser.oneOf
-                            [ longVariable
-                            , shortVariable
-                            ]
+                    Parser.oneOf
+                        [ declaration
+                        , longVariable
+                        , shortVariable
+                        ]
                 , trailing = Parser.Optional
                 }
         )
