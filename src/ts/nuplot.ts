@@ -264,6 +264,13 @@ export class NuPlot extends HTMLElement {
     window.requestAnimationFrame(this.renderFrame.bind(this));
   }
 
+  static withLines(input: string): string {
+    return input
+      .split("\n")
+      .map((l, i) => (i + 1).toString().padStart(3) + " " + l)
+      .join("\n");
+  }
+
   sourceAndCompile(shader: WebGLShader, built: string) {
     if (!this.gl) return;
 
@@ -277,7 +284,7 @@ Error compiling shader, log:
 ${this.gl.getShaderInfoLog(shader)}
 
 Source:
-${built}
+${NuPlot.withLines(built)}
       </pre>`;
       console.error("Error compiling shader, source:\n", built);
       console.error("Log:\n", this.gl.getShaderInfoLog(shader));
