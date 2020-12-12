@@ -2,7 +2,7 @@ module Expression.Value exposing (complexToSymbolic, value)
 
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), filterContext, genericAsMatrix, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication, partialSubstitute)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), filterContext, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication, partialSubstitute)
 import Expression.Parser
 import Expression.Simplify
 import Expression.Utils as Utils
@@ -480,11 +480,14 @@ toSymbolic v =
                 Explicit2D e ->
                     e
 
-                Relation2D o l r ->
-                    RelationOperation o l r
+                Relation2D e ->
+                    e
 
                 Implicit2D l r ->
                     RelationOperation Equals l r
+
+                Implicit3D e ->
+                    e
 
                 Contour e ->
                     e

@@ -40,8 +40,9 @@ import Trie exposing (Trie)
 
 type Graph
     = Explicit2D Expression
-    | Relation2D RelationOperation Expression Expression
+    | Relation2D Expression
     | Implicit2D Expression Expression
+    | Implicit3D Expression
     | Contour Expression
     | GraphList (List Graph)
 
@@ -338,11 +339,14 @@ graphToString g =
         Explicit2D e ->
             "Explicit2D " ++ toString e
 
-        Relation2D o l r ->
-            "Relation2D " ++ toString (RelationOperation o l r)
+        Relation2D e ->
+            "Relation2D " ++ toString e
 
         Implicit2D l r ->
             "Implicit2D " ++ toString (RelationOperation Equals l r)
+
+        Implicit3D e ->
+            "Implicit3D " ++ toString e
 
         Contour c ->
             "Contour " ++ toString c

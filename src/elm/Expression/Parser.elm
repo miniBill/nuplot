@@ -123,10 +123,14 @@ expressionToGraph expr =
                     Explicit2D r
 
                 ( _, Equals, _ ) ->
-                    Implicit2D l r
+                    if Set.member "z" <| getFreeVariables expr then
+                        Implicit3D expr
+
+                    else
+                        Implicit2D l r
 
                 _ ->
-                    Relation2D rop l r
+                    Relation2D expr
 
         List ls ->
             GraphList <| List.map expressionToGraph ls
@@ -136,7 +140,10 @@ expressionToGraph expr =
                 free =
                     getFreeVariables expr
             in
-            if Set.member "y" free then
+            if Set.member "z" free then
+                Implicit3D expr
+
+            else if Set.member "y" free then
                 Contour expr
 
             else

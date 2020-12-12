@@ -1,7 +1,7 @@
 module UI.Glsl exposing (getGlsl)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), filterContext)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..))
 import Expression.Utils
 import List.Extra as List
 
@@ -28,15 +28,14 @@ getGlsl graph =
                     in
                     ( e, toSrcImplicit prefix e )
 
-                Relation2D op l r ->
-                    let
-                        e =
-                            RelationOperation op l r
-                    in
+                Relation2D e ->
                     ( e, toSrcRelation prefix e )
 
                 Contour e ->
                     ( e, toSrcContour prefix e )
+
+                Implicit3D e ->
+                    ( e, toSrc3D prefix e )
 
                 GraphList l ->
                     let
@@ -630,7 +629,7 @@ toSrcRelation suffix e =
 toSrcContour : String -> Expression -> String
 toSrcContour suffix e =
     """
-    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
+    vec3 pixel""" ++ suffix ++ """_o(float deltaX, float deltaY, float x, float y) {
         vec2 z = """ ++ Expression.toGLString e ++ """;
 
         float theta = atan(z.y, z.x) / radians(360.0);
@@ -647,5 +646,57 @@ toSrcContour suffix e =
 
         float l = td < 1.0 ? squished * td + (1.0 - td) : squished;
         return hl2rgb(theta, l);
+    }
+
+    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
+        if(0 > 0)
+            return pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y);
+
+        // Antialiasing
+
+        float dist = 1.0 / 3.0;
+        vec3 a = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x + dist * deltaX, y + dist * deltaY);
+        vec3 b = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x - dist * deltaX, y - dist * deltaY);
+        vec3 c = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x + dist * deltaX, y - dist * deltaY);
+        vec3 d = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x - dist * deltaX, y + dist * deltaY);
+
+        vec3 diff = abs(max(a, max(b, max(c, d))) - min(a, min(b, min(c, d))));
+        if (diff.x < dist && diff.y < dist && diff.z < dist)
+            return (a + b + c + d) / 4.0;
+
+        vec3 e = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x + 2.0 * dist * deltaX, y);
+        vec3 f = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x - 2.0 * dist * deltaX, y);
+        vec3 g = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y - 2.0 * dist * deltaY);
+        vec3 h = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y + 2.0 * dist * deltaY);
+
+        return (a + b + c + d + e + f + g + h) / 8.0;
+    }
+    """
+
+
+toSrc3D : String -> Expression -> String
+toSrc3D suffix e =
+    """
+    vec3 pixel""" ++ suffix ++ """_o(float deltaX, float deltaY, float x, float y) {
+        vec2 z = """ ++ Expression.toGLString e ++ """;
+
+        float theta = atan(z.y, z.x) / radians(360.0);
+        float td = thetaDelta(theta);
+
+        float radius = sqrt(z.x*z.x + z.y*z.y);
+        float logRadius = log2(radius);
+        float powerRemainder = logRadius - floor(logRadius);
+        float squished = 0.7 - powerRemainder * 0.4;
+
+        if(u_completelyReal > 0.0) {
+            return hl2rgb(theta, squished);
+        }
+
+        float l = td < 1.0 ? squished * td + (1.0 - td) : squished;
+        return hl2rgb(theta, l);
+    }
+
+    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
+        return pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y);
     }
     """
