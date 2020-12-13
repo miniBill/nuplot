@@ -289,7 +289,7 @@ toSrcContour suffix e =
         float theta = atan(z.y, z.x) / radians(360.0);
         float td = thetaDelta(theta);
 
-        float radius = sqrt(z.x*z.x + z.y*z.y);
+        float radius = length(z);
         float logRadius = log2(radius);
         float powerRemainder = logRadius - floor(logRadius);
         float squished = 0.7 - powerRemainder * 0.4;
@@ -337,7 +337,7 @@ toSrc3D suffix e =
         float theta = atan(z.y, z.x) / radians(360.0);
         float td = thetaDelta(theta);
 
-        float radius = sqrt(z.x*z.x + z.y*z.y);
+        float radius = length(z);
         float logRadius = log2(radius);
         float powerRemainder = logRadius - floor(logRadius);
         float squished = 0.7 - powerRemainder * 0.4;
