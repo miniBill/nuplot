@@ -1,6 +1,6 @@
 module UI.Glsl.Code exposing (constantToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
 
-import Expression exposing (Expression)
+import Expression exposing (Expression, PrintExpression(..))
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -69,8 +69,46 @@ straightOperationToGlsl op =
 intervalOperationToGlsl : GlslOperation -> String
 intervalOperationToGlsl op =
     case op of
+        GlslAddition ->
+            ""
+
+        GlslNegation ->
+            """
+            vec2 ineg(vec2 v) {
+                return vec2(-v.y, -v.x);
+            }
+            """
+
+        GlslMultiplication ->
+            """
+            vec2 iby(vec2 l, vec2 r) {
+                float a = l.x * r.x;
+                float b = l.x * r.y;
+                float c = l.y * r.x;
+                float d = l.y * r.y;
+                float mn = min(min(a,b),min(c,d));
+                float mx = max(max(a,b),max(c,d));
+                return vec2(mn, mx);
+            }
+            """
+
+        GlslDivision ->
+            """
+            vec2 idiv(vec2 l, vec2 r) {
+                if(r.x <= 0 && r.y >= 0)
+                    return vec2(1.0 / 0.0, 1.0 / 0.0);
+                float a = l.x / r.x;
+                float b = l.x / r.y;
+                float c = l.y / r.x;
+                float d = l.y / r.y;
+                float mn = min(min(a,b),min(c,d));
+                float mx = max(max(a,b),max(c,d));
+                return vec2(mn, mx);
+            }
+            """
+
         _ ->
-            Debug.todo "intervalOperationToGlsl"
+            "TODO"
 
 
 straightFunctionToGlsl : GlslFunction -> String
@@ -270,14 +308,14 @@ intervalFunctionToGlsl : GlslFunction -> String
 intervalFunctionToGlsl name =
     case name of
         _ ->
-            Debug.todo "intervalFunctionToGlsl"
+            "TODO"
 
 
 toSrcImplicit : String -> Expression -> String
 toSrcImplicit suffix e =
     """
     float f""" ++ suffix ++ """(float x, float y) {
-        vec2 complex = """ ++ Expression.toGLString e ++ """;
+        vec2 complex = """ ++ expressionToGlsl e ++ """;
         if(abs(complex.y) > """ ++ String.fromFloat epsilon ++ """) {
             return -1.0;
         }
@@ -289,7 +327,9 @@ toSrcImplicit suffix e =
         float l = f""" ++ suffix ++ """(x - deltaX,y);
         float ul = f""" ++ suffix ++ """(x - deltaX,y - deltaY);
         float u = f""" ++ suffix ++ """(x,y - deltaY);
-        return (h != l || h != u || h != ul) && (h >= 0.0 && l >= 0.0 && ul >= 0.0 && u >= 0.0) ? vec3(1,1,1) : vec3(0,0,0);
+        return (h != l || h != u || h != ul)
+            && (h >= 0.0 && l >= 0.0 && ul >= 0.0 && u >= 0.0)
+                ? vec3(1,1,1) : vec3(0,0,0);
     }
     """
 
@@ -298,7 +338,7 @@ toSrcContour : String -> Expression -> String
 toSrcContour suffix e =
     """
     vec3 pixel""" ++ suffix ++ """_o(float deltaX, float deltaY, float x, float y) {
-        vec2 z = """ ++ Expression.toGLString e ++ """;
+        vec2 z = """ ++ expressionToGlsl e ++ """;
 
         float theta = atan(z.y, z.x) / radians(360.0);
         float td = thetaDelta(theta);
@@ -346,12 +386,13 @@ toSrc3D : String -> Expression -> String
 toSrc3D suffix e =
     """
     vec3 pixel""" ++ suffix ++ """_o(float deltaX, float deltaY, float x, float y) {
-        vec2 z = """ ++ Expression.toGLString e ++ """;
+        float z = 0.0;
+        vec2 v = """ ++ expressionToGlsl e ++ """;
 
-        float theta = atan(z.y, z.x) / radians(360.0);
+        float theta = atan(v.y, v.x) / radians(360.0);
         float td = thetaDelta(theta);
 
-        float radius = length(z);
+        float radius = length(v);
         float logRadius = log2(radius);
         float powerRemainder = logRadius - floor(logRadius);
         float squished = 0.7 - powerRemainder * 0.4;
@@ -374,7 +415,7 @@ toSrcRelation : String -> Expression -> String
 toSrcRelation suffix e =
     """
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        vec2 complex = """ ++ Expression.toGLString e ++ """;
+        vec2 complex = """ ++ expressionToGlsl e ++ """;
         return complex.x > 0.0 && abs(complex.y) < """ ++ String.fromFloat epsilon ++ """ ? vec3(0.8,0.5,0.5) : vec3(0,0,0);
     }
     """
@@ -383,3 +424,97 @@ toSrcRelation suffix e =
 epsilon : Float
 epsilon =
     0.00001
+
+
+expressionToGlsl : Expression -> String
+expressionToGlsl =
+    let
+        step e ( l, acc ) =
+            if String.length e + String.length l > 40 then
+                ( e, l :: acc )
+
+            else
+                ( l ++ e, acc )
+    in
+    Expression.toPrintExpression
+        >> expressionToGlslPrec 0
+        >> String.split " "
+        >> List.foldl step ( "", [] )
+        >> (\( l, a ) ->
+                if String.isEmpty l then
+                    a
+
+                else
+                    l :: a
+           )
+        >> List.reverse
+        >> String.join "\n            "
+
+
+expressionToGlslPrec : Int -> PrintExpression -> String
+expressionToGlslPrec p expr =
+    let
+        paren b c =
+            if b then
+                "(" ++ c ++ ")"
+
+            else
+                c
+
+        noninfix op c =
+            paren (p > 10) <| op ++ expressionToGlslPrec 11 c
+
+        infixl_ n op l r =
+            paren (p > n) <| expressionToGlslPrec n l ++ op ++ expressionToGlslPrec (n + 1) r
+
+        apply name ex =
+            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (expressionToGlslPrec 0) ex) ++ ")"
+    in
+    case expr of
+        PVariable "i" ->
+            "vec2(0,1)"
+
+        PVariable "pi" ->
+            "vec2(radians(180.0),0.0)"
+
+        PVariable "e" ->
+            "vec2(exp(1.0),0)"
+
+        PVariable v ->
+            "vec2(" ++ v ++ ",0)"
+
+        PInteger v ->
+            "vec2(" ++ String.fromInt v ++ ",0)"
+
+        PFloat f ->
+            "vec2(" ++ String.fromFloat f ++ ",0)"
+
+        PNegate expression ->
+            "(" ++ noninfix "-" expression ++ ")"
+
+        PAdd l (PNegate r) ->
+            infixl_ 6 " - " l r
+
+        PAdd l r ->
+            infixl_ 6 " + " l r
+
+        PRel rel l r ->
+            "vec2((" ++ expressionToGlslPrec 10 l ++ ".x " ++ rel ++ " " ++ expressionToGlslPrec 10 r ++ ".x) ? 1.0 : 0.0,0.0)"
+
+        PBy l r ->
+            apply "by" [ l, r ]
+
+        PDiv l r ->
+            apply "div" [ l, r ]
+
+        PPower l r ->
+            apply "cpow" [ l, r ]
+
+        PApply name ex ->
+            apply ("c" ++ Expression.functionNameToString name) ex
+
+        PList es ->
+            "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (expressionToGlslPrec 0) es) ++ ")"
+
+        PReplace var e ->
+            expressionToGlslPrec p (Expression.pfullSubstitute var e)

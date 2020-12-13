@@ -50,8 +50,12 @@ getGlsl graph =
                         children =
                             List.indexedMap (extract << prefix_) l
 
+                        color i =
+                            "hl2rgb(" ++ String.fromFloat (toFloat (i + 1) / pi) ++ ", 0.5)"
+
                         addPixel i =
-                            "res = max(res, pixel" ++ prefix_ i ++ "(deltaX, deltaY, x, y));"
+                            """curr = """ ++ color i ++ """ * pixel""" ++ prefix_ i ++ """(deltaX, deltaY, x, y);
+                                    res = curr == vec3(0,0,0) ? res : curr;"""
 
                         inner =
                             l
@@ -62,19 +66,20 @@ getGlsl graph =
                             """
                                 vec3 pixel""" ++ prefix ++ """(float deltaX, float deltaY, float x, float y) {
                                     vec3 res = vec3(0,0,0);
+                                    vec3 curr;
                                     """ ++ inner ++ """
                                     return res;
                                 }"""
                     in
                     { expr = List <| List.map .expr children
-                    , srcExpr = String.join "\n" (List.map .srcExpr children) ++ deindent 8 src
+                    , srcExpr = String.join "\n" (List.map .srcExpr children) ++ deindent 28 src
                     , interval =
                         if List.any (\c -> c.interval /= StraightOnly) children then
                             IntervalAndStraight
 
                         else
                             StraightOnly
-                    , hsl = List.any .hsl children
+                    , hsl = True
                     }
 
         hslCode =

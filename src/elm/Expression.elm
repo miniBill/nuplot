@@ -6,6 +6,7 @@ module Expression exposing
     , FunctionName(..)
     , Graph(..)
     , KnownFunction(..)
+    , PrintExpression(..)
     , RelationOperation(..)
     , UnaryOperation(..)
     , Value(..)
@@ -13,13 +14,15 @@ module Expression exposing
     , equals
     , filterContext
     , fullSubstitute
+    , functionNameToString
     , genericAsSquareMatrix
     , genericDeterminant
     , genericMatrixAddition
     , genericMatrixMultiplication
     , getFreeVariables
     , graphToString
-    , toGLString
+    , pfullSubstitute
+    , toPrintExpression
     , toString
     , toTeXString
     , visit
@@ -718,81 +721,6 @@ getFreeVariables expr =
 
         List es ->
             concatMap es
-
-
-toGLString : Expression -> String
-toGLString =
-    toPrintExpression
-        >> toGLStringPrec 0
-
-
-toGLStringPrec : Int -> PrintExpression -> String
-toGLStringPrec p expr =
-    let
-        paren b c =
-            if b then
-                "(" ++ c ++ ")"
-
-            else
-                c
-
-        noninfix op c =
-            paren (p > 10) <| op ++ toGLStringPrec 11 c
-
-        infixl_ n op l r =
-            paren (p > n) <| toGLStringPrec n l ++ op ++ toGLStringPrec (n + 1) r
-
-        apply name ex =
-            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (toGLStringPrec 0) ex) ++ ")"
-    in
-    case expr of
-        PVariable "i" ->
-            "vec2(0,1)"
-
-        PVariable "pi" ->
-            "vec2(radians(180.0),0.0)"
-
-        PVariable "e" ->
-            "vec2(exp(1.0),0)"
-
-        PVariable v ->
-            "vec2(" ++ v ++ ",0)"
-
-        PInteger v ->
-            "vec2(" ++ String.fromInt v ++ ",0)"
-
-        PFloat f ->
-            "vec2(" ++ String.fromFloat f ++ ",0)"
-
-        PNegate expression ->
-            noninfix "-" expression
-
-        PAdd l (PNegate r) ->
-            infixl_ 6 " - " l r
-
-        PAdd l r ->
-            infixl_ 6 " + " l r
-
-        PRel rel l r ->
-            "vec2((" ++ toGLStringPrec 10 l ++ ".x " ++ rel ++ " " ++ toGLStringPrec 10 r ++ ".x) ? 1.0 : 0.0,0.0)"
-
-        PBy l r ->
-            apply "by" [ l, r ]
-
-        PDiv l r ->
-            apply "div" [ l, r ]
-
-        PPower l r ->
-            apply "cpow" [ l, r ]
-
-        PApply name ex ->
-            apply ("c" ++ functionNameToString name) ex
-
-        PList es ->
-            "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (toGLStringPrec 0) es) ++ ")"
-
-        PReplace var e ->
-            toGLStringPrec p (pfullSubstitute var e)
 
 
 functionNameToString : FunctionName -> String

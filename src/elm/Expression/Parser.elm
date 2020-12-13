@@ -124,7 +124,7 @@ expressionToGraph expr =
 
                 ( _, Equals, _ ) ->
                     if Set.member "z" <| getFreeVariables expr then
-                        Implicit3D expr
+                        Implicit3D <| Expression.Utils.minus l r
 
                     else
                         Implicit2D l r
