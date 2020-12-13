@@ -89,9 +89,9 @@ export class MathJaxElement extends HTMLElement {
         })
         .catch((err) => {
           this.wrapper.innerHTML = "";
-          const errorNode = document
-            .createElement("pre")
-            .appendChild(document.createTextNode(err.message));
+          const errorNode = document.createElement("pre");
+          errorNode.appendChild(document.createTextNode(err.message));
+          errorNode.style.whiteSpace = "pre-wrap";
           this.wrapper.appendChild(errorNode);
         });
     });

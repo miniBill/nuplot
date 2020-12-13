@@ -56,8 +56,8 @@ view pageWidth index row =
         , alignTop
         ]
         [ inputLine index row
-        , statusLine pageWidth row
         , outputBlock { pageWidth = pageWidth } row
+        , statusLine pageWidth row
         ]
 
 
@@ -100,14 +100,14 @@ statusLine pageWidth row =
 
 viewError : String -> Element msg
 viewError e =
-    el
+    Element.paragraph
         [ alignTop
         , Font.family [ Font.monospace ]
         , Font.color <| rgb 1 0 0
         ]
-        (Element.html <|
-            Html.pre [] [ Html.text e ]
-        )
+    <|
+        List.map text <|
+            String.split "\n" e
 
 
 label : String -> Element msg

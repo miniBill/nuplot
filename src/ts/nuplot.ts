@@ -277,7 +277,7 @@ export class NuPlot extends HTMLElement {
 
     var compiled = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
     if (!compiled) {
-      this.label.innerHTML = `<pre>
+      this.label.innerHTML = `<pre style="white-space: pre-wrap">
 Error compiling shader, log:
 ${this.gl.getShaderInfoLog(shader)}
 

@@ -120,7 +120,11 @@ expressionToGraph expr =
         RelationOperation rop l r ->
             case ( l, rop, Set.member "y" <| getFreeVariables r ) of
                 ( Variable "y", Equals, False ) ->
-                    Explicit2D r
+                    if Set.member "z" <| getFreeVariables expr then
+                        Implicit3D <| Expression.Utils.minus l r
+
+                    else
+                        Explicit2D r
 
                 ( _, Equals, _ ) ->
                     if Set.member "z" <| getFreeVariables expr then

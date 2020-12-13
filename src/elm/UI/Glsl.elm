@@ -54,7 +54,7 @@ getGlsl graph =
                     , interval = IntervalAndStraight
                     , thetaDelta = True
                     , pixel2D = []
-                    , pixel3D = [ "pixel" ++ prefix ]
+                    , pixel3D = [ prefix ]
                     }
 
                 GraphList children ->
@@ -200,7 +200,7 @@ expressionToRequirements e =
                 [ RequireOperation GlslPower ]
 
             else
-                [ RequireOperation GlslMultiplication ]
+                [ RequireOperation GlslPower, RequireOperation GlslMultiplication ]
 
         BinaryOperation op l r ->
             let

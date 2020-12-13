@@ -94,22 +94,26 @@ intervalOperationToGlsl op =
 
         GlslDivision ->
             """
+            vec2 iinverse(vec2 y) {
+                if(y.x <= 0.0 && y.y >= 0.0)
+                    return vec2(-1.0 / 0.0, 1.0 / 0.0);
+                if(y.y == 0.0)
+                    return vec2(-1.0 / 0.0, 1.0 / y.x);
+                if(y.x == 0.0)
+                    return vec2(1.0 / y.y, 1.0 / 0.0);
+                return vec2(1.0 / y.y, 1.0 / y.x);
+            }
+
             vec2 idiv(vec2 l, vec2 r) {
-                if(r.x <= 0 && r.y >= 0)
-                    return vec2(1.0 / 0.0, 1.0 / 0.0);
-                float a = l.x / r.x;
-                float b = l.x / r.y;
-                float c = l.y / r.x;
-                float d = l.y / r.y;
-                float mn = min(min(a,b),min(c,d));
-                float mx = max(max(a,b),max(c,d));
-                return vec2(mn, mx);
+                return iby(l, iinverse(r));
             }
             """
 
         GlslPower ->
             """
-            TODO: GlslPower
+            vec2 ipow(vec2 b, vec2 e) {
+                return iexp(iby(iln(b), e));
+            }
             """
 
 
@@ -332,7 +336,13 @@ intervalFunctionToGlsl name =
     case name of
         Abs22 ->
             """
-            TODO Abs22
+            vec2 iabs(vec2 z) {
+                if(z.x <= 0.0 && z.y >= 0.0)
+                    return vec2(0.0, max(z.y, abs(z.x)));
+                if(z.x <= 0.0)
+                    return vec2(-z.y, -z.x);
+                return z;
+            }
             """
 
         Acos22 ->
@@ -371,18 +381,24 @@ intervalFunctionToGlsl name =
             """
 
         Cosh11 ->
-            """
-            TODO Cosh11
-            """
+            ""
 
         Cosh22 ->
             """
-            TODO Cosh22
+            vec2 icosh(vec2 v) {
+                if(z.x <= 0.0 && z.y >= 0.0)
+                    return vec2(cosh(0.0), max(z.y, abs(z.x)));
+                if(z.x <= 0.0)
+                    return vec2(cosh(-z.y), cosh(-z.x));
+                return vec2(cosh(z.x), cosh(z.y));
+            }
             """
 
         Exp22 ->
             """
-            TODO Exp22
+            vec2 iexp(vec2 z) {
+                return vec2(exp(z.x), exp(z.y));
+            }
             """
 
         Floor22 ->
@@ -397,7 +413,9 @@ intervalFunctionToGlsl name =
 
         Ln22 ->
             """
-            TODO Ln22
+            vec2 iln(vec2 z) {
+                return vec2(log(z.x), log(z.y));
+            }
             """
 
         Log1022 ->
@@ -422,22 +440,47 @@ intervalFunctionToGlsl name =
 
         Sin22 ->
             """
-            TODO Sin22
+            vec2 isin(vec2 v) {
+                if(v.y - v.x > radians(360.0)) {
+                    return vec2(-1.0, 1.0);
+                }
+                float from = mod(v.x, radians(360.0)); // [0, 2pi]
+                float to = from + v.y - v.x;
+                float mn = min(sin(from), sin(to));
+                float mx = max(sin(from), sin(to));
+                if(to > radians(360.0 + 90.0)) {
+                    mx = 1.0;
+                    if(from < radians(270.0))
+                        mn = -1.0;
+                } else if (to > radians(270.0)) {
+                    if(from < radians(270.0)) {
+                        mn = -1.0;
+                        if(from < radians(90.0))
+                            mx = 1.0;
+                    }
+                } else if (to > radians(90.0)) {
+                    if(from < radians(90.0))
+                        mx = 1.0;
+                }
+                return vec2(mn, mx);
+            }
             """
 
         Sinh11 ->
-            """
-            TODO Sinh11
-            """
+            ""
 
         Sinh22 ->
             """
-            TODO Sinh22
+            vec2 isinh(vec2 v) {
+                return vec2(sinh(v.x), sinh(v.y));
+            }
             """
 
         Sqrt22 ->
             """
-            TODO Sqrt22
+            vec2 isqrt(vec2 v) {
+                return vec2(sqrt(max(0.0, v.x)), sqrt(max(0.0, v.y)));
+            }
             """
 
         Tan22 ->
@@ -704,13 +747,13 @@ expressionToIntervalGlslPrec p expr =
     in
     case expr of
         PVariable "pi" ->
-            "vec2(radians(180.0),radians(180.0))"
+            "dup(radians(180.0))"
 
         PVariable "e" ->
-            "vec2(exp(1.0),exp(1.0))"
+            "dup(exp(1.0))"
 
         PVariable v ->
-            "dup(" ++ v ++ ")"
+            v
 
         PInteger v ->
             "dup(" ++ String.fromInt v ++ ".0)"
@@ -745,11 +788,11 @@ expressionToIntervalGlslPrec p expr =
         PDiv l r ->
             apply "idiv" [ l, r ]
 
-        PPower (PVariable "i") r ->
-            apply "ipow" [ PVariable "i", r ]
+        PPower (PVariable "i") (PInteger 2) ->
+            "dup(-1.0)"
 
         PPower (PVariable v) (PInteger 2) ->
-            "iby(dup(" ++ v ++ "),dup(" ++ v ++ "))"
+            "iby(" ++ v ++ ", " ++ v ++ ")"
 
         PPower l r ->
             apply "ipow" [ l, r ]
@@ -830,58 +873,96 @@ main2D pixels =
 toSrc3D : String -> Expression -> String
 toSrc3D suffix e =
     """
-    vec3 pixel""" ++ suffix ++ """(float x, float y, float z) {
-        vec2 v = """ ++ expressionToIntervalGlsl e ++ """;
-
-        float logRadius = log2(abs(v.x));
-        float powerRemainder = fract(logRadius);
-        float squished = 0.7 - powerRemainder * 0.4;
-
-        float haf = fract(logRadius) / 6.0;
-        if(v.x > 0.0)
-            return hl2rgb(haf + 0.3, squished);
-        else
-            return hl2rgb(haf - 0.1, 1.0 - squished);
+    vec2 interval""" ++ suffix ++ """(vec3 f, vec3 t) {
+        vec2 x = vec2(f.x, t.x);
+        vec2 z = vec2(f.y, t.y);
+        vec2 y = vec2(f.z, t.z);
+        return """ ++ expressionToIntervalGlsl e ++ """;
     }
     """
 
 
 main3D : List String -> String
-main3D pixels =
+main3D suffixes =
     let
-        addPixel i p =
-            """
-            curr = """ ++ p ++ """(x, y, 0.0);
-            px = curr == vec3(0,0,0) ? px : curr;"""
+        head =
+            String.join "\n" <| List.indexedMap suffixToBisect suffixes
 
-        inner =
-            pixels
-                |> List.indexedMap addPixel
-                |> String.join "\n                "
+        suffixToBisect i suffix =
+            """
+            vec3 bisect""" ++ suffix ++ """(vec3 o, vec3 d) {
+                vec3 from = o;
+                vec3 to = o + 10.0 * d;
+                vec3 recover_from = from;
+                vec3 recover_to = to;
+                for(int it = 0; it < 1000; it++) {
+                    vec3 midpoint = mix(from, to, 0.5);
+                    if(length(from - to) < 0.1)
+                        return midpoint;
+                    vec2 front = interval""" ++ suffix ++ """(from, midpoint);
+                    vec2 back = interval""" ++ suffix ++ """(midpoint, to);
+                    if(front.x <= 0.0 && front.y >= 0.0) {
+                        if(back.x <= 0.0 && back.y >= 0.0) {
+                            recover_from = midpoint;
+                            recover_to = to;
+                        }
+                        to = midpoint;
+                    } else if(back.x <= 0.0 && back.y >= 0.0) {
+                        from = midpoint;
+                    } else {
+                        if(it == 0)
+                            return o + 100.0 * d;
+                        from = recover_from;
+                        to = recover_to;
+                    }
+                }
+                return o + 100.0 * d;
+            }
+            """
     in
-    deindent 8 <|
-        """
-        float ax(float coord, float delta) {
-            return max(0.0, 1.0 - abs(coord/delta));
-        }
-
-        vec4 pixel3 () {
-            vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
-            vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
-
-            vec2 viewportSize = (u_viewportWidth / u_canvasWidth) * canvasSize;
-            vec2 uv = uv_centered / canvasSize * viewportSize;
-            vec2 c = u_zoomCenter + uv;
-            float x = c.x;
-            float y = c.y;
-
-            vec3 px = vec3(0,0,0);
-            vec3 curr;
-            """
-            ++ inner
+    deindent 12 <|
+        head
             ++ """
-            return vec4(px, 1.0);
-        }
+            float ax(float coord, float delta) {
+                return max(0.0, 1.0 - abs(coord/delta));
+            }
+
+            vec3 color(float y) {
+                float logRadius = log2(abs(y));
+                float powerRemainder = fract(logRadius);
+                float squished = 0.7 - powerRemainder * 0.4;
+
+                float haf = fract(logRadius) / 6.0;
+                if(y > 0.0)
+                    return hl2rgb(haf + 0.3, squished);
+                else
+                    return hl2rgb(haf - 0.1, 1.0 - squished);
+            }
+
+            vec4 pixel3 () {
+                vec3 eye = vec3(0, 0.5, -2);
+                float focal_dist = 1.0;
+
+                vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
+                vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
+
+                vec2 uv = 1.0 / u_canvasHeight * uv_centered; // [-0.5,0.5]²
+                vec3 to_center = normalize(-eye);
+                
+                vec3 canvas_center = eye + focal_dist * to_center;
+                vec3 up = vec3(0, -to_center.z, -to_center.y);
+                vec3 canvas_point = vec3(canvas_center.x + uv.x, uv.y * up.y, uv.y * up.z);
+
+                vec3 ray_direction = normalize(canvas_point - eye);
+                vec3 intersection = bisect(canvas_point, ray_direction);
+                if(intersection.z > canvas_point.z + 50.0 * ray_direction.z) {
+                    return vec4(vec3(0),1.0);
+                }
+                else {
+                    vec3 px = hl2rgb(intersection.y, 0.5);
+                    return vec4(px, 1.0);
+                }
+            }
         """
 
 
