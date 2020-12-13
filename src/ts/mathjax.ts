@@ -1,5 +1,3 @@
-import { debug } from "console";
-
 declare global {
   interface Window {
     MathJax: {

@@ -109,7 +109,7 @@ intervalOperationToGlsl op =
 
         GlslPower ->
             """
-            TODO """ ++ Debug.toString op ++ """
+            TODO: GlslPower
             """
 
 
@@ -330,9 +330,129 @@ straightFunctionToGlsl name =
 intervalFunctionToGlsl : GlslFunction -> String
 intervalFunctionToGlsl name =
     case name of
-        _ ->
+        Abs22 ->
             """
-            TODO """ ++ Debug.toString name ++ """
+            TODO Abs22
+            """
+
+        Acos22 ->
+            """
+            TODO Acos22
+            """
+
+        Arg22 ->
+            """
+            TODO Arg22
+            """
+
+        Asin22 ->
+            """
+            TODO Asin22
+            """
+
+        Atan22 ->
+            """
+            TODO Atan22
+            """
+
+        Atan222 ->
+            """
+            TODO Atan222
+            """
+
+        Ceiling22 ->
+            """
+            TODO Ceiling22
+            """
+
+        Cos22 ->
+            """
+            TODO Cos22
+            """
+
+        Cosh11 ->
+            """
+            TODO Cosh11
+            """
+
+        Cosh22 ->
+            """
+            TODO Cosh22
+            """
+
+        Exp22 ->
+            """
+            TODO Exp22
+            """
+
+        Floor22 ->
+            """
+            TODO Floor22
+            """
+
+        Im22 ->
+            """
+            TODO Im22
+            """
+
+        Ln22 ->
+            """
+            TODO Ln22
+            """
+
+        Log1022 ->
+            """
+            TODO Log1022
+            """
+
+        Pw22 ->
+            """
+            TODO Pw22
+            """
+
+        Re22 ->
+            """
+            TODO Re22
+            """
+
+        Round22 ->
+            """
+            TODO Round22
+            """
+
+        Sin22 ->
+            """
+            TODO Sin22
+            """
+
+        Sinh11 ->
+            """
+            TODO Sinh11
+            """
+
+        Sinh22 ->
+            """
+            TODO Sinh22
+            """
+
+        Sqrt22 ->
+            """
+            TODO Sqrt22
+            """
+
+        Tan22 ->
+            """
+            TODO Tan22
+            """
+
+        Tanh11 ->
+            """
+            TODO Tanh11
+            """
+
+        Tanh22 ->
+            """
+            TODO Tanh22
             """
 
 
