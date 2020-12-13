@@ -580,6 +580,31 @@ expressionToGlsl =
         >> String.join "\n            "
 
 
+expressionToIntervalGlsl : Expression -> String
+expressionToIntervalGlsl =
+    let
+        step e ( l, acc ) =
+            if String.length e + String.length l > 40 then
+                ( e, l :: acc )
+
+            else
+                ( l ++ e, acc )
+    in
+    Expression.toPrintExpression
+        >> expressionToIntervalGlslPrec 0
+        >> String.split " "
+        >> List.foldl step ( "", [] )
+        >> (\( l, a ) ->
+                if String.isEmpty l then
+                    a
+
+                else
+                    l :: a
+           )
+        >> List.reverse
+        >> String.join "\n            "
+
+
 expressionToGlslPrec : Int -> PrintExpression -> String
 expressionToGlslPrec p expr =
     let
@@ -658,6 +683,87 @@ expressionToGlslPrec p expr =
             expressionToGlslPrec p (Expression.pfullSubstitute var e)
 
 
+expressionToIntervalGlslPrec : Int -> PrintExpression -> String
+expressionToIntervalGlslPrec p expr =
+    let
+        paren b c =
+            if b then
+                "(" ++ c ++ ")"
+
+            else
+                c
+
+        noninfix op c =
+            paren (p > 10) <| op ++ expressionToIntervalGlslPrec 11 c
+
+        infixl_ n op l r =
+            paren (p > n) <| expressionToIntervalGlslPrec n l ++ op ++ expressionToIntervalGlslPrec (n + 1) r
+
+        apply name ex =
+            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (expressionToIntervalGlslPrec 0) ex) ++ ")"
+    in
+    case expr of
+        PVariable "pi" ->
+            "vec2(radians(180.0),radians(180.0))"
+
+        PVariable "e" ->
+            "vec2(exp(1.0),exp(1.0))"
+
+        PVariable v ->
+            "dup(" ++ v ++ ")"
+
+        PInteger v ->
+            "dup(" ++ String.fromInt v ++ ".0)"
+
+        PFloat f ->
+            "dup(" ++ String.fromFloat f ++ ")"
+
+        PNegate expression ->
+            "ineg(" ++ expressionToIntervalGlslPrec 10 expression ++ ")"
+
+        PAdd l r ->
+            infixl_ 6 " + " l r
+
+        PRel rel l r ->
+            "dup(("
+                ++ expressionToIntervalGlslPrec 10 l
+                ++ ".x "
+                ++ rel
+                ++ " "
+                ++ expressionToIntervalGlslPrec 10 r
+                ++ ".x) ? 0.5 : 0.0 + ("
+                ++ expressionToIntervalGlslPrec 10 l
+                ++ ".y "
+                ++ rel
+                ++ " "
+                ++ expressionToIntervalGlslPrec 10 r
+                ++ ".y) ? 0.5 : 0.0)"
+
+        PBy l r ->
+            apply "iby" [ l, r ]
+
+        PDiv l r ->
+            apply "idiv" [ l, r ]
+
+        PPower (PVariable "i") r ->
+            apply "ipow" [ PVariable "i", r ]
+
+        PPower (PVariable v) (PInteger 2) ->
+            "iby(dup(" ++ v ++ "),dup(" ++ v ++ "))"
+
+        PPower l r ->
+            apply "ipow" [ l, r ]
+
+        PApply name ex ->
+            apply ("i" ++ Expression.functionNameToString name) ex
+
+        PList es ->
+            "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (expressionToIntervalGlslPrec 0) es) ++ ")"
+
+        PReplace var e ->
+            expressionToIntervalGlslPrec p (Expression.pfullSubstitute var e)
+
+
 mainGlsl : List { name : String, color : Bool } -> List String -> String
 mainGlsl pixel2 pixel3 =
     case ( pixel2, pixel3 ) of
@@ -724,13 +830,10 @@ main2D pixels =
 toSrc3D : String -> Expression -> String
 toSrc3D suffix e =
     """
-    vec3 pixel""" ++ suffix ++ """_o(float deltaX, float deltaY, float x, float y) {
-        float z = 0.0;
-        vec2 v = """ ++ expressionToGlsl e ++ """;
+    vec3 pixel""" ++ suffix ++ """(float x, float y, float z) {
+        vec2 v = """ ++ expressionToIntervalGlsl e ++ """;
 
-        float theta = atan(v.y, v.x) / radians(360.0);
-
-        float logRadius = log2(length(v));
+        float logRadius = log2(abs(v.x));
         float powerRemainder = fract(logRadius);
         float squished = 0.7 - powerRemainder * 0.4;
 
@@ -740,10 +843,6 @@ toSrc3D suffix e =
         else
             return hl2rgb(haf - 0.1, 1.0 - squished);
     }
-
-    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        return pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y);
-    }
     """
 
 
@@ -752,7 +851,7 @@ main3D pixels =
     let
         addPixel i p =
             """
-            curr = """ ++ p ++ """(deltaX, deltaY, x, y);
+            curr = """ ++ p ++ """(x, y, 0.0);
             px = curr == vec3(0,0,0) ? px : curr;"""
 
         inner =
@@ -776,16 +875,12 @@ main3D pixels =
             float x = c.x;
             float y = c.y;
 
-            float deltaX = u_viewportWidth / u_canvasWidth;
-            float deltaY = u_viewportWidth / u_canvasHeight;
             vec3 px = vec3(0,0,0);
             vec3 curr;
             """
             ++ inner
             ++ """
-            vec3 yax = ax(x, deltaX * 2.0) * vec3(0,1,0);
-            vec3 xax = ax(y, deltaY * 2.0) * vec3(1,0,0);
-            return vec4(max(px, max(xax, yax)), 1.0);
+            return vec4(px, 1.0);
         }
         """
 

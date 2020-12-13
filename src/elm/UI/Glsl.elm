@@ -200,7 +200,7 @@ expressionToRequirements e =
                 [ RequireOperation GlslPower ]
 
             else
-                []
+                [ RequireOperation GlslMultiplication ]
 
         BinaryOperation op l r ->
             let
