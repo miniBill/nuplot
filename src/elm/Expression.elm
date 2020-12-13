@@ -13,17 +13,12 @@ module Expression exposing
     , equals
     , filterContext
     , fullSubstitute
-    , functionNameToString
-    , genericAsMatrix
     , genericAsSquareMatrix
     , genericDeterminant
     , genericMatrixAddition
     , genericMatrixMultiplication
     , getFreeVariables
     , graphToString
-    , greeks
-    , partialSubstitute
-    , relationToString
     , toGLString
     , toString
     , toTeXString
@@ -1142,9 +1137,6 @@ toTeXStringPrec p e =
 
         infixl_ n op l r =
             paren (p > n) <| toTeXStringPrec n l ++ op ++ toTeXStringPrec (n + 1) r
-
-        infixr_ n op l r =
-            paren (p > n) <| toTeXStringPrec (n + 1) l ++ op ++ toTeXStringPrec n r
 
         wrp x =
             if p > 0 then

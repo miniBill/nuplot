@@ -6,8 +6,8 @@ import Expression.Utils
 import List
 import List.Extra as List
 import List.MyExtra as List
-import SortedAnySet as Set exposing (SortedAnySet)
-import UI.Glsl.Code exposing (constantToGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
+import SortedAnySet as Set
+import UI.Glsl.Code exposing (constantToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -422,8 +422,11 @@ operationToGlsl interval op =
         StraightOnly ->
             deindent 12 <| straightOperationToGlsl op
 
-        _ ->
-            Debug.todo "operationToGlsl"
+        IntervalOnly ->
+            deindent 12 <| intervalOperationToGlsl op
+
+        IntervalAndStraight ->
+            deindent 12 <| straightOperationToGlsl op ++ "\n" ++ intervalOperationToGlsl op
 
 
 functionToGlsl : RequiresInterval -> GlslFunction -> String
@@ -432,5 +435,8 @@ functionToGlsl interval name =
         StraightOnly ->
             deindent 12 <| straightFunctionToGlsl name
 
-        _ ->
-            Debug.todo "functionToGlsl"
+        IntervalOnly ->
+            deindent 12 <| intervalFunctionToGlsl name
+
+        IntervalAndStraight ->
+            deindent 12 <| straightFunctionToGlsl name ++ "\n" ++ intervalFunctionToGlsl name

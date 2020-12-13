@@ -1,7 +1,76 @@
-module UI.Glsl.Code exposing (..)
+module UI.Glsl.Code exposing (constantToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
 
 import Expression exposing (Expression)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
+
+
+constantToGlsl : GlslConstant -> String
+constantToGlsl c =
+    case c of
+        I ->
+            """
+            vec2 i() {
+                return vec2(0,1);
+            }
+            """
+
+        Pi ->
+            """
+            vec2 pi() {
+                return vec2(radians(180.0), 0.0);
+            }
+            """
+
+        E ->
+            """
+            vec2 e() {
+                return vec2(exp(1.0), 0.0);
+            }
+            """
+
+
+straightOperationToGlsl : GlslOperation -> String
+straightOperationToGlsl op =
+    case op of
+        GlslAddition ->
+            ""
+
+        GlslMultiplication ->
+            """
+            vec2 by(vec2 a, vec2 b) {
+                return vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x);
+            }
+            """
+
+        GlslNegation ->
+            ""
+
+        GlslDivision ->
+            """
+            vec2 div(vec2 a, vec2 b) {
+                float k = 1.0 / dot(b, b);
+                float r = k * dot(a, b);
+                float i = k * (a.y*b.x - a.x*b.y);
+                return vec2(r, i);
+            }
+            """
+
+        GlslPower ->
+            """
+            vec2 cpow(vec2 w, vec2 z) {
+                if(w.y == 0.0 && z.y == 0.0) {
+                    return vec2(pow(w.x, z.x), 0);
+                }
+                return cexp(by(cln(w), z));
+            }
+            """
+
+
+intervalOperationToGlsl : GlslOperation -> String
+intervalOperationToGlsl op =
+    case op of
+        _ ->
+            Debug.todo "intervalOperationToGlsl"
 
 
 straightFunctionToGlsl : GlslFunction -> String
@@ -197,66 +266,11 @@ straightFunctionToGlsl name =
             """
 
 
-straightOperationToGlsl : GlslOperation -> String
-straightOperationToGlsl op =
-    case op of
-        GlslAddition ->
-            ""
-
-        GlslMultiplication ->
-            """
-            vec2 by(vec2 a, vec2 b) {
-                return vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x);
-            }
-            """
-
-        GlslNegation ->
-            ""
-
-        GlslDivision ->
-            """
-            vec2 div(vec2 a, vec2 b) {
-                float k = 1.0 / dot(b, b);
-                float r = k * dot(a, b);
-                float i = k * (a.y*b.x - a.x*b.y);
-                return vec2(r, i);
-            }
-            """
-
-        GlslPower ->
-            """
-            vec2 cpow(vec2 w, vec2 z) {
-                if(w.y == 0.0 && z.y == 0.0) {
-                    return vec2(pow(w.x, z.x), 0);
-                }
-                return cexp(by(cln(w), z));
-            }
-            """
-
-
-constantToGlsl : GlslConstant -> String
-constantToGlsl c =
-    case c of
-        I ->
-            """
-            vec2 i() {
-                return vec2(0,1);
-            }
-            """
-
-        Pi ->
-            """
-            vec2 pi() {
-                return vec2(radians(180.0), 0.0);
-            }
-            """
-
-        E ->
-            """
-            vec2 e() {
-                return vec2(exp(1.0), 0.0);
-            }
-            """
+intervalFunctionToGlsl : GlslFunction -> String
+intervalFunctionToGlsl name =
+    case name of
+        _ ->
+            Debug.todo "intervalFunctionToGlsl"
 
 
 toSrcImplicit : String -> Expression -> String

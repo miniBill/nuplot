@@ -2,7 +2,7 @@ module UI.RowView exposing (view)
 
 import Complex
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, column, el, fill, height, none, paddingXY, px, rgb, row, shrink, spacing, spacingXY, text, width)
+import Element exposing (Element, alignBottom, alignTop, centerX, el, fill, height, none, paddingXY, px, rgb, row, shrink, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input

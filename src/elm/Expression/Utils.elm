@@ -1,6 +1,6 @@
-module Expression.Utils exposing (a, abs_, asMatrix, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, det, determinant, div, double, e, f, g, gra_, h, i, icomplex, ii, int, ipow, j, k, l, ln_, m, minus, n, negate_, o, one, p, plus, pow, q, r, s, sin_, sinh_, sqrt_, square, squash, t, triple, two, u, v, vector, w, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, det, determinant, div, double, e, f, g, gra_, h, i, icomplex, ii, int, ipow, j, k, l, ln_, m, minus, n, negate_, o, one, p, plus, pow, q, r, s, sin_, sinh_, sqrt_, square, squash, t, triple, two, u, v, vector, w, x, y, z, zero)
 
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), genericAsMatrix, genericAsSquareMatrix, genericDeterminant, visit)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), genericAsSquareMatrix, genericDeterminant, visit)
 
 
 
@@ -378,11 +378,6 @@ asList ex =
 
         _ ->
             Nothing
-
-
-asMatrix : Expression -> Maybe (List (List Expression))
-asMatrix =
-    genericAsMatrix asList
 
 
 asSquareMatrix : Expression -> Maybe (List (List Expression))
