@@ -1204,7 +1204,7 @@ toTeXStringPrec p e =
                 paren (p > 7) <| "\\frac" ++ toTeXStringPrec 7 l ++ toTeXStringPrec 8 r
 
             PPower l r ->
-                paren (p > 8) <| toTeXStringPrec 9 l ++ "^" ++ toTeXStringPrec 0 r
+                paren (p > 8) <| toTeXStringPrec 9 l ++ "^{" ++ toTeXStringPrec 0 r ++ "}"
 
             PApply (KnownFunction Abs) [ ex ] ->
                 paren (p > 10) <| "\\left|" ++ toTeXStringPrec 0 ex ++ "\\right|"
