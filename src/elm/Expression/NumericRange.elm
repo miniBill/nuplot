@@ -96,6 +96,13 @@ getRange ctx e =
                 Apply (KnownFunction Im) [ _ ] ->
                     Real
 
+                Apply (KnownFunction Atan2) [ y, x ] ->
+                    if getRange ctx y /= Complex && getRange ctx x /= Complex then
+                        Real
+
+                    else
+                        Complex
+
                 Apply (KnownFunction _) [ c ] ->
                     if getRange ctx c == Complex then
                         Complex

@@ -353,7 +353,7 @@ dependenciesOf req =
             RequireOperation GlslDivision :: List.map RequireFunction [ Sin22, Cos22 ]
 
         RequireFunction Asin22 ->
-            List.map RequireFunction [ Sqrt22, Ln22 ]
+            RequireOperation GlslMultiplication :: List.map RequireFunction [ Sqrt22, Ln22 ]
 
         RequireFunction Acos22 ->
             [ RequireConstant Pi, RequireFunction Asin22 ]
@@ -570,8 +570,8 @@ straightFunctionToGlsl name =
             """
             vec2 casin(vec2 z) {
                 vec2 s = csqrt(vec2(1, 0) - by(z, z));
-                vec2 arg = s - by(i(), z);
-                return by(i(), cln(arg));
+                vec2 arg = s - by(vec2(0, 1), z);
+                return by(vec2(0, 1), cln(arg));
             }
             """
 
@@ -589,9 +589,9 @@ straightFunctionToGlsl name =
                     return vec2(atan(z.x), 0);
                 }
                 vec2 o = vec2(1, 0);
-                vec2 iz = by(i(), z);
+                vec2 iz = by(vec2(0, 1), z);
                 vec2 l = div(o + iz, o - iz);
-                return -0.5 * by(i(), cln(l));
+                return -0.5 * by(vec2(0, 1), cln(l));
             }
             """
 
