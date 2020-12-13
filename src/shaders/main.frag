@@ -16,10 +16,10 @@ vec3 palette(float deltaX, float deltaY, float x, float y, vec3 pixel) {
 }
 
 void main() {
-  vec2 uv_centered = gl_FragCoord.xy - vec2(u_canvasWidth / 2.0, u_canvasHeight / 2.0);
+  vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
+  vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
   float u_viewportHeight = u_viewportWidth * u_canvasHeight / u_canvasWidth;
   
-  vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
   vec2 viewportSize = vec2(u_viewportWidth, u_viewportHeight);
   vec2 uv = uv_centered / canvasSize * viewportSize;
   vec2 c = u_zoomCenter + uv;
