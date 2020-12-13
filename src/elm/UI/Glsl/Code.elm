@@ -874,9 +874,9 @@ toSrc3D : String -> Expression -> String
 toSrc3D suffix e =
     """
     vec2 interval""" ++ suffix ++ """(vec3 f, vec3 t) {
-        vec2 x = vec2(f.x, t.x);
-        vec2 z = vec2(f.y, t.y);
-        vec2 y = vec2(f.z, t.z);
+        vec2 x = f.x < t.x ? vec2(f.x, t.x) : vec2(t.x, f.x);
+        vec2 z = f.y < t.y ? vec2(f.y, t.y) : vec2(t.y, f.y);
+        vec2 y = f.z < t.z ? vec2(f.z, t.z) : vec2(t.z, f.z);
         return """ ++ expressionToIntervalGlsl e ++ """;
     }
     """
@@ -890,17 +890,17 @@ main3D suffixes =
 
         suffixToBisect i suffix =
             """
-            vec3 bisect""" ++ suffix ++ """(vec3 o, vec3 d) {
+            vec3 bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance) {
                 vec3 from = o;
-                vec3 to = o + 10.0 * d;
+                vec3 to = o + max_distance * d;
                 vec3 recover_from = from;
                 vec3 recover_to = to;
-                for(int it = 0; it < 1000; it++) {
+                for(int it = 0; it < 50; it++) {
                     vec3 midpoint = mix(from, to, 0.5);
-                    if(length(from - to) < 0.1)
-                        return midpoint;
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
+                    if(front.y - front.x < 0.02 || back.y - back.x < 0.02)
+                        return midpoint;
                     if(front.x <= 0.0 && front.y >= 0.0) {
                         if(back.x <= 0.0 && back.y >= 0.0) {
                             recover_from = midpoint;
@@ -911,12 +911,12 @@ main3D suffixes =
                         from = midpoint;
                     } else {
                         if(it == 0)
-                            return o + 100.0 * d;
+                            return o + 10.0 * max_distance * d;
                         from = recover_from;
                         to = recover_to;
                     }
                 }
-                return o + 100.0 * d;
+                return o + 10.0 * max_distance * d;
             }
             """
     in
@@ -940,22 +940,23 @@ main3D suffixes =
             }
 
             vec4 pixel3 () {
-                vec3 eye = vec3(0, 0.5, -2);
+                vec3 eye = vec3(0,u_viewportWidth, -1.5*u_viewportWidth);
                 float focal_dist = 1.0;
 
                 vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
                 vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
 
-                vec2 uv = 1.0 / u_canvasHeight * uv_centered; // [-0.5,0.5]²
-                vec3 to_center = normalize(-eye);
-                
-                vec3 canvas_center = eye + focal_dist * to_center;
-                vec3 up = vec3(0, -to_center.z, -to_center.y);
-                vec3 canvas_point = vec3(canvas_center.x + uv.x, uv.y * up.y, uv.y * up.z);
+                vec2 uv = 1.0 / u_canvasHeight * uv_centered;
+
+                vec3 target = vec3(u_zoomCenter, 0);
+                vec3 to_center = normalize(target-eye);
+                vec3 canvas_center = eye + to_center;
+                vec3 canvas_point = canvas_center + vec3(uv.x, uv.y * to_center.z, -uv.y * to_center.y);
 
                 vec3 ray_direction = normalize(canvas_point - eye);
-                vec3 intersection = bisect(canvas_point, ray_direction);
-                if(intersection.z > canvas_point.z + 50.0 * ray_direction.z) {
+                float max_distance = 100.0 * length(eye);
+                vec3 intersection = bisect(canvas_point, ray_direction, max_distance);
+                if(intersection.z > canvas_point.z + 2.0 * max_distance * ray_direction.z) {
                     return vec4(vec3(0),1.0);
                 }
                 else {

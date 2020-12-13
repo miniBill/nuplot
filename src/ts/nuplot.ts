@@ -17,7 +17,6 @@ export class NuPlot extends HTMLElement {
   zoom_center!: number[];
   target_zoom_center!: number[];
   viewport_width!: number;
-  stop_zooming!: boolean;
   zoom_factor!: number;
   label: HTMLElement;
 
@@ -43,7 +42,6 @@ export class NuPlot extends HTMLElement {
     this.zoom_center = [0.0, 0.0];
     this.target_zoom_center = [0.0, 0.0];
     this.viewport_width = 2 * Math.PI;
-    this.stop_zooming = true;
     this.zoom_factor = 1;
   }
 
@@ -140,7 +138,6 @@ export class NuPlot extends HTMLElement {
       // central wheel
       this.reinit_zoom();
     } else {
-      this.stop_zooming = false;
       const zoom_speed = 0.02;
       this.zoom_factor = e.buttons & 1 ? 1 - zoom_speed : 1 + zoom_speed;
     }
@@ -156,7 +153,11 @@ export class NuPlot extends HTMLElement {
   }
 
   canvasOnmouseup(e: MouseEvent) {
-    this.stop_zooming = true;
+    this.zoom_factor = 1.0;
+  }
+
+  willRenderFrame() {
+    window.requestAnimationFrame(this.renderFrame.bind(this));
   }
 
   renderFrame() {
@@ -176,31 +177,31 @@ export class NuPlot extends HTMLElement {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
 
-    if (this.stop_zooming) return;
+    if (this.zoom_factor != 1.0) {
+      const minx = this.zoom_center[0] - this.viewport_width / 2;
 
-    const minx = this.zoom_center[0] - this.viewport_width / 2;
+      let viewport_height =
+        (this.viewport_width * this.gl.canvas.height) / this.gl.canvas.width;
 
-    let viewport_height =
-      (this.viewport_width * this.gl.canvas.height) / this.gl.canvas.width;
+      const miny = this.zoom_center[1] - viewport_height / 2;
 
-    const miny = this.zoom_center[1] - viewport_height / 2;
+      const targetX = this.target_zoom_center[0] * this.viewport_width + minx;
+      const targetY = this.target_zoom_center[1] * viewport_height + miny;
 
-    const targetX = this.target_zoom_center[0] * this.viewport_width + minx;
-    const targetY = this.target_zoom_center[1] * viewport_height + miny;
+      this.viewport_width *= this.zoom_factor;
+      viewport_height *= this.zoom_factor;
 
-    this.viewport_width *= this.zoom_factor;
-    viewport_height *= this.zoom_factor;
+      if (this.zoom_factor < 1) {
+        const newMinx =
+          targetX - this.target_zoom_center[0] * this.viewport_width;
+        this.zoom_center[0] = newMinx + this.viewport_width / 2;
 
-    if (this.zoom_factor < 1) {
-      const newMinx =
-        targetX - this.target_zoom_center[0] * this.viewport_width;
-      this.zoom_center[0] = newMinx + this.viewport_width / 2;
+        const newMiny = targetY - this.target_zoom_center[1] * viewport_height;
+        this.zoom_center[1] = newMiny + viewport_height / 2;
+      }
 
-      const newMiny = targetY - this.target_zoom_center[1] * viewport_height;
-      this.zoom_center[1] = newMiny + viewport_height / 2;
+      window.setTimeout(this.willRenderFrame.bind(this), 100);
     }
-
-    window.requestAnimationFrame(this.renderFrame.bind(this));
   }
 
   private uniform1f(name: string, value: number) {

@@ -349,7 +349,7 @@ dependenciesOf req =
             []
 
         RequireFunction Sinh22 ->
-            [ RequireFunction Exp22 ]
+            [ RequireFunction Exp22, RequireFunction Sinh11 ]
 
         RequireFunction Cosh22 ->
             [ RequireFunction Exp22 ]
