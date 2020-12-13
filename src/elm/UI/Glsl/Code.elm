@@ -385,7 +385,11 @@ toSrcContour suffix e =
         float squished = 0.7 - powerRemainder * 0.4;
 
         if(u_completelyReal > 0.0) {
-            return hl2rgb(theta, squished);
+            float haf = fract(logRadius) / 6.0;
+            if(z.x > 0.0)
+                return hl2rgb(haf + 0.3, squished);
+            else
+                return hl2rgb(haf - 0.1, 1.0 - squished);
         }
 
         float td = thetaDelta(theta);
@@ -412,28 +416,6 @@ toSrcContour suffix e =
         vec3 h = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y + 2.0 * dist * deltaY);
 
         return (a + b + c + d + e + f + g + h) / 8.0;
-    }
-    """
-
-
-toSrc3D : String -> Expression -> String
-toSrc3D suffix e =
-    """
-    vec3 pixel""" ++ suffix ++ """_o(float deltaX, float deltaY, float x, float y) {
-        float z = 0.0;
-        vec2 v = """ ++ expressionToGlsl e ++ """;
-
-        float theta = atan(v.y, v.x) / radians(360.0);
-
-        float logRadius = log2(length(v));
-        float powerRemainder = logRadius - floor(logRadius);
-        float squished = 0.7 - powerRemainder * 0.4;
-
-        return hl2rgb(theta, squished);
-    }
-
-    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        return pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y);
     }
     """
 
@@ -599,15 +581,12 @@ main2D pixels =
         vec4 pixel2 () {
             vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
             vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
-            float u_viewportHeight = u_viewportWidth * u_canvasHeight / u_canvasWidth;
             
-            vec2 viewportSize = vec2(u_viewportWidth, u_viewportHeight);
+            vec2 viewportSize = (u_viewportWidth / u_canvasWidth) * canvasSize;
             vec2 uv = uv_centered / canvasSize * viewportSize;
             vec2 c = u_zoomCenter + uv;
             float x = c.x;
             float y = c.y;
-            bool escaped = false;
-            int iterations = 0;
 
             float deltaX = u_viewportWidth / u_canvasWidth;
             float deltaY = u_viewportWidth / u_canvasHeight;
@@ -620,6 +599,28 @@ main2D pixels =
             return vec4(max(px, max(xax, yax)), 1.0);
         }
         """
+
+
+toSrc3D : String -> Expression -> String
+toSrc3D suffix e =
+    """
+    vec3 pixel""" ++ suffix ++ """_o(float deltaX, float deltaY, float x, float y) {
+        float z = 0.0;
+        vec2 v = """ ++ expressionToGlsl e ++ """;
+
+        float theta = atan(v.y, v.x) / radians(360.0);
+
+        float logRadius = log2(length(v));
+        float powerRemainder = logRadius - floor(logRadius);
+        float squished = 0.7 - powerRemainder * 0.4;
+
+        return hl2rgb(theta, squished);
+    }
+
+    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
+        return pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y);
+    }
+    """
 
 
 main3D : List String -> String
@@ -644,15 +645,12 @@ main3D pixels =
         vec4 pixel3 () {
             vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
             vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
-            float u_viewportHeight = u_viewportWidth * u_canvasHeight / u_canvasWidth;
-            
-            vec2 viewportSize = vec2(u_viewportWidth, u_viewportHeight);
+
+            vec2 viewportSize = (u_viewportWidth / u_canvasWidth) * canvasSize;
             vec2 uv = uv_centered / canvasSize * viewportSize;
             vec2 c = u_zoomCenter + uv;
             float x = c.x;
             float y = c.y;
-            bool escaped = false;
-            int iterations = 0;
 
             float deltaX = u_viewportWidth / u_canvasWidth;
             float deltaY = u_viewportWidth / u_canvasHeight;
