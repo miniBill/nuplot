@@ -643,7 +643,7 @@ expressionToGlslPrec p expr =
             "vec2(" ++ v ++ "*" ++ v ++ ",0)"
 
         PPower (PVariable v) (PInteger i) ->
-            "vec2(pow(" ++ v ++ "," ++ String.fromInt i ++ ",0)"
+            "vec2(pow(" ++ v ++ "," ++ String.fromInt i ++ ".0))"
 
         PPower l r ->
             apply "cpow" [ l, r ]
@@ -731,10 +731,14 @@ toSrc3D suffix e =
         float theta = atan(v.y, v.x) / radians(360.0);
 
         float logRadius = log2(length(v));
-        float powerRemainder = logRadius - floor(logRadius);
+        float powerRemainder = fract(logRadius);
         float squished = 0.7 - powerRemainder * 0.4;
 
-        return hl2rgb(theta, squished);
+        float haf = fract(logRadius) / 6.0;
+        if(v.x > 0.0)
+            return hl2rgb(haf + 0.3, squished);
+        else
+            return hl2rgb(haf - 0.1, 1.0 - squished);
     }
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
