@@ -54,7 +54,7 @@ init flags =
             }
 
         default =
-            [ "{{plotsinx, plot(x<y)}, {plot(x²+y²=3), [zx+iy]plotexp(1/z)}}"
+            [ "{{plotsinx, plot(x<y)}, {plot(x²+y²=3), [zx+iy]plotexp(1/z)},{plot(x²+y²+z²=3)}}"
             ]
 
         measure =
