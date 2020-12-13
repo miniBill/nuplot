@@ -73,7 +73,7 @@ inputLine index row =
                         { row = index
                         , input = newValue
                         }
-            , placeholder = Just <| Input.placeholder [] <| text "y = f(x)"
+            , placeholder = Nothing
             , text = row.input
             }
         ]

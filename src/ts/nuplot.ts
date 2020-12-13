@@ -1,5 +1,4 @@
 import declarations from "../shaders/declarations.frag";
-import main from "../shaders/main.frag";
 
 export class NuPlot extends HTMLElement {
   wrapper: HTMLElement;
@@ -9,8 +8,7 @@ export class NuPlot extends HTMLElement {
   program: WebGLProgram | null = null;
   fragment_shader: WebGLShader | null = null;
 
-  src =
-    "vec3 pixel(float deltaX, float deltaY, float x, float y) { return vec3(0,0,0); }";
+  src = "void main() { gl_FragColor = vec4(0); }";
 
   whiteLines = 6;
   completelyReal = 0;
@@ -118,7 +116,7 @@ export class NuPlot extends HTMLElement {
   }
 
   private buildFragmentShader(expr: string) {
-    return `${declarations}\n${expr}\n/* Main */\n${main}`;
+    return `${declarations}\n${expr}`;
   }
 
   compileAndAttachShader(type: number, src: string): WebGLShader | null {

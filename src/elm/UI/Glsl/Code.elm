@@ -1,4 +1,4 @@
-module UI.Glsl.Code exposing (constantToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
+module UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
 
 import Expression exposing (Expression, PrintExpression(..))
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
@@ -107,8 +107,10 @@ intervalOperationToGlsl op =
             }
             """
 
-        _ ->
-            "TODO"
+        GlslPower ->
+            """
+            TODO """ ++ Debug.toString op ++ """
+            """
 
 
 straightFunctionToGlsl : GlslFunction -> String
@@ -308,7 +310,9 @@ intervalFunctionToGlsl : GlslFunction -> String
 intervalFunctionToGlsl name =
     case name of
         _ ->
-            "TODO"
+            """
+            TODO """ ++ Debug.toString name ++ """
+            """
 
 
 toSrcImplicit : String -> Expression -> String
@@ -507,6 +511,15 @@ expressionToGlslPrec p expr =
         PDiv l r ->
             apply "div" [ l, r ]
 
+        PPower (PVariable "i") r ->
+            apply "cpow" [ PVariable "i", r ]
+
+        PPower (PVariable v) (PInteger 2) ->
+            "vec2(" ++ v ++ "*" ++ v ++ ",0)"
+
+        PPower (PVariable v) (PInteger i) ->
+            "vec2(pow(" ++ v ++ "," ++ String.fromInt i ++ ",0)"
+
         PPower l r ->
             apply "cpow" [ l, r ]
 
@@ -518,3 +531,125 @@ expressionToGlslPrec p expr =
 
         PReplace var e ->
             expressionToGlslPrec p (Expression.pfullSubstitute var e)
+
+
+mainGlsl : List { name : String, color : Bool } -> List String -> String
+mainGlsl pixel2 pixel3 =
+    case ( pixel2, pixel3 ) of
+        ( _, [] ) ->
+            main2D pixel2 ++ "\n\nvoid main () { gl_FragColor = pixel2(); }"
+
+        ( [], _ ) ->
+            main3D pixel3 ++ "\n\nvoid main () { gl_FragColor = pixel3(); }"
+
+        _ ->
+            main2D pixel2 ++ "\n\n" ++ main3D pixel3 ++ "\n\nvoid main () { gl_FragColor = max(pixel2(), pixel3()); }"
+
+
+main2D : List { name : String, color : Bool } -> String
+main2D pixels =
+    let
+        addPixel i { name, color } =
+            let
+                k =
+                    if color then
+                        "hl2rgb(" ++ String.fromFloat (toFloat (i + 2) / pi) ++ ", 0.5)" ++ " * " ++ name
+
+                    else
+                        name
+            in
+            """
+            curr = """ ++ k ++ """(deltaX, deltaY, x, y);
+            px = curr == vec3(0,0,0) ? px : curr;"""
+
+        inner =
+            pixels
+                |> List.indexedMap addPixel
+                |> String.concat
+    in
+    deindent 8 <|
+        """
+        float ax(float coord, float delta) {
+            return max(0.0, 1.0 - abs(coord/delta));
+        }
+
+        vec4 pixel2 () {
+            vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
+            vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
+            float u_viewportHeight = u_viewportWidth * u_canvasHeight / u_canvasWidth;
+            
+            vec2 viewportSize = vec2(u_viewportWidth, u_viewportHeight);
+            vec2 uv = uv_centered / canvasSize * viewportSize;
+            vec2 c = u_zoomCenter + uv;
+            float x = c.x;
+            float y = c.y;
+            bool escaped = false;
+            int iterations = 0;
+
+            float deltaX = u_viewportWidth / u_canvasWidth;
+            float deltaY = u_viewportWidth / u_canvasHeight;
+            vec3 px = vec3(0,0,0);
+            vec3 curr;"""
+            ++ inner
+            ++ """
+            vec3 yax = ax(x, deltaX * 2.0) * vec3(0,1,0);
+            vec3 xax = ax(y, deltaY * 2.0) * vec3(1,0,0);
+            return vec4(max(px, max(xax, yax)), 1.0);
+        }
+        """
+
+
+main3D : List String -> String
+main3D pixels =
+    let
+        color i =
+            "hl2rgb(" ++ String.fromFloat (toFloat (i + 1) / pi) ++ ", 0.5)"
+
+        addPixel i p =
+            """
+            curr = """ ++ color i ++ """ * """ ++ p ++ """(deltaX, deltaY, x, y);
+            px = curr == vec3(0,0,0) ? px : curr;"""
+
+        inner =
+            pixels
+                |> List.indexedMap addPixel
+                |> String.join "\n                "
+    in
+    deindent 8 <|
+        """
+        float ax(float coord, float delta) {
+            return max(0.0, 1.0 - abs(coord/delta));
+        }
+
+        vec4 pixel3 () {
+            vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
+            vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
+            float u_viewportHeight = u_viewportWidth * u_canvasHeight / u_canvasWidth;
+            
+            vec2 viewportSize = vec2(u_viewportWidth, u_viewportHeight);
+            vec2 uv = uv_centered / canvasSize * viewportSize;
+            vec2 c = u_zoomCenter + uv;
+            float x = c.x;
+            float y = c.y;
+            bool escaped = false;
+            int iterations = 0;
+
+            float deltaX = u_viewportWidth / u_canvasWidth;
+            float deltaY = u_viewportWidth / u_canvasHeight;
+            vec3 px = vec3(0,0,0);
+            vec3 curr;
+            """
+            ++ inner
+            ++ """
+            vec3 yax = ax(x, deltaX * 2.0) * vec3(0,1,0);
+            vec3 xax = ax(y, deltaY * 2.0) * vec3(1,0,0);
+            return vec4(max(px, max(xax, yax)), 1.0);
+        }
+        """
+
+
+deindent : Int -> String -> String
+deindent i =
+    String.split "\n"
+        >> List.map (String.dropLeft i)
+        >> String.join "\n"

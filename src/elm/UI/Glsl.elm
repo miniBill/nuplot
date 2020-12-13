@@ -7,91 +7,81 @@ import List
 import List.Extra as List
 import List.MyExtra as List
 import SortedAnySet as Set
-import UI.Glsl.Code exposing (constantToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
+import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
 getGlsl : Graph -> String
 getGlsl graph =
     let
-        { expr, srcExpr, interval, hsl } =
+        { expr, srcExpr, interval, thetaDelta, pixel2D, pixel3D } =
             extract "" graph
+
+        build2d toSrc prefix e =
+            { expr = e
+            , srcExpr = toSrc prefix e
+            , interval = StraightOnly
+            , thetaDelta = False
+            , pixel2D = [ { name = "pixel" ++ prefix, color = True } ]
+            , pixel3D = []
+            }
 
         extract prefix g =
             case g of
                 Explicit2D c ->
-                    let
-                        e =
-                            Expression.Utils.minus Expression.Utils.y c
-                    in
-                    { expr = e, srcExpr = toSrcImplicit prefix e, interval = StraightOnly, hsl = False }
+                    build2d toSrcImplicit prefix <|
+                        Expression.Utils.minus Expression.Utils.y c
 
                 Implicit2D l r ->
-                    let
-                        e =
-                            Expression.Utils.minus l r
-                    in
-                    { expr = e, srcExpr = toSrcImplicit prefix e, interval = StraightOnly, hsl = False }
+                    build2d toSrcImplicit prefix <|
+                        Expression.Utils.minus l r
 
                 Relation2D e ->
-                    { expr = e, srcExpr = toSrcRelation prefix e, interval = StraightOnly, hsl = False }
+                    build2d toSrcRelation prefix e
 
                 Contour e ->
-                    { expr = e, srcExpr = toSrcContour prefix e, interval = StraightOnly, hsl = True }
+                    { expr = e
+                    , srcExpr = toSrcContour prefix e
+                    , interval = StraightOnly
+                    , thetaDelta = True
+                    , pixel2D = [ { name = "pixel" ++ prefix, color = False } ]
+                    , pixel3D = []
+                    }
 
                 Implicit3D e ->
-                    { expr = e, srcExpr = toSrc3D prefix e, interval = IntervalAndStraight, hsl = True }
+                    { expr = e
+                    , srcExpr = "BORK" ++ toSrc3D prefix e
+                    , interval = IntervalAndStraight
+                    , thetaDelta = True
+                    , pixel2D = []
+                    , pixel3D = [ "pixel" ++ prefix ]
+                    }
 
-                GraphList l ->
+                GraphList children ->
                     let
                         prefix_ i =
                             prefix ++ "_" ++ String.fromInt i
 
-                        children =
-                            List.indexedMap (extract << prefix_) l
-
-                        color i =
-                            "hl2rgb(" ++ String.fromFloat (toFloat (i + 1) / pi) ++ ", 0.5)"
-
-                        addPixel i =
-                            """curr = """ ++ color i ++ """ * pixel""" ++ prefix_ i ++ """(deltaX, deltaY, x, y);
-                                    res = curr == vec3(0,0,0) ? res : curr;"""
-
-                        inner =
-                            l
-                                |> List.indexedMap (\i _ -> addPixel i)
-                                |> String.join "\n                                    "
-
-                        src =
-                            """
-                                vec3 pixel""" ++ prefix ++ """(float deltaX, float deltaY, float x, float y) {
-                                    vec3 res = vec3(0,0,0);
-                                    vec3 curr;
-                                    """ ++ inner ++ """
-                                    return res;
-                                }"""
+                        extracted =
+                            List.indexedMap (extract << prefix_) children
                     in
-                    { expr = List <| List.map .expr children
-                    , srcExpr = String.join "\n" (List.map .srcExpr children) ++ deindent 28 src
+                    { expr = List <| List.map .expr extracted
+                    , srcExpr = String.join "\n" (List.map .srcExpr extracted)
                     , interval =
-                        if List.any (\c -> c.interval /= StraightOnly) children then
+                        if List.any (\c -> c.interval /= StraightOnly) extracted then
                             IntervalAndStraight
 
                         else
                             StraightOnly
-                    , hsl = True
+                    , thetaDelta = List.any .thetaDelta extracted
+                    , pixel2D = List.concatMap .pixel2D extracted
+                    , pixel3D = List.concatMap .pixel3D extracted
                     }
 
-        hslCode =
+        thetaDeltaCode =
             deindent 20 <|
-                if hsl then
+                if thetaDelta then
                     """
-                    vec3 hl2rgb(float h, float l)
-                    {
-                        vec3 rgb = clamp(abs(mod(h*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);
-                        return l + (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
-                    }
-
                     float thetaDelta(float theta) {
                         if(u_whiteLines < 1.0)
                             return 100.0;
@@ -112,7 +102,7 @@ getGlsl graph =
                 |> List.map (requirementToGlsl interval)
                 |> String.join "\n"
     in
-    hslCode ++ reqs ++ "\n/* Expression */" ++ deindent 4 srcExpr
+    thetaDeltaCode ++ reqs ++ "\n/* Expression */" ++ deindent 4 srcExpr ++ mainGlsl pixel2D pixel3D
 
 
 transitiveClosure : List Requirement -> List Requirement
@@ -187,13 +177,6 @@ requirementToGlsl i r =
             operationToGlsl i o
 
 
-deindent : Int -> String -> String
-deindent i =
-    String.split "\n"
-        >> List.map (String.dropLeft i)
-        >> String.join "\n"
-
-
 expressionToRequirements : Expression -> List Requirement
 expressionToRequirements e =
     case e of
@@ -219,6 +202,13 @@ expressionToRequirements e =
 
         UnaryOperation _ c ->
             RequireOperation GlslNegation :: expressionToRequirements c
+
+        BinaryOperation Power (Variable v) (Integer _) ->
+            if v == "i" then
+                [ RequireOperation GlslPower ]
+
+            else
+                []
 
         BinaryOperation op l r ->
             let
