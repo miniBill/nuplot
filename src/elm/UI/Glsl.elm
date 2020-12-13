@@ -470,7 +470,7 @@ straightOperationToGlsl op =
                 if(w.y == 0.0 && z.y == 0.0) {
                     return vec2(pow(w.x, z.x), 0);
                 }
-                return cexp(by(w, cln(z)));
+                return cexp(by(cln(w), z));
             }
             """
 
