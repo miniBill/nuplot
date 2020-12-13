@@ -100,6 +100,9 @@ type KnownFunction
     | Dd
     | Ii
       -- Misc
+    | Round
+    | Floor
+    | Ceiling
     | Pw
     | Plot
     | Simplify
@@ -634,6 +637,9 @@ unaryFunctions =
         other =
             [ ( "plot", Plot )
             , ( "simplify", Simplify )
+            , ( "floor", Floor )
+            , ( "ceiling", Ceiling )
+            , ( "round", Round )
             ]
     in
     List.concat
@@ -800,6 +806,15 @@ functionNameToString name =
 
         KnownFunction Simplify ->
             "simplify"
+
+        KnownFunction Floor ->
+            "floor"
+
+        KnownFunction Ceiling ->
+            "ceiling"
+
+        KnownFunction Round ->
+            "round"
 
         UserFunction u ->
             u

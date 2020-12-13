@@ -166,6 +166,15 @@ applyValue context name args =
         KnownFunction Atan ->
             unaryFunctionValue context args Atan Complex.atan
 
+        KnownFunction Floor ->
+            unaryFunctionValue context args Floor Complex.floor
+
+        KnownFunction Ceiling ->
+            unaryFunctionValue context args Ceiling Complex.ceiling
+
+        KnownFunction Round ->
+            unaryFunctionValue context args Round Complex.round
+
         KnownFunction Atan2 ->
             case args of
                 [ y, x ] ->

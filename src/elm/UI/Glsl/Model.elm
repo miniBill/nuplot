@@ -8,15 +8,18 @@ type GlslFunction
     | Asin22
     | Atan22
     | Atan222
+    | Ceiling22
     | Cos22
     | Cosh11
     | Cosh22
     | Exp22
+    | Floor22
     | Im22
     | Ln22
     | Log1022
     | Pw22
     | Re22
+    | Round22
     | Sin22
     | Sinh11
     | Sinh22

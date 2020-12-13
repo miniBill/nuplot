@@ -1,4 +1,4 @@
-module Complex exposing (Complex(..), abs, acos, arg, asin, atan, atan2, by, cos, cosh, div, exp, fromReal, i, im, ln, minus, negate, one, plus, power, re, sin, sinh, sqrt, tan, tanh, toString, zero)
+module Complex exposing (Complex(..), abs, acos, arg, asin, atan, atan2, by, ceiling, cos, cosh, div, exp, floor, fromReal, i, im, ln, minus, negate, one, plus, power, re, round, sin, sinh, sqrt, tan, tanh, toString, zero)
 
 
 type Complex
@@ -191,6 +191,21 @@ sqrt (Complex x y) =
                 -mi
     in
     Complex r si
+
+
+floor : Complex -> Complex
+floor (Complex x y) =
+    Complex (toFloat <| Basics.floor x) (toFloat <| Basics.floor y)
+
+
+ceiling : Complex -> Complex
+ceiling (Complex x y) =
+    Complex (toFloat <| Basics.ceiling x) (toFloat <| Basics.ceiling y)
+
+
+round : Complex -> Complex
+round (Complex x y) =
+    Complex (toFloat <| Basics.round x) (toFloat <| Basics.round y)
 
 
 toString : Complex -> String

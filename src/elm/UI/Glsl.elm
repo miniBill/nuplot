@@ -79,17 +79,9 @@ getGlsl graph =
                     }
 
         thetaDeltaCode =
-            deindent 20 <|
+            deindent 4 <|
                 if thetaDelta then
-                    """
-                    float thetaDelta(float theta) {
-                        if(u_whiteLines < 1.0)
-                            return 100.0;
-                        float thetaSix = theta * u_whiteLines;
-                        float thetaNeigh = 0.05;
-                        return abs(thetaSix - floor(thetaSix + 0.5)) / thetaNeigh;
-                    }
-                    """
+                    UI.Glsl.Code.thetaDelta
 
                 else
                     ""
@@ -307,6 +299,15 @@ toGlslFunction name =
         Pw ->
             Just Pw22
 
+        Floor ->
+            Just Floor22
+
+        Ceiling ->
+            Just Ceiling22
+
+        Round ->
+            Just Round22
+
         Det ->
             Nothing
 
@@ -390,6 +391,15 @@ dependenciesOf req =
             []
 
         RequireFunction Tanh11 ->
+            []
+
+        RequireFunction Ceiling22 ->
+            []
+
+        RequireFunction Floor22 ->
+            []
+
+        RequireFunction Round22 ->
             []
 
         RequireOperation GlslPower ->

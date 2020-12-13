@@ -1,4 +1,4 @@
-module UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
+module UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, thetaDelta, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
 
 import Expression exposing (Expression, PrintExpression(..))
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
@@ -305,6 +305,27 @@ straightFunctionToGlsl name =
             }
             """
 
+        Ceiling22 ->
+            """
+            vec2 cceiling(vec2 z) {
+                return ceil(z);
+            }
+            """
+
+        Floor22 ->
+            """
+            vec2 cfloor(vec2 z) {
+                return floor(z);
+            }
+            """
+
+        Round22 ->
+            """
+            vec2 cround(vec2 z) {
+                return floor(z + vec2(0.5, 0.5));
+            }
+            """
+
 
 intervalFunctionToGlsl : GlslFunction -> String
 intervalFunctionToGlsl name =
@@ -338,6 +359,19 @@ toSrcImplicit suffix e =
     """
 
 
+thetaDelta : String
+thetaDelta =
+    """
+    float thetaDelta(float theta) {
+        if(u_whiteLines < 1.0)
+            return 100.0;
+        float thetaSix = theta * u_whiteLines + 0.5;
+        float thetaNeigh = 0.05;
+        return abs(fract(thetaSix) - 0.5) / thetaNeigh;
+    }
+    """
+
+
 toSrcContour : String -> Expression -> String
 toSrcContour suffix e =
     """
@@ -345,25 +379,21 @@ toSrcContour suffix e =
         vec2 z = """ ++ expressionToGlsl e ++ """;
 
         float theta = atan(z.y, z.x) / radians(360.0);
-        float td = thetaDelta(theta);
 
-        float radius = length(z);
-        float logRadius = log2(radius);
-        float powerRemainder = logRadius - floor(logRadius);
+        float logRadius = log2(length(z));
+        float powerRemainder = fract(logRadius);
         float squished = 0.7 - powerRemainder * 0.4;
 
         if(u_completelyReal > 0.0) {
             return hl2rgb(theta, squished);
         }
 
-        float l = td < 1.0 ? squished * td + (1.0 - td) : squished;
+        float td = thetaDelta(theta);
+        float l = mix(1.0, squished, smoothstep(0.0, 1.0, td));
         return hl2rgb(theta, l);
     }
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        if(1 > 0)
-            return pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y);
-
         // Antialiasing
 
         float dist = 1.0 / 3.0;
@@ -373,7 +403,7 @@ toSrcContour suffix e =
         vec3 d = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x - dist * deltaX, y + dist * deltaY);
 
         vec3 diff = abs(max(a, max(b, max(c, d))) - min(a, min(b, min(c, d))));
-        if (0 > 0 && diff.x < dist && diff.y < dist && diff.z < dist)
+        if (diff.x < dist && diff.y < dist && diff.z < dist)
             return (a + b + c + d) / 4.0;
 
         vec3 e = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x + 2.0 * dist * deltaX, y);
@@ -394,19 +424,12 @@ toSrc3D suffix e =
         vec2 v = """ ++ expressionToGlsl e ++ """;
 
         float theta = atan(v.y, v.x) / radians(360.0);
-        float td = thetaDelta(theta);
 
-        float radius = length(v);
-        float logRadius = log2(radius);
+        float logRadius = log2(length(v));
         float powerRemainder = logRadius - floor(logRadius);
         float squished = 0.7 - powerRemainder * 0.4;
 
-        if(u_completelyReal > 0.0) {
-            return hl2rgb(theta, squished);
-        }
-
-        float l = td < 1.0 ? squished * td + (1.0 - td) : squished;
-        return hl2rgb(theta, l);
+        return hl2rgb(theta, squished);
     }
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
@@ -602,12 +625,9 @@ main2D pixels =
 main3D : List String -> String
 main3D pixels =
     let
-        color i =
-            "hl2rgb(" ++ String.fromFloat (toFloat (i + 1) / pi) ++ ", 0.5)"
-
         addPixel i p =
             """
-            curr = """ ++ color i ++ """ * """ ++ p ++ """(deltaX, deltaY, x, y);
+            curr = """ ++ p ++ """(deltaX, deltaY, x, y);
             px = curr == vec3(0,0,0) ? px : curr;"""
 
         inner =
