@@ -410,7 +410,7 @@ dependenciesOf req =
             []
 
         RequireOperation GlslPower ->
-            List.map RequireFunction [ Exp22, Ln22 ]
+            RequireOperation GlslMultiplication :: List.map RequireFunction [ Exp22, Ln22 ]
 
         RequireOperation GlslAddition ->
             []
@@ -470,7 +470,7 @@ straightOperationToGlsl op =
                 if(w.y == 0.0 && z.y == 0.0) {
                     return vec2(pow(w.x, z.x), 0);
                 }
-                return cexp(by(w, clog(z)));
+                return cexp(by(w, cln(z)));
             }
             """
 
