@@ -895,11 +895,12 @@ main3D suffixes =
                 vec3 to = o + max_distance * d;
                 vec3 recover_from = from;
                 vec3 recover_to = to;
+                float threshold = 0.04;
                 for(int it = 0; it < 50; it++) {
                     vec3 midpoint = mix(from, to, 0.5);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
-                    if(front.y - front.x < 0.02 || back.y - back.x < 0.02)
+                    if(front.y - front.x < threshold || back.y - back.x < threshold)
                         return midpoint;
                     if(front.x <= 0.0 && front.y >= 0.0) {
                         if(back.x <= 0.0 && back.y >= 0.0) {
@@ -910,10 +911,11 @@ main3D suffixes =
                     } else if(back.x <= 0.0 && back.y >= 0.0) {
                         from = midpoint;
                     } else {
-                        if(it == 0)
+                        if(it == 0 || length(recover_from - recover_to) == 0.0)
                             return o + 10.0 * max_distance * d;
                         from = recover_from;
                         to = recover_to;
+                        recover_to = recover_from;
                     }
                 }
                 return o + 10.0 * max_distance * d;
