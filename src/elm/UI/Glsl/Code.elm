@@ -433,6 +433,10 @@ intervalFunctionToGlsl name =
         Pw22 ->
             """
             vec2 ipw(vec2 c, vec2 t, vec2 f) {
+                if(c.y < 0.5)
+                    return f;
+                if(c.x > 0.5)
+                    return t;
                 return vec2(min(t.x, f.x), max(t.y, f.y));
             }
             """
@@ -918,7 +922,7 @@ main3D suffixes =
                 vec3 to = o + max_distance * d;
                 vec3 recover_from = from;
                 vec3 recover_to = to;
-                float threshold = 0.04;
+                float threshold = 0.01;
                 for(int it = 0; it < 500; it++) {
                     vec3 midpoint = mix(from, to, 0.5);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
