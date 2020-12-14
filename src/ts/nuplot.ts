@@ -277,20 +277,22 @@ export class NuPlot extends HTMLElement {
     this.gl.compileShader(shader);
 
     var compiled = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
-    if (!compiled) {
-      this.label.innerHTML = `<pre style="white-space: pre-wrap">
-Error compiling shader, log:
-${this.gl.getShaderInfoLog(shader)}
 
-Source:
-${NuPlot.withLines(built)}
-      </pre>`;
+    this.label.innerHTML = "";
+
+    if (!compiled) {
+      var preNode = document.createElement("pre");
+      preNode.style.whiteSpace = "pre-wrap";
+      preNode.innerText = `Error compiling shader, log:
+  ${this.gl.getShaderInfoLog(shader)}
+  
+  Source:
+  ${NuPlot.withLines(built)}`;
+      this.label.appendChild(preNode);
       console.error("Error compiling shader, source:\n", built);
       console.error("Log:\n", this.gl.getShaderInfoLog(shader));
       return null;
     }
-
-    this.label.innerHTML = "";
     return compiled;
   }
 

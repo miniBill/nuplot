@@ -252,6 +252,13 @@ straightFunctionToGlsl name =
             }
             """
 
+        Square22 ->
+            """
+            vec2 csquare(vec2 z) {
+                return by(z, z);
+            }
+            """
+
         Ln22 ->
             """
             vec2 cln(vec2 z) {
@@ -425,7 +432,9 @@ intervalFunctionToGlsl name =
 
         Pw22 ->
             """
-            TODO Pw22
+            vec2 ipw(vec2 c, vec2 t, vec2 f) {
+                return vec2(min(t.x, f.x), max(t.y, f.y));
+            }
             """
 
         Re22 ->
@@ -440,29 +449,32 @@ intervalFunctionToGlsl name =
 
         Sin22 ->
             """
+            bool between(float x, float low, float high) {
+                return low <= x && x <= high;
+            }
+
+            vec2 merge(vec2 l, vec2 r) {
+                return vec2(min(l.x, r.x), max(l.y, r.y));
+            }
+
+            vec2 isin_piece(vec2 v) {
+                vec2 s = sin(v);
+                return merge(s, s);
+            }
+
             vec2 isin(vec2 v) {
                 if(v.y - v.x > radians(360.0)) {
                     return vec2(-1.0, 1.0);
                 }
-                float from = mod(v.x, radians(360.0)); // [0, 2pi]
-                float to = from + v.y - v.x;
-                float mn = min(sin(from), sin(to));
-                float mx = max(sin(from), sin(to));
-                if(to > radians(360.0 + 90.0)) {
-                    mx = 1.0;
-                    if(from < radians(270.0))
-                        mn = -1.0;
-                } else if (to > radians(270.0)) {
-                    if(from < radians(270.0)) {
-                        mn = -1.0;
-                        if(from < radians(90.0))
-                            mx = 1.0;
-                    }
-                } else if (to > radians(90.0)) {
-                    if(from < radians(90.0))
-                        mx = 1.0;
-                }
-                return vec2(mn, mx);
+                float from = mod(v.x, radians(360.0)); // [0, 360°]
+                float to = from + v.y - v.x; // [0, 720°]
+                vec2 s = sin(vec2(from, to));
+                vec2 res = vec2(min(s.x, s.y), max(s.x, s.y));
+                if(between(radians(90.0), from, to) || between(radians(90.0 + 360.0), from, to))
+                    res.y = 1.0;
+                if(between(radians(270.0), from, to))
+                    res.x = -1.0;
+                return res;
             }
             """
 
@@ -480,6 +492,17 @@ intervalFunctionToGlsl name =
             """
             vec2 isqrt(vec2 v) {
                 return vec2(sqrt(max(0.0, v.x)), sqrt(max(0.0, v.y)));
+            }
+            """
+
+        Square22 ->
+            """
+            vec2 isquare(vec2 z) {
+                if(z.x <= 0.0 && z.y >= 0.0)
+                    return vec2(0.0, pow(max(z.y, abs(z.x)), 2.0));
+                if(z.x <= 0.0)
+                    return vec2(z.y*z.y, z.x*z.x);
+                return vec2(z.x*z.x, z.y*z.y);
             }
             """
 
@@ -768,19 +791,19 @@ expressionToIntervalGlslPrec p expr =
             infixl_ 6 " + " l r
 
         PRel rel l r ->
-            "dup(("
+            "dup((("
                 ++ expressionToIntervalGlslPrec 10 l
                 ++ ".x "
                 ++ rel
                 ++ " "
                 ++ expressionToIntervalGlslPrec 10 r
-                ++ ".x) ? 0.5 : 0.0 + ("
+                ++ ".x) ? 0.5 : 0.0) + (("
                 ++ expressionToIntervalGlslPrec 10 l
                 ++ ".y "
                 ++ rel
                 ++ " "
                 ++ expressionToIntervalGlslPrec 10 r
-                ++ ".y) ? 0.5 : 0.0)"
+                ++ ".y) ? 0.5 : 0.0))"
 
         PBy l r ->
             apply "iby" [ l, r ]
@@ -791,8 +814,8 @@ expressionToIntervalGlslPrec p expr =
         PPower (PVariable "i") (PInteger 2) ->
             "dup(-1.0)"
 
-        PPower (PVariable v) (PInteger 2) ->
-            "iby(" ++ v ++ ", " ++ v ++ ")"
+        PPower l (PInteger 2) ->
+            "isquare(" ++ expressionToIntervalGlslPrec 0 l ++ ")"
 
         PPower l r ->
             apply "ipow" [ l, r ]
@@ -896,7 +919,7 @@ main3D suffixes =
                 vec3 recover_from = from;
                 vec3 recover_to = to;
                 float threshold = 0.04;
-                for(int it = 0; it < 50; it++) {
+                for(int it = 0; it < 500; it++) {
                     vec3 midpoint = mix(from, to, 0.5);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
