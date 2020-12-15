@@ -955,18 +955,15 @@ main3D suffixes =
         head =
             String.join "\n" <| List.indexedMap suffixToBisect suffixes
 
-        maxDepthString =
-            "100"
-
         suffixToBisect i suffix =
             """
             vec3 bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance) {
                 vec3 from = o;
                 vec3 to = o + max_distance * d;
                 float threshold = 0.01;
-                bool path[""" ++ maxDepthString ++ """];
+                bool path[MAXDEPTH];
                 int depth = 0;
-                for(int it = 0; it < """ ++ maxDepthString ++ """; it++) {
+                for(int it = 0; it < MAXDEPTH; it++) {
                     vec3 midpoint = mix(from, to, 0.5);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
@@ -976,18 +973,18 @@ main3D suffixes =
                     if(front.x <= 0.0 && front.y >= 0.0) {
                         to = midpoint;
                         depth++;
-                        for(int j = 0; j < """ ++ maxDepthString ++ """; j++) if(j == depth) path[j] = true;
+                        for(int j = 0; j < MAXDEPTH; j++) if(j == depth) path[j] = true;
                     } else if(back.x <= 0.0 && back.y >= 0.0) {
                         from = midpoint;
                         depth++;
-                        for(int j = 0; j < """ ++ maxDepthString ++ """; j++) if(j == depth) path[j] = false;
+                        for(int j = 0; j < MAXDEPTH; j++) if(j == depth) path[j] = false;
                     } else {
-                        for(int j = 0; j < """ ++ maxDepthString ++ """; j++) {
+                        for(int j = 0; j < MAXDEPTH; j++) {
                             if(depth == 0)
                                 return o + 10.0 * max_distance * d;
                             depth--;
                             bool found = false;
-                            for(int j = 0; j < """ ++ maxDepthString ++ """; j++)
+                            for(int j = 0; j < MAXDEPTH; j++)
                                 if(j == depth) {
                                     if(path[j]) {
                                         midpoint = to;

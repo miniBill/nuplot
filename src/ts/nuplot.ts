@@ -12,6 +12,9 @@ export class NuPlot extends HTMLElement {
 
   whiteLines = 6;
   completelyReal = 0;
+  minDepth = 25;
+  currDepth = 25;
+  maxDepth = 400;
 
   /* these hold the state of zoom operation */
   zoom_center!: number[];
@@ -19,6 +22,10 @@ export class NuPlot extends HTMLElement {
   viewport_width!: number;
   zoom_factor!: number;
   label: HTMLElement;
+
+  pendingRaf = -1;
+  pendingTimeout = -1;
+  wasZooming = false;
 
   constructor() {
     super();
@@ -79,8 +86,6 @@ export class NuPlot extends HTMLElement {
       gl_Position = vec4(a_Position.x, a_Position.y, 0.0, 1.0);
     }`;
 
-    const fragment_shader = this.buildFragmentShader(this.src);
-
     this.program = this.gl.createProgram();
 
     if (this.program == null) {
@@ -91,6 +96,7 @@ export class NuPlot extends HTMLElement {
     if (!this.compileAndAttachShader(this.gl.VERTEX_SHADER, vertex_shader))
       return;
 
+    const fragment_shader = this.buildFragmentShader(this.src);
     this.fragment_shader = this.compileAndAttachShader(
       this.gl.FRAGMENT_SHADER,
       fragment_shader
@@ -131,7 +137,7 @@ export class NuPlot extends HTMLElement {
     this.canvas.onmousemove = this.canvasOnmousemove.bind(this);
 
     /* display initial frame */
-    window.requestAnimationFrame(this.renderFrame.bind(this));
+    this.rafRenderFrame();
   }
 
   private buildFragmentShader(expr: string) {
@@ -162,7 +168,7 @@ export class NuPlot extends HTMLElement {
       const zoom_speed = 0.02;
       this.zoom_factor = e.buttons & 1 ? 1 - zoom_speed : 1 + zoom_speed;
     }
-    this.renderFrame();
+    this.rafRenderFrame(true);
     return true;
   }
 
@@ -177,26 +183,32 @@ export class NuPlot extends HTMLElement {
     this.zoom_factor = 1.0;
   }
 
-  willRenderFrame() {
-    window.requestAnimationFrame(this.renderFrame.bind(this));
+  delayedRenderFrame(delay: number) {
+    if (this.pendingRaf >= 0 || this.pendingTimeout >= 0) return;
+    this.pendingTimeout = window.setTimeout(() => {
+      this.pendingTimeout = -1;
+      this.pendingRaf = window.requestAnimationFrame(
+        this.renderFrame.bind(this)
+      );
+    }, delay);
+  }
+
+  rafRenderFrame(rightNow: boolean = false) {
+    if (this.pendingRaf >= 0) return;
+    if (this.pendingTimeout >= 0)
+      if (rightNow) {
+        window.clearTimeout(this.pendingTimeout);
+        this.pendingTimeout = -1;
+      } else {
+        return;
+      }
+    this.pendingRaf = window.requestAnimationFrame(this.renderFrame.bind(this));
   }
 
   renderFrame() {
+    this.pendingRaf = -1;
+
     if (this.gl == null || this.program == null) return;
-
-    this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-
-    /* bind inputs & render frame */
-    this.uniform1f("u_whiteLines", this.whiteLines);
-    this.uniform1f("u_completelyReal", this.completelyReal);
-    this.uniform1f("u_viewportWidth", this.viewport_width);
-    this.uniform1f("u_canvasWidth", this.canvas.width);
-    this.uniform1f("u_canvasHeight", this.canvas.height);
-    this.uniform2f("u_zoomCenter", this.zoom_center[0], this.zoom_center[1]);
-
-    this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-    this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
 
     if (this.zoom_factor != 1.0) {
       const minx = this.zoom_center[0] - this.viewport_width / 2;
@@ -221,8 +233,50 @@ export class NuPlot extends HTMLElement {
         this.zoom_center[1] = newMiny + viewport_height / 2;
       }
 
-      window.setTimeout(this.willRenderFrame.bind(this), 100);
+      if (this.currDepth == this.minDepth) {
+        this.doRender();
+      } else {
+        this.currDepth = this.minDepth;
+        this.reloadFragmentShader(this.buildFragmentShader(this.src));
+      }
+      this.rafRenderFrame();
+      this.wasZooming = true;
+    } else if (this.currDepth < this.maxDepth) {
+      this.doRender();
+      if (!this.wasZooming) {
+        this.currDepth *= 2;
+        this.currDepth = Math.min(this.currDepth, this.maxDepth);
+        this.reloadFragmentShader(this.buildFragmentShader(this.src));
+      }
+      this.delayedRenderFrame(this.currDepth == this.minDepth ? 1000 : 100);
+      this.wasZooming = false;
+    } else if (this.currDepth >= this.maxDepth) {
+      this.doRender();
+      this.currDepth = this.minDepth;
+      this.reloadFragmentShader(this.buildFragmentShader(this.src));
+      this.wasZooming = false;
+    } else {
+      this.doRender();
+      this.wasZooming = false;
     }
+  }
+
+  doRender() {
+    if (this.gl == null || this.program == null) return;
+
+    this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+
+    /* bind inputs & render frame */
+    this.uniform1f("u_whiteLines", this.whiteLines);
+    this.uniform1f("u_completelyReal", this.completelyReal);
+    this.uniform1f("u_viewportWidth", this.viewport_width);
+    this.uniform1f("u_canvasWidth", this.canvas.width);
+    this.uniform1f("u_canvasHeight", this.canvas.height);
+    this.uniform2f("u_zoomCenter", this.zoom_center[0], this.zoom_center[1]);
+
+    this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
   }
 
   private uniform1f(name: string, value: number) {
@@ -244,23 +298,25 @@ export class NuPlot extends HTMLElement {
       case "canvas-width":
         if (!newValue) return;
         this.canvas.width = +newValue;
-        window.requestAnimationFrame(this.renderFrame.bind(this));
+        this.rafRenderFrame();
         break;
 
       case "canvas-height":
         if (!newValue) return;
         this.canvas.height = +newValue;
-        window.requestAnimationFrame(this.renderFrame.bind(this));
+        this.rafRenderFrame();
         break;
 
       case "white-lines":
         if (!newValue) return;
         this.whiteLines = +newValue;
+        this.rafRenderFrame();
         break;
 
       case "completely-real":
         if (!newValue) return;
         this.completelyReal = +newValue;
+        this.rafRenderFrame();
         break;
 
       case "expr-src":
@@ -270,6 +326,7 @@ export class NuPlot extends HTMLElement {
         //console.info(newValue);
         this.src = newValue;
         this.reloadFragmentShader(this.buildFragmentShader(this.src));
+        this.rafRenderFrame();
         break;
     }
   }
@@ -280,8 +337,6 @@ export class NuPlot extends HTMLElement {
     this.sourceAndCompile(this.fragment_shader, src);
 
     this.gl.linkProgram(this.program);
-
-    window.requestAnimationFrame(this.renderFrame.bind(this));
   }
 
   static withLines(input: string): string {
@@ -293,6 +348,9 @@ export class NuPlot extends HTMLElement {
 
   sourceAndCompile(shader: WebGLShader, built: string) {
     if (!this.gl) return;
+
+    built = `#define MAXDEPTH ${this.currDepth.toString()}
+${built}`;
 
     this.gl.shaderSource(shader, built);
     this.gl.compileShader(shader);
