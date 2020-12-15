@@ -953,9 +953,47 @@ main3D : List String -> String
 main3D suffixes =
     let
         head =
-            String.join "\n" <| List.indexedMap suffixToBisect suffixes
+            String.join "\n" <| List.map suffixToBisect suffixes ++ [ raytrace ]
 
-        suffixToBisect i suffix =
+        colorCoeff =
+            String.fromFloat (1.19 - 0.2 * toFloat (List.length suffixes))
+
+        innerTrace =
+            String.join "\n" (List.indexedMap suffixToRay suffixes)
+
+        raytrace =
+            """
+            vec4 raytrace(vec3 o, vec3 d, float max_distance) {
+                vec3 found = o + 2.0 * max_distance * d;
+                float curr_distance = max_distance;
+                int found_index = -1;
+                vec3 test;
+                """ ++ innerTrace ++ """
+                if(length(found - o) < max_distance) {
+                    float h = (float(found_index) + 2.0)/radians(180.0);
+                    vec3 px = mix(
+                        hl2rgb(h, 0.5),
+                        hl2rgb(found.y, 0.5),
+                        max(0.2, """ ++ colorCoeff ++ """)
+                    );
+                    return vec4(px, 1.0);
+                } else {
+                    return vec4(vec3(0),1.0);
+                }
+            }
+            """
+
+        suffixToRay i suffix =
+            """
+                test = bisect""" ++ suffix ++ """(o, d, curr_distance);
+                if(length(test - o) < length(found - o)) {
+                    found_index = """ ++ String.fromInt i ++ """;
+                    found = test;
+                    curr_distance = length(test - o);
+                }
+            """
+
+        suffixToBisect suffix =
             """
             vec3 bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance) {
                 vec3 from = o;
@@ -963,6 +1001,9 @@ main3D suffixes =
                 float threshold = 0.01;
                 bool path[MAXDEPTH];
                 int depth = 0;
+                int recover_depth = 0;
+                vec3 recover_from = vec3(0);
+                vec3 recover_to = vec3(0);
                 for(int it = 0; it < MAXDEPTH; it++) {
                     vec3 midpoint = mix(from, to, 0.5);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
@@ -974,10 +1015,25 @@ main3D suffixes =
                         to = midpoint;
                         depth++;
                         for(int j = 0; j < MAXDEPTH; j++) if(j == depth) path[j] = true;
+                        if(back.x <= 0.0 && back.y >= 0.0) {
+                            recover_depth = depth;
+                            recover_from = from;
+                            recover_to = to;
+                        }
                     } else if(back.x <= 0.0 && back.y >= 0.0) {
                         from = midpoint;
                         depth++;
                         for(int j = 0; j < MAXDEPTH; j++) if(j == depth) path[j] = false;
+                    } else if(recover_depth > 0) {
+                        for(int j = MAXDEPTH - 1; j >= 0; j--) {
+                            path[j] = false;
+                            if(j == recover_depth)
+                                break;
+                        }
+                        from = recover_from;
+                        to = recover_to;
+                        depth = recover_depth;
+                        recover_depth = -1;
                     } else {
                         for(int j = 0; j < MAXDEPTH; j++) {
                             if(depth == 0)
@@ -1045,14 +1101,7 @@ main3D suffixes =
 
                 vec3 ray_direction = normalize(canvas_point - eye);
                 float max_distance = 100.0 * length(eye);
-                vec3 intersection = bisect(canvas_point, ray_direction, max_distance);
-                if(intersection.z > canvas_point.z + 2.0 * max_distance * ray_direction.z) {
-                    return vec4(vec3(0),1.0);
-                }
-                else {
-                    vec3 px = hl2rgb(intersection.y, 0.5);
-                    return vec4(px, 1.0);
-                }
+                return raytrace(canvas_point, ray_direction, max_distance);
             }
         """
 
