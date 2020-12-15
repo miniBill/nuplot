@@ -42,3 +42,4 @@ type GlslOperation
     | GlslNegation
     | GlslDivision
     | GlslPower
+    | GlslRelations

@@ -12,10 +12,10 @@ int main () {
     u_canvasHeight = 673;
     u_zoomCenter = vec2(0, 0);
 
-    int yfrom = 562;
-    int yto = 556;
-    int xfrom = 245;
-    int xto = 255;
+    int yfrom = u_canvasHeight; // 562;
+    int yto = 0; //556;
+    int xfrom = 0; //245;
+    int xto = u_canvasWidth; // 255;
 
     debugFile = fopen("debug.log", "w+");
 

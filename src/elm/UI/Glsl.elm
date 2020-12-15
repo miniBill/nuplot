@@ -218,7 +218,7 @@ expressionToRequirements e =
             RequireOperation op_ :: List.concatMap expressionToRequirements [ l, r ]
 
         RelationOperation _ l r ->
-            List.concatMap expressionToRequirements [ l, r ]
+            RequireOperation GlslRelations :: List.concatMap expressionToRequirements [ l, r ]
 
         AssociativeOperation op l m r ->
             let
@@ -421,6 +421,9 @@ dependenciesOf req =
             []
 
         RequireOperation GlslNegation ->
+            []
+
+        RequireOperation GlslRelations ->
             []
 
         RequireConstant _ ->

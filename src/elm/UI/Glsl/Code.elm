@@ -1,6 +1,6 @@
 module UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, thetaDelta, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
 
-import Expression exposing (Expression, PrintExpression(..))
+import Expression exposing (Expression, PrintExpression(..), RelationOperation(..))
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -65,6 +65,9 @@ straightOperationToGlsl op =
             }
             """
 
+        GlslRelations ->
+            ""
+
 
 intervalOperationToGlsl : GlslOperation -> String
 intervalOperationToGlsl op =
@@ -113,6 +116,34 @@ intervalOperationToGlsl op =
             """
             vec2 ipow(vec2 b, vec2 e) {
                 return iexp(iby(iln(b), e));
+            }
+            """
+
+        GlslRelations ->
+            """
+            vec2 ilt(vec2 l, vec2 r) {
+                return l.y < r.x ? dup(1.0) : l.x < r.y ? dup(0.0) : vec2(0.0, 1.0);
+            }
+
+            vec2 ileq(vec2 l, vec2 r) {
+                return l.y <= r.x ? dup(1.0) : l.x < r.y ? dup(0.0) : vec2(0.0, 1.0);
+            }
+
+            vec2 ieq(vec2 l, vec2 r) {
+                return
+                    (l.x == l.y && l.y == r.x && r.x == r.y)
+                        ? dup(1.0)
+                    : (l.y < r.x || r.y < l.x)
+                        ? dup(0.0)
+                    : vec2(0.0, 1.0);
+            }
+
+            vec2 igeq(vec2 l, vec2 r) {
+                return ileq(r, l);
+            }
+
+            vec2 igt(vec2 l, vec2 r) {
+                return ilt(r, l);
             }
             """
 
@@ -433,9 +464,9 @@ intervalFunctionToGlsl name =
         Pw22 ->
             """
             vec2 ipw(vec2 c, vec2 t, vec2 f) {
-                if(c.y < 0.5)
+                if(c.y <= 0.0)
                     return f;
-                if(c.x > 0.5)
+                if(c.x >= 1.0)
                     return t;
                 return vec2(min(t.x, f.x), max(t.y, f.y));
             }
@@ -794,20 +825,29 @@ expressionToIntervalGlslPrec p expr =
         PAdd l r ->
             infixl_ 6 " + " l r
 
-        PRel rel l r ->
-            "dup((("
-                ++ expressionToIntervalGlslPrec 10 l
-                ++ ".x "
-                ++ rel
-                ++ " "
-                ++ expressionToIntervalGlslPrec 10 r
-                ++ ".x) ? 0.5 : 0.0) + (("
-                ++ expressionToIntervalGlslPrec 10 l
-                ++ ".y "
-                ++ rel
-                ++ " "
-                ++ expressionToIntervalGlslPrec 10 r
-                ++ ".y) ? 0.5 : 0.0))"
+        PRel op l r ->
+            let
+                name =
+                    case op of
+                        "<" ->
+                            "ilt"
+
+                        "<=" ->
+                            "ileq"
+
+                        "=" ->
+                            "ieq"
+
+                        ">=" ->
+                            "igeq"
+
+                        ">" ->
+                            "igt"
+
+                        _ ->
+                            "iuknownrelop"
+            in
+            name ++ "(" ++ expressionToIntervalGlslPrec 10 l ++ ", " ++ expressionToIntervalGlslPrec 10 r ++ ")"
 
         PBy l r ->
             apply "iby" [ l, r ]
