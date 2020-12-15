@@ -415,7 +415,17 @@ intervalFunctionToGlsl name =
 
         Arg22 ->
             """
-            TODO Arg22
+            vec2 iarg(vec2 z) {
+                if(z.y < 0.0)
+                    return dup(radians(180.0));
+                if(z.x >= 0.0)
+                    return vec2(0);
+                return vec2(0.0, radians(180.0));
+            }
+
+            vec4 garg(vec4 z) {
+                return vec4(z.x >= 0.0 ? 0.0 : radians(180.0), 0.0, 0.0, -1.0);
+            }
             """
 
         Asin22 ->
@@ -435,12 +445,24 @@ intervalFunctionToGlsl name =
 
         Ceiling22 ->
             """
-            TODO Ceiling22
+            vec2 iceiling(vec2 z) {
+                return ceil(z);
+            }
+
+            vec4 gceiling(vec4 z) {
+                return vec4(z.x, 1.0, 1.0, -1.0);
+            }
             """
 
         Cos22 ->
             """
-            TODO Cos22
+            vec2 icos(vec2 v) {
+                return isin(v + radians(90.0));
+            }
+
+            vec4 gcos(vec4 v) {
+                return vec4(cos(v.x), -sin(v.x) * v.yzw);
+            }
             """
 
         Cosh11 ->
@@ -591,7 +613,13 @@ intervalFunctionToGlsl name =
 
         Tan22 ->
             """
-            TODO Tan22
+            vec2 itan(vec2 z) {
+                return idiv(isin(z), icos(z));
+            }
+
+            vec4 gtan(vec4 z) {
+                return vec4(tan(z.x), 1.0 / pow(cos(z.x), 2.0) * z.yzw);
+            }
             """
 
         Tanh11 ->

@@ -350,8 +350,9 @@ ${built}`;
       preNode.style.whiteSpace = "pre-wrap";
       preNode.innerText = `Error compiling shader, log:
   ${this.gl.getShaderInfoLog(shader)}
-  
+
   Source:
+
   ${NuPlot.withLines(built)}`;
       this.label.appendChild(preNode);
       console.error("Error compiling shader, source:\n", built);

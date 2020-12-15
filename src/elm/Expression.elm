@@ -638,6 +638,7 @@ unaryFunctions =
             [ ( "plot", Plot )
             , ( "simplify", Simplify )
             , ( "floor", Floor )
+            , ( "ceil", Ceiling )
             , ( "ceiling", Ceiling )
             , ( "round", Round )
             ]
