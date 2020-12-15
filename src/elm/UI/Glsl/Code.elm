@@ -122,11 +122,11 @@ intervalOperationToGlsl op =
         GlslRelations ->
             """
             vec2 ilt(vec2 l, vec2 r) {
-                return l.y < r.x ? dup(1.0) : l.x < r.y ? dup(0.0) : vec2(0.0, 1.0);
+                return l.y < r.x ? dup(1.0) : l.x > r.y ? dup(0.0) : vec2(0.0, 1.0);
             }
 
             vec2 ileq(vec2 l, vec2 r) {
-                return l.y <= r.x ? dup(1.0) : l.x < r.y ? dup(0.0) : vec2(0.0, 1.0);
+                return l.y <= r.x ? dup(1.0) : l.x > r.y ? dup(0.0) : vec2(0.0, 1.0);
             }
 
             vec2 ieq(vec2 l, vec2 r) {
@@ -955,34 +955,57 @@ main3D suffixes =
         head =
             String.join "\n" <| List.indexedMap suffixToBisect suffixes
 
+        maxDepthString =
+            "100"
+
         suffixToBisect i suffix =
             """
             vec3 bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance) {
                 vec3 from = o;
                 vec3 to = o + max_distance * d;
-                vec3 recover_from = from;
-                vec3 recover_to = to;
                 float threshold = 0.01;
-                for(int it = 0; it < 500; it++) {
+                bool path[""" ++ maxDepthString ++ """];
+                int depth = 0;
+                for(int it = 0; it < """ ++ maxDepthString ++ """; it++) {
                     vec3 midpoint = mix(from, to, 0.5);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
                     if(front.y - front.x < threshold || back.y - back.x < threshold)
                         return midpoint;
                     if(front.x <= 0.0 && front.y >= 0.0) {
-                        if(back.x <= 0.0 && back.y >= 0.0) {
-                            recover_from = midpoint;
-                            recover_to = to;
-                        }
                         to = midpoint;
+                        depth++;
+                        for(int j = 0; j < """ ++ maxDepthString ++ """; j++) if(j == depth) path[j] = true;
                     } else if(back.x <= 0.0 && back.y >= 0.0) {
                         from = midpoint;
+                        depth++;
+                        for(int j = 0; j < """ ++ maxDepthString ++ """; j++) if(j == depth) path[j] = false;
                     } else {
-                        if(it == 0 || length(recover_from - recover_to) == 0.0)
-                            return o + 10.0 * max_distance * d;
-                        from = recover_from;
-                        to = recover_to;
-                        recover_to = recover_from;
+                        for(int j = 0; j < """ ++ maxDepthString ++ """; j++) {
+                            if(depth == 0)
+                                return o + 10.0 * max_distance * d;
+                            depth--;
+                            bool found = false;
+                            for(int j = 0; j < """ ++ maxDepthString ++ """; j++)
+                                if(j == depth) {
+                                    if(path[j]) {
+                                        midpoint = to;
+                                        to = to + (to - from);
+                                        vec2 back = interval""" ++ suffix ++ """(midpoint, to);
+                                        if(back.x <= 0.0 && back.y >= 0.0) {
+                                            from = midpoint;
+                                            depth++;
+                                            path[j] = false;
+                                            found = true;
+                                        }
+                                        break;
+                                    } else {
+                                        from = from - (to - from);
+                                    }
+                                }
+                            if(found)
+                                break;
+                        }
                     }
                 }
                 return o + 10.0 * max_distance * d;

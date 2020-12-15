@@ -64,10 +64,10 @@ struct vec4 {
     double x;
     double y;
     double z;
-    double t;
-    vec4() : x(0), y(0), z(0), t(0) {}
-    vec4(vec3 xyz, double t) : x(xyz.x), y(xyz.y), z(xyz.z), t(t) {}
-    vec4(double x, double y, double z, double t) : x(x), y(y), z(z), t(t) {}
+    double w;
+    vec4() : x(0), y(0), z(0), w(0) {}
+    vec4(vec3 xyz, double w) : x(xyz.x), y(xyz.y), z(xyz.z), w(w) {}
+    vec4(double x, double y, double z, double w) : x(x), y(y), z(z), w(w) {}
 };
 
 vec3 abs(vec3 x) {
@@ -143,7 +143,7 @@ FILE* debugFile;
             vec2 f ## _(vec2 z); \
             vec2 f (vec2 z) { \
                 vec2 res = f ## _(z); \
-                fprintf(debugFile, #f "(%lf, %lf) = [%lf, %lf]\n", z.x, z.y, res.x, res.y); \
+                if(trace) fprintf(debugFile, "  " #f "(%lf, %lf) = [%lf, %lf]\n", z.x, z.y, res.x, res.y); \
                 return res; \
             }
 
@@ -157,7 +157,7 @@ FILE* debugFile;
             vec2 f ## _(vec2 l, vec2 r); \
             vec2 f (vec2 l, vec2 r) { \
                 vec2 res = f ## _(l, r); \
-                fprintf(debugFile, #f "((%lf, %lf), (%lf, %lf)) = [%lf, %lf]\n", l.x, l.y, r.x, r.y, res.x, res.y); \
+                if(trace) fprintf(debugFile, "  " #f "((%lf, %lf), (%lf, %lf)) = [%lf, %lf]\n", l.x, l.y, r.x, r.y, res.x, res.y); \
                 return res; \
             }
 
@@ -171,7 +171,7 @@ FILE* debugFile;
             vec2 f ## _(vec2 l, vec2 m, vec2 r); \
             vec2 f (vec2 l, vec2 m, vec2 r) { \
                 vec2 res = f ## _(l, m, r); \
-                fprintf(debugFile, #f "((%lf, %lf), (%lf, %lf), (%lf, %lf)) = [%lf, %lf]\n", \
+                if(trace) fprintf(debugFile, "  " #f "((%lf, %lf), (%lf, %lf), (%lf, %lf)) = [%lf, %lf]\n", \
                     l.x, l.y, m.x, m.y, r.x, r.y, res.x, res.y); \
                 return res; \
             }
@@ -181,6 +181,8 @@ FILE* debugFile;
             vec2 f (vec2 l, vec2 m, vec2 r) { \
                 return f ## _(l, m, r); \
             }
+
+bool trace;
 
 notrace2(cln)
 notrace2(iabs)
@@ -195,3 +197,26 @@ notrace22(iby)
 trace222(ipw)
 trace22(ileq)
 trace22(ilt)
+
+vec2 interval_(vec3 l, vec3 r);
+vec2 interval(vec3 l, vec3 r) {
+    vec2 res = interval_(l, r);
+    if(trace)
+        fprintf(debugFile, "interval((%lf, %lf, %lf), (%lf, %lf, %lf) [%lf]) = [%lf, %lf]\n",
+            l.x, l.y, l.z, r.x, r.y, r.z, length(r - l), res.x, res.y);
+    return res;
+}
+
+vec3 bisect_(vec3 o, vec3 d, float max_distance);
+vec3 bisect(vec3 l, vec3 r, float max_distance) {
+    vec3 res = bisect_(l, r, max_distance);
+    vec3 to = l + max_distance * r;
+    if(trace)
+        fprintf(debugFile, "bisect((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf)\n\n",
+            l.x, l.y, l.z, to.x, to.y, to.z, res.x, res.y, res.z);
+    return res;
+}
+
+vec4 vec4_(vec3 l, double r) {
+    return vec4(l, r);
+}

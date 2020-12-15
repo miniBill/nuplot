@@ -29,9 +29,30 @@ export class NuPlot extends HTMLElement {
     const shadowRoow = this.attachShadow({ mode: "open" }); // sets and returns 'this.shadowRoot'
 
     this.wrapper = document.createElement("div");
-    this.label = this.wrapper.appendChild(document.createElement("div"));
-    this.canvas = this.wrapper.appendChild(document.createElement("canvas"));
 
+    this.label = this.wrapper.appendChild(document.createElement("div"));
+
+    var checkboxLabel = this.wrapper.appendChild(
+      document.createElement("label")
+    );
+    var checkbox = checkboxLabel.appendChild(document.createElement("input"));
+    checkbox.type = "checkbox";
+    checkbox.oninput = () => {
+      this.label.innerHTML = "";
+      if (checkbox.checked) {
+        var preNode = document.createElement("pre");
+        preNode.style.whiteSpace = "pre-wrap";
+        preNode.innerText = this.buildFragmentShader(this.src);
+        this.label.appendChild(preNode);
+      }
+      this.renderFrame();
+    };
+
+    checkboxLabel.appendChild(document.createTextNode("Show Source"));
+
+    this.wrapper.appendChild(document.createElement("br"));
+
+    this.canvas = this.wrapper.appendChild(document.createElement("canvas"));
     this.initCanvas();
 
     // attach the created elements to the shadow DOM
