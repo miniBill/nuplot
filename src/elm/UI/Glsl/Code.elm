@@ -970,7 +970,8 @@ main3D suffixes =
                     vec3 midpoint = mix(from, to, 0.5);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
-                    if(front.y - front.x < threshold || back.y - back.x < threshold)
+                    if((front.y - front.x < threshold || back.y - back.x < threshold)
+                        && length(from - to) < pow(threshold, 3.0) * max_distance)
                         return midpoint;
                     if(front.x <= 0.0 && front.y >= 0.0) {
                         to = midpoint;
