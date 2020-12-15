@@ -970,10 +970,10 @@ main3D suffixes =
                 vec3 test;
                 """ ++ innerTrace ++ """
                 if(length(found - o) < max_distance) {
-                    float h = (float(found_index) + 2.0)/radians(180.0);
+                    float h = (float(found_index))*radians(360.0 / 1.1);
                     vec3 px = mix(
                         hl2rgb(h, 0.5),
-                        hl2rgb(found.y, 0.5),
+                        hl2rgb(found.y * 0.5, 0.5),
                         max(0.2, """ ++ colorCoeff ++ """)
                     );
                     return vec4(px, 1.0);

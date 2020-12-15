@@ -42,22 +42,6 @@ export class NuPlot extends HTMLElement {
     var checkboxLabel = this.wrapper.appendChild(
       document.createElement("label")
     );
-    var checkbox = checkboxLabel.appendChild(document.createElement("input"));
-    checkbox.type = "checkbox";
-    checkbox.oninput = () => {
-      this.label.innerHTML = "";
-      if (checkbox.checked) {
-        var preNode = document.createElement("pre");
-        preNode.style.whiteSpace = "pre-wrap";
-        preNode.innerText = this.buildFragmentShader(this.src);
-        this.label.appendChild(preNode);
-      }
-      this.renderFrame();
-    };
-
-    checkboxLabel.appendChild(document.createTextNode("Show Source"));
-
-    this.wrapper.appendChild(document.createElement("br"));
 
     this.canvas = this.wrapper.appendChild(document.createElement("canvas"));
     this.initCanvas();
