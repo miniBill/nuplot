@@ -418,7 +418,7 @@ dependenciesOf req =
             []
 
         RequireOperation GlslDivision ->
-            []
+            [ RequireOperation GlslMultiplication ]
 
         RequireOperation GlslNegation ->
             []
