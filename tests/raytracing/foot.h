@@ -7,21 +7,21 @@ void dput(double d) {
 }
 
 int main () {
-    u_viewportWidth = 2 * 3.14159;
-    u_canvasWidth = 898;
-    u_canvasHeight = 673;
+    u_viewportWidth = 2 * M_PI;
+    u_canvasWidth = 500;
+    u_canvasHeight = 375;
     u_zoomCenter = vec2(0, 0);
 
-    int traceYFrom = 557;
-    int traceYTo = 559;
-    int traceXFrom = 250;
-    int traceXTo = 251;
+    int traceYFrom = 287;
+    int traceYTo = 289;
+    int traceXFrom = 284;
+    int traceXTo = 286;
 
     bool onlyTraced = true;
     int xfrom = onlyTraced ? traceXFrom : 0;
     int xto = onlyTraced ? traceXTo : u_canvasWidth;
-    int yfrom = onlyTraced ? traceYFrom : u_canvasHeight;
-    int yto = onlyTraced ? traceYTo : 0;
+    int yfrom = onlyTraced ? traceYFrom : 0;
+    int yto = onlyTraced ? traceYTo : u_canvasHeight;
 
     debugFile = fopen("debug.log", "w+");
 

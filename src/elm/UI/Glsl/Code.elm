@@ -575,6 +575,10 @@ intervalFunctionToGlsl name =
                     return vec2(z.y*z.y, z.x*z.x);
                 return vec2(z.x*z.x, z.y*z.y);
             }
+
+            vec4 gsquare(vec4 z) {
+                return vec4(z.x*z.x, 2.0 * z.x * z.yzw);
+            }
             """
 
         Tan22 ->
@@ -983,6 +987,9 @@ expressionToNormalGlslPrec p expr =
         PDiv l r ->
             apply "gdiv" [ l, r ]
 
+        PPower l (PInteger 2) ->
+            apply "gsquare" [ l ]
+
         PPower l r ->
             apply "gpow" [ l, r ]
 
@@ -1131,7 +1138,7 @@ main3D suffixes =
 
         suffixToRay i suffix =
             """
-                if(bisect""" ++ suffix ++ """(o, d, curr_distance, f, n)) {
+                if(bisect""" ++ suffix ++ """(o, d, max_distance, f, n) && length(f - o) < curr_distance) {
                     found_index = """ ++ String.fromInt i ++ """;
                     found = f;
                     normal = n;

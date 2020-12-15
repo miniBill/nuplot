@@ -4,6 +4,7 @@
 #define main() main_()
 #define float double // Yes, really
 #define abs fabs
+#define MAXDEPTH 400
 
 struct vec2 {
     double x;
@@ -47,6 +48,10 @@ struct vec3 {
         return vec3(l.x - r.x, l.y - r.y, l.z - r.z);
     }
 
+    friend vec3 operator - (vec3 l) {
+        return vec3(-l.x, -l.y, -l.z);
+    }
+
     friend vec3 operator * (vec3 r, double d) {
         return vec3(d * r.x, d * r.y, d * r.z);
     }
@@ -67,11 +72,28 @@ struct vec4 {
     double w;
     vec4() : x(0), y(0), z(0), w(0) {}
     vec4(vec3 xyz, double w) : x(xyz.x), y(xyz.y), z(xyz.z), w(w) {}
+    vec4(double x, vec3 yzw) : x(x), y(yzw.x), z(yzw.y), w(yzw.z) {}
     vec4(double x, double y, double z, double w) : x(x), y(y), z(z), w(w) {}
+
+    friend vec4 operator + (vec4 l, vec4 r) {
+        return vec4(l.x + r.x, l.y + r.y, l.z + r.z, l.w + r.w);
+    }
+
+    friend vec4 operator - (vec4 r) {
+        return vec4(-r.x, -r.y, -r.z, -r.w);
+    }
+
+    vec3 ywz() {
+        return vec3(y, w, z);
+    }
+
+    vec3 yzw() {
+        return vec3(y, z, w);
+    }
 };
 
 vec3 abs(vec3 x) {
-    return vec3(fabs(x.x), fabs(x.y), fabs(x.z));
+    return vec3(abs(x.x), abs(x.y), abs(x.z));
 }
 
 double mod(double x, double y) {
@@ -118,6 +140,10 @@ double atan(double y, double x) {
     return atan2(y, x);
 }
 
+double radians(double deg) {
+    return M_PI * deg / 180.0;
+}
+
 template<class T>
 T mix(T x, T y, double a) {
     return x * (1 - a) + y * a;
@@ -126,6 +152,16 @@ T mix(T x, T y, double a) {
 template<class T>
 T normalize(T x) {
     return x / length(x);
+}
+
+double dot(vec3 l, vec3 r) {
+    return l.x * r.x + l.y * r.y + l.z * r.z;
+}
+
+vec3 faceforward(vec3 n, vec3 a, vec3 b) {
+    if(dot(a, b) < 0)
+        return n;
+    return -n;
 }
 
 struct FragCoord {
@@ -153,6 +189,20 @@ FILE* debugFile;
                 return f ## _(z); \
             }
 
+#define trace3(f) \
+            vec3 f ## _(vec3 z); \
+            vec3 f (vec3 z) { \
+                vec3 res = f ## _(z); \
+                if(trace) fprintf(debugFile, "  " #f "(%lf, %lf, %lf) = (%lf, %lf, %lf) [%lf]\n", z.x, z.y, z.z, res.x, res.y, res.z, length(res)); \
+                return res; \
+            }
+
+#define notrace3(f) \
+            vec3 f ## _(vec3 z); \
+            vec3 f (vec3 z) { \
+                return f ## _(z); \
+            }
+
 #define trace22(f) \
             vec2 f ## _(vec2 l, vec2 r); \
             vec2 f (vec2 l, vec2 r) { \
@@ -164,6 +214,26 @@ FILE* debugFile;
 #define notrace22(f) \
             vec2 f ## _(vec2 l, vec2 r); \
             vec2 f (vec2 l, vec2 r) { \
+                return f ## _(l, r); \
+            }
+
+#define notrace33(f) \
+            vec3 f ## _(vec3 l, vec3 r); \
+            vec3 f (vec3 l, vec3 r) { \
+                return f ## _(l, r); \
+            }
+
+#define trace33_2(f) \
+            vec2 f ## _(vec3 l, vec3 r); \
+            vec2 f (vec3 l, vec3 r) { \
+                vec2 res = f ## _(l, r); \
+                if(trace) fprintf(debugFile, "  " #f "((%lf, %lf, %lf), (%lf, %lf, %lf)) = [%lf, %lf]\n", l.x, l.y, l.z, r.x, r.y, r.z, res.x, res.y); \
+                return res; \
+            }
+
+#define notrace33_2(f) \
+            vec2 f ## _(vec3 l, vec3 r); \
+            vec2 f (vec3 l, vec3 r) { \
                 return f ## _(l, r); \
             }
 
@@ -184,39 +254,56 @@ FILE* debugFile;
 
 bool trace;
 
-notrace2(cln)
-notrace2(iabs)
-notrace2(ineg)
-notrace22(ipow)
-notrace2(iln)
+//notrace2(iabs)
+//notrace22(ileq)
+//notrace22(ilt)
+//notrace222(ipw)
 notrace2(cexp)
+notrace2(cln)
 notrace2(iexp)
+notrace2(iln)
+notrace2(ineg)
+notrace2(isin)
 notrace2(isquare)
+notrace2(sin)
 notrace22(by)
 notrace22(iby)
-trace222(ipw)
-trace22(ileq)
-trace22(ilt)
+notrace22(ipow)
+notrace22(merge)
+trace33_2(interval_0)
+trace33_2(interval_1)
+trace3(normal_0)
+trace3(normal_1)
 
-vec2 interval_(vec3 l, vec3 r);
-vec2 interval(vec3 l, vec3 r) {
-    vec2 res = interval_(l, r);
+vec2 sin_(vec2 input) {
+    return vec2(sin(input.x), sin(input.y));
+}
+
+bool bisect_0_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
+bool bisect_0(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
+    bool res = bisect_0_(l, r, max_distance, found, n);
+    vec3 to = l + max_distance * r;
     if(trace)
-        fprintf(debugFile, "interval((%lf, %lf, %lf), (%lf, %lf, %lf) [%lf]) = [%lf, %lf]\n",
-            l.x, l.y, l.z, r.x, r.y, r.z, length(r - l), res.x, res.y);
+        fprintf(debugFile, "bisect_0((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf) [%lf]\n\n",
+            l.x, l.y, l.z, to.x, to.y, to.z, found.x, found.y, found.z, length(found - l));
     return res;
 }
 
-vec3 bisect_(vec3 o, vec3 d, float max_distance);
-vec3 bisect(vec3 l, vec3 r, float max_distance) {
-    vec3 res = bisect_(l, r, max_distance);
+bool bisect_1_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
+bool bisect_1(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
+    bool res = bisect_1_(l, r, max_distance, found, n);
     vec3 to = l + max_distance * r;
     if(trace)
-        fprintf(debugFile, "bisect((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf)\n\n",
-            l.x, l.y, l.z, to.x, to.y, to.z, res.x, res.y, res.z);
+        fprintf(debugFile, "bisect_1((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf) [%lf]\n\n",
+            l.x, l.y, l.z, to.x, to.y, to.z, found.x, found.y, found.z, length(found - l));
     return res;
 }
 
 vec4 vec4_(vec3 l, double r) {
     return vec4(l, r);
+}
+
+vec4 raytrace_(vec3 o, vec3 d, float max_distance, vec3 light);
+vec4 raytrace(vec3 o, vec3 d, float max_distance, vec3 light) {
+    return raytrace_(o, d, max_distance, light);
 }

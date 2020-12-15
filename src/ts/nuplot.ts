@@ -125,7 +125,9 @@ export class NuPlot extends HTMLElement {
   }
 
   private buildFragmentShader(expr: string) {
-    return `${declarations}\n${expr}`;
+    const res = `${declarations}\n${expr}`;
+    console.log(res);
+    return res;
   }
 
   compileAndAttachShader(type: number, src: string): WebGLShader | null {
