@@ -402,6 +402,10 @@ intervalFunctionToGlsl name =
                     return vec2(-z.y, -z.x);
                 return z;
             }
+
+            vec4 gabs(vec4 v) {
+                return vec4(abs(v.x), sign(v.x) * v.yzw);
+            }
             """
 
         Acos22 ->
@@ -563,6 +567,10 @@ intervalFunctionToGlsl name =
             """
             vec2 isqrt(vec2 v) {
                 return vec2(sqrt(max(0.0, v.x)), sqrt(max(0.0, v.y)));
+            }
+
+            vec4 gsqrt(vec4 v) {
+                return vec4(sqrt(v.x), 0.5 * pow(v.x, -0.5) * v.yzw);
             }
             """
 
