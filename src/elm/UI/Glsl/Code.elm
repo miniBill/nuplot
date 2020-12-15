@@ -80,6 +80,10 @@ intervalOperationToGlsl op =
             vec2 ineg(vec2 v) {
                 return vec2(-v.y, -v.x);
             }
+
+            vec4 gneg(vec4 v) {
+                return -v;
+            }
             """
 
         GlslMultiplication ->
@@ -92,6 +96,12 @@ intervalOperationToGlsl op =
                 float mn = min(min(a,b),min(c,d));
                 float mx = max(max(a,b),max(c,d));
                 return vec2(mn, mx);
+            }
+
+            vec4 gby(vec4 l, vec4 r) {
+                return vec4(
+                    l.x * r.x,
+                    l.x * r.yzw + r.x * l.yzw);
             }
             """
 
@@ -110,12 +120,23 @@ intervalOperationToGlsl op =
             vec2 idiv(vec2 l, vec2 r) {
                 return iby(l, iinverse(r));
             }
+
+            vec4 gdiv(vec4 l, vec4 r) {
+                return vec4(
+                    l.x / r.x,
+                    (r.x * l.yzw - l.x * r.yzw) / pow(r.x, 2.0)
+                );
+            }
             """
 
         GlslPower ->
             """
             vec2 ipow(vec2 b, vec2 e) {
                 return iexp(iby(iln(b), e));
+            }
+
+            vec4 gpow(vec4 b, vec4 e) {
+                return gexp(gby(gln(b), e));
             }
             """
 
@@ -437,6 +458,13 @@ intervalFunctionToGlsl name =
             vec2 iexp(vec2 z) {
                 return vec2(exp(z.x), exp(z.y));
             }
+
+            vec4 gexp(vec4 z) {
+                return vec4(
+                    exp(z.x),
+                    exp(z.x) * z.yzw
+                );
+            }
             """
 
         Floor22 ->
@@ -453,6 +481,10 @@ intervalFunctionToGlsl name =
             """
             vec2 iln(vec2 z) {
                 return vec2(log(z.x), log(z.y));
+            }
+
+            vec4 gln(vec4 z) {
+                return vec4(log(z.x), z.yzw / z.x);
             }
             """
 
@@ -510,6 +542,10 @@ intervalFunctionToGlsl name =
                 if(between(radians(270.0), from, to))
                     res.x = -1.0;
                 return res;
+            }
+
+            vec4 gsin(vec4 v) {
+                return vec4(sin(v.x), cos(v.x) * v.yzw);
             }
             """
 
@@ -656,8 +692,7 @@ epsilon =
     0.00001
 
 
-expressionToGlsl : Expression -> String
-expressionToGlsl =
+wordWrap =
     let
         step e ( l, acc ) =
             if String.length e + String.length l > 40 then
@@ -666,9 +701,7 @@ expressionToGlsl =
             else
                 ( l ++ e, acc )
     in
-    Expression.toPrintExpression
-        >> expressionToGlslPrec 0
-        >> String.split " "
+    String.split " "
         >> List.foldl step ( "", [] )
         >> (\( l, a ) ->
                 if String.isEmpty l then
@@ -679,31 +712,27 @@ expressionToGlsl =
            )
         >> List.reverse
         >> String.join "\n            "
+
+
+expressionToGlsl : Expression -> String
+expressionToGlsl =
+    Expression.toPrintExpression
+        >> expressionToGlslPrec 0
+        >> wordWrap
 
 
 expressionToIntervalGlsl : Expression -> String
 expressionToIntervalGlsl =
-    let
-        step e ( l, acc ) =
-            if String.length e + String.length l > 40 then
-                ( e, l :: acc )
-
-            else
-                ( l ++ e, acc )
-    in
     Expression.toPrintExpression
         >> expressionToIntervalGlslPrec 0
-        >> String.split " "
-        >> List.foldl step ( "", [] )
-        >> (\( l, a ) ->
-                if String.isEmpty l then
-                    a
+        >> wordWrap
 
-                else
-                    l :: a
-           )
-        >> List.reverse
-        >> String.join "\n            "
+
+expressionToNormalGlsl : Expression -> String
+expressionToNormalGlsl =
+    Expression.toPrintExpression
+        >> expressionToNormalGlslPrec 0
+        >> wordWrap
 
 
 expressionToGlslPrec : Int -> PrintExpression -> String
@@ -874,6 +903,99 @@ expressionToIntervalGlslPrec p expr =
             expressionToIntervalGlslPrec p (Expression.pfullSubstitute var e)
 
 
+expressionToNormalGlslPrec : Int -> PrintExpression -> String
+expressionToNormalGlslPrec p expr =
+    let
+        paren b c =
+            if b then
+                "(" ++ c ++ ")"
+
+            else
+                c
+
+        noninfix op c =
+            paren (p > 10) <| op ++ expressionToNormalGlslPrec 11 c
+
+        infixl_ n op l r =
+            paren (p > n) <| expressionToNormalGlslPrec n l ++ op ++ expressionToNormalGlslPrec (n + 1) r
+
+        apply name ex =
+            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (expressionToNormalGlslPrec 0) ex) ++ ")"
+    in
+    case expr of
+        PVariable "pi" ->
+            "gnum(radians(180.0))"
+
+        PVariable "e" ->
+            "gnum(exp(1.0))"
+
+        PVariable "x" ->
+            "vec4(x,1,0,0)"
+
+        PVariable "y" ->
+            "vec4(y,0,1,0)"
+
+        PVariable "z" ->
+            "vec4(z,0,0,1)"
+
+        PVariable v ->
+            v
+
+        PInteger v ->
+            "gnum(" ++ String.fromInt v ++ ".0)"
+
+        PFloat f ->
+            "gnum(" ++ String.fromFloat f ++ ")"
+
+        PNegate expression ->
+            "gneg(" ++ expressionToNormalGlslPrec 10 expression ++ ")"
+
+        PAdd l r ->
+            infixl_ 6 " + " l r
+
+        PRel op l r ->
+            let
+                name =
+                    case op of
+                        "<" ->
+                            "ilt"
+
+                        "<=" ->
+                            "ileq"
+
+                        "=" ->
+                            "ieq"
+
+                        ">=" ->
+                            "igeq"
+
+                        ">" ->
+                            "igt"
+
+                        _ ->
+                            "iuknownrelop"
+            in
+            "gnum((" ++ expressionToGlslPrec 10 l ++ op ++ expressionToGlslPrec 10 r ++ ") ? 1.0 : 0.0)"
+
+        PBy l r ->
+            apply "gby" [ l, r ]
+
+        PDiv l r ->
+            apply "gdiv" [ l, r ]
+
+        PPower l r ->
+            apply "gpow" [ l, r ]
+
+        PApply name ex ->
+            apply ("g" ++ Expression.functionNameToString name) ex
+
+        PList es ->
+            "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (expressionToNormalGlslPrec 0) es) ++ ")"
+
+        PReplace var e ->
+            expressionToNormalGlslPrec p (Expression.pfullSubstitute var e)
+
+
 mainGlsl : List { name : String, color : Bool } -> List String -> String
 mainGlsl pixel2 pixel3 =
     case ( pixel2, pixel3 ) of
@@ -940,6 +1062,14 @@ main2D pixels =
 toSrc3D : String -> Expression -> String
 toSrc3D suffix e =
     """
+    vec3 normal""" ++ suffix ++ """(vec3 p) {
+        float x = p.x;
+        float y = p.z;
+        float z = p.y;
+        vec4 gradient = """ ++ expressionToNormalGlsl e ++ """;
+        return normalize(gradient.ywz);
+    }
+
     vec2 interval""" ++ suffix ++ """(vec3 f, vec3 t) {
         vec2 x = f.x < t.x ? vec2(f.x, t.x) : vec2(t.x, f.x);
         vec2 z = f.y < t.y ? vec2(f.y, t.y) : vec2(t.y, f.y);
@@ -961,19 +1091,35 @@ main3D suffixes =
         innerTrace =
             String.join "\n" (List.indexedMap suffixToRay suffixes)
 
+        innerLightTrace =
+            String.join "\n" (List.map suffixToRayLight suffixes)
+
         raytrace =
             """
-            vec4 raytrace(vec3 o, vec3 d, float max_distance) {
+            vec4 raytrace(vec3 o, vec3 d, float max_distance, vec3 light) {
                 vec3 found = o + 2.0 * max_distance * d;
+                vec3 normal = vec3(0);
                 float curr_distance = max_distance;
                 int found_index = -1;
-                vec3 test;
+                vec3 f = vec3(0);
+                vec3 n = vec3(0);
                 """ ++ innerTrace ++ """
                 if(length(found - o) < max_distance) {
                     float h = (float(found_index))*radians(360.0 / 1.1);
+                    float fy = found.y * 0.5;
+
+                    float light_distance = length(light - found);
+                    vec3 light_direction = normalize(light - found);
+                    bool in_light = true;
+                    vec3 offseted = found + 0.001 * normal;
+                    normal = -faceforward(normal, normal, light_direction);
+                    if(0 == 1) { }
+                    """ ++ innerLightTrace ++ """
+                    float l = in_light ? mix(0.4, 0.6, dot(normal, light_direction)) : 0.2;
+
                     vec3 px = mix(
-                        hl2rgb(h, 0.5),
-                        hl2rgb(found.y * 0.5, 0.5),
+                        hl2rgb(h, l),
+                        hl2rgb(fy, l),
                         max(0.2, """ ++ colorCoeff ++ """)
                     );
                     return vec4(px, 1.0);
@@ -985,17 +1131,24 @@ main3D suffixes =
 
         suffixToRay i suffix =
             """
-                test = bisect""" ++ suffix ++ """(o, d, curr_distance);
-                if(length(test - o) < length(found - o)) {
+                if(bisect""" ++ suffix ++ """(o, d, curr_distance, f, n)) {
                     found_index = """ ++ String.fromInt i ++ """;
-                    found = test;
-                    curr_distance = length(test - o);
+                    found = f;
+                    normal = n;
+                    curr_distance = length(found - o);
+                }
+            """
+
+        suffixToRayLight suffix =
+            """
+                else if(bisect""" ++ suffix ++ """(offseted, light_direction, light_distance, f, n)) {
+                    in_light = false;
                 }
             """
 
         suffixToBisect suffix =
             """
-            vec3 bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance) {
+            bool bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found, out vec3 n) {
                 vec3 from = o;
                 vec3 to = o + max_distance * d;
                 float threshold = 0.01;
@@ -1009,8 +1162,11 @@ main3D suffixes =
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
                     if((front.y - front.x < threshold || back.y - back.x < threshold)
-                        && length(from - to) < pow(threshold, 3.0) * max_distance)
-                        return midpoint;
+                        && length(from - to) < pow(threshold, 3.0) * max_distance) {
+                            found = midpoint;
+                            n = normal""" ++ suffix ++ """(midpoint);
+                            return true;
+                        }
                     if(front.x <= 0.0 && front.y >= 0.0) {
                         to = midpoint;
                         depth++;
@@ -1037,7 +1193,7 @@ main3D suffixes =
                     } else {
                         for(int j = 0; j < MAXDEPTH; j++) {
                             if(depth == 0)
-                                return o + 10.0 * max_distance * d;
+                                return false;
                             depth--;
                             bool found = false;
                             for(int j = 0; j < MAXDEPTH; j++)
@@ -1062,7 +1218,7 @@ main3D suffixes =
                         }
                     }
                 }
-                return o + 10.0 * max_distance * d;
+                return false;
             }
             """
     in
@@ -1086,7 +1242,8 @@ main3D suffixes =
             }
 
             vec4 pixel3 () {
-                vec3 eye = vec3(0,u_viewportWidth, -1.5*u_viewportWidth);
+                vec3 eye = vec3(0, u_viewportWidth, -1.5*u_viewportWidth);
+                vec3 light = vec3(-0.5*u_viewportWidth, 2.0 * u_viewportWidth, 0);
                 float focal_dist = 1.0;
 
                 vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
@@ -1101,7 +1258,7 @@ main3D suffixes =
 
                 vec3 ray_direction = normalize(canvas_point - eye);
                 float max_distance = 100.0 * length(eye);
-                return raytrace(canvas_point, ray_direction, max_distance);
+                return raytrace(canvas_point, ray_direction, max_distance, light);
             }
         """
 

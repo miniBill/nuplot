@@ -16,3 +16,7 @@ vec3 hl2rgb(float h, float l)
 vec2 dup(float x) {
     return vec2(x, x);
 }
+
+vec4 gnum(float f) {
+    return vec4(f, 0, 0, 0);
+}
