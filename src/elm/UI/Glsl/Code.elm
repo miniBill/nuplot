@@ -1256,31 +1256,26 @@ main3D suffixes =
                         depth = recover_depth;
                         recover_depth = -1;
                     } else {
-                        for(int j = 0; j < MAXDEPTH; j++) {
-                            if(depth == 0)
-                                return false;
+                        for(int j = MAXDEPTH - 1; j > 0; j--) {
+                            if(j > depth)
+                                continue;
                             depth--;
-                            bool found = false;
-                            for(int j = 0; j < MAXDEPTH; j++)
-                                if(j == depth) {
-                                    if(path[j]) {
-                                        midpoint = to;
-                                        to = to + (to - from);
-                                        vec2 back = interval""" ++ suffix ++ """(midpoint, to);
-                                        if(back.x <= 0.0 && back.y >= 0.0) {
-                                            from = midpoint;
-                                            depth++;
-                                            path[j] = false;
-                                            found = true;
-                                        }
-                                        break;
-                                    } else {
-                                        from = from - (to - from);
-                                    }
+                            if(path[j]) {
+                                midpoint = to;
+                                to = to + (to - from);
+                                vec2 back = interval""" ++ suffix ++ """(midpoint, to);
+                                if(back.x <= 0.0 && back.y >= 0.0) {
+                                    from = midpoint;
+                                    depth++;
+                                    path[j] = false;
+                                    break;
                                 }
-                            if(found)
-                                break;
+                            } else {
+                                from = from - (to - from);
+                            }
                         }
+                        if(depth == 0)
+                            return false;
                     }
                 }
                 return false;
