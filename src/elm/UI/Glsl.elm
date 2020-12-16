@@ -337,7 +337,7 @@ dependenciesOf req =
             List.map RequireFunction [ Sinh11, Cosh11 ]
 
         RequireFunction Cos22 ->
-            List.map RequireFunction [ Sinh11, Cosh11 ]
+            List.map RequireFunction [ Sin22, Sinh11, Cosh11 ]
 
         RequireFunction Tan22 ->
             RequireOperation GlslDivision :: List.map RequireFunction [ Sin22, Cos22 ]

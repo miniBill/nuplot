@@ -431,7 +431,7 @@ intervalFunctionToGlsl name =
             }
 
             vec4 garg(vec4 z) {
-                return vec4(z.x >= 0.0 ? 0.0 : radians(180.0), 0.0, 0.0, -1.0);
+                return gnum(z.x >= 0.0 ? 0.0 : radians(180.0));
             }
             """
 
@@ -442,7 +442,7 @@ intervalFunctionToGlsl name =
             }
 
             vec4 gsign(vec4 v) {
-                return vec4(sign(v.x), 0.0, 0.0, 1.0);
+                return gnum(sign(v.x));
             }
             """
 
@@ -468,14 +468,15 @@ intervalFunctionToGlsl name =
             }
 
             vec4 gceiling(vec4 z) {
-                return vec4(ceil(z.x), 1.0, 1.0, -1.0);
+                return gnum(ceil(z.x));
             }
             """
 
         Cos22 ->
             """
             vec2 icos(vec2 v) {
-                return isin(v + radians(90.0));
+                vec2 shift = radians(90.0) * vec2(1,1);
+                return isin(v + shift);
             }
 
             vec4 gcos(vec4 v) {
@@ -488,12 +489,16 @@ intervalFunctionToGlsl name =
 
         Cosh22 ->
             """
-            vec2 icosh(vec2 v) {
+            vec2 icosh(vec2 z) {
                 if(z.x <= 0.0 && z.y >= 0.0)
                     return vec2(cosh(0.0), max(z.y, abs(z.x)));
                 if(z.x <= 0.0)
                     return vec2(cosh(-z.y), cosh(-z.x));
                 return vec2(cosh(z.x), cosh(z.y));
+            }
+
+            vec4 gcosh(vec4 v) {
+                return vec4(cosh(v.x), sinh(v.x) * v.yzw);
             }
             """
 
@@ -518,13 +523,8 @@ intervalFunctionToGlsl name =
             }
 
             vec4 gfloor(vec4 z) {
-                return vec4(floor(z.x), 1.0, 1.0, -1.0);
+                return gnum(floor(z.x));
             }
-            """
-
-        Im22 ->
-            """
-            TODO Im22
             """
 
         Ln22 ->
@@ -560,7 +560,24 @@ intervalFunctionToGlsl name =
 
         Re22 ->
             """
-            TODO Re22
+            vec2 ire(vec2 v) {
+                return v;
+            }
+
+            vec4 gre(vec4 v) {
+                return v;
+            }
+            """
+
+        Im22 ->
+            """
+            vec2 iim(vec2 v) {
+                return vec2(0);
+            }
+
+            vec4 gim(vec4 v) {
+                return vec4(0, 0, 0, 1.0);
+            }
             """
 
         Round22 ->
@@ -610,6 +627,10 @@ intervalFunctionToGlsl name =
             """
             vec2 isinh(vec2 v) {
                 return vec2(sinh(v.x), sinh(v.y));
+            }
+
+            vec4 gsinh(vec4 v) {
+                return vec4(sinh(v.x), cosh(v.x) * v.yzw);
             }
             """
 
