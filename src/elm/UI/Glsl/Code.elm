@@ -1235,7 +1235,7 @@ main3D suffixes =
                     if(front.x <= 0.0 && front.y >= 0.0) {
                         to = midpoint;
                         depth++;
-                        for(int j = 0; j < MAXDEPTH; j++) if(j == depth) path[j] = true;
+                        for(int j = 0; j < MAXDEPTH; j++) if(j == depth) { path[j] = true; break; }
                         if(back.x <= 0.0 && back.y >= 0.0) {
                             recover_depth = depth;
                             recover_from = from;
@@ -1244,7 +1244,7 @@ main3D suffixes =
                     } else if(back.x <= 0.0 && back.y >= 0.0) {
                         from = midpoint;
                         depth++;
-                        for(int j = 0; j < MAXDEPTH; j++) if(j == depth) path[j] = false;
+                        for(int j = 0; j < MAXDEPTH; j++) if(j == depth) { path[j] = false; break; }
                     } else if(recover_depth > 0) {
                         for(int j = MAXDEPTH - 1; j >= 0; j--) {
                             path[j] = false;
