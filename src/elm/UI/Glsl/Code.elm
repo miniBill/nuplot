@@ -1176,11 +1176,14 @@ main3D suffixes =
                     float light_distance = length(light - found);
                     vec3 light_direction = normalize(light - found);
                     bool in_light = true;
-                    vec3 offseted = found + 0.001 * normal;
-                    normal = -faceforward(normal, normal, light_direction);
+                    vec3 offseted = found + 0.001 * normalize(o - found);
+                    if(length(normal) == 0.0) {
+                        normal = normalize(o - found);
+                    }
                     if(0 == 1) { }
                     """ ++ innerLightTrace ++ """
-                    float l = in_light ? mix(0.4, 0.6, dot(normal, light_direction)) : 0.2;
+                    float dt = max(0.0, dot(normal, light_direction));
+                    float l = in_light ? mix(0.4, 0.5, dt) : 0.2;
 
                     vec3 px = mix(
                         hl2rgb(h, l),

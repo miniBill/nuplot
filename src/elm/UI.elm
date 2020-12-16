@@ -48,7 +48,7 @@ init flags =
 
         ex x =
             { input = x
-            , output = parseOrError x
+            , output = Empty
             }
 
         default =
