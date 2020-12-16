@@ -139,23 +139,6 @@ parseOrError input =
                 ParseError <| Expression.Parser.errorsToString input e
 
 
-toTyping : Output -> Output
-toTyping output =
-    Typing <|
-        case output of
-            Empty ->
-                Nothing
-
-            ParseError _ ->
-                Nothing
-
-            Typing e ->
-                e
-
-            Parsed e ->
-                Just e
-
-
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Browser.Events.onResize (\w _ -> Width w)

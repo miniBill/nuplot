@@ -101,9 +101,6 @@ statusLine pageWidth row =
         Empty ->
             none
 
-        Typing _ ->
-            el [ alignTop ] <| text "Typing..."
-
         ParseError e ->
             viewError e
 
@@ -265,10 +262,6 @@ outputBlock model row =
 
         ParseError _ ->
             none
-
-        Typing e ->
-            Maybe.map showExpr e
-                |> Maybe.withDefault none
 
         Parsed e ->
             Theme.column [ alignTop, width fill ]

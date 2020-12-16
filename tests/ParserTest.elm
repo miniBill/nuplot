@@ -281,7 +281,7 @@ tests =
     , ( "ddxsinx,x", dd (by [ x, sin_ x ]) x, "dd(x*sin(x), x)" )
     , ( "ddsin(x^2),x", dd (sin_ <| square x) x, "dd(sin(x²), x)" )
     , straight "ii(ln(a), a, b, c)" <| ii (ln_ a) a b c
-    , ("[x.5x;y.5y]plot(z=2exp(-x²-y²))",)
+    , ( "[x.5x;y.5y]plot(z=2exp(-x²-y²))", "" )
     ]
 
 

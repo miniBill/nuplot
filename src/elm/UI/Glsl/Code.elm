@@ -885,9 +885,6 @@ expressionToIntervalGlslPrec p expr =
             else
                 c
 
-        noninfix op c =
-            paren (p > 10) <| op ++ expressionToIntervalGlslPrec 11 c
-
         infixl_ n op l r =
             paren (p > n) <| expressionToIntervalGlslPrec n l ++ op ++ expressionToIntervalGlslPrec (n + 1) r
 
@@ -974,9 +971,6 @@ expressionToNormalGlslPrec p expr =
 
             else
                 c
-
-        noninfix op c =
-            paren (p > 10) <| op ++ expressionToNormalGlslPrec 11 c
 
         infixl_ n op l r =
             paren (p > n) <| expressionToNormalGlslPrec n l ++ op ++ expressionToNormalGlslPrec (n + 1) r

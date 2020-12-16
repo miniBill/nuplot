@@ -29,7 +29,6 @@ emptyRow =
 
 type Output
     = Empty
-    | Typing (Maybe Expression)
     | ParseError String
     | Parsed Expression
 
