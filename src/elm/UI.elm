@@ -1,6 +1,5 @@
 port module UI exposing (main)
 
-import Bounce
 import Browser
 import Browser.Dom
 import Browser.Events
@@ -50,7 +49,6 @@ init flags =
         ex x =
             { input = x
             , output = parseOrError x
-            , bounce = Bounce.init
             }
 
         default =
@@ -98,53 +96,30 @@ update msg model =
         Input { row, input } ->
             let
                 rows_ =
-                    model.rows
-                        |> List.updateAt row
-                            (\{ bounce, output } ->
-                                { input = input
-                                , output = toTyping output
-                                , bounce = Bounce.push bounce
-                                }
-                            )
+                    List.updateAt row
+                        (\r -> { r | input = input })
+                        model.rows
             in
             ( { model | rows = rows_ }
-            , Bounce.delay 1000 (BounceMsg row)
+            , rows_
+                |> List.indexedMap (\i r -> save { key = String.fromInt i, value = r.input })
+                |> Cmd.batch
             )
 
-        BounceMsg row ->
-            case List.getAt row model.rows of
-                Nothing ->
-                    ( model
-                    , Cmd.none
-                    )
-
-                Just { input, bounce, output } ->
-                    let
-                        newBounce =
-                            Bounce.pop bounce
-
-                        rows_ =
-                            model.rows
-                                |> List.setAt row
-                                    { input = input
-                                    , bounce = newBounce
-                                    , output =
-                                        if Bounce.steady newBounce then
-                                            parseOrError input
-
-                                        else
-                                            toTyping output
-                                    }
-                    in
-                    ( { model
-                        | rows =
-                            List.filterNot (\r -> String.isEmpty r.input && Bounce.steady r.bounce) rows_
-                                ++ [ Model.emptyRow ]
-                      }
-                    , rows_
-                        |> List.indexedMap (\i r -> save { key = String.fromInt i, value = r.input })
-                        |> Cmd.batch
-                    )
+        Calculate row ->
+            let
+                rows_ =
+                    List.updateAt row
+                        (\r -> { r | output = parseOrError r.input })
+                        model.rows
+            in
+            ( { model
+                | rows =
+                    List.filterNot (String.isEmpty << .input) rows_
+                        ++ [ Model.emptyRow ]
+              }
+            , Cmd.none
+            )
 
         Width width ->
             ( { model | pageWidth = width }, Cmd.none )

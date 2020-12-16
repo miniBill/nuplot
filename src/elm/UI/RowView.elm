@@ -2,7 +2,7 @@ module UI.RowView exposing (view)
 
 import Complex
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, el, fill, height, none, paddingXY, px, rgb, row, shrink, spacing, text, width)
+import Element exposing (Attribute, Element, alignBottom, alignTop, centerX, el, fill, height, htmlAttribute, none, paddingXY, px, rgb, row, shrink, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -11,6 +11,8 @@ import Expression.NumericRange
 import Expression.Value
 import Html
 import Html.Attributes
+import Html.Events
+import Json.Decode as Decode
 import List.Extra as List
 import Model exposing (Msg(..), Output(..), Row)
 import UI.Glsl exposing (getGlsl)
@@ -65,7 +67,7 @@ inputLine : Int -> Row -> Element Msg
 inputLine index row =
     Theme.row [ width fill ]
         [ text <| "In[" ++ String.fromInt index ++ "]"
-        , Input.text [ width <| Element.minimum 600 fill ]
+        , Input.text [ width <| Element.minimum 600 fill, onEnter <| Calculate index ]
             { label = Input.labelHidden "Input"
             , onChange =
                 \newValue ->
@@ -76,7 +78,26 @@ inputLine index row =
             , placeholder = Nothing
             , text = row.input
             }
+        , Input.button [ htmlAttribute <| Html.Attributes.title "Press Enter to calculate" ]
+            { onPress = Just <| Calculate index
+            , label = text "⏎"
+            }
         ]
+
+
+onEnter : msg -> Attribute msg
+onEnter msg =
+    Decode.field "key" Decode.string
+        |> Decode.andThen
+            (\s ->
+                if s == "Enter" then
+                    Decode.succeed msg
+
+                else
+                    Decode.fail "ignored"
+            )
+        |> Html.Events.on "keyup"
+        |> htmlAttribute
 
 
 statusLine : Int -> Row -> Element msg
