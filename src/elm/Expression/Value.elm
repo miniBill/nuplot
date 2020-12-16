@@ -207,6 +207,9 @@ applyValue context name args =
         KnownFunction Abs ->
             unaryFunctionValue context args Abs (Complex.fromReal << Complex.abs)
 
+        KnownFunction Sign ->
+            unaryFunctionValue context args Sign Complex.sign
+
         KnownFunction Log10 ->
             unaryFunctionValue context args Log10 <| \v -> Complex.div v (Complex.ln <| Complex.fromReal 10)
 

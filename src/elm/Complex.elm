@@ -1,4 +1,4 @@
-module Complex exposing (Complex(..), abs, acos, arg, asin, atan, atan2, by, ceiling, cos, cosh, div, exp, floor, fromReal, i, im, ln, minus, negate, one, plus, power, re, round, sin, sinh, sqrt, tan, tanh, toString, zero)
+module Complex exposing (Complex(..), abs, acos, arg, asin, atan, atan2, by, ceiling, cos, cosh, div, exp, floor, fromReal, i, im, ln, minus, negate, one, plus, power, re, round, sign, sin, sinh, sqrt, tan, tanh, toString, zero)
 
 
 type Complex
@@ -75,6 +75,22 @@ power ((Complex br bi) as b) ((Complex zr zi) as z) =
 abs : Complex -> Float
 abs (Complex x y) =
     Basics.sqrt (x * x + y * y)
+
+
+sign : Complex -> Complex
+sign (Complex x y) =
+    let
+        sgn q =
+            if q > 0 then
+                1
+
+            else if q < 0 then
+                -1
+
+            else
+                0
+    in
+    Complex (sgn x) (sgn y)
 
 
 arg : Complex -> Float

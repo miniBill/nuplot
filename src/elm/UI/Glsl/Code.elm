@@ -292,6 +292,13 @@ straightFunctionToGlsl name =
             }
             """
 
+        Sign22 ->
+            """
+            vec2 csign(vec2 z) {
+                return vec2(sign(z.x), sign(z.y));
+            }
+            """
+
         Sqrt22 ->
             """
             vec2 csqrt(vec2 z) {
@@ -428,6 +435,17 @@ intervalFunctionToGlsl name =
             }
             """
 
+        Sign22 ->
+            """
+            vec2 isign(vec2 z) {
+                return sign(z);
+            }
+
+            vec4 gsign(vec4 v) {
+                return vec4(sign(v.x), 0.0, 0.0, 1.0);
+            }
+            """
+
         Asin22 ->
             """
             TODO Asin22
@@ -527,6 +545,10 @@ intervalFunctionToGlsl name =
                 if(c.x >= 1.0)
                     return t;
                 return vec2(min(t.x, f.x), max(t.y, f.y));
+            }
+
+            vec4 gpw(vec4 c, vec4 t, vec4 f) {
+                return c.x > 0.0 ? t : f;
             }
             """
 
@@ -994,28 +1016,7 @@ expressionToNormalGlslPrec p expr =
             infixl_ 6 " + " l r
 
         PRel op l r ->
-            let
-                name =
-                    case op of
-                        "<" ->
-                            "ilt"
-
-                        "<=" ->
-                            "ileq"
-
-                        "=" ->
-                            "ieq"
-
-                        ">=" ->
-                            "igeq"
-
-                        ">" ->
-                            "igt"
-
-                        _ ->
-                            "iuknownrelop"
-            in
-            "gnum((" ++ expressionToGlslPrec 10 l ++ op ++ expressionToGlslPrec 10 r ++ ") ? 1.0 : 0.0)"
+            "gnum(((" ++ expressionToNormalGlslPrec 10 l ++ ").x" ++ op ++ "(" ++ expressionToNormalGlslPrec 10 r ++ ").x) ? 1.0 : 0.0)"
 
         PBy l r ->
             apply "gby" [ l, r ]

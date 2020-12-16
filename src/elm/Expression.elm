@@ -89,6 +89,7 @@ type KnownFunction
     | Ln
     | Log10
     | Exp
+    | Sign
       -- Complex
     | Re
     | Im
@@ -617,6 +618,7 @@ unaryFunctions =
 
         power =
             [ ( "abs", Abs )
+            , ( "sign", Sign )
             , ( "sqrt", Sqrt )
             , ( "ln", Ln )
             , ( "log10", Log10 )
@@ -765,6 +767,9 @@ functionNameToString name =
 
         KnownFunction Abs ->
             "abs"
+
+        KnownFunction Sign ->
+            "sign"
 
         KnownFunction Sqrt ->
             "sqrt"

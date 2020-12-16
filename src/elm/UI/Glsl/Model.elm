@@ -20,6 +20,7 @@ type GlslFunction
     | Pw22
     | Re22
     | Round22
+    | Sign22
     | Sin22
     | Sinh11
     | Sinh22

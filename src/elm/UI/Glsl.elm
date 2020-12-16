@@ -202,8 +202,8 @@ expressionToRequirements e =
             else
                 [ RequireOperation GlslPower, RequireOperation GlslMultiplication, RequireFunction Square22 ]
 
-        BinaryOperation Power _ (Integer _) ->
-            [ RequireOperation GlslPower, RequireOperation GlslMultiplication, RequireFunction Square22 ]
+        BinaryOperation Power b (Integer _) ->
+            [ RequireOperation GlslPower, RequireOperation GlslMultiplication, RequireFunction Square22 ] ++ expressionToRequirements b
 
         BinaryOperation op l r ->
             let
@@ -274,6 +274,9 @@ toGlslFunction name =
 
         Abs ->
             Just Abs22
+
+        Sign ->
+            Just Sign22
 
         Sqrt ->
             Just Sqrt22
@@ -361,6 +364,9 @@ dependenciesOf req =
             [ RequireFunction Exp22, RequireOperation GlslDivision ]
 
         RequireFunction Abs22 ->
+            []
+
+        RequireFunction Sign22 ->
             []
 
         RequireFunction Sqrt22 ->
