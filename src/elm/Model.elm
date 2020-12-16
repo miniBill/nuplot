@@ -35,6 +35,6 @@ type Output
 
 
 type Msg
-    = Input { row : Int, input : String }
+    = Input Int String
     | Width Int
     | Calculate Int

@@ -93,7 +93,7 @@ view model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Input { row, input } ->
+        Input row input ->
             let
                 rows_ =
                     List.updateAt row

@@ -69,12 +69,7 @@ inputLine index row =
         [ text <| "In[" ++ String.fromInt index ++ "]"
         , Input.text [ width <| Element.minimum 600 fill, onEnter <| Calculate index ]
             { label = Input.labelHidden "Input"
-            , onChange =
-                \newValue ->
-                    Input
-                        { row = index
-                        , input = newValue
-                        }
+            , onChange = Input index
             , placeholder = Nothing
             , text = row.input
             }
