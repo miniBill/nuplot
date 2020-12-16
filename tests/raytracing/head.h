@@ -20,6 +20,10 @@ struct vec2 {
         return vec2(l.x - r.x, l.y - r.y);
     }
 
+    friend vec2 operator - (vec2 r) {
+        return vec2(-r.x, -r.y);
+    }
+
     friend vec2 operator * (double d, vec2 r) {
         return vec2(d * r.x, d * r.y);
     }
@@ -258,8 +262,14 @@ bool trace;
 //notrace22(ileq)
 //notrace22(ilt)
 //notrace222(ipw)
+//notrace3(normal_0)
+//notrace3(normal_1)
+//trace33_2(interval_0)
+//trace33_2(interval_1)
 notrace2(cexp)
 notrace2(cln)
+notrace2(icos)
+notrace2(icosh)
 notrace2(iexp)
 notrace2(iln)
 notrace2(ineg)
@@ -270,16 +280,24 @@ notrace22(by)
 notrace22(iby)
 notrace22(ipow)
 notrace22(merge)
-trace33_2(interval_0)
-trace33_2(interval_1)
-trace3(normal_0)
-trace3(normal_1)
+notrace3(normal)
+trace33_2(interval)
 
 vec2 sin_(vec2 input) {
     return vec2(sin(input.x), sin(input.y));
 }
 
-bool bisect_0_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
+bool bisect_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
+bool bisect(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
+    bool res = bisect_(l, r, max_distance, found, n);
+    vec3 to = l + max_distance * r;
+    if(trace)
+        fprintf(debugFile, "bisect((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf) [%lf]\n\n",
+            l.x, l.y, l.z, to.x, to.y, to.z, found.x, found.y, found.z, length(found - l));
+    return res;
+}
+
+/* bool bisect_0_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
 bool bisect_0(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
     bool res = bisect_0_(l, r, max_distance, found, n);
     vec3 to = l + max_distance * r;
@@ -297,7 +315,7 @@ bool bisect_1(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
         fprintf(debugFile, "bisect_1((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf) [%lf]\n\n",
             l.x, l.y, l.z, to.x, to.y, to.z, found.x, found.y, found.z, length(found - l));
     return res;
-}
+} */
 
 vec4 vec4_(vec3 l, double r) {
     return vec4(l, r);

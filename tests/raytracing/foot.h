@@ -8,8 +8,8 @@ void dput(double d) {
 
 int main () {
     u_viewportWidth = 2 * M_PI;
-    u_canvasWidth = 500;
-    u_canvasHeight = 375;
+    u_canvasWidth = 400;
+    u_canvasHeight = 300;
     u_zoomCenter = vec2(0, 0);
 
     int traceYFrom = 287;
@@ -17,7 +17,7 @@ int main () {
     int traceXFrom = 284;
     int traceXTo = 286;
 
-    bool onlyTraced = true;
+    bool onlyTraced = false;
     int xfrom = onlyTraced ? traceXFrom : 0;
     int xto = onlyTraced ? traceXTo : u_canvasWidth;
     int yfrom = onlyTraced ? traceYFrom : 0;
