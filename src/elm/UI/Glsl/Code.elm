@@ -781,6 +781,7 @@ epsilon =
     0.00001
 
 
+wordWrap : String -> String
 wordWrap =
     let
         step e ( l, acc ) =
@@ -1037,7 +1038,15 @@ expressionToNormalGlslPrec p expr =
             infixl_ 6 " + " l r
 
         PRel op l r ->
-            "gnum(((" ++ expressionToNormalGlslPrec 10 l ++ ").x" ++ op ++ "(" ++ expressionToNormalGlslPrec 10 r ++ ").x) ? 1.0 : 0.0)"
+            let
+                op_ =
+                    if op == "=" then
+                        "=="
+
+                    else
+                        op
+            in
+            "gnum(((" ++ expressionToNormalGlslPrec 10 l ++ ").x" ++ op_ ++ "(" ++ expressionToNormalGlslPrec 10 r ++ ").x) ? 1.0 : 0.0)"
 
         PBy l r ->
             apply "gby" [ l, r ]
