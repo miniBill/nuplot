@@ -39,10 +39,6 @@ export class NuPlot extends HTMLElement {
 
     this.label = this.wrapper.appendChild(document.createElement("div"));
 
-    var checkboxLabel = this.wrapper.appendChild(
-      document.createElement("label")
-    );
-
     this.canvas = this.wrapper.appendChild(document.createElement("canvas"));
     this.initCanvas();
 
