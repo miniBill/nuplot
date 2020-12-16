@@ -468,7 +468,7 @@ intervalFunctionToGlsl name =
             }
 
             vec4 gceiling(vec4 z) {
-                return vec4(z.x, 1.0, 1.0, -1.0);
+                return vec4(ceil(z.x), 1.0, 1.0, -1.0);
             }
             """
 
@@ -513,7 +513,13 @@ intervalFunctionToGlsl name =
 
         Floor22 ->
             """
-            TODO Floor22
+            vec2 ifloor(vec2 z) {
+                return floor(z);
+            }
+
+            vec4 gfloor(vec4 z) {
+                return vec4(floor(z.x), 1.0, 1.0, -1.0);
+            }
             """
 
         Im22 ->
