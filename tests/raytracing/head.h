@@ -4,7 +4,7 @@
 #define main() main_()
 #define float double // Yes, really
 #define abs fabs
-#define MAXDEPTH 400
+#define MAX_ITERATIONS 400
 
 struct vec2 {
     double x;

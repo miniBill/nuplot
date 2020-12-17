@@ -330,7 +330,7 @@ export class NuPlot extends HTMLElement {
   sourceAndCompile(shader: WebGLShader, built: string) {
     if (!this.gl) return;
 
-    built = `#define MAXDEPTH ${this.currDepth.toString()}
+    built = `#define MAX_ITERATIONS ${this.currDepth.toString()}
 ${built}`;
 
     this.gl.shaderSource(shader, built);

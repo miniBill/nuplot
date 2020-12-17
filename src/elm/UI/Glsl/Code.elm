@@ -1229,17 +1229,17 @@ main3D suffixes =
                 vec3 from = o;
                 vec3 to = o + max_distance * d;
                 float threshold = 0.01;
-                bool path[MAXDEPTH];
                 int depth = 0;
-                int recover_depth = 0;
-                vec3 recover_from = vec3(0);
-                vec3 recover_to = vec3(0);
-                for(int it = 0; it < MAXDEPTH; it++) {
+                //ivec2 choices = ivec2(0,0);
+                int choices = 0;
+                for(int it = 0; it < MAX_ITERATIONS; it++) {
+                    if(depth >= MAX_DEPTH) return false;
                     vec3 midpoint = mix(from, to, 0.5);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
-                    if((front.y - front.x < threshold || back.y - back.x < threshold)
-                        && length(from - to) < pow(threshold, 3.0) * max_distance) {
+                    if(depth >= MAX_DEPTH ||
+                        ((front.y - front.x < threshold || back.y - back.x < threshold)
+                        && length(from - to) < pow(threshold, 3.0) * max_distance)) {
                             found = midpoint;
                             n = normal""" ++ suffix ++ """(midpoint);
                             return true;
@@ -1247,39 +1247,25 @@ main3D suffixes =
                     if(front.x <= 0.0 && front.y >= 0.0) {
                         to = midpoint;
                         depth++;
-                        for(int j = 0; j < MAXDEPTH; j++) if(j == depth) { path[j] = true; break; }
-                        if(back.x <= 0.0 && back.y >= 0.0) {
-                            recover_depth = depth;
-                            recover_from = from;
-                            recover_to = to;
-                        }
+                        choices = int64_shl(choices);
                     } else if(back.x <= 0.0 && back.y >= 0.0) {
                         from = midpoint;
                         depth++;
-                        for(int j = 0; j < MAXDEPTH; j++) if(j == depth) { path[j] = false; break; }
-                    } else if(recover_depth > 0) {
-                        for(int j = MAXDEPTH - 1; j >= 0; j--) {
-                            path[j] = false;
-                            if(j == recover_depth)
-                                break;
-                        }
-                        from = recover_from;
-                        to = recover_to;
-                        depth = recover_depth;
-                        recover_depth = -1;
+                        choices = int64_shl_plus_one(choices);
                     } else {
-                        for(int j = MAXDEPTH - 1; j > 0; j--) {
+                        for(int j = MAX_DEPTH - 1; j > 0; j--) {
                             if(j > depth)
                                 continue;
                             depth--;
-                            if(path[j]) {
+                            choices = int64_shr(choices);
+                            if(int64_is_even(choices)) {
                                 midpoint = to;
                                 to = to + (to - from);
                                 vec2 back = interval""" ++ suffix ++ """(midpoint, to);
                                 if(back.x <= 0.0 && back.y >= 0.0) {
                                     from = midpoint;
                                     depth++;
-                                    path[j] = false;
+                                    choices = int64_shl_plus_one(choices);
                                     break;
                                 }
                             } else {
