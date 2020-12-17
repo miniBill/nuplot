@@ -1156,8 +1156,13 @@ toSrc3D suffix e =
 main3D : List String -> String
 main3D suffixes =
     let
+        maxDepth =
+            """
+            #define MAX_DEPTH 30
+            """
+
         head =
-            String.join "\n" <| List.map suffixToBisect suffixes ++ [ raytrace ]
+            String.join "\n" <| [ maxDepth ] ++ List.map suffixToBisect suffixes ++ [ raytrace ]
 
         colorCoeff =
             String.fromFloat (1.19 - 0.2 * toFloat (List.length suffixes))
@@ -1228,18 +1233,16 @@ main3D suffixes =
             bool bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found, out vec3 n) {
                 vec3 from = o;
                 vec3 to = o + max_distance * d;
-                float threshold = 0.01;
+                float ithreshold = 0.000001 * max_distance;
                 int depth = 0;
-                //ivec2 choices = ivec2(0,0);
                 int choices = 0;
                 for(int it = 0; it < MAX_ITERATIONS; it++) {
-                    if(depth >= MAX_DEPTH) return false;
                     vec3 midpoint = mix(from, to, 0.5);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
                     if(depth >= MAX_DEPTH ||
-                        ((front.y - front.x < threshold || back.y - back.x < threshold)
-                        && length(from - to) < pow(threshold, 3.0) * max_distance)) {
+                        (front.y - front.x < ithreshold || back.y - back.x < ithreshold)
+                        ) {
                             found = midpoint;
                             n = normal""" ++ suffix ++ """(midpoint);
                             return true;
@@ -1247,25 +1250,25 @@ main3D suffixes =
                     if(front.x <= 0.0 && front.y >= 0.0) {
                         to = midpoint;
                         depth++;
-                        choices = int64_shl(choices);
+                        choices *= 2;
                     } else if(back.x <= 0.0 && back.y >= 0.0) {
                         from = midpoint;
                         depth++;
-                        choices = int64_shl_plus_one(choices);
+                        choices = choices * 2 + 1;
                     } else {
                         for(int j = MAX_DEPTH - 1; j > 0; j--) {
                             if(j > depth)
                                 continue;
                             depth--;
-                            choices = int64_shr(choices);
-                            if(int64_is_even(choices)) {
+                            choices /= 2;
+                            if(choices / 2 * 2 == choices) {
                                 midpoint = to;
                                 to = to + (to - from);
                                 vec2 back = interval""" ++ suffix ++ """(midpoint, to);
                                 if(back.x <= 0.0 && back.y >= 0.0) {
                                     from = midpoint;
                                     depth++;
-                                    choices = int64_shl_plus_one(choices);
+                                    choices = choices * 2 + 1;
                                     break;
                                 }
                             } else {
@@ -1302,7 +1305,7 @@ main3D suffixes =
             vec4 pixel3 () {
                 vec3 eye = vec3(0, u_viewportWidth, -1.5*u_viewportWidth);
                 vec3 light = vec3(-0.5*u_viewportWidth, 2.0 * u_viewportWidth, 0);
-                float focal_dist = 1.0;
+                float focal_dist = u_viewportWidth / radians(180.0);
 
                 vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
                 vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
@@ -1315,7 +1318,7 @@ main3D suffixes =
                 vec3 canvas_point = canvas_center + vec3(uv.x, uv.y * to_center.z, -uv.y * to_center.y);
 
                 vec3 ray_direction = normalize(canvas_point - eye);
-                float max_distance = 100.0 * length(eye);
+                float max_distance = 40.0 * length(eye);
                 return raytrace(canvas_point, ray_direction, max_distance, light);
             }
         """

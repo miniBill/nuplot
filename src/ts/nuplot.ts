@@ -12,9 +12,9 @@ export class NuPlot extends HTMLElement {
 
   whiteLines = 6;
   completelyReal = 0;
-  minDepth = 25;
-  currDepth = 25;
-  maxDepth = 400;
+  minIterations = 25;
+  currIterations = 25;
+  maxIterations = 200;
 
   /* these hold the state of zoom operation */
   zoom_center!: number[];
@@ -214,26 +214,28 @@ export class NuPlot extends HTMLElement {
         this.zoom_center[1] = newMiny + viewport_height / 2;
       }
 
-      if (this.currDepth == this.minDepth) {
+      if (this.currIterations == this.minIterations) {
         this.doRender();
       } else {
-        this.currDepth = this.minDepth;
+        this.currIterations = this.minIterations;
         this.reloadFragmentShader(this.buildFragmentShader(this.src));
       }
       this.rafRenderFrame();
       this.wasZooming = true;
-    } else if (this.currDepth < this.maxDepth) {
+    } else if (this.currIterations < this.maxIterations) {
       this.doRender();
       if (!this.wasZooming) {
-        this.currDepth *= 2;
-        this.currDepth = Math.min(this.currDepth, this.maxDepth);
+        this.currIterations *= 2;
+        this.currIterations = Math.min(this.currIterations, this.maxIterations);
         this.reloadFragmentShader(this.buildFragmentShader(this.src));
       }
-      this.delayedRenderFrame(this.currDepth == this.minDepth ? 1000 : 100);
+      this.delayedRenderFrame(
+        this.currIterations == this.minIterations ? 1000 : 100
+      );
       this.wasZooming = false;
-    } else if (this.currDepth >= this.maxDepth) {
+    } else if (this.currIterations >= this.maxIterations) {
       this.doRender();
-      this.currDepth = this.minDepth;
+      this.currIterations = this.minIterations;
       this.reloadFragmentShader(this.buildFragmentShader(this.src));
       this.wasZooming = false;
     } else {
@@ -330,7 +332,7 @@ export class NuPlot extends HTMLElement {
   sourceAndCompile(shader: WebGLShader, built: string) {
     if (!this.gl) return;
 
-    built = `#define MAX_ITERATIONS ${this.currDepth.toString()}
+    built = `#define MAX_ITERATIONS ${this.currIterations.toString()}
 ${built}`;
 
     this.gl.shaderSource(shader, built);
