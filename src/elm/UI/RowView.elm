@@ -6,7 +6,7 @@ import Element exposing (Attribute, Element, alignBottom, alignTop, centerX, el,
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..))
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), genericAsMatrix)
 import Expression.NumericRange
 import Expression.Value
 import Html
@@ -19,8 +19,8 @@ import UI.Glsl exposing (getGlsl)
 import UI.Theme as Theme
 
 
-draw : { a | pageWidth : Int } -> Int -> Graph -> Element msg
-draw { pageWidth } coeff graph =
+draw : { a | pageWidth : Int, pageHeight : Int } -> { wdiv : Int, hdiv : Int } -> Graph -> Element msg
+draw { pageWidth, pageHeight } { wdiv, hdiv } graph =
     let
         isCompletelyReal =
             case graph of
@@ -35,31 +35,31 @@ draw { pageWidth } coeff graph =
                     "0"
 
         imageWidth =
-            pageWidth - (1 + coeff) * 3 * Theme.spacing
+            pageWidth - (1 + wdiv) * 3 * Theme.spacing
 
         imageHeight =
-            imageWidth * 3 // 4
+            pageHeight - (6 + hdiv) * 3 * Theme.spacing
     in
     Element.html <|
         Html.node "nu-plot"
             [ Html.Attributes.attribute "expr-src" <| getGlsl graph
-            , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // coeff
-            , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // coeff
+            , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
+            , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
             , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
             , Html.Attributes.attribute "completely-real" isCompletelyReal
             ]
             []
 
 
-view : Int -> Int -> Row -> Element Msg
-view pageWidth index row =
+view : { width : Int, height : Int } -> Int -> Row -> Element Msg
+view { width, height } index row =
     Theme.column
-        [ width fill
+        [ Element.width fill
         , alignTop
         ]
         [ inputLine index row
-        , outputBlock { pageWidth = pageWidth } row
-        , statusLine pageWidth row
+        , outputBlock { pageWidth = width, pageHeight = height } row
+        , statusLine width row
         ]
 
 
@@ -179,13 +179,13 @@ bracketed l r blocks =
     row [ spacing 1, paddingXY 2 0 ] [ l, grid, r ]
 
 
-outputBlock : { a | pageWidth : Int } -> Row -> Element msg
+outputBlock : { a | pageHeight : Int, pageWidth : Int } -> Row -> Element msg
 outputBlock model row =
     let
         showExpr e =
             e
                 |> Expression.Value.value Dict.empty
-                |> viewValue 1
+                |> viewValue { wdiv = 1, hdiv = 1 }
 
         asExpression v =
             case v of
@@ -204,7 +204,7 @@ outputBlock model row =
                 GraphValue _ ->
                     Nothing
 
-        viewValue inList v =
+        viewValue coeffs v =
             case asExpression v of
                 Just ex ->
                     viewExpression model.pageWidth ex
@@ -215,7 +215,7 @@ outputBlock model row =
                             viewExpression model.pageWidth s
 
                         GraphValue g ->
-                            el [ centerX ] <| draw model inList g
+                            el [ centerX ] <| draw model coeffs g
 
                         ComplexValue c ->
                             text <| Complex.toString c
@@ -224,37 +224,39 @@ outputBlock model row =
                             viewError err
 
                         ListValue ls ->
-                            let
-                                asList l =
-                                    case l of
-                                        ListValue u ->
-                                            Just u
+                            case
+                                v
+                                    |> genericAsMatrix
+                                        (\w ->
+                                            case w of
+                                                ListValue us ->
+                                                    Just us
 
-                                        _ ->
-                                            Nothing
+                                                _ ->
+                                                    Nothing
+                                        )
+                            of
+                                Just m ->
+                                    roundBracketed <|
+                                        List.map
+                                            (List.map
+                                                (viewValue
+                                                    { wdiv = coeffs.wdiv * Maybe.withDefault 1 (Maybe.map List.length <| List.head m)
+                                                    , hdiv = coeffs.hdiv * List.length m
+                                                    }
+                                                )
+                                            )
+                                            m
 
-                                childLists =
-                                    List.filterMap asList ls
-
-                                block =
-                                    if List.length ls == List.length childLists then
-                                        let
-                                            width =
-                                                childLists
-                                                    |> List.map List.length
-                                                    |> List.maximum
-                                                    |> Maybe.withDefault 0
-                                        in
-                                        roundBracketed <| List.map (List.map (viewValue <| inList * width)) childLists
-
-                                    else
-                                        let
-                                            width =
-                                                List.length ls
-                                        in
-                                        roundBracketed [ List.intersperse (label ", ") <| List.map (viewValue <| inList * width) ls ]
-                            in
-                            block
+                                Nothing ->
+                                    roundBracketed
+                                        [ List.intersperse (label ", ") <|
+                                            List.map
+                                                (viewValue
+                                                    { coeffs | wdiv = coeffs.wdiv * List.length ls }
+                                                )
+                                                ls
+                                        ]
     in
     case row.output of
         Empty ->

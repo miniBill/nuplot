@@ -52,14 +52,19 @@ init flags =
             }
 
         default =
-            [ "{{plotsinx, plot(x<y)}, {plot(x²+y²=3), [zx+iy]plotexp(1/z)},{plot(x²+y²+z²=3),plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}}"
+            [ "{{plotsinx, plot(x<y), plot(x²+y²=3)}, {[zx+iy]plotexp(1/z), plot(x²+y²+z²=3), plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}}"
             , "[zx+iy]{plot(z³-1),plotabs(z³-1),plotarg(z³-1)}"
             , "plot({z=sin(x²+y²),x²+y²+(z-2)² = 3}"
             ]
 
         measure =
             Browser.Dom.getViewport
-                |> Task.map (.viewport >> .width >> floor)
+                |> Task.map
+                    (\{ viewport } ->
+                        { width = floor viewport.width
+                        , height = floor viewport.height
+                        }
+                    )
     in
     ( { rows =
             parsed
@@ -74,9 +79,9 @@ init flags =
                    )
                 |> (\l -> l ++ [ "" ])
                 |> List.map ex
-      , pageWidth = 1024
+      , size = { width = 1024, height = 768 }
       }
-    , Task.perform Width measure
+    , Task.perform Resized measure
     )
 
 
@@ -87,7 +92,7 @@ view model =
         , width fill
         ]
     <|
-        List.indexedMap (\index row -> Element.Lazy.lazy3 UI.RowView.view model.pageWidth index row) model.rows
+        List.indexedMap (\index row -> Element.Lazy.lazy3 UI.RowView.view model.size index row) model.rows
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -121,8 +126,8 @@ update msg model =
             , Cmd.none
             )
 
-        Width width ->
-            ( { model | pageWidth = width }, Cmd.none )
+        Resized size ->
+            ( { model | size = size }, Cmd.none )
 
 
 parseOrError : String -> Output
@@ -141,4 +146,4 @@ parseOrError input =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Browser.Events.onResize (\w _ -> Width w)
+    Browser.Events.onResize (\w h -> Resized { width = w, height = h })

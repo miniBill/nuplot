@@ -1170,9 +1170,6 @@ main3D suffixes =
         innerTrace =
             String.join "\n" (List.indexedMap suffixToRay suffixes)
 
-        innerLightTrace =
-            String.join "\n" (List.map suffixToRayLight suffixes)
-
         raytrace =
             """
             vec4 raytrace(vec3 o, vec3 d, float max_distance, vec3 light) {
@@ -1188,12 +1185,12 @@ main3D suffixes =
                     float fy = found.y * 0.5;
 
                     float light_distance = length(light - found);
-                    vec3 light_direction = normalize(light - found);
                     bool in_light = true;
                     vec3 offseted = found + 0.001 * normalize(o - found);
                     if(length(normal) == 0.0) {
                         normal = normalize(o - found);
                     }
+                    vec3 light_direction = normalize(light - offseted);
                     if(0 == 1) { }
                     """ ++ innerLightTrace ++ """
                     float dt = max(0.0, dot(normal, light_direction));
@@ -1210,6 +1207,9 @@ main3D suffixes =
                 }
             }
             """
+
+        innerLightTrace =
+            String.join "\n" (List.map suffixToRayLight suffixes)
 
         suffixToRay i suffix =
             """
@@ -1305,7 +1305,6 @@ main3D suffixes =
             vec4 pixel3 () {
                 vec3 eye = vec3(0, u_viewportWidth, -1.5*u_viewportWidth);
                 vec3 light = vec3(-0.5*u_viewportWidth, 2.0 * u_viewportWidth, 0);
-                float focal_dist = u_viewportWidth / radians(180.0);
 
                 vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
                 vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;

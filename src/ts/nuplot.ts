@@ -12,8 +12,8 @@ export class NuPlot extends HTMLElement {
 
   whiteLines = 6;
   completelyReal = 0;
-  minIterations = 25;
-  currIterations = 25;
+  minIterations = process.env.NODE_ENV === "development" ? 400 : 25;
+  currIterations = 400;
   maxIterations = 400;
 
   /* these hold the state of zoom operation */

@@ -15,6 +15,7 @@ module Expression exposing
     , filterContext
     , fullSubstitute
     , functionNameToString
+    , genericAsMatrix
     , genericAsSquareMatrix
     , genericDeterminant
     , genericMatrixAddition

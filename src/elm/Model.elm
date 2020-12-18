@@ -10,7 +10,13 @@ type alias Flags =
 
 type alias Model =
     { rows : List Row
-    , pageWidth : Int
+    , size : Size
+    }
+
+
+type alias Size =
+    { width : Int
+    , height : Int
     }
 
 
@@ -35,5 +41,5 @@ type Output
 
 type Msg
     = Input Int String
-    | Width Int
     | Calculate Int
+    | Resized Size
