@@ -69,7 +69,8 @@ export class NuPlot extends HTMLElement {
     this.program = this.gl.createProgram();
 
     if (this.program == null) {
-      console.error("invalid program");
+      if (process.env.NODE_ENV === "development")
+        console.error("invalid program");
       return;
     }
 
@@ -130,7 +131,8 @@ export class NuPlot extends HTMLElement {
     const shader = this.gl.createShader(type);
 
     if (shader == null) {
-      console.error("invalid shader");
+      if (process.env.NODE_ENV === "development")
+        console.error("invalid shader");
       return null;
     }
 
@@ -345,18 +347,25 @@ ${built}`;
     this.label.innerHTML = "";
 
     if (!compiled) {
-      var preNode = document.createElement("pre");
-      preNode.style.whiteSpace = "pre-wrap";
-      preNode.innerText = `Error compiling shader, log:
+      if (process.env.NODE_ENV === "development") {
+        var preNode = document.createElement("pre");
+        preNode.style.whiteSpace = "pre-wrap";
+        preNode.innerText = `Error compiling shader, log:
 
-${this.gl.getShaderInfoLog(shader)}
+  ${this.gl.getShaderInfoLog(shader)}
 
-Source:
+  Source:
 
-${NuPlot.withLines(built)}`;
-      this.label.appendChild(preNode);
-      console.error("Error compiling shader, source:\n", built);
-      console.error("Log:\n", this.gl.getShaderInfoLog(shader));
+  ${NuPlot.withLines(built)}`;
+        this.label.appendChild(preNode);
+        console.error("Error compiling shader, source:\n", built);
+        console.error("Log:\n", this.gl.getShaderInfoLog(shader));
+      } else {
+        var errorNode = document.createElement("div");
+        errorNode.innerText =
+          "Error creating graph. Try contacting the author.";
+        this.label.appendChild(errorNode);
+      }
       return null;
     }
     return compiled;
