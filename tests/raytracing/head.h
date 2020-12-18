@@ -266,19 +266,20 @@ bool trace;
 //trace33_2(interval_0)
 //trace33_2(interval_1)
 notrace2(cexp)
+notrace2(iceiling)
 notrace2(cln)
 //notrace2(icos)
 //notrace2(icosh)
 notrace2(iexp)
 notrace2(iln)
 notrace2(ineg)
-//notrace2(isin)
+notrace2(isin)
 notrace2(isquare)
 notrace2(sin)
 notrace22(by)
 notrace22(iby)
 notrace22(ipow)
-//notrace22(merge)
+notrace22(merge)
 notrace3(normal)
 trace33_2(interval)
 
@@ -286,12 +287,16 @@ vec2 sin_(vec2 input) {
     return vec2(sin(input.x), sin(input.y));
 }
 
+vec2 ceil(vec2 input) {
+    return vec2(ceil(input.x), ceil(input.y));
+}
+
 bool bisect_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
 bool bisect(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
     bool res = bisect_(l, r, max_distance, found, n);
     vec3 to = l + max_distance * r;
     if(trace)
-        fprintf(debugFile, "bisect((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf) [%lf]\n\n",
+        fprintf(debugFile, "bisect((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf) [found - eye = %lf]\n\n",
             l.x, l.y, l.z, to.x, to.y, to.z, found.x, found.y, found.z, length(found - l));
     return res;
 }

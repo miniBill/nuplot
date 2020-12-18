@@ -1,7 +1,7 @@
 CFLAGS=-Wall
 
 .PHONY: all
-all: out/image.ppm out/sorted.log out/spir-v.asm
+all: out/debug.log # out/spir-v.asm
 
 out/tracer.cpp: head.h raw.frag foot.h
 	mkdir -p `dirname $@`
@@ -9,11 +9,10 @@ out/tracer.cpp: head.h raw.frag foot.h
 	cat raw.frag | sed 's/uniform//g;s/(vec2/_(vec2/g;s/out vec3/vec3\&/g;s/ywz/ywz()/g;s/yzw/yzw()/g;s/(vec3/_(vec3/' | grep -v precision >> $@
 	cat foot.h >> $@
 
-out/sorted.log: out/debug.log
-	cat $^ | sort | uniq > $@
-
-out/image.ppm out/debug.log: out/tracer
+out/image.ppm: out/tracer
 	./out/tracer > $@
+
+ out/debug.log: out/image.ppm
 
 out/spir-v.asm out/frag.spv: out/forspir.frag
 	glslangValidator -G --auto-map-locations $^ -o out/frag.spv --spirv-dis > out/spir-v.asm

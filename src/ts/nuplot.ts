@@ -14,7 +14,7 @@ export class NuPlot extends HTMLElement {
   completelyReal = 0;
   minIterations = 25;
   currIterations = 25;
-  maxIterations = 200;
+  maxIterations = 400;
 
   /* these hold the state of zoom operation */
   zoom_center!: number[];

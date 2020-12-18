@@ -12,10 +12,10 @@ int main () {
     u_canvasHeight = 300;
     u_zoomCenter = vec2(0, 0);
 
-    int traceYFrom = 287;
-    int traceYTo = 289;
-    int traceXFrom = 284;
-    int traceXTo = 286;
+    int traceYFrom = 271;
+    int traceYTo = 273;
+    int traceXFrom = 194;
+    int traceXTo = 195;
 
     bool onlyTraced = false;
     int xfrom = onlyTraced ? traceXFrom : 0;
@@ -32,7 +32,19 @@ int main () {
             gl_FragCoord.xy = vec2(x, y);
             trace = x >= traceXFrom && x < traceXTo && y >= traceYFrom && y < traceYTo;
             if(trace) fprintf(debugFile, "--[%d, %d]--\n", x, y);
-            main_();
+            if(
+                ((x == traceXFrom - 1 || x == traceXTo) && y >= traceYFrom - 1 && y <= traceYTo)
+                ||
+                ((y == traceYFrom - 1 || y == traceYTo) && x >= traceXFrom - 1 && x <= traceXTo)
+            )
+                gl_FragColor = vec4(1,0,0,0);
+            else
+                main_();
+            if(trace)
+                fprintf(debugFile, "{%d,%d,%d}\n",
+                    int(255 * gl_FragColor.x),
+                    int(255 * gl_FragColor.y),
+                    int(255 * gl_FragColor.z));
             dput(gl_FragColor.x);
             dput(gl_FragColor.y);
             dput(gl_FragColor.z);
