@@ -1,7 +1,2 @@
-cat.cpp
-raw.glsl
-image.ppm
-debug.log
-sorted.log
-tracer
-tracer.cpp
+raw.frag
+out

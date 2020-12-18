@@ -23,7 +23,7 @@ int main () {
     int yfrom = onlyTraced ? traceYFrom : 0;
     int yto = onlyTraced ? traceYTo : u_canvasHeight;
 
-    debugFile = fopen("debug.log", "w+");
+    debugFile = fopen("out/debug.log", "w+");
 
     printf("P3\n");
     printf("%d %d 255\n", (int)(xto - xfrom), (int)(yto - yfrom));

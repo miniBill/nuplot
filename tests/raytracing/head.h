@@ -4,7 +4,6 @@
 #define main() main_()
 #define float double // Yes, really
 #define abs fabs
-#define MAX_ITERATIONS 400
 
 struct vec2 {
     double x;
@@ -268,18 +267,18 @@ bool trace;
 //trace33_2(interval_1)
 notrace2(cexp)
 notrace2(cln)
-notrace2(icos)
-notrace2(icosh)
+//notrace2(icos)
+//notrace2(icosh)
 notrace2(iexp)
 notrace2(iln)
 notrace2(ineg)
-notrace2(isin)
+//notrace2(isin)
 notrace2(isquare)
 notrace2(sin)
 notrace22(by)
 notrace22(iby)
 notrace22(ipow)
-notrace22(merge)
+//notrace22(merge)
 notrace3(normal)
 trace33_2(interval)
 
