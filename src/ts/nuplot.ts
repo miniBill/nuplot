@@ -304,9 +304,6 @@ export class NuPlot extends HTMLElement {
 
       case "expr-src":
         if (newValue == this.src) return;
-
-        //console.log("src changed");
-        //console.info(newValue);
         this.src = newValue;
         this.reloadFragmentShader(this.buildFragmentShader(this.src));
         this.rafRenderFrame();
@@ -334,6 +331,11 @@ export class NuPlot extends HTMLElement {
 
     built = `#define MAX_ITERATIONS ${this.currIterations.toString()}
 ${built}`;
+    if (
+      process.env.NODE_ENV === "development" &&
+      this.currIterations == this.maxIterations
+    )
+      console.info(built);
 
     this.gl.shaderSource(shader, built);
     this.gl.compileShader(shader);
