@@ -35,7 +35,7 @@ draw { pageWidth } coeff graph =
                     "0"
 
         imageWidth =
-            min 1200 <| pageWidth - (1 + coeff) * 3 * Theme.spacing
+            pageWidth - (1 + coeff) * 3 * Theme.spacing
 
         imageHeight =
             imageWidth * 3 // 4
