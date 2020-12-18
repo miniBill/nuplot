@@ -1,4 +1,6 @@
-CFLAGS=-Wall
+# These flags allow us to declare every function and not define them and strip them
+CFLAGS=-Wall -fdata-sections -ffunction-sections -Wl,--gc-section
+CXXFLAGS=$(CFLAGS)
 
 .PHONY: all
 all: out/debug.log # out/spir-v.asm
