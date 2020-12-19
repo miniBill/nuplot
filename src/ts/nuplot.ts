@@ -34,7 +34,7 @@ export class NuPlot extends HTMLElement {
   constructor() {
     super();
 
-    this.reinit_zoom();
+    this.resetZoom();
 
     // Create a shadow root
     const shadowRoow = this.attachShadow({ mode: "open" }); // sets and returns 'this.shadowRoot'
@@ -50,7 +50,7 @@ export class NuPlot extends HTMLElement {
     shadowRoow.append(this.wrapper);
   }
 
-  reinit_zoom() {
+  resetZoom() {
     this.zoom_center = [0.0, 0.0];
     this.target_zoom_center = [0.0, 0.0];
     this.viewport_width = 2 * Math.PI;
@@ -153,7 +153,7 @@ export class NuPlot extends HTMLElement {
   canvasOnPointerDown(e: PointerEvent) {
     if (e.buttons == 4) {
       // central wheel
-      this.reinit_zoom();
+      this.resetZoom();
     } else {
       // In 3D, these are not actually used to zoom, but it's still useful as a signal
       const zoom_speed = 0.02;
