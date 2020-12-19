@@ -1264,7 +1264,7 @@ main3D suffixes =
                         depth++;
                         choices = choices * 2 + 1;
                     } else {
-                        // This could be probably helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
+                        // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
                         for(int j = MAX_DEPTH - 1; j > 0; j--) {
                             if(j > depth)
                                 continue;
