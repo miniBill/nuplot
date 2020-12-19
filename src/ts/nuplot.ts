@@ -118,10 +118,11 @@ export class NuPlot extends HTMLElement {
     );
 
     /* input handling */
-    this.canvas.onmousedown = (e) => this.canvasOnmousedown(e);
+    this.canvas.onpointerdown = (e) => this.canvasOnPointerDown(e);
     this.canvas.oncontextmenu = () => false;
-    this.canvas.onmouseup = () => this.canvasOnmouseup();
-    this.canvas.onmousemove = (e) => this.canvasOnmousemove(e);
+    this.canvas.onpointerup = () => this.canvasOnPointerUp();
+    this.canvas.onpointercancel = () => this.canvasOnPointerUp();
+    this.canvas.onpointermove = (e) => this.canvasOnPointerMove(e);
 
     /* display initial frame */
     this.rafRenderFrame();
@@ -149,7 +150,7 @@ export class NuPlot extends HTMLElement {
     return shader;
   }
 
-  canvasOnmousedown(e: MouseEvent) {
+  canvasOnPointerDown(e: PointerEvent) {
     if (e.buttons == 4) {
       // central wheel
       this.reinit_zoom();
@@ -162,7 +163,7 @@ export class NuPlot extends HTMLElement {
     return true;
   }
 
-  canvasOnmousemove(e: MouseEvent) {
+  canvasOnPointerMove(e: PointerEvent) {
     if (this.is3D && this.zoom_factor != 1.0) {
       this.phi += e.movementX / 100.0;
       this.theta += e.movementY / 100.0;
@@ -174,7 +175,7 @@ export class NuPlot extends HTMLElement {
     return true;
   }
 
-  canvasOnmouseup() {
+  canvasOnPointerUp() {
     this.zoom_factor = 1.0;
   }
 
@@ -323,7 +324,7 @@ export class NuPlot extends HTMLElement {
 
       case "is-3d":
         if (!newValue) return;
-        this.canvasOnmouseup();
+        this.canvasOnPointerUp();
         this.is3D = +newValue;
         break;
 
