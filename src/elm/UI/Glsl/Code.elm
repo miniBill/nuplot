@@ -143,11 +143,11 @@ intervalOperationToGlsl op =
         GlslRelations ->
             """
             vec2 ilt(vec2 l, vec2 r) {
-                return l.y < r.x ? dup(1.0) : l.x > r.y ? dup(0.0) : vec2(0.0, 1.0);
+                return vec2(r.x - l.y, r.y - l.x);
             }
 
             vec2 ileq(vec2 l, vec2 r) {
-                return l.y <= r.x ? dup(1.0) : l.x > r.y ? dup(0.0) : vec2(0.0, 1.0);
+                return vec2(r.x - l.y, r.y - l.x);
             }
 
             vec2 ieq(vec2 l, vec2 r) {
@@ -155,11 +155,11 @@ intervalOperationToGlsl op =
             }
 
             vec2 igeq(vec2 l, vec2 r) {
-                return ileq(r, l);
+                return vec2(l.x - r.y, l.y - r.x);
             }
 
             vec2 igt(vec2 l, vec2 r) {
-                return ilt(r, l);
+                return vec2(l.x - r.y, l.y - r.x);
             }
             """
 
@@ -1247,8 +1247,9 @@ main3D suffixes =
                     vec3 midpoint = mix(from, to, 0.5);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
-                    if(depth >= MAX_DEPTH ||
-                        (front.y - front.x < ithreshold || back.y - back.x < ithreshold)
+                    if(depth >= MAX_DEPTH
+                        || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
+                        || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
                         ) {
                             found = midpoint;
                             n = normal""" ++ suffix ++ """(midpoint);
