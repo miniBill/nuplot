@@ -20,6 +20,9 @@ derivative var expr =
             else
                 zero
 
+        Lambda x f ->
+            Lambda x f
+
         List ls ->
             List <| List.map (derivative var) ls
 

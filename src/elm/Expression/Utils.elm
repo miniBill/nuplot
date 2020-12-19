@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, det, determinant, div, double, e, f, g, gra_, h, i, icomplex, ii, int, ipow, j, k, l, ln_, m, minus, n, negate_, o, one, p, plus, pow, q, r, s, sin_, sinh_, sqrt_, square, squash, t, triple, two, u, v, vector, w, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, det, determinant, div, double, e, exp_, f, g, gra_, h, i, icomplex, ii, int, ipow, j, k, l, ln_, m, minus, n, negate_, o, one, p, plus, pow, q, r, s, sin_, sinh_, sqrt_, square, squash, t, triple, two, u, v, vector, w, x, y, z, zero)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), genericAsSquareMatrix, genericDeterminant, visit)
 
@@ -238,6 +238,11 @@ abs_ =
 sin_ : Expression -> Expression
 sin_ =
     unaryFunc Sin
+
+
+exp_ : Expression -> Expression
+exp_ =
+    unaryFunc Exp
 
 
 cos_ : Expression -> Expression

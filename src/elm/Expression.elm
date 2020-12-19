@@ -10,6 +10,7 @@ module Expression exposing
     , RelationOperation(..)
     , UnaryOperation(..)
     , Value(..)
+    , VariableStatus(..)
     , defaultContext
     , equals
     , filterContext
@@ -22,6 +23,7 @@ module Expression exposing
     , genericMatrixMultiplication
     , getFreeVariables
     , graphToString
+    , partialSubstitute
     , pfullSubstitute
     , toPrintExpression
     , toString
@@ -50,6 +52,7 @@ type Expression
     = Integer Int
     | Float Float
     | Variable String
+    | Lambda String Expression
     | UnaryOperation UnaryOperation Expression
     | BinaryOperation BinaryOperation Expression Expression
     | RelationOperation RelationOperation Expression Expression
@@ -180,6 +183,9 @@ visit f expr =
                 Variable v ->
                     Variable v
 
+                Lambda x e ->
+                    Lambda x <| visit f e
+
                 Float fl ->
                     Float fl
 
@@ -209,6 +215,9 @@ pvisit f expr =
 
                 PNegate l ->
                     PNegate (pvisit f l)
+
+                PLambda x e ->
+                    PLambda x (pvisit f e)
 
                 PAdd l r ->
                     PAdd (pvisit f l) (pvisit f r)
@@ -362,6 +371,7 @@ type PrintExpression
     = PInteger Int
     | PFloat Float
     | PVariable String
+    | PLambda String PrintExpression
     | PAdd PrintExpression PrintExpression
     | PNegate PrintExpression
     | PBy PrintExpression PrintExpression
@@ -378,6 +388,9 @@ toPrintExpression e =
     case e of
         Variable v ->
             PVariable v
+
+        Lambda x f ->
+            PLambda x <| toPrintExpression f
 
         Integer i ->
             PInteger i
@@ -514,6 +527,16 @@ toStringPrec p e =
         PPower l r ->
             infixr_ 8 "^" l r
 
+        PLambda x ((PApply fn [ PVariable v ]) as f) ->
+            if v == x then
+                functionNameToString fn
+
+            else
+                paren (p > 0) <| x ++ " => " ++ toStringPrec 0 f
+
+        PLambda x f ->
+            paren (p > 0) <| x ++ " => " ++ toStringPrec 0 f
+
         PApply name [ (PList _) as ex ] ->
             paren (p > 10) <| functionNameToString name ++ toStringPrec 0 ex
 
@@ -598,8 +621,13 @@ greeks =
 
 type alias Context =
     { functions : Trie ( FunctionName, Int )
-    , variables : Trie ()
+    , variables : Trie VariableStatus
     }
+
+
+type VariableStatus
+    = Declared
+    | Defined
 
 
 unaryFunctions : List ( String, KnownFunction )
@@ -690,7 +718,7 @@ defaultContext =
                 , map 3 ternaryFunctions
                 , map 4 quaternaryFunctions
                 ]
-    , variables = Trie.fromList <| List.map (\v -> ( v, () )) <| letters ++ Dict.keys greeks
+    , variables = Trie.fromList <| List.map (\v -> ( v, Declared )) <| letters ++ Dict.keys greeks
     }
 
 
@@ -725,6 +753,9 @@ getFreeVariables expr =
 
         Float _ ->
             Set.empty
+
+        Lambda x f ->
+            Set.diff (getFreeVariables f) (Set.singleton x)
 
         Replace vars e ->
             getFreeVariables <| fullSubstitute (filterContext vars) e
@@ -1121,6 +1152,16 @@ toTeXStringPrec p e =
 
             PRel rel l r ->
                 infixl_ 5 (" " ++ rel ++ " ") l r
+
+            PLambda x ((PApply fn [ PVariable v ]) as f) ->
+                if v == x then
+                    functionNameToString fn
+
+                else
+                    paren (p > 0) <| x ++ " \\RightArrow " ++ toTeXStringPrec 0 f
+
+            PLambda x f ->
+                paren (p > 0) <| x ++ " \\RightArrow " ++ toTeXStringPrec 0 f
 
             PBy ((PInteger _) as l) r ->
                 case r of

@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (AssociativeOperation(..), Expression(..))
 import Expression.Simplify
-import Expression.Utils exposing (a, b, by, c, complex, cos_, cosh_, div, double, f, g, i, int, ipow, m, minus, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, triple, two, x, z, zero)
+import Expression.Utils exposing (a, b, by, c, complex, cos_, cosh_, div, double, f, g, i, int, ipow, m, minus, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, triple, two, x, y, z, zero)
 import Test exposing (Test, describe, test)
 
 
@@ -120,6 +120,9 @@ simplificationTests =
         in
         plus [ afmn, negate_ afmn ]
       , zero
+      )
+    , ( by [ Lambda "x" <| sin_ x, y ]
+      , sin_ y
       )
 
     {-

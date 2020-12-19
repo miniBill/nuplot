@@ -1,14 +1,14 @@
 module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, expressionToGraph, parse)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), defaultContext, getFreeVariables)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), VariableStatus(..), defaultContext, getFreeVariables)
 import Expression.Cleaner as Cleaner
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
 import List
 import List.Extra as List
-import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
+import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), getChompedString)
 import Set
-import Trie
+import Trie exposing (Trie)
 
 
 type alias ExpressionParser a =
@@ -20,6 +20,7 @@ type ParserContext
     | ListContext
     | ReplacementContext
     | ReplacementListContext
+    | NumberContext
 
 
 type Problem
@@ -156,7 +157,7 @@ expressionToGraph expr =
 
 toContext : Dict String (Maybe Expression) -> Context
 toContext d =
-    { variables = Trie.fromList <| List.map (\v -> ( v, () )) <| Dict.keys d
+    { variables = Trie.fromList <| List.map (\v -> ( v, Defined )) <| Dict.keys d
     , functions = Trie.empty
     }
 
@@ -271,16 +272,35 @@ whitespace =
 
 listParser : ExpressionParser Expression
 listParser context =
+    let
+        restParser =
+            Parser.map List.reverse <|
+                Parser.loop [] step
+
+        step acc =
+            Parser.oneOf
+                [ Parser.succeed identity
+                    |. Parser.symbol (token ",")
+                    |. whitespace
+                    |= Parser.oneOf
+                        [ Parser.map (\e -> Parser.Loop <| e :: acc) <|
+                            Parser.lazy (\_ -> mainParser context)
+                        , Parser.succeed <| Parser.Done acc
+                        ]
+                , Parser.succeed <| Parser.Done acc
+                ]
+    in
     Parser.inContext ListContext <|
-        Parser.map Expression.List <|
-            Parser.sequence
-                { start = token "{"
-                , separator = token ","
-                , end = token "}"
-                , spaces = whitespace
-                , item = Parser.lazy (\_ -> mainParser context)
-                , trailing = Parser.Optional
-                }
+        Parser.succeed (\h t -> Expression.List (h :: t))
+            |. Parser.symbol (token "{")
+            |. whitespace
+            |= Parser.lazy (\_ -> mainParser context)
+            |. whitespace
+            |= restParser
+            |. Parser.oneOf
+                [ Parser.symbol (token "}")
+                , Parser.succeed ()
+                ]
 
 
 relationParser : ExpressionParser Expression
@@ -417,16 +437,28 @@ atomParser context =
         , replacementParser context
         , listParser context
         , variableParser context
-        , Parser.number
-            { binary = Ok Integer
-            , float = Ok Float
-            , hex = Ok Integer
-            , int = Ok Integer
-            , octal = Ok Integer
-            , invalid = Expected "a valid number"
-            , expecting = Expected "a number"
-            }
+        , Parser.andThen tryParseNumber <|
+            getChompedString <|
+                Parser.succeed ()
+                    |. Parser.chompIf (\c -> c == '.' || Char.isDigit c) (Expected "a digit, or a dot")
+                    |. Parser.chompWhile (\c -> c == '.' || Char.isDigit c)
         ]
+
+
+tryParseNumber : String -> Parser ParserContext Problem Expression
+tryParseNumber n =
+    Parser.inContext NumberContext <|
+        case String.toInt n of
+            Just i ->
+                Parser.succeed <| Integer i
+
+            Nothing ->
+                case String.toFloat n of
+                    Just f ->
+                        Parser.succeed <| Float f
+
+                    Nothing ->
+                        Parser.problem (Expected "a number")
 
 
 optional : Parser c x () -> Parser c x ()
@@ -457,26 +489,66 @@ variableParser context =
             (\rest ->
                 case Trie.getLongestPrefix rest context.functions of
                     Just ( nameString, ( name, arity ) ) ->
-                        Parser.succeed (Apply name)
+                        Parser.succeed
+                            (Maybe.map (Apply name)
+                                >> Maybe.withDefault
+                                    (let
+                                        free =
+                                            getFirstFree context.variables
+                                     in
+                                     Lambda free <| Apply name [ Variable free ]
+                                    )
+                            )
                             |. chomp (String.length nameString)
                             |. whitespace
                             |= Parser.oneOf
-                                [ Parser.succeed identity
+                                [ Parser.succeed Just
                                     |. Parser.symbol (token "(")
                                     |= parseArgs arity True context
                                     |. Parser.oneOf [ Parser.symbol (token ")"), Parser.succeed () ]
-                                , parseArgs arity False context
+                                , Parser.map Just <| parseArgs arity False context
+                                , Parser.succeed Nothing
                                 ]
 
                     Nothing ->
                         case Trie.getLongestPrefix rest context.variables of
-                            Just ( name, () ) ->
+                            Just ( name, _ ) ->
                                 Parser.succeed (Variable name)
                                     |. chomp (String.length name)
 
                             Nothing ->
                                 Parser.problem (Expected "a letter")
             )
+
+
+getFirstFree : Trie VariableStatus -> String
+getFirstFree trie =
+    let
+        _ =
+            if go alphabeth == "aa" then
+                Debug.log "getFirstFree"
+                    { trie = trie
+                    , res = go alphabeth
+                    }
+
+            else
+                { trie = trie
+                , res = go alphabeth
+                }
+
+        alphabeth =
+            List.map (String.fromChar << Char.fromCode) <| List.range (Char.toCode 'a') (Char.toCode 'z')
+
+        go : List String -> String
+        go lst =
+            case List.find (\p -> Trie.get p trie /= Just Defined) lst of
+                Just p ->
+                    p
+
+                Nothing ->
+                    go (List.concatMap (\l -> List.map (\r -> l ++ r) alphabeth) lst)
+    in
+    go alphabeth
 
 
 parseArgs : Int -> Bool -> ExpressionParser (List Expression)

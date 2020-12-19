@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, vector, x, y, z)
+import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, vector, x, y, z)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -281,7 +281,16 @@ tests =
     , ( "ddxsinx,x", dd (by [ x, sin_ x ]) x, "dd(x*sin(x), x)" )
     , ( "ddsin(x^2),x", dd (sin_ <| square x) x, "dd(sin(x²), x)" )
     , straight "ii(ln(a), a, b, c)" <| ii (ln_ a) a b c
-    , ( "[x.5x;y.5y]plot(z=2exp(-x²-y²))", "" )
+    , ( "sin²x", by [ square (Lambda "a" <| sin_ a), x ], "sin²*x" )
+    , ( "sinx²", sin_ <| square x, "sin(x²)" )
+    , straight "sin(cos)" (sin_ (Lambda "a" <| cos_ a))
+    , ( "{a", List [ a ], "{a}" )
+    , ( "{a,", List [ a ], "{a}" )
+    , ( "{a,}", List [ a ], "{a}" )
+    , ( "{a,b", List [ a, b ], "{a, b}" )
+    , ( "{a,b,", List [ a, b ], "{a, b}" )
+    , ( "{a,b,}", List [ a, b ], "{a, b}" )
+    , ( "2expa", by [ two, exp_ a ], "2exp(a)" )
     ]
 
 

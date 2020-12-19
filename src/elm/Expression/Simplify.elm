@@ -1,7 +1,7 @@
 module Expression.Simplify exposing (simplify, sortByDegree)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute)
 import Expression.Derivative
 import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
 import List
@@ -51,6 +51,9 @@ stepSimplify context expr =
 
         UnaryOperation uop e ->
             UnaryOperation uop <| stepSimplify context e
+
+        Lambda x f ->
+            Lambda x <| stepSimplify context f
 
         BinaryOperation bop l r ->
             let
@@ -463,17 +466,17 @@ asList l =
 groupStepMultiplication : Expression -> Expression -> Maybe Expression
 groupStepMultiplication curr last =
     case ( curr, last ) of
-        ( Integer 1, _ ) ->
-            Just last
+        ( Integer 1, l ) ->
+            Just l
 
-        ( _, Integer 1 ) ->
-            Just curr
+        ( c, Integer 1 ) ->
+            Just c
 
         ( Integer il, Integer ir ) ->
             Just <| Integer <| il * ir
 
-        ( BinaryOperation Power pb pe, _ ) ->
-            if Expression.equals last pb then
+        ( BinaryOperation Power pb pe, l ) ->
+            if Expression.equals l pb then
                 case pe of
                     Integer pei ->
                         Just (ipow pb <| pei + 1)
@@ -498,6 +501,9 @@ groupStepMultiplication curr last =
 
         ( List _, List _ ) ->
             multiplyMatrices curr last
+
+        ( c, Lambda x f ) ->
+            Just <| partialSubstitute x c f
 
         _ ->
             if Expression.equals curr last then
@@ -666,6 +672,9 @@ polyDegree var expr =
                     Nothing
 
                 List _ ->
+                    Nothing
+
+                Lambda _ _ ->
                     Nothing
     in
     res

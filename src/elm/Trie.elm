@@ -1,6 +1,8 @@
-module Trie exposing (Trie, empty, fromList, getLongestPrefix, union)
+module Trie exposing (Trie, empty, fromList, get, getLongestPrefix, insert, isEmpty, size, union)
 
 import Dict exposing (Dict)
+import Element exposing (alpha)
+import List.Extra as List
 
 
 type Trie a
@@ -15,13 +17,62 @@ fromList =
     List.foldl (\( k, v ) -> insert k v) empty
 
 
+size : Trie a -> Int
+size (Trie { value, children }) =
+    let
+        childrenSize =
+            children
+                |> Dict.values
+                |> List.map size
+                |> List.sum
+    in
+    if value == Nothing then
+        childrenSize
+
+    else
+        1 + childrenSize
+
+
+member : String -> Trie a -> Bool
+member key trie =
+    get key trie /= Nothing
+
+
+get : String -> Trie a -> Maybe a
+get key =
+    let
+        go k (Trie { value, children }) =
+            case k of
+                [] ->
+                    value
+
+                h :: t ->
+                    case Dict.get h children of
+                        Nothing ->
+                            Nothing
+
+                        Just child ->
+                            go t child
+    in
+    go (String.toList key)
+
+
+isEmpty : Trie a -> Bool
+isEmpty (Trie { value, children }) =
+    value == Nothing && Dict.isEmpty children
+
+
 insert : String -> a -> Trie a -> Trie a
 insert s v =
     let
-        go ss (Trie trie) =
+        go ss ((Trie trie) as orig) =
             case ss of
                 [] ->
-                    Trie { trie | value = Just v }
+                    if trie.value == Nothing then
+                        Trie { trie | value = Just v }
+
+                    else
+                        orig
 
                 c :: cs ->
                     let
