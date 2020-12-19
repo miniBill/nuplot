@@ -43,8 +43,12 @@ init flags =
         parsed =
             flags
                 |> JD.decodeValue (JD.dict JD.string)
-                |> Result.map (Dict.filter (\k _ -> String.toInt k /= Nothing))
-                |> Result.map Dict.values
+                |> Result.map
+                    (Dict.toList
+                        >> List.filterMap (\( k, v ) -> Maybe.map (\ik -> ( ik, v )) (String.toInt k))
+                        >> List.sortBy Tuple.first
+                        >> List.map Tuple.second
+                    )
 
         ex x =
             { input = x
