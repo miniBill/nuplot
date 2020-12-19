@@ -359,7 +359,8 @@ export class NuPlot extends HTMLElement {
 ${built}`;
     if (
       process.env.NODE_ENV === "development" &&
-      this.currIterations == this.maxIterations
+      this.currIterations == this.maxIterations &&
+      false
     )
       console.info(built);
 
