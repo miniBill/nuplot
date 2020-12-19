@@ -54,7 +54,7 @@ innerValue context expr =
             applyValue context name args
 
         Lambda x f ->
-            LambdaValue x <| innerValue (Dict.insert x (SymbolicValue <| Variable x) context) expr
+            LambdaValue x <| innerValue (Dict.insert x (SymbolicValue <| Variable x) context) f
 
         Integer i ->
             ComplexValue <| Complex.fromReal <| toFloat i
@@ -386,30 +386,37 @@ unaryFunctionValue : Dict String Value -> List Expression -> KnownFunction -> (C
 unaryFunctionValue context args s f =
     case args of
         [ e ] ->
-            case innerValue context e of
-                ComplexValue z ->
-                    ComplexValue <| f z
+            let
+                go w =
+                    case w of
+                        ComplexValue z ->
+                            ComplexValue <| f z
 
-                SymbolicValue w ->
-                    SymbolicValue <| Apply (KnownFunction s) [ w ]
+                        SymbolicValue sv ->
+                            SymbolicValue <| Apply (KnownFunction s) [ sv ]
 
-                ListValue ls ->
-                    ListValue <|
-                        List.map
-                            (complexMap
-                                { symbolic = \w -> Apply (KnownFunction s) [ w ]
-                                , complex = f
-                                , list = Nothing
-                                , lambda = Nothing
-                                }
-                            )
-                            ls
+                        ListValue ls ->
+                            ListValue <|
+                                List.map
+                                    (complexMap
+                                        { symbolic = \sv -> Apply (KnownFunction s) [ sv ]
+                                        , complex = f
+                                        , list = Nothing
+                                        , lambda = Nothing
+                                        }
+                                    )
+                                    ls
 
-                ErrorValue err ->
-                    ErrorValue err
+                        ErrorValue err ->
+                            ErrorValue err
 
-                u ->
-                    ErrorValue <| "Unexpected argument: " ++ toString u
+                        LambdaValue y g ->
+                            LambdaValue y <| go g
+
+                        u ->
+                            ErrorValue <| "Unexpected argument: " ++ toString u
+            in
+            go <| innerValue context e
 
         _ ->
             ErrorValue "Unexpected number of arguments, expected 1"
