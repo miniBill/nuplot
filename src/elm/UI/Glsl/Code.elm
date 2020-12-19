@@ -548,7 +548,7 @@ intervalFunctionToGlsl name =
             vec2 ipw(vec2 c, vec2 t, vec2 f) {
                 if(c.y <= 0.0)
                     return f;
-                if(c.x >= 1.0)
+                if(c.x > 0.0)
                     return t;
                 return vec2(min(t.x, f.x), max(t.y, f.y));
             }
@@ -1256,6 +1256,7 @@ main3D suffixes =
                         depth++;
                         choices = choices * 2 + 1;
                     } else {
+                        // This could be probably helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
                         for(int j = MAX_DEPTH - 1; j > 0; j--) {
                             if(j > depth)
                                 continue;
