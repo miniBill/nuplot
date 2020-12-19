@@ -122,14 +122,14 @@ expressionToGraph expr =
             case ( l, rop, Set.member "y" <| getFreeVariables r ) of
                 ( Variable "y", Equals, False ) ->
                     if Set.member "z" <| getFreeVariables expr then
-                        Implicit3D <| Expression.Utils.minus l r
+                        Implicit3D expr
 
                     else
                         Explicit2D r
 
                 ( _, Equals, _ ) ->
                     if Set.member "z" <| getFreeVariables expr then
-                        Implicit3D <| Expression.Utils.minus l r
+                        Implicit3D expr
 
                     else
                         Implicit2D l r

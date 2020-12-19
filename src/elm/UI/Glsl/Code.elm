@@ -151,12 +151,7 @@ intervalOperationToGlsl op =
             }
 
             vec2 ieq(vec2 l, vec2 r) {
-                return
-                    (l.x == l.y && l.y == r.x && r.x == r.y)
-                        ? dup(1.0)
-                    : (l.y < r.x || r.y < l.x)
-                        ? dup(0.0)
-                    : vec2(0.0, 1.0);
+                return vec2(l.x - r.y, l.y - r.x);
             }
 
             vec2 igeq(vec2 l, vec2 r) {
