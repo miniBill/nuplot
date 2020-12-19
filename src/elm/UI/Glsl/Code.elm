@@ -1304,18 +1304,23 @@ main3D suffixes =
             }
 
             vec4 pixel3 () {
-                vec3 eye = vec3(0, u_viewportWidth, -1.5*u_viewportWidth);
-                vec3 light = vec3(-0.5*u_viewportWidth, 2.0 * u_viewportWidth, 0);
+                float eye_dist = 2.0 * u_viewportWidth;
+                float t = u_theta - 1.0;
+                float p = u_phi;
+                vec3 eye = eye_dist * vec3(sin(t) * sin(p), cos(t), sin(t) * cos(p));
+                vec3 light = vec3(-5, 20, 0);
 
                 vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
                 vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
 
                 vec2 uv = 1.0 / u_canvasHeight * uv_centered;
 
-                vec3 target = vec3(u_zoomCenter, 0);
+                vec3 target = vec3(0);
                 vec3 to_center = normalize(target-eye);
                 vec3 canvas_center = eye + to_center;
-                vec3 canvas_point = canvas_center + vec3(uv.x, uv.y * to_center.z, -uv.y * to_center.y);
+                vec3 across = normalize(-cross(vec3(0,-1,0), to_center));
+                vec3 up = normalize(-cross(across, to_center));
+                vec3 canvas_point = canvas_center + uv.x * across + uv.y * up;
 
                 vec3 ray_direction = normalize(canvas_point - eye);
                 float max_distance = 40.0 * length(eye);

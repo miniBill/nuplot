@@ -1,3 +1,4 @@
+import { throws } from "assert";
 import declarations from "../shaders/declarations.frag";
 
 export class NuPlot extends HTMLElement {
@@ -12,7 +13,8 @@ export class NuPlot extends HTMLElement {
 
   whiteLines = 6;
   completelyReal = 0;
-  minIterations = process.env.NODE_ENV === "development" ? 400 : 25;
+  is3D = 0;
+  minIterations = 25;
   currIterations = 400;
   maxIterations = 400;
 
@@ -26,6 +28,8 @@ export class NuPlot extends HTMLElement {
   pendingRaf = -1;
   pendingTimeout = -1;
   wasZooming = false;
+  phi = 0;
+  theta = 0;
 
   constructor() {
     super();
@@ -51,6 +55,8 @@ export class NuPlot extends HTMLElement {
     this.target_zoom_center = [0.0, 0.0];
     this.viewport_width = 2 * Math.PI;
     this.zoom_factor = 1;
+    this.phi = 0;
+    this.theta = 0;
   }
 
   private initCanvas() {
@@ -112,10 +118,10 @@ export class NuPlot extends HTMLElement {
     );
 
     /* input handling */
-    this.canvas.onmousedown = this.canvasOnmousedown.bind(this);
-    this.canvas.oncontextmenu = (e) => false;
-    this.canvas.onmouseup = this.canvasOnmouseup.bind(this);
-    this.canvas.onmousemove = this.canvasOnmousemove.bind(this);
+    this.canvas.onmousedown = (e) => this.canvasOnmousedown(e);
+    this.canvas.oncontextmenu = () => false;
+    this.canvas.onmouseup = () => this.canvasOnmouseup();
+    this.canvas.onmousemove = (e) => this.canvasOnmousemove(e);
 
     /* display initial frame */
     this.rafRenderFrame();
@@ -148,6 +154,7 @@ export class NuPlot extends HTMLElement {
       // central wheel
       this.reinit_zoom();
     } else {
+      // In 3D, these are not actually used to zoom, but it's still useful as a signal
       const zoom_speed = 0.02;
       this.zoom_factor = e.buttons & 1 ? 1 - zoom_speed : 1 + zoom_speed;
     }
@@ -156,13 +163,18 @@ export class NuPlot extends HTMLElement {
   }
 
   canvasOnmousemove(e: MouseEvent) {
-    this.target_zoom_center[0] = e.offsetX / this.canvas.width;
-    this.target_zoom_center[1] = 1 - e.offsetY / this.canvas.height;
+    if (this.is3D && this.zoom_factor != 1.0) {
+      this.phi += e.movementX / 100.0;
+      this.theta += e.movementY / 100.0;
+    } else {
+      this.target_zoom_center[0] = e.offsetX / this.canvas.width;
+      this.target_zoom_center[1] = 1 - e.offsetY / this.canvas.height;
+    }
 
     return true;
   }
 
-  canvasOnmouseup(e: MouseEvent) {
+  canvasOnmouseup() {
     this.zoom_factor = 1.0;
   }
 
@@ -194,26 +206,29 @@ export class NuPlot extends HTMLElement {
     if (this.gl == null || this.program == null) return;
 
     if (this.zoom_factor != 1.0) {
-      const minx = this.zoom_center[0] - this.viewport_width / 2;
+      if (!this.is3D) {
+        const minx = this.zoom_center[0] - this.viewport_width / 2;
 
-      let viewport_height =
-        (this.viewport_width * this.gl.canvas.height) / this.gl.canvas.width;
+        let viewport_height =
+          (this.viewport_width * this.gl.canvas.height) / this.gl.canvas.width;
 
-      const miny = this.zoom_center[1] - viewport_height / 2;
+        const miny = this.zoom_center[1] - viewport_height / 2;
 
-      const targetX = this.target_zoom_center[0] * this.viewport_width + minx;
-      const targetY = this.target_zoom_center[1] * viewport_height + miny;
+        const targetX = this.target_zoom_center[0] * this.viewport_width + minx;
+        const targetY = this.target_zoom_center[1] * viewport_height + miny;
 
-      this.viewport_width *= this.zoom_factor;
-      viewport_height *= this.zoom_factor;
+        this.viewport_width *= this.zoom_factor;
+        viewport_height *= this.zoom_factor;
 
-      if (this.zoom_factor < 1) {
-        const newMinx =
-          targetX - this.target_zoom_center[0] * this.viewport_width;
-        this.zoom_center[0] = newMinx + this.viewport_width / 2;
+        if (this.zoom_factor < 1) {
+          const newMinx =
+            targetX - this.target_zoom_center[0] * this.viewport_width;
+          this.zoom_center[0] = newMinx + this.viewport_width / 2;
 
-        const newMiny = targetY - this.target_zoom_center[1] * viewport_height;
-        this.zoom_center[1] = newMiny + viewport_height / 2;
+          const newMiny =
+            targetY - this.target_zoom_center[1] * viewport_height;
+          this.zoom_center[1] = newMiny + viewport_height / 2;
+        }
       }
 
       if (this.currIterations == this.minIterations) {
@@ -258,6 +273,8 @@ export class NuPlot extends HTMLElement {
     this.uniform1f("u_canvasWidth", this.canvas.width);
     this.uniform1f("u_canvasHeight", this.canvas.height);
     this.uniform2f("u_zoomCenter", this.zoom_center[0], this.zoom_center[1]);
+    this.uniform1f("u_phi", this.phi);
+    this.uniform1f("u_theta", this.theta);
 
     this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
@@ -302,6 +319,12 @@ export class NuPlot extends HTMLElement {
         if (!newValue) return;
         this.completelyReal = +newValue;
         this.rafRenderFrame();
+        break;
+
+      case "is-3d":
+        if (!newValue) return;
+        this.canvasOnmouseup();
+        this.is3D = +newValue;
         break;
 
       case "expr-src":
@@ -378,6 +401,7 @@ ${built}`;
       "canvas-height",
       "white-lines",
       "completely-real",
+      "is-3d",
     ];
   }
 }

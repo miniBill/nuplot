@@ -22,17 +22,38 @@ import UI.Theme as Theme
 draw : { a | pageWidth : Int, pageHeight : Int } -> { wdiv : Int, hdiv : Int } -> Graph -> Element msg
 draw { pageWidth, pageHeight } { wdiv, hdiv } graph =
     let
-        isCompletelyReal =
-            case graph of
+        isCompletelyReal g =
+            case g of
+                GraphList gs ->
+                    List.all isCompletelyReal gs
+
                 Contour e ->
                     if Expression.NumericRange.isCompletelyReal e then
-                        "1"
+                        True
 
                     else
-                        "0"
+                        False
 
                 _ ->
-                    "0"
+                    False
+
+        is3D g =
+            case g of
+                GraphList gs ->
+                    List.any is3D gs
+
+                Implicit3D _ ->
+                    True
+
+                _ ->
+                    False
+
+        boolToIntString b =
+            if b then
+                "1"
+
+            else
+                "0"
 
         imageWidth =
             pageWidth - (1 + wdiv) * 3 * Theme.spacing
@@ -46,7 +67,8 @@ draw { pageWidth, pageHeight } { wdiv, hdiv } graph =
             , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
             , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
             , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
-            , Html.Attributes.attribute "completely-real" isCompletelyReal
+            , Html.Attributes.attribute "completely-real" <| boolToIntString <| isCompletelyReal graph
+            , Html.Attributes.attribute "is-3d" <| boolToIntString <| is3D graph
             ]
             []
 
