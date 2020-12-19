@@ -226,6 +226,9 @@ outputBlock model row =
                 GraphValue _ ->
                     Nothing
 
+                LambdaValue x f ->
+                    Maybe.map (Lambda x) (asExpression f)
+
         viewValue coeffs v =
             case asExpression v of
                 Just ex ->
@@ -244,6 +247,14 @@ outputBlock model row =
 
                         ErrorValue err ->
                             viewError err
+
+                        LambdaValue x f ->
+                            case asExpression f of
+                                Just e ->
+                                    viewExpression model.pageWidth <| Lambda x e
+
+                                Nothing ->
+                                    Element.row [] [ text <| x ++ " => ", viewValue coeffs f ]
 
                         ListValue ls ->
                             case

@@ -33,25 +33,28 @@ innerValue context expr =
                 |> Maybe.withDefault (SymbolicValue expr)
 
         UnaryOperation Negate e ->
-            complexMap { symbolic = UnaryOperation Negate, complex = Complex.negate, list = Nothing } <| innerValue context e
+            negateValue <| innerValue context e
 
         BinaryOperation Division l r ->
-            complexMap2 { symbolic = BinaryOperation Division, complex = Complex.div, list = Nothing } (innerValue context l) (innerValue context r)
+            simpleComplexMap2 (BinaryOperation Division) Complex.div context l r
 
         BinaryOperation Power l r ->
-            complexMap2 { symbolic = BinaryOperation Power, complex = Complex.power, list = Nothing } (innerValue context l) (innerValue context r)
+            simpleComplexMap2 (BinaryOperation Power) Complex.power context l r
 
         RelationOperation o l r ->
-            complexMap2 { symbolic = RelationOperation o, complex = relationValue o, list = Nothing } (innerValue context l) (innerValue context r)
+            simpleComplexMap2 (RelationOperation o) (relationValue o) context l r
 
         AssociativeOperation Addition l r o ->
-            plus <| List.map (innerValue context) (l :: r :: o)
+            plus context <| List.map (innerValue context) (l :: r :: o)
 
         AssociativeOperation Multiplication l r o ->
-            by <| List.map (innerValue context) (l :: r :: o)
+            by context <| List.map (innerValue context) (l :: r :: o)
 
         Apply name args ->
             applyValue context name args
+
+        Lambda x f ->
+            LambdaValue x <| innerValue (Dict.insert x (SymbolicValue <| Variable x) context) expr
 
         Integer i ->
             ComplexValue <| Complex.fromReal <| toFloat i
@@ -66,8 +69,18 @@ innerValue context expr =
             innerValue context <| fullSubstitute (filterContext ctx) e
 
 
-plusTwo : Value -> Value -> Value
-plusTwo =
+negateValue : Value -> Value
+negateValue =
+    complexMap
+        { symbolic = UnaryOperation Negate
+        , complex = Complex.negate
+        , list = Nothing
+        , lambda = Nothing
+        }
+
+
+plusTwo : Dict String Value -> Value -> Value -> Value
+plusTwo context =
     let
         inner u v =
             case ( u, v ) of
@@ -92,11 +105,13 @@ plusTwo =
         { symbolic = inner
         , complex = Complex.plus
         , list = Nothing
+        , lambda = Nothing
+        , context = context
         }
 
 
-byTwo : Value -> Value -> Value
-byTwo =
+byTwo : Dict String Value -> Value -> Value -> Value
+byTwo context =
     let
         inner u v =
             case ( u, v ) of
@@ -126,13 +141,45 @@ byTwo =
     complexMap2
         { symbolic = inner
         , complex = Complex.by
-        , list = Just matrixMultiplication
+        , list = Just <| matrixMultiplication context
+        , lambda =
+            Just
+                ( \x f r -> partialSubstitute x r f
+                , \l x f -> LambdaValue x <| byTwo context l f
+                )
+        , context = context
         }
 
 
-matrixMultiplication : List Value -> List Value -> Value
-matrixMultiplication l r =
-    genericMatrixMultiplication { asList = asList, by = by, plus = plus, toList = ListValue } (ListValue l) (ListValue r)
+partialSubstitute : String -> Value -> Value -> Value
+partialSubstitute var val expr =
+    case expr of
+        SymbolicValue s ->
+            SymbolicValue <| Expression.partialSubstitute var (toSymbolic val) s
+
+        LambdaValue x f ->
+            if x == var then
+                expr
+
+            else
+                LambdaValue x <| partialSubstitute var val f
+
+        ListValue ls ->
+            ListValue <| List.map (partialSubstitute var val) ls
+
+        GraphValue _ ->
+            expr
+
+        ComplexValue c ->
+            expr
+
+        ErrorValue _ ->
+            expr
+
+
+matrixMultiplication : Dict String Value -> List Value -> List Value -> Value
+matrixMultiplication context l r =
+    genericMatrixMultiplication { asList = asList, by = by context, plus = plus context, toList = ListValue } (ListValue l) (ListValue r)
         |> Maybe.withDefault (ErrorValue "Cannot multiply matrices")
 
 
@@ -182,6 +229,8 @@ applyValue context name args =
                         { symbolic = \l r -> Apply name [ l, r ]
                         , complex = Complex.atan2
                         , list = Nothing
+                        , lambda = Nothing
+                        , context = context
                         }
                         (innerValue context y)
                         (innerValue context x)
@@ -216,7 +265,7 @@ applyValue context name args =
         KnownFunction Det ->
             case args of
                 [ c ] ->
-                    determinant <| innerValue context c
+                    determinant context <| innerValue context c
 
                 _ ->
                     ErrorValue "Unexpected number of args to pw, expected 1"
@@ -290,27 +339,27 @@ assocToList default f xs =
             List.foldl (\e a -> f a e) h t
 
 
-plus : List Value -> Value
-plus =
-    assocToList (ComplexValue Complex.zero) plusTwo
+plus : Dict String Value -> List Value -> Value
+plus context =
+    assocToList (ComplexValue Complex.zero) (plusTwo context)
 
 
-by : List Value -> Value
-by =
-    assocToList (ComplexValue <| Complex.fromReal 1) byTwo
+by : Dict String Value -> List Value -> Value
+by context =
+    assocToList (ComplexValue <| Complex.fromReal 1) (byTwo context)
 
 
-determinant : Value -> Value
-determinant val =
+determinant : Dict String Value -> Value -> Value
+determinant context val =
     case val of
         ListValue _ ->
             case asSquareMatrix val of
                 Just rows ->
                     rows
                         |> genericDeterminant
-                            { plus = plus
-                            , by = by
-                            , negate = complexMap { symbolic = UnaryOperation Negate, complex = Complex.negate, list = Nothing }
+                            { plus = plus context
+                            , by = by context
+                            , negate = negateValue
                             }
                         |> Maybe.withDefault (ErrorValue "Error in calculating the determinant")
 
@@ -327,6 +376,9 @@ determinant val =
             val
 
         ErrorValue _ ->
+            val
+
+        LambdaValue _ _ ->
             val
 
 
@@ -348,6 +400,7 @@ unaryFunctionValue context args s f =
                                 { symbolic = \w -> Apply (KnownFunction s) [ w ]
                                 , complex = f
                                 , list = Nothing
+                                , lambda = Nothing
                                 }
                             )
                             ls
@@ -379,6 +432,9 @@ toString v =
 
         GraphValue g ->
             "Graph: " ++ Expression.graphToString g
+
+        LambdaValue x f ->
+            "Lambda: " ++ x ++ " => " ++ toString f
 
 
 relationValue : RelationOperation -> Complex -> Complex -> Complex
@@ -412,13 +468,22 @@ complexMap :
     { symbolic : Expression -> Expression
     , complex : Complex -> Complex
     , list : Maybe (List Value -> Value)
+    , lambda : Maybe (String -> Value -> Value)
     }
     -> Value
     -> Value
-complexMap ({ symbolic, complex, list } as fs) v =
+complexMap ({ lambda, symbolic, complex, list } as fs) v =
     case v of
         ErrorValue _ ->
             v
+
+        LambdaValue x f ->
+            case lambda of
+                Just l ->
+                    l x f
+
+                Nothing ->
+                    LambdaValue x <| complexMap fs f
 
         ListValue ls ->
             case list of
@@ -438,21 +503,62 @@ complexMap ({ symbolic, complex, list } as fs) v =
             SymbolicValue <| symbolic w
 
 
+simpleComplexMap2 :
+    (Expression -> Expression -> Expression)
+    -> (Complex -> Complex -> Complex)
+    -> Dict String Value
+    -> Expression
+    -> Expression
+    -> Value
+simpleComplexMap2 symbolic complex context l r =
+    complexMap2
+        { symbolic = symbolic
+        , complex = complex
+        , list = Nothing
+        , lambda = Nothing
+        , context = context
+        }
+        (innerValue context l)
+        (innerValue context r)
+
+
 complexMap2 :
     { symbolic : Expression -> Expression -> Expression
     , complex : Complex -> Complex -> Complex
     , list : Maybe (List Value -> List Value -> Value)
+    , lambda : Maybe ( String -> Value -> Value -> Value, Value -> String -> Value -> Value )
+    , context : Dict String Value
     }
     -> Value
     -> Value
     -> Value
-complexMap2 ({ symbolic, complex, list } as fs) v w =
+complexMap2 ({ symbolic, complex, list, lambda, context } as fs) v w =
     case ( v, w ) of
         ( ErrorValue _, _ ) ->
             v
 
         ( _, ErrorValue _ ) ->
             w
+
+        ( LambdaValue x f, _ ) ->
+            case lambda of
+                Just ( l, _ ) ->
+                    l x f w
+
+                Nothing ->
+                    LambdaValue x <|
+                        innerValue (Dict.remove x context)
+                            (symbolic (toSymbolic f) (toSymbolic w))
+
+        ( _, LambdaValue x f ) ->
+            case lambda of
+                Just ( _, r ) ->
+                    r v x f
+
+                Nothing ->
+                    LambdaValue x <|
+                        innerValue (Dict.remove x context)
+                            (symbolic (toSymbolic v) (toSymbolic f))
 
         ( ListValue ls, ListValue rs ) ->
             case list of
@@ -508,6 +614,9 @@ toSymbolic v =
                     List <| List.map graphToExpression gs
     in
     case v of
+        LambdaValue x f ->
+            Lambda x <| toSymbolic f
+
         SymbolicValue s ->
             s
 

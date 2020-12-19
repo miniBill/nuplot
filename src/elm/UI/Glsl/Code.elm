@@ -902,6 +902,10 @@ expressionToGlslPrec p expr =
         PReplace var e ->
             expressionToGlslPrec p (Expression.pfullSubstitute var e)
 
+        -- If this happens, it's too late
+        PLambda _ _ ->
+            "vec2(0)"
+
 
 expressionToIntervalGlslPrec : Int -> PrintExpression -> String
 expressionToIntervalGlslPrec p expr =
@@ -989,6 +993,10 @@ expressionToIntervalGlslPrec p expr =
         PReplace var e ->
             expressionToIntervalGlslPrec p (Expression.pfullSubstitute var e)
 
+        -- If this happens, it's too late
+        PLambda _ _ ->
+            "vec2(0)"
+
 
 expressionToNormalGlslPrec : Int -> PrintExpression -> String
 expressionToNormalGlslPrec p expr =
@@ -1068,6 +1076,10 @@ expressionToNormalGlslPrec p expr =
 
         PReplace var e ->
             expressionToNormalGlslPrec p (Expression.pfullSubstitute var e)
+
+        -- If this happens, it's too late
+        PLambda _ _ ->
+            "vec4(0)"
 
 
 mainGlsl : List { name : String, color : Bool } -> List String -> String

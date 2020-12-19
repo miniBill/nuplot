@@ -67,6 +67,7 @@ type Value
     | SymbolicValue Expression
     | ComplexValue Complex
     | GraphValue Graph
+    | LambdaValue String Value
     | ListValue (List Value)
 
 

@@ -120,6 +120,9 @@ getRange ctx e =
                             (Dict.toList <| filterContext variables)
                         )
                         c
+
+                Lambda x f ->
+                    getRange (Dict.remove x ctx) f
     in
     result
 

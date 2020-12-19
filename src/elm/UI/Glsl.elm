@@ -238,6 +238,9 @@ expressionToRequirements e =
         List args ->
             List.concatMap expressionToRequirements args
 
+        Lambda _ f ->
+            expressionToRequirements f
+
 
 toGlslFunction : KnownFunction -> Maybe GlslFunction
 toGlslFunction name =
