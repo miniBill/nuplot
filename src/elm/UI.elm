@@ -3,6 +3,7 @@ port module UI exposing (main)
 import Browser
 import Browser.Dom
 import Browser.Events
+import Codec exposing (Codec, Value)
 import Dict
 import Element exposing (Element, fill, height, text, width)
 import Element.Background as Background
@@ -12,7 +13,6 @@ import Element.Input as Input
 import Element.Lazy
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import Expression.Parser
-import Json.Decode as JD
 import List.Extra as List
 import Model exposing (Document, Flags, Model, Msg(..), Output(..))
 import Task
@@ -21,7 +21,7 @@ import UI.Theme as Theme
 import Zipper exposing (Zipper)
 
 
-port save : { key : String, value : String } -> Cmd msg
+port save : Value -> Cmd msg
 
 
 main : Program Flags Model Msg
@@ -43,25 +43,41 @@ main =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
-        parsed =
-            flags
-                |> JD.decodeValue (JD.dict JD.string)
-                |> Result.withDefault Dict.empty
-                |> Dict.toList
-                |> List.filterMap (\( k, v ) -> Maybe.map (\ik -> ( ik, v )) (String.toInt k))
-                |> List.sortBy Tuple.first
-                |> List.map Tuple.second
-                |> List.filterNot String.isEmpty
-                |> (\l ->
-                        if List.isEmpty l then
-                            default
+        documents =
+            case Codec.decodeValue Model.documentsCodec flags of
+                Ok docs ->
+                    docs
 
-                        else
-                            l
-                   )
-                |> (\l -> l ++ [ "" ])
+                Err _ ->
+                    let
+                        raw =
+                            case Codec.decodeValue (Codec.dict Codec.string) flags of
+                                Ok rowsDict ->
+                                    rowsDict
+                                        |> Dict.toList
+                                        |> List.filterMap (\( k, v ) -> Maybe.map (\ik -> ( ik, v )) (String.toInt k))
+                                        |> List.sortBy Tuple.first
+                                        |> List.map Tuple.second
+                                        |> List.filterNot String.isEmpty
 
-        ex x =
+                                Err _ ->
+                                    []
+
+                        rows =
+                            if List.isEmpty raw then
+                                default ++ [ "" ]
+
+                            else
+                                raw ++ [ "" ]
+                    in
+                    Just <|
+                        Zipper.singleton
+                            { name = "Untitled"
+                            , rows = List.map emptyRow rows
+                            , changed = False
+                            }
+
+        emptyRow x =
             { input = x
             , output = Empty
             }
@@ -82,13 +98,7 @@ init flags =
                         }
                     )
     in
-    ( { documents =
-            Just <|
-                Zipper.singleton
-                    { name = "Untitled"
-                    , rows = List.map ex parsed
-                    , changed = False
-                    }
+    ( { documents = documents
       , size = { width = 1024, height = 768 }
       }
     , Task.perform Resized measure
@@ -181,11 +191,7 @@ update msg model =
                             curr.rows
                                 |> List.updateAt row (\r -> { r | input = input })
                     in
-                    ( { curr | rows = rows_, changed = True }
-                    , rows_
-                        |> List.indexedMap (\i r -> save { key = String.fromInt i, value = r.input })
-                        |> Cmd.batch
-                    )
+                    { curr | rows = rows_, changed = True }
                 )
                 model
 
@@ -198,13 +204,11 @@ update msg model =
                                 (\r -> { r | output = parseOrError r.input })
                                 curr.rows
                     in
-                    ( { curr
+                    { curr
                         | rows =
                             List.filterNot (String.isEmpty << .input) rows_
                                 ++ [ Model.emptyRow ]
-                      }
-                    , Cmd.none
-                    )
+                    }
                 )
                 model
 
@@ -240,7 +244,7 @@ update msg model =
             ( { model | size = size }, Cmd.none )
 
 
-updateCurrent : (Document -> ( Document, Cmd msg )) -> Model -> ( Model, Cmd msg )
+updateCurrent : (Document -> Document) -> Model -> ( Model, Cmd msg )
 updateCurrent f model =
     case model.documents of
         Nothing ->
@@ -248,10 +252,15 @@ updateCurrent f model =
 
         Just docs ->
             let
-                ( doc, cmds ) =
+                doc =
                     f <| Zipper.selected docs
+
+                documents =
+                    Just <| Zipper.setSelected doc docs
             in
-            ( { model | documents = Just <| Zipper.setSelected doc docs }, cmds )
+            ( { model | documents = documents }
+            , save <| Codec.encodeToValue Model.documentsCodec documents
+            )
 
 
 parseOrError : String -> Output

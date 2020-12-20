@@ -1,3 +1,5 @@
+dependencies:
+  localforage: 1.9.0
 devDependencies:
   elm: 0.19.1-3
   elm-hot: 1.1.5
@@ -3489,6 +3491,10 @@ packages:
     dev: true
     resolution:
       integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==
+  /immediate/3.0.6:
+    dev: false
+    resolution:
+      integrity: sha1-nbHb0Pr43m++D13V5Wu2BigN5ps=
   /import-fresh/2.0.0:
     dependencies:
       caller-path: 2.0.0
@@ -3997,6 +4003,18 @@ packages:
       node: '>= 0.8.0'
     resolution:
       integrity: sha1-OwmSTt+fCDwEkP3UwLxEIeBHZO4=
+  /lie/3.1.1:
+    dependencies:
+      immediate: 3.0.6
+    dev: false
+    resolution:
+      integrity: sha1-mkNrLMd0bKWd56QfpGmz77dr2H4=
+  /localforage/1.9.0:
+    dependencies:
+      lie: 3.1.1
+    dev: false
+    resolution:
+      integrity: sha512-rR1oyNrKulpe+VM9cYmcFn6tsHuokyVHFaCM3+osEmxaHTbEk8oQu6eGDfS6DQLWi/N67XRmB8ECG37OES368g==
   /locate-path/5.0.0:
     dependencies:
       p-locate: 4.1.0
@@ -6879,6 +6897,7 @@ specifiers:
   elm-review: ^2.3.3
   glslify-bundle: ^5.1.1
   glslify-deps: ^1.3.2
+  localforage: ^1.9.0
   node-elm-compiler: ^5.0.5
   parcel-bundler: ^1.12.4
   parcel-plugin-ogimage: ^1.2.0

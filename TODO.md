@@ -1,3 +1,5 @@
+solve
+
 zoom finger
 fix 3d navigation
     zoom with rmb

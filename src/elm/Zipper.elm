@@ -1,4 +1,19 @@
-module Zipper exposing (Zipper, allRight, append, left, map, removeAt, right, selected, setSelected, singleton)
+module Zipper exposing
+    ( Zipper
+    , allRight
+    , append
+    , codec
+    , fromList
+    , left
+    , map
+    , removeAt
+    , right
+    , selected
+    , setSelected
+    , singleton
+    )
+
+import Codec exposing (Codec)
 
 
 type Zipper a
@@ -102,3 +117,23 @@ removeAt i (Zipper z) =
 
             ( h :: t, _ ) ->
                 Just <| Zipper { z | curr = h, before = t }
+
+
+fromList : List a -> Maybe (Zipper a)
+fromList ls =
+    case ls of
+        [] ->
+            Nothing
+
+        h :: t ->
+            Just <| Zipper { before = [], curr = h, after = t }
+
+
+codec : Codec a -> Codec (Zipper a)
+codec inner =
+    Codec.object (\b c a -> { before = b, curr = c, after = a })
+        |> Codec.field "before" .before (Codec.list inner)
+        |> Codec.field "curr" .curr inner
+        |> Codec.field "after" .after (Codec.list inner)
+        |> Codec.buildObject
+        |> Codec.map Zipper (\(Zipper z) -> z)
