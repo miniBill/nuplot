@@ -1,5 +1,6 @@
 module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, expressionToGraph, parse)
 
+import Color exposing (white)
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), VariableStatus(..), defaultContext, getFreeVariables)
 import Expression.Cleaner as Cleaner
@@ -504,10 +505,13 @@ variableParser context =
                             |= Parser.oneOf
                                 [ Parser.succeed Just
                                     |. Parser.symbol (token "(")
+                                    |. whitespace
                                     |= parseArgs arity True context
                                     |. Parser.oneOf [ Parser.symbol (token ")"), Parser.succeed () ]
+                                    |. whitespace
                                 , Parser.map Just <| parseArgs arity False context
                                 , Parser.succeed Nothing
+                                    |. whitespace
                                 ]
 
                     Nothing ->
@@ -563,6 +567,7 @@ parseArgs count greedy context =
                 |. Parser.symbol (token ",")
                 |. whitespace
                 |= parseArgs (count - 1) greedy context
+                |. whitespace
 
 
 isVariableLetter : Char -> Bool

@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, vector, x, y, z)
+import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, vector, x, y, z, zero)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -291,6 +291,12 @@ tests =
     , ( "{a,b,", List [ a, b ], "{a, b}" )
     , ( "{a,b,}", List [ a, b ], "{a, b}" )
     , ( "2expa", by [ two, exp_ a ], "2exp(a)" )
+    , ( "sin( 0c)", sin_ <| by [ zero, c ], "sin(0c)" )
+    , ( "sin (0c)", sin_ <| by [ zero, c ], "sin(0c)" )
+    , ( "sin ( 0c)", sin_ <| by [ zero, c ], "sin(0c)" )
+    , ( "sin ( 0 c)", sin_ <| by [ zero, c ], "sin(0c)" )
+    , ( "sin ( 0 c )", sin_ <| by [ zero, c ], "sin(0c)" )
+    , ( "sin ( 0 c ) a", by [ sin_ <| by [ zero, c ], a ], "sin(0c)*a" )
     ]
 
 
