@@ -153,8 +153,8 @@ view model =
                 |> Maybe.withDefault (Element.text "Select a document")
     in
     Theme.column [ width fill, height fill ]
-        [ documentPickerView
-        , documentView
+        [ -- documentPickerView,
+          documentView
         ]
 
 
