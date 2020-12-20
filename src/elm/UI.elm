@@ -252,6 +252,8 @@ update msg model =
                         rows_ =
                             curr.rows
                                 |> List.updateAt row (\r -> { r | input = input })
+                                |> List.filterNot (String.isEmpty << .input)
+                                |> (\rs -> rs ++ [ Model.emptyRow ])
                     in
                     { curr | rows = rows_, changed = True }
                 )
@@ -262,15 +264,12 @@ update msg model =
                 (\curr ->
                     let
                         rows_ =
-                            List.updateAt row
-                                (\r -> { r | output = parseOrError r.input })
-                                curr.rows
+                            curr.rows
+                                |> List.updateAt row (\r -> { r | output = parseOrError r.input })
+                                |> List.filterNot (String.isEmpty << .input)
+                                |> (\rs -> rs ++ [ Model.emptyRow ])
                     in
-                    { curr
-                        | rows =
-                            List.filterNot (String.isEmpty << .input) rows_
-                                ++ [ Model.emptyRow ]
-                    }
+                    { curr | rows = rows_ }
                 )
                 model
 
