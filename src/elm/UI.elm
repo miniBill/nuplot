@@ -4,17 +4,21 @@ import Browser
 import Browser.Dom
 import Browser.Events
 import Dict
-import Element exposing (Element, fill, height, width)
+import Element exposing (Element, fill, height, text, width)
+import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Element.Lazy
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import Expression.Parser
 import Json.Decode as JD
 import List.Extra as List
-import Model exposing (Flags, Model, Msg(..), Output(..))
+import Model exposing (Document, Flags, Model, Msg(..), Output(..))
 import Task
 import UI.RowView
 import UI.Theme as Theme
+import Zipper exposing (Zipper)
 
 
 port save : { key : String, value : String } -> Cmd msg
@@ -29,7 +33,6 @@ main =
                 [ width fill
                 , height fill
                 , Font.size Theme.fontSize
-                , Element.padding Theme.spacing
                 ]
                 << view
         , update = update
@@ -43,12 +46,20 @@ init flags =
         parsed =
             flags
                 |> JD.decodeValue (JD.dict JD.string)
-                |> Result.map
-                    (Dict.toList
-                        >> List.filterMap (\( k, v ) -> Maybe.map (\ik -> ( ik, v )) (String.toInt k))
-                        >> List.sortBy Tuple.first
-                        >> List.map Tuple.second
-                    )
+                |> Result.withDefault Dict.empty
+                |> Dict.toList
+                |> List.filterMap (\( k, v ) -> Maybe.map (\ik -> ( ik, v )) (String.toInt k))
+                |> List.sortBy Tuple.first
+                |> List.map Tuple.second
+                |> List.filterNot String.isEmpty
+                |> (\l ->
+                        if List.isEmpty l then
+                            default
+
+                        else
+                            l
+                   )
+                |> (\l -> l ++ [ "" ])
 
         ex x =
             { input = x
@@ -70,19 +81,13 @@ init flags =
                         }
                     )
     in
-    ( { rows =
-            parsed
-                |> Result.withDefault []
-                |> List.filterNot String.isEmpty
-                |> (\l ->
-                        if List.isEmpty l then
-                            default
-
-                        else
-                            l
-                   )
-                |> (\l -> l ++ [ "" ])
-                |> List.map ex
+    ( { documents =
+            Just <|
+                Zipper.singleton
+                    { name = "Untitled"
+                    , rows = List.map ex parsed
+                    , changed = False
+                    }
       , size = { width = 1024, height = 768 }
       }
     , Task.perform Resized measure
@@ -91,47 +96,161 @@ init flags =
 
 view : Model -> Element Msg
 view model =
+    let
+        documentPickerView =
+            let
+                btn selected msg label =
+                    Input.button
+                        [ Element.padding Theme.spacing
+                        , Border.widthEach
+                            { left = 1
+                            , top = 1
+                            , right =
+                                if msg == NewDocument then
+                                    1
+
+                                else
+                                    0
+                            , bottom = 0
+                            }
+                        , Background.color <|
+                            if selected then
+                                Theme.colors.selectedDocument
+
+                            else
+                                Theme.colors.unselectedDocument
+                        , Element.focused
+                            [ Background.color <|
+                                Theme.darken <|
+                                    if selected then
+                                        Theme.colors.selectedDocument
+
+                                    else
+                                        Theme.colors.unselectedDocument
+                            ]
+                        ]
+                        { onPress = Just msg
+                        , label = text label
+                        }
+
+                toBtn selected index doc =
+                    btn selected (SelectDocument index) doc.name
+
+                buttons =
+                    Maybe.withDefault [] (Maybe.map (Zipper.map toBtn) model.documents)
+                        ++ [ btn False NewDocument "+" ]
+            in
+            Element.row
+                [ Element.paddingEach { top = Theme.spacing, left = Theme.spacing, right = Theme.spacing, bottom = 0 }
+                , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
+                , width fill
+                ]
+                buttons
+
+        documentView =
+            model.documents
+                |> Maybe.map (Zipper.selected >> viewDocument model.size)
+                |> Maybe.withDefault (Element.text "Select a document")
+    in
+    Theme.column [ width fill, height fill ]
+        [ documentPickerView
+        , documentView
+        ]
+
+
+viewDocument : { width : Int, height : Int } -> Document -> Element Msg
+viewDocument size { rows } =
     Element.column
         [ Element.spacing <| 2 * Theme.spacing
+        , Element.padding Theme.spacing
         , width fill
         ]
     <|
-        List.indexedMap (\index row -> Element.Lazy.lazy3 UI.RowView.view model.size index row) model.rows
+        List.indexedMap (\index row -> Element.Lazy.lazy3 UI.RowView.view size index row) rows
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Input row input ->
-            let
-                rows_ =
-                    List.updateAt row
-                        (\r -> { r | input = input })
-                        model.rows
-            in
-            ( { model | rows = rows_ }
-            , rows_
-                |> List.indexedMap (\i r -> save { key = String.fromInt i, value = r.input })
-                |> Cmd.batch
-            )
+            updateCurrent
+                (\curr ->
+                    let
+                        rows_ =
+                            curr.rows
+                                |> List.updateAt row (\r -> { r | input = input })
+                    in
+                    ( { curr | rows = rows_, changed = True }
+                    , rows_
+                        |> List.indexedMap (\i r -> save { key = String.fromInt i, value = r.input })
+                        |> Cmd.batch
+                    )
+                )
+                model
 
         Calculate row ->
+            updateCurrent
+                (\curr ->
+                    let
+                        rows_ =
+                            List.updateAt row
+                                (\r -> { r | output = parseOrError r.input })
+                                curr.rows
+                    in
+                    ( { curr
+                        | rows =
+                            List.filterNot (String.isEmpty << .input) rows_
+                                ++ [ Model.emptyRow ]
+                      }
+                    , Cmd.none
+                    )
+                )
+                model
+
+        NewDocument ->
             let
-                rows_ =
-                    List.updateAt row
-                        (\r -> { r | output = parseOrError r.input })
-                        model.rows
+                newDocument =
+                    { name = "Untitled"
+                    , rows = [ Model.emptyRow ]
+                    , changed = False
+                    }
             in
             ( { model
-                | rows =
-                    List.filterNot (String.isEmpty << .input) rows_
-                        ++ [ Model.emptyRow ]
+                | documents =
+                    Just <|
+                        case model.documents of
+                            Nothing ->
+                                Zipper.singleton newDocument
+
+                            Just docs ->
+                                Zipper.append newDocument docs
+                                    |> Zipper.allRight
               }
             , Cmd.none
             )
 
+        SelectDocument i ->
+            ( { model | documents = Maybe.map (Zipper.right i) model.documents }, Cmd.none )
+
+        CloseDocument i ->
+            ( { model | documents = Maybe.andThen (Zipper.removeAt i) model.documents }, Cmd.none )
+
         Resized size ->
             ( { model | size = size }, Cmd.none )
+
+
+updateCurrent : (Document -> ( Document, Cmd msg )) -> Model -> ( Model, Cmd msg )
+updateCurrent f model =
+    case model.documents of
+        Nothing ->
+            ( model, Cmd.none )
+
+        Just docs ->
+            let
+                ( doc, cmds ) =
+                    f <| Zipper.selected docs
+            in
+            ( { model | documents = Just <| Zipper.setSelected doc docs }, cmds )
 
 
 parseOrError : String -> Output

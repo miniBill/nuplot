@@ -1,6 +1,7 @@
-module UI.Theme exposing (bracketBorderWidth, bracketWidth, column, fontSize, grid, row, spacing, whiteLines, wrappedRow)
+module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darken, fontSize, grid, row, spacing, whiteLines, wrappedRow)
 
-import Element exposing (Attribute, Element, none, shrink)
+import Color
+import Element exposing (Attribute, Color, Element, none, rgb, shrink)
 
 
 fontSize : number
@@ -26,6 +27,40 @@ bracketWidth =
 bracketBorderWidth : number
 bracketBorderWidth =
     2
+
+
+colors :
+    { selectedDocument : Color
+    , unselectedDocument : Color
+    }
+colors =
+    { selectedDocument = rgb 0.8 0.8 0.9
+    , unselectedDocument = rgb 0.8 0.8 0.8
+    }
+
+
+darken : Color -> Color
+darken =
+    mapHsl (\c -> { c | lightness = 0.8 * c.lightness })
+
+
+type alias Hsla =
+    { hue : Float
+    , saturation : Float
+    , lightness : Float
+    , alpha : Float
+    }
+
+
+mapHsl : (Hsla -> Hsla) -> Color -> Color
+mapHsl f =
+    Element.toRgb
+        >> Color.fromRgba
+        >> Color.toHsla
+        >> f
+        >> Color.fromHsla
+        >> Color.toRgba
+        >> Element.fromRgb
 
 
 row : List (Attribute msg) -> List (Element msg) -> Element msg
