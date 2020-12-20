@@ -7,7 +7,7 @@ devDependencies:
   glslify-deps: 1.3.2
   node-elm-compiler: 5.0.5
   parcel-bundler: 1.12.4
-  parcel-plugin-inliner: 1.0.14_parcel-bundler@1.12.4
+  parcel-plugin-ogimage: 1.2.0
   parcel-plugin-pwa-manifest: 3.0.10_parcel-bundler@1.12.4
   typescript: 4.1.2
 lockfileVersion: 5.2
@@ -1067,15 +1067,6 @@ packages:
       node: '>=10'
     resolution:
       integrity: sha512-eTiEreR4UjQRN1QEaogZNYFAsrWLSOAhNCVAUYO/8a33b4g5nSkbbyrRSNCyx1jdTXq9NGpRfBtRhDJJqgO5Iw==
-  /@shferreira/posthtml-inline-assets/3.0.2:
-    dependencies:
-      file-type: 10.11.0
-      fse: 4.0.1
-    dev: true
-    engines:
-      node: '>=4.0.0'
-    resolution:
-      integrity: sha512-Flj6L54Tc17M8p/wbb9YaL01MlX+WQe8gzPTxRb0yF/DYHqgizWEx0XKVeUEHbCGeB14zJ9pVCmCDFBxhc2y3Q==
   /@sindresorhus/is/2.1.1:
     dev: true
     engines:
@@ -1187,6 +1178,12 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-7QMXwyIGT3lGbAKWa922Bas32Zg=
+  /ansi-regex/4.1.0:
+    dev: true
+    engines:
+      node: '>=6'
+    resolution:
+      integrity: sha512-1apePfXM1UOSqw0o9IiFAovVz9M5S1Dg+4TrDwfMewQ6p/rmMueb7tWZjQ1rx4Loy1ArBggoqGpfqqdI4rondg==
   /ansi-regex/5.0.0:
     dev: true
     engines:
@@ -2886,12 +2883,6 @@ packages:
     dev: true
     resolution:
       integrity: sha512-483XLLxTVIwWK3QTrMGRqUfUpoOs/0hbQrl2oz4J0pAcm3A3bu84wxTFqGqkJzewCLdME38xJLJAxBABfQT8sQ==
-  /file-type/10.11.0:
-    dev: true
-    engines:
-      node: '>=6'
-    resolution:
-      integrity: sha512-uzk64HRpUZyTGZtVuvrjP0FYxzQrBf4rojot6J65YMEbwBLB0CWm0CLojVpwpmFmxcE/lkvYICgfcGozbBq6rw==
   /file-uri-to-path/1.0.0:
     dev: true
     resolution:
@@ -3028,12 +3019,10 @@ packages:
     dev: true
     resolution:
       integrity: sha1-FQStJSMVjKpA20onh8sBQRmU6k8=
-  /fse/4.0.1:
+  /fs/0.0.1-security:
     dev: true
-    engines:
-      node: '>=4.0.0'
     resolution:
-      integrity: sha512-5XLUrweQvJxSJKhBe3XjimHSJ2EUhYOG+K2tLQy8I9kp78Fa3CgUXqxAZWxE9+fsvnI5GVkHl4NDqbf1tSb93Q==
+      integrity: sha1-invTcYa23d84E/I4WLV+yq9eQdQ=
   /fsevents/1.2.13:
     dependencies:
       bindings: 1.5.0
@@ -4607,6 +4596,19 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha512-hNNlAd3gfv/iPmsNxYoAPLvxg7HuPozww7fFonMZvL84tP6Ox5igfk5j/+a9rtJJwqMgKK+JgWsAQik5o0HTLA==
+  /ora/3.4.0:
+    dependencies:
+      chalk: 2.4.2
+      cli-cursor: 2.1.0
+      cli-spinners: 2.5.0
+      log-symbols: 2.2.0
+      strip-ansi: 5.2.0
+      wcwidth: 1.0.1
+    dev: true
+    engines:
+      node: '>=6'
+    resolution:
+      integrity: sha512-eNwHudNbO1folBP3JsZ19v9azXWtQZjICdr3Q0TDPIaeBQ3mXLrh54wM+er0+hSp+dWKf+Z8KM58CYzEyIYxYg==
   /ora/4.1.1:
     dependencies:
       chalk: 3.0.0
@@ -4752,15 +4754,18 @@ packages:
     requiresBuild: true
     resolution:
       integrity: sha512-G+iZGGiPEXcRzw0fiRxWYCKxdt/F7l9a0xkiU4XbcVRJCSlBnioWEwJMutOCCpoQmaQtjB4RBHDGIHN85AIhLQ==
-  /parcel-plugin-inliner/1.0.14_parcel-bundler@1.12.4:
+  /parcel-plugin-ogimage/1.2.0:
     dependencies:
-      '@shferreira/posthtml-inline-assets': 3.0.2
-      parcel-bundler: 1.12.4
+      chalk: 2.4.2
+      fs: 0.0.1-security
+      ora: 3.4.0
+      path: 0.12.7
+      pretty-ms: 5.1.0
     dev: true
-    peerDependencies:
-      parcel-bundler: ^1.9.4
+    engines:
+      node: '>=8'
     resolution:
-      integrity: sha512-i3U6m/MHOFPuQEx1GqHLburj6PO3MUVVYe3f2bgS9vSGFC7Dy694Mna1UkQ57h146r/DoweXMabNEOvk5kkyhA==
+      integrity: sha512-EN4X3UnEvp/Vd1pun45fiJKMrrrgFNbSb8iuHkjo7Sszwg+ou8ivYD7h8Iw9UNEvGJVGD0JrktJnSmhZ2P51rg==
   /parcel-plugin-pwa-manifest/3.0.10_parcel-bundler@1.12.4:
     dependencies:
       '@pwa-manifest/core': 1.4.1
@@ -4791,6 +4796,12 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-vjX1Qlvh9/bHRxhPmKeIy5lHfuA=
+  /parse-ms/2.1.0:
+    dev: true
+    engines:
+      node: '>=6'
+    resolution:
+      integrity: sha512-kHt7kzLoS9VBZfUsiKjv43mr91ea+U05EyKkEtqp7vNbHxmaVuEqN7XxeEVnGrMtYOAxGrDElSi96K7EgO1zCA==
   /parse5/5.1.0:
     dev: true
     resolution:
@@ -4843,6 +4854,13 @@ packages:
     dev: true
     resolution:
       integrity: sha512-GSmOT2EbHrINBf9SR7CDELwlJ8AENk3Qn7OikK4nFYAu3Ote2+JYNVvkpAEQm3/TLNEJFD/xZJjzyxg3KBWOzw==
+  /path/0.12.7:
+    dependencies:
+      process: 0.11.10
+      util: 0.10.4
+    dev: true
+    resolution:
+      integrity: sha1-1NwqUGxM4hl+tIHr/NWzbAFAsQ8=
   /pbkdf2/3.1.1:
     dependencies:
       create-hash: 1.2.0
@@ -5314,6 +5332,14 @@ packages:
       node: '>= 0.8.0'
     resolution:
       integrity: sha1-IZMqVJ9eUv/ZqCf1cOBL5iqX2lQ=
+  /pretty-ms/5.1.0:
+    dependencies:
+      parse-ms: 2.1.0
+    dev: true
+    engines:
+      node: '>=8'
+    resolution:
+      integrity: sha512-4gaK1skD2gwscCfkswYQRmddUb2GJZtzDGRjHWadVHtK/DIKFufa12MvES6/xu1tVbUYeia5bmLcwJtZJQUqnw==
   /process-nextick-args/2.0.1:
     dev: true
     resolution:
@@ -6159,6 +6185,14 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-qEeQIusaw2iocTibY1JixQXuNo8=
+  /strip-ansi/5.2.0:
+    dependencies:
+      ansi-regex: 4.1.0
+    dev: true
+    engines:
+      node: '>=6'
+    resolution:
+      integrity: sha512-DuRs1gKbBqsMKIZlrffwlug8MHkcnpjs5VPmL1PAh+mA30U0DTotfDZ0d2UUsXpPmPmMMJ6W773MaA3J+lbiWA==
   /strip-ansi/6.0.0:
     dependencies:
       ansi-regex: 5.0.0
@@ -6663,6 +6697,12 @@ packages:
     dev: true
     resolution:
       integrity: sha1-evsa/lCAUkZInj23/g7TeTNqwPk=
+  /util/0.10.4:
+    dependencies:
+      inherits: 2.0.3
+    dev: true
+    resolution:
+      integrity: sha512-0Pm9hTQ3se5ll1XihRic3FDIku70C+iHUdT/W926rSgHV5QgXsYbKZN8MSC3tJtSkhuROzvsQjAaFENRXr+19A==
   /util/0.11.1:
     dependencies:
       inherits: 2.0.3
@@ -6841,6 +6881,6 @@ specifiers:
   glslify-deps: ^1.3.2
   node-elm-compiler: ^5.0.5
   parcel-bundler: ^1.12.4
-  parcel-plugin-inliner: ^1.0.14
+  parcel-plugin-ogimage: ^1.2.0
   parcel-plugin-pwa-manifest: ^3.0.10
   typescript: ^4.1.2
