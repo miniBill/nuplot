@@ -1179,7 +1179,7 @@ main3D suffixes =
 
         raytrace =
             """
-            vec4 raytrace(vec3 o, vec3 d, float max_distance, vec3 light) {
+            vec4 raytrace(vec3 o, vec3 d, float max_distance) {
                 vec3 found = o + 2.0 * max_distance * d;
                 vec3 normal = vec3(0);
                 float curr_distance = max_distance;
@@ -1191,13 +1191,13 @@ main3D suffixes =
                     float h = (float(found_index))*radians(360.0 / 1.1);
                     float fy = found.y * 0.5;
 
-                    float light_distance = length(light - found);
+                    vec3 light_direction = normalize(vec3(-0.3, 1.0, 0.0));
+                    float light_distance = max_distance;
                     bool in_light = true;
                     vec3 offseted = found + 0.001 * normalize(o - found);
                     if(length(normal) == 0.0) {
                         normal = normalize(o - found);
                     }
-                    vec3 light_direction = normalize(light - offseted);
                     if(0 == 1) { }
                     """ ++ innerLightTrace ++ """
                     float dt = max(0.0, dot(normal, light_direction));
@@ -1316,7 +1316,6 @@ main3D suffixes =
                 float t = u_theta - 1.0;
                 float p = u_phi;
                 vec3 eye = eye_dist * vec3(sin(t) * sin(p), cos(t), sin(t) * cos(p));
-                vec3 light = vec3(-5, 20, 0);
 
                 vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
                 vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
@@ -1332,7 +1331,7 @@ main3D suffixes =
 
                 vec3 ray_direction = normalize(canvas_point - eye);
                 float max_distance = 40.0 * length(eye);
-                return raytrace(canvas_point, ray_direction, max_distance, light);
+                return raytrace(canvas_point, ray_direction, max_distance);
             }
         """
 
