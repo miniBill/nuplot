@@ -30,11 +30,13 @@ bracketBorderWidth =
 
 
 colors :
-    { selectedDocument : Color
+    { background : Color
+    , selectedDocument : Color
     , unselectedDocument : Color
     }
 colors =
-    { selectedDocument = rgb 0.8 0.8 0.9
+    { background = rgb 0.9 0.9 0.9
+    , selectedDocument = rgb 0.8 0.8 0.9
     , unselectedDocument = rgb 0.8 0.8 0.8
     }
 

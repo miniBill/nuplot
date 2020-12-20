@@ -4,6 +4,7 @@ module Zipper exposing
     , append
     , codec
     , fromList
+    , get
     , left
     , map
     , removeAt
@@ -41,6 +42,18 @@ selected (Zipper { curr }) =
 setSelected : a -> Zipper a -> Zipper a
 setSelected x (Zipper z) =
     Zipper { z | curr = x }
+
+
+get : Int -> Zipper a -> Maybe a
+get i (Zipper { before, curr, after }) =
+    if i == 0 then
+        Just curr
+
+    else if i < 0 then
+        List.head (List.drop (-i - 1) before)
+
+    else
+        List.head (List.drop (i - 1) after)
 
 
 left : Int -> Zipper a -> Zipper a

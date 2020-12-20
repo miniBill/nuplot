@@ -1,4 +1,4 @@
-module Model exposing (Document, Flags, Model, Msg(..), Output(..), Row, documentsCodec, emptyRow)
+module Model exposing (Document, Flags, Modal(..), Model, Msg(..), Output(..), Row, documentsCodec, emptyRow)
 
 import Codec exposing (Codec)
 import Expression exposing (Expression)
@@ -12,8 +12,13 @@ type alias Flags =
 
 type alias Model =
     { documents : Maybe (Zipper Document)
+    , modal : Maybe Modal
     , size : Size
     }
+
+
+type Modal
+    = ModalClose Int
 
 
 documentsCodec : Codec (Maybe (Zipper Document))
@@ -81,5 +86,6 @@ type Msg
     | Calculate Int
     | NewDocument
     | SelectDocument Int
-    | CloseDocument Int
+    | CloseDocument { ask : Bool, index : Int }
     | Resized Size
+    | DismissModal

@@ -5,7 +5,7 @@ import Browser.Dom
 import Browser.Events
 import Codec exposing (Codec, Value)
 import Dict
-import Element exposing (Element, fill, height, text, width)
+import Element exposing (Element, alignRight, centerX, centerY, el, fill, height, padding, paddingEach, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -14,7 +14,7 @@ import Element.Lazy
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import Expression.Parser
 import List.Extra as List
-import Model exposing (Document, Flags, Model, Msg(..), Output(..))
+import Model exposing (Document, Flags, Modal(..), Model, Msg(..), Output(..))
 import Task
 import UI.RowView
 import UI.Theme as Theme
@@ -31,8 +31,8 @@ main =
         , view =
             Element.layout
                 [ width fill
-                , height fill
                 , Font.size Theme.fontSize
+                , Background.color Theme.colors.background
                 ]
                 << view
         , update = update
@@ -100,6 +100,7 @@ init flags =
     in
     ( { documents = documents
       , size = { width = 1024, height = 768 }
+      , modal = Nothing
       }
     , Task.perform Resized measure
     )
@@ -110,10 +111,9 @@ view model =
     let
         documentPickerView =
             let
-                btn selected msg label =
+                btn selected msg closeMsg label =
                     Input.button
-                        [ Element.padding Theme.spacing
-                        , Border.widthEach
+                        [ Border.widthEach
                             { left = 1
                             , top = 1
                             , right =
@@ -141,18 +141,32 @@ view model =
                             ]
                         ]
                         { onPress = Just msg
-                        , label = text label
+                        , label =
+                            case closeMsg of
+                                Nothing ->
+                                    el [ padding Theme.spacing ] <| text label
+
+                                Just c ->
+                                    Element.row
+                                        [ padding <| Theme.spacing // 2
+                                        ]
+                                        [ el [ padding <| Theme.spacing // 2 ] <| text label
+                                        , Input.button [ padding <| Theme.spacing // 2 ]
+                                            { onPress = closeMsg
+                                            , label = text "X"
+                                            }
+                                        ]
                         }
 
                 toBtn selected index doc =
-                    btn selected (SelectDocument index) doc.name
+                    btn selected (SelectDocument index) (Just <| CloseDocument { ask = True, index = index }) doc.name
 
                 buttons =
                     Maybe.withDefault [] (Maybe.map (Zipper.map toBtn) model.documents)
-                        ++ [ btn False NewDocument "+" ]
+                        ++ [ btn False NewDocument Nothing "+" ]
             in
             Element.row
-                [ Element.paddingEach { top = Theme.spacing, left = Theme.spacing, right = Theme.spacing, bottom = 0 }
+                [ paddingEach { top = Theme.spacing, left = Theme.spacing, right = Theme.spacing, bottom = 0 }
                 , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
                 , width fill
                 ]
@@ -163,10 +177,58 @@ view model =
                 |> Maybe.map (Zipper.selected >> viewDocument model.size)
                 |> Maybe.withDefault (Element.text "Select a document")
     in
-    Theme.column [ width fill, height fill ]
-        [ -- documentPickerView,
+    Theme.column
+        [ width fill
+        , height fill
+        , Element.inFront <| viewModal model
+        ]
+        [ --documentPickerView,
           documentView
         ]
+
+
+viewModal : Model -> Element Msg
+viewModal model =
+    let
+        wrap e =
+            el
+                [ width fill
+                , height fill
+                , padding <| Theme.spacing * 8
+                , Background.color <| Element.rgba 0.5 0.5 0.5 0.5
+                ]
+            <|
+                el [ centerX, centerY, Background.color Theme.colors.background, padding Theme.spacing ] <|
+                    Theme.column [] <|
+                        Input.button [ alignRight ]
+                            { onPress = Just DismissModal
+                            , label = text "X"
+                            }
+                            :: e
+    in
+    case ( model.modal, model.documents ) of
+        ( Nothing, _ ) ->
+            Element.none
+
+        ( Just (ModalClose _), Nothing ) ->
+            Element.none
+
+        ( Just (ModalClose i), Just docs ) ->
+            case Zipper.get i docs of
+                Nothing ->
+                    Element.none
+
+                Just { name } ->
+                    wrap
+                        [ text <| "Close document " ++ name ++ "?"
+                        , Theme.row [ alignRight ]
+                            [ Input.button []
+                                { onPress = Just <| CloseDocument { ask = False, index = i }
+                                , label = text "Ok"
+                                }
+                            , Input.button [] { onPress = Just DismissModal, label = text "Cancel" }
+                            ]
+                        ]
 
 
 viewDocument : { width : Int, height : Int } -> Document -> Element Msg
@@ -219,9 +281,8 @@ update msg model =
                     , rows = [ Model.emptyRow ]
                     , changed = False
                     }
-            in
-            ( { model
-                | documents =
+
+                documents =
                     Just <|
                         case model.documents of
                             Nothing ->
@@ -230,18 +291,40 @@ update msg model =
                             Just docs ->
                                 Zipper.append newDocument docs
                                     |> Zipper.allRight
-              }
-            , Cmd.none
+            in
+            ( { model | documents = documents }
+            , save <| Codec.encodeToValue Model.documentsCodec documents
             )
 
         SelectDocument i ->
-            ( { model | documents = Maybe.map (Zipper.right i) model.documents }, Cmd.none )
+            let
+                documents =
+                    Maybe.map (Zipper.right i) model.documents
+            in
+            ( { model | documents = documents }
+            , save <| Codec.encodeToValue Model.documentsCodec documents
+            )
 
-        CloseDocument i ->
-            ( { model | documents = Maybe.andThen (Zipper.removeAt i) model.documents }, Cmd.none )
+        CloseDocument { ask, index } ->
+            if ask then
+                ( { model | modal = Just <| ModalClose index }
+                , Cmd.none
+                )
+
+            else
+                let
+                    documents =
+                        Maybe.andThen (Zipper.removeAt index) model.documents
+                in
+                ( { model | documents = documents }
+                , save <| Codec.encodeToValue Model.documentsCodec documents
+                )
 
         Resized size ->
             ( { model | size = size }, Cmd.none )
+
+        DismissModal ->
+            ( { model | modal = Nothing }, Cmd.none )
 
 
 updateCurrent : (Document -> Document) -> Model -> ( Model, Cmd msg )
