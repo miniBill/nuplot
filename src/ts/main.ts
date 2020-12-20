@@ -13,6 +13,8 @@ window.MathJax = {
 customElements.define("nu-plot", NuPlot);
 customElements.define("math-jax", MathJaxElement);
 
+const storageKey = "documents";
+
 function fromLS() {
   var saved: { [key: string]: string } = {};
   for (var i = 0; i < localStorage.length; i++) {
@@ -25,16 +27,7 @@ function fromLS() {
   return saved;
 }
 
-async function retrieveSavedData() {
-  try {
-    var fromLF = await localForage.getItem(storageKey);
-    if (fromLF !== null) return fromLF;
-  } catch (e) {}
-  return fromLS();
-}
-
-const storageKey = "documents";
-export async function init(Elm: ElmType) {
+function innerInit(Elm: ElmType, saved: any) {
   const node = document.getElementById("main");
   if (node == null) {
     document.write(
@@ -43,13 +36,18 @@ export async function init(Elm: ElmType) {
     return;
   }
 
-  var saved = await retrieveSavedData();
-
   var app = Elm.UI.init({
     node: node,
     flags: saved,
   });
-  app.ports.save.subscribe(async (value) => {
-    await localForage.setItem(storageKey, value);
+  app.ports.save.subscribe((value) => {
+    localForage.setItem(storageKey, value);
   });
+}
+
+export function init(Elm: ElmType) {
+  localForage
+    .getItem(storageKey)
+    .then((saved) => innerInit(Elm, saved))
+    .catch(() => innerInit(Elm, fromLS()));
 }
