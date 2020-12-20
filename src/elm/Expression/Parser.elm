@@ -524,18 +524,6 @@ variableParser context =
 getFirstFree : Trie VariableStatus -> String
 getFirstFree trie =
     let
-        _ =
-            if go alphabeth == "aa" then
-                Debug.log "getFirstFree"
-                    { trie = trie
-                    , res = go alphabeth
-                    }
-
-            else
-                { trie = trie
-                , res = go alphabeth
-                }
-
         alphabeth =
             List.map (String.fromChar << Char.fromCode) <| List.range (Char.toCode 'a') (Char.toCode 'z')
 
