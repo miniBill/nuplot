@@ -472,6 +472,12 @@ groupStepMultiplication curr last =
         ( c, Integer 1 ) ->
             Just c
 
+        ( _, Integer 0 ) ->
+            Just <| Integer 0
+
+        ( Integer 0, l ) ->
+            Just <| Integer 0
+
         ( Integer il, Integer ir ) ->
             Just <| Integer <| il * ir
 
