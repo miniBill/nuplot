@@ -124,8 +124,6 @@ stepSimplifyApply fname sargs =
 
                         else
                             Integer r
-                        --simplifydetdet{{{{a,b},{f,g}},{{c,d},{h,j}}},{{{k,l},{o,p}},{{m,n},{q,r}}}}
-                        --simplifydet{{a,b,c,d},{f,g,h,j},{k,l,m,n},{o,p,q,r}}
 
                     else
                         Apply fname sargs
