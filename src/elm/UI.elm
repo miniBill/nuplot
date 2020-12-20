@@ -87,6 +87,7 @@ init flags =
             , "[zx+iy]{plot(z³-1),plotabs(z³-1),plotarg(z³-1)}"
             , "plot((sinx)²+(siny)²+(sinz)² = pw(z>1,-1,.5sinsqrt(x²+y²+z²)"
             , "plot({z=sin(x²+y²),x²+y²+(z-2)² = 3}"
+            , "simplifydet{{a,b,c},{0,1,0},{1,2,3"
             ]
 
         measure =
