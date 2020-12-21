@@ -17,7 +17,7 @@ import List.Extra as List
 import Model exposing (Document, Flags, Modal(..), Model, Msg(..), Output(..))
 import Task
 import UI.RowView
-import UI.Theme as Theme
+import UI.Theme as Theme exposing (onEnter)
 import Zipper exposing (Zipper)
 
 
@@ -255,7 +255,7 @@ viewModal model =
 
         ( Just (ModalRename name), Just docs ) ->
             wrap (RenameDocument <| Just name)
-                [ Input.text []
+                [ Input.text [ onEnter <| RenameDocument <| Just name ]
                     { onChange = SetModal << ModalRename
                     , text = name
                     , placeholder = Nothing

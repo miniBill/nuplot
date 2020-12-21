@@ -16,7 +16,7 @@ import Json.Decode as Decode
 import List.Extra as List
 import Model exposing (Msg(..), Output(..), Row)
 import UI.Glsl exposing (getGlsl)
-import UI.Theme as Theme
+import UI.Theme as Theme exposing (onEnter)
 
 
 draw : { a | pageWidth : Int, pageHeight : Int } -> { wdiv : Int, hdiv : Int } -> Graph -> Element msg
@@ -100,21 +100,6 @@ inputLine index row =
             , label = text "⏎"
             }
         ]
-
-
-onEnter : msg -> Attribute msg
-onEnter msg =
-    Decode.field "key" Decode.string
-        |> Decode.andThen
-            (\s ->
-                if s == "Enter" then
-                    Decode.succeed msg
-
-                else
-                    Decode.fail "ignored"
-            )
-        |> Html.Events.on "keyup"
-        |> htmlAttribute
 
 
 statusLine : Int -> Row -> Element msg

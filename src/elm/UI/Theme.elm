@@ -1,7 +1,9 @@
-module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darken, fontSize, grid, row, spacing, whiteLines, wrappedRow)
+module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darken, fontSize, grid, onEnter, row, spacing, whiteLines, wrappedRow)
 
 import Color
 import Element exposing (Attribute, Color, Element, none, rgb, shrink)
+import Html.Events
+import Json.Decode as Decode
 
 
 fontSize : number
@@ -108,3 +110,18 @@ grid attrs rows =
             { columns = List.map toColumn <| List.range 0 (w - 1)
             , data = rows
             }
+
+
+onEnter : msg -> Attribute msg
+onEnter msg =
+    Decode.field "key" Decode.string
+        |> Decode.andThen
+            (\s ->
+                if s == "Enter" then
+                    Decode.succeed msg
+
+                else
+                    Decode.fail "ignored"
+            )
+        |> Html.Events.on "keyup"
+        |> Element.htmlAttribute
