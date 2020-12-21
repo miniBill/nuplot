@@ -95,7 +95,7 @@ inputLine index row =
             , placeholder = Nothing
             , text = row.input
             }
-        , Input.button [ htmlAttribute <| Html.Attributes.title "Press Enter to calculate" ]
+        , Input.button [ Font.bold, htmlAttribute <| Html.Attributes.title "Press Enter to calculate" ]
             { onPress = Just <| Calculate index
             , label = text "⏎"
             }
