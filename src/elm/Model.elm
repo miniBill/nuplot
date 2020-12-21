@@ -19,6 +19,7 @@ type alias Model =
 
 type Modal
     = ModalClose Int
+    | ModalRename String
 
 
 documentsCodec : Codec (Maybe (Zipper Document))
@@ -86,6 +87,8 @@ type Msg
     | Calculate Int
     | NewDocument
     | SelectDocument Int
+    | RenameDocument (Maybe String)
     | CloseDocument { ask : Bool, index : Int }
     | Resized Size
     | DismissModal
+    | SetModal Modal

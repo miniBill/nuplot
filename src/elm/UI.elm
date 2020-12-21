@@ -112,7 +112,18 @@ view model =
     let
         documentPickerView =
             let
-                btn selected msg closeMsg label =
+                focusStyle selected =
+                    Element.focused
+                        [ Background.color <|
+                            Theme.darken <|
+                                if selected then
+                                    Theme.colors.selectedDocument
+
+                                else
+                                    Theme.colors.unselectedDocument
+                        ]
+
+                documentTabButton selected msg closeMsg label =
                     Input.button
                         [ Border.widthEach
                             { left = 1
@@ -131,15 +142,7 @@ view model =
 
                             else
                                 Theme.colors.unselectedDocument
-                        , Element.focused
-                            [ Background.color <|
-                                Theme.darken <|
-                                    if selected then
-                                        Theme.colors.selectedDocument
-
-                                    else
-                                        Theme.colors.unselectedDocument
-                            ]
+                        , focusStyle selected
                         ]
                         { onPress = Just msg
                         , label =
@@ -152,19 +155,36 @@ view model =
                                         [ padding <| Theme.spacing // 2
                                         ]
                                         [ el [ padding <| Theme.spacing // 2 ] <| text label
-                                        , Input.button [ padding <| Theme.spacing // 2 ]
+                                        , Input.button
+                                            [ padding <| Theme.spacing // 2
+                                            , focusStyle selected
+                                            , Background.color <|
+                                                if selected then
+                                                    Theme.colors.selectedDocument
+
+                                                else
+                                                    Theme.colors.unselectedDocument
+                                            ]
                                             { onPress = closeMsg
                                             , label = text "X"
                                             }
                                         ]
                         }
 
-                toBtn selected index doc =
-                    btn selected (SelectDocument index) (Just <| CloseDocument { ask = True, index = index }) doc.name
+                toDocumentTabButton selected index doc =
+                    documentTabButton selected
+                        (if selected then
+                            RenameDocument Nothing
+
+                         else
+                            SelectDocument index
+                        )
+                        (Just <| CloseDocument { ask = True, index = index })
+                        doc.name
 
                 buttons =
-                    Maybe.withDefault [] (Maybe.map (Zipper.map toBtn) model.documents)
-                        ++ [ btn False NewDocument Nothing "+" ]
+                    Maybe.withDefault [] (Maybe.map (Zipper.map toDocumentTabButton) model.documents)
+                        ++ [ documentTabButton False NewDocument Nothing "+" ]
             in
             Element.row
                 [ paddingEach { top = Theme.spacing, left = Theme.spacing, right = Theme.spacing, bottom = 0 }
@@ -183,15 +203,15 @@ view model =
         , height fill
         , Element.inFront <| viewModal model
         ]
-        [ --documentPickerView,
-          documentView
+        [ documentPickerView
+        , documentView
         ]
 
 
 viewModal : Model -> Element Msg
 viewModal model =
     let
-        wrap e =
+        wrap onOk e =
             el
                 [ width fill
                 , height fill
@@ -199,13 +219,19 @@ viewModal model =
                 , Background.color <| Element.rgba 0.5 0.5 0.5 0.5
                 ]
             <|
-                el [ centerX, centerY, Background.color Theme.colors.background, padding Theme.spacing ] <|
-                    Theme.column [] <|
-                        Input.button [ alignRight ]
-                            { onPress = Just DismissModal
-                            , label = text "X"
-                            }
-                            :: e
+                el [ centerX, centerY, Background.color Theme.colors.background ] <|
+                    el [ padding Theme.spacing ] <|
+                        Theme.column []
+                            (e
+                                ++ [ Theme.row [ alignRight ]
+                                        [ Input.button []
+                                            { onPress = Just onOk
+                                            , label = text "Ok"
+                                            }
+                                        , Input.button [] { onPress = Just DismissModal, label = text "Cancel" }
+                                        ]
+                                   ]
+                            )
     in
     case ( model.modal, model.documents ) of
         ( Nothing, _ ) ->
@@ -214,22 +240,28 @@ viewModal model =
         ( Just (ModalClose _), Nothing ) ->
             Element.none
 
+        ( Just (ModalRename _), Nothing ) ->
+            Element.none
+
         ( Just (ModalClose i), Just docs ) ->
             case Zipper.get i docs of
                 Nothing ->
                     Element.none
 
                 Just { name } ->
-                    wrap
+                    wrap (CloseDocument { ask = False, index = i })
                         [ text <| "Close document " ++ name ++ "?"
-                        , Theme.row [ alignRight ]
-                            [ Input.button []
-                                { onPress = Just <| CloseDocument { ask = False, index = i }
-                                , label = text "Ok"
-                                }
-                            , Input.button [] { onPress = Just DismissModal, label = text "Cancel" }
-                            ]
                         ]
+
+        ( Just (ModalRename name), Just docs ) ->
+            wrap (RenameDocument <| Just name)
+                [ Input.text []
+                    { onChange = SetModal << ModalRename
+                    , text = name
+                    , placeholder = Nothing
+                    , label = Input.labelAbove [] <| text <| "Rename document \"" ++ (Zipper.selected docs).name ++ "\" to"
+                    }
+                ]
 
 
 viewDocument : { width : Int, height : Int } -> Document -> Element Msg
@@ -307,24 +339,50 @@ update msg model =
 
         CloseDocument { ask, index } ->
             if ask then
-                ( { model | modal = Just <| ModalClose index }
-                , Cmd.none
-                )
+                if model.modal /= Nothing then
+                    ( model, Cmd.none )
+
+                else
+                    ( { model | modal = Just <| ModalClose index }
+                    , Cmd.none
+                    )
 
             else
                 let
                     documents =
                         Maybe.andThen (Zipper.removeAt index) model.documents
                 in
-                ( { model | documents = documents }
+                ( { model | documents = documents, modal = Nothing }
                 , save <| Codec.encodeToValue Model.documentsCodec documents
                 )
+
+        RenameDocument n ->
+            case n of
+                Nothing ->
+                    if model.modal /= Nothing then
+                        ( model, Cmd.none )
+
+                    else
+                        case model.documents of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just docs ->
+                                ( { model | modal = Just <| ModalRename (Zipper.selected docs).name }
+                                , Cmd.none
+                                )
+
+                Just name ->
+                    updateCurrent (\doc -> { doc | name = name }) { model | modal = Nothing }
 
         Resized size ->
             ( { model | size = size }, Cmd.none )
 
         DismissModal ->
             ( { model | modal = Nothing }, Cmd.none )
+
+        SetModal m ->
+            ( { model | modal = Just m }, Cmd.none )
 
 
 updateCurrent : (Document -> Document) -> Model -> ( Model, Cmd msg )
