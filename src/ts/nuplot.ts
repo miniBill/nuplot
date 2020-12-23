@@ -3,8 +3,9 @@ import declarations from "../shaders/declarations.frag";
 
 export class NuPlot extends HTMLElement {
   wrapper: HTMLElement;
-
+  label: HTMLElement;
   canvas: HTMLCanvasElement;
+
   gl: WebGLRenderingContext | null = null;
   program: WebGLProgram | null = null;
   fragment_shader: WebGLShader | null = null;
@@ -23,7 +24,6 @@ export class NuPlot extends HTMLElement {
   target_zoom_center!: number[];
   viewport_width!: number;
   zoom_factor!: number;
-  label: HTMLElement;
 
   pendingRaf = -1;
   pendingTimeout = -1;
@@ -40,14 +40,58 @@ export class NuPlot extends HTMLElement {
     const shadowRoow = this.attachShadow({ mode: "open" }); // sets and returns 'this.shadowRoot'
 
     this.wrapper = document.createElement("div");
+    this.wrapper.style.position = "relative";
 
     this.label = this.wrapper.appendChild(document.createElement("div"));
 
     this.canvas = this.wrapper.appendChild(document.createElement("canvas"));
     this.initCanvas();
 
+    const exportButton = this.wrapper.appendChild(
+      document.createElement("div")
+    );
+    exportButton.innerText = "💾";
+    exportButton.style.position = "absolute";
+    exportButton.style.top = "10px";
+    exportButton.style.right = "10px";
+    exportButton.style.cursor = "pointer";
+    exportButton.onclick = this.onExportButtonClick.bind(this);
+
     // attach the created elements to the shadow DOM
     shadowRoow.append(this.wrapper);
+  }
+
+  onExportButtonClick(ev: MouseEvent) {
+    const widthString = window.prompt("Exported image width:", "1920");
+    if (!widthString) return;
+    const heightString = window.prompt("Exported image height:", "1080");
+    if (!heightString) return;
+    const name = window.prompt("Exported image name:", "export.png");
+    if (!name) return;
+
+    const oldIterations = this.currIterations;
+    const oldWith = this.canvas.width;
+    const oldHeight = this.canvas.height;
+
+    this.currIterations = this.maxIterations;
+    this.canvas.width = +(widthString || 1920);
+    this.canvas.height = +(heightString || 1080);
+
+    this.reloadFragmentShader(this.buildFragmentShader(this.src));
+    this.doRender();
+    const dataUrl = this.canvas.toDataURL();
+    var downloadElement = document.createElement("a");
+    downloadElement.setAttribute("href", dataUrl);
+    downloadElement.setAttribute("download", name);
+    downloadElement.click();
+
+    this.canvas.width = oldWith;
+    this.canvas.height = oldHeight;
+
+    this.doRender();
+
+    this.currIterations = oldIterations;
+    this.reloadFragmentShader(this.buildFragmentShader(this.src));
   }
 
   resetZoom() {
