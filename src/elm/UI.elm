@@ -49,31 +49,10 @@ init flags =
                     docs
 
                 Err _ ->
-                    let
-                        raw =
-                            case Codec.decodeValue (Codec.dict Codec.string) flags of
-                                Ok rowsDict ->
-                                    rowsDict
-                                        |> Dict.toList
-                                        |> List.filterMap (\( k, v ) -> Maybe.map (\ik -> ( ik, v )) (String.toInt k))
-                                        |> List.sortBy Tuple.first
-                                        |> List.map Tuple.second
-                                        |> List.filterNot String.isEmpty
-
-                                Err _ ->
-                                    []
-
-                        rows =
-                            if List.isEmpty raw then
-                                default ++ [ "" ]
-
-                            else
-                                raw ++ [ "" ]
-                    in
                     Just <|
                         Zipper.singleton
                             { name = "Untitled"
-                            , rows = List.map emptyRow rows
+                            , rows = List.map emptyRow <| default ++ [ "" ]
                             , changed = False
                             }
 
