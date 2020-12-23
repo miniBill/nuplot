@@ -56,10 +56,10 @@ draw { pageWidth, pageHeight } { wdiv, hdiv } graph =
                 "0"
 
         imageWidth =
-            pageWidth - (1 + wdiv) * 3 * Theme.spacing
+            min 1920 <| pageWidth - (1 + wdiv) * 3 * Theme.spacing
 
         imageHeight =
-            pageHeight - (6 + hdiv) * 3 * Theme.spacing
+            min 1080 <| pageHeight - (6 + hdiv) * 3 * Theme.spacing
     in
     Element.html <|
         Html.node "nu-plot"
