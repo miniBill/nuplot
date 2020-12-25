@@ -1,2 +1,4 @@
 raw.frag
 out
+build*
+CMakeLists.txt.user
