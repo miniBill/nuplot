@@ -374,6 +374,7 @@ export class NuPlot extends HTMLElement {
 
       case "expr-src":
         if (newValue == this.src) return;
+        this.currIterations = this.maxIterations;
         this.src = newValue;
         this.reloadFragmentShader(this.buildFragmentShader(this.src));
         this.rafRenderFrame();
