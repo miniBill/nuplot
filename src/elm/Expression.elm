@@ -1278,8 +1278,16 @@ hoistLambda =
                         ( hl, hm, hr ) ->
                             Nothing
 
-                Apply fn [ Lambda x f ] ->
-                    Just <| Lambda x <| hoistLambda <| Apply fn [ f ]
+                Apply fn args ->
+                    case ( fn, List.map hoistLambda args ) of
+                        ( KnownFunction Plot, ha ) ->
+                            Nothing
+
+                        ( _, [ Lambda x f ] ) ->
+                            Just <| Lambda x <| hoistLambda <| Apply fn [ f ]
+
+                        _ ->
+                            Nothing
 
                 _ ->
                     Nothing

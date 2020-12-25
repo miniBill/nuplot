@@ -64,8 +64,8 @@ init flags =
         default =
             [ "{{plotsinx, plot(x<y), plot(x²+y²=3)}, {[zx+iy]plotexp(1/z), plot(x²+y²+z²=3), plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}}"
             , "[zx+iy]{plot(z³-1),plotabs(z³-1),plotarg(z³-1)}"
-            , "plot(sin²x+sin²y+sin²z = pw(z>1,-1,.5sinsqrt(x²+y²+z²)"
-            , "plot({z=sin(x²+y²),x²+y²+(z-2)² = 3}"
+            , "plot(sin²x+sin²y+sin²z = pw(z>1,-1,.5sinsqrt(x²+y²+z²"
+            , "plot{z=sin(x²+y²),x²+y²+(z-2)² = 3}"
             , "simplifydet{{a,b,c},{0,1,0},{1,2,3"
             ]
 
