@@ -114,46 +114,84 @@ parse input =
 
 
 expressionToGraph : Expression -> Graph
-expressionToGraph expr =
-    case expr of
-        Replace ctx (RelationOperation rop l r) ->
-            expressionToGraph (RelationOperation rop (Replace ctx l) (Replace ctx r))
+expressionToGraph =
+    let
+        hoistLambda ex =
+            Expression.visit
+                (\expr ->
+                    case expr of
+                        Lambda x f ->
+                            Just <| Lambda x <| hoistLambda f
 
-        RelationOperation rop l r ->
-            case ( l, rop, Set.member "y" <| getFreeVariables r ) of
-                ( Variable "y", Equals, False ) ->
-                    if Set.member "z" <| getFreeVariables expr then
-                        Implicit3D expr
+                        BinaryOperation Power b e ->
+                            case ( hoistLambda b, hoistLambda e ) of
+                                ( Lambda x f, he ) ->
+                                    Just <| Lambda x <| hoistLambda <| BinaryOperation Power f he
 
-                    else
-                        Explicit2D r
+                                ( hb, he ) ->
+                                    Nothing
 
-                ( _, Equals, _ ) ->
-                    if Set.member "z" <| getFreeVariables expr then
-                        Implicit3D expr
+                        AssociativeOperation Multiplication l m r ->
+                            case ( hoistLambda l, hoistLambda m, List.map hoistLambda r ) of
+                                ( Lambda x f, hm, [] ) ->
+                                    Just <| hoistLambda <| Expression.partialSubstitute x hm f
 
-                    else
-                        Implicit2D l r
+                                ( hl, hm, hr ) ->
+                                    Nothing
+
+                        Apply fn [ Lambda x f ] ->
+                            Just <| Lambda x <| hoistLambda <| Apply fn [ f ]
+
+                        _ ->
+                            Nothing
+                )
+                ex
+
+        go expr =
+            case expr of
+                Lambda x f ->
+                    expressionToGraph <| Expression.partialSubstitute x (Variable "x") f
+
+                Replace ctx (RelationOperation rop l r) ->
+                    expressionToGraph (RelationOperation rop (Replace ctx l) (Replace ctx r))
+
+                RelationOperation rop l r ->
+                    case ( l, rop, Set.member "y" <| getFreeVariables r ) of
+                        ( Variable "y", Equals, False ) ->
+                            if Set.member "z" <| getFreeVariables expr then
+                                Implicit3D expr
+
+                            else
+                                Explicit2D r
+
+                        ( _, Equals, _ ) ->
+                            if Set.member "z" <| getFreeVariables expr then
+                                Implicit3D expr
+
+                            else
+                                Implicit2D l r
+
+                        _ ->
+                            Relation2D expr
+
+                List ls ->
+                    GraphList <| List.map expressionToGraph ls
 
                 _ ->
-                    Relation2D expr
+                    let
+                        free =
+                            getFreeVariables expr
+                    in
+                    if Set.member "z" free then
+                        Implicit3D expr
 
-        List ls ->
-            GraphList <| List.map expressionToGraph ls
+                    else if Set.member "y" free then
+                        Contour expr
 
-        _ ->
-            let
-                free =
-                    getFreeVariables expr
-            in
-            if Set.member "z" free then
-                Implicit3D expr
-
-            else if Set.member "y" free then
-                Contour expr
-
-            else
-                Explicit2D expr
+                    else
+                        Explicit2D expr
+    in
+    go << hoistLambda
 
 
 toContext : Dict String (Maybe Expression) -> Context
