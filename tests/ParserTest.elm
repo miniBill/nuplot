@@ -299,6 +299,7 @@ tests =
     , ( "sin ( 0 c ) a", by [ sin_ <| by [ zero, c ], a ], "sin(0c)*a" )
     , straight "dd(ii(ln(t), t, 1, a), a)" <| dd (ii (ln_ t) t one a) a
     , straight "dd(ii(ln(t), t, a + 1, a²), a)" <| dd (ii (ln_ t) t (plus [ a, one ]) (square a)) a
+    , straight "x => x" <| Lambda "x" x
     ]
 
 

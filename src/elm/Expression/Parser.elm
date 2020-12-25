@@ -313,23 +313,40 @@ listParser context =
 
 relationParser : ExpressionParser Expression
 relationParser context =
+    let
+        inner =
+            Parser.succeed (\a f -> f a)
+                |= addsubtractionParser context
+                |. whitespace
+                |= Parser.oneOf
+                    [ Parser.succeed
+                        (\r l ->
+                            case l of
+                                Variable v ->
+                                    Parser.succeed <| Lambda v r
+
+                                _ ->
+                                    Parser.problem <| Expected "left side of lambda"
+                        )
+                        |. Parser.symbol (token "=>")
+                        |. whitespace
+                        |= addsubtractionParser context
+                    , Parser.succeed (\o r l -> Parser.succeed <| RelationOperation o l r)
+                        |= Parser.oneOf
+                            [ Parser.succeed LessThanOrEquals |. Parser.symbol (token "<=")
+                            , Parser.succeed GreaterThanOrEquals |. Parser.symbol (token ">=")
+                            , Parser.succeed LessThan |. Parser.symbol (token "<")
+                            , Parser.succeed Equals |. Parser.symbol (token "=")
+                            , Parser.succeed GreaterThan |. Parser.symbol (token ">")
+                            ]
+                        |. whitespace
+                        |= addsubtractionParser context
+                    , Parser.succeed Parser.succeed
+                    ]
+    in
     Parser.inContext ExpressionContext <|
-        Parser.succeed (\a f -> f a)
-            |= addsubtractionParser context
-            |. whitespace
-            |= Parser.oneOf
-                [ Parser.succeed (\o r l -> RelationOperation o l r)
-                    |= Parser.oneOf
-                        [ Parser.succeed LessThanOrEquals |. Parser.symbol (token "<=")
-                        , Parser.succeed GreaterThanOrEquals |. Parser.symbol (token ">=")
-                        , Parser.succeed LessThan |. Parser.symbol (token "<")
-                        , Parser.succeed Equals |. Parser.symbol (token "=")
-                        , Parser.succeed GreaterThan |. Parser.symbol (token ">")
-                        ]
-                    |. whitespace
-                    |= addsubtractionParser context
-                , Parser.succeed identity
-                ]
+        Parser.andThen identity <|
+            inner
 
 
 addsubtractionParser : ExpressionParser Expression
