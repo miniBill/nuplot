@@ -1255,9 +1255,9 @@ filterContext =
 
 
 hoistLambda : Expression -> Expression
-hoistLambda ex =
-    visit
-        (\expr ->
+hoistLambda =
+    visit <|
+        \expr ->
             case expr of
                 Lambda x f ->
                     Just <| Lambda x <| hoistLambda f
@@ -1283,5 +1283,3 @@ hoistLambda ex =
 
                 _ ->
                     Nothing
-        )
-        ex
