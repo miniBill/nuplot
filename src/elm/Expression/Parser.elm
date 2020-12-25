@@ -116,37 +116,6 @@ parse input =
 expressionToGraph : Expression -> Graph
 expressionToGraph =
     let
-        hoistLambda ex =
-            Expression.visit
-                (\expr ->
-                    case expr of
-                        Lambda x f ->
-                            Just <| Lambda x <| hoistLambda f
-
-                        BinaryOperation Power b e ->
-                            case ( hoistLambda b, hoistLambda e ) of
-                                ( Lambda x f, he ) ->
-                                    Just <| Lambda x <| hoistLambda <| BinaryOperation Power f he
-
-                                ( hb, he ) ->
-                                    Nothing
-
-                        AssociativeOperation Multiplication l m r ->
-                            case ( hoistLambda l, hoistLambda m, List.map hoistLambda r ) of
-                                ( Lambda x f, hm, [] ) ->
-                                    Just <| hoistLambda <| Expression.partialSubstitute x hm f
-
-                                ( hl, hm, hr ) ->
-                                    Nothing
-
-                        Apply fn [ Lambda x f ] ->
-                            Just <| Lambda x <| hoistLambda <| Apply fn [ f ]
-
-                        _ ->
-                            Nothing
-                )
-                ex
-
         go expr =
             case expr of
                 Lambda x f ->
@@ -191,7 +160,7 @@ expressionToGraph =
                     else
                         Explicit2D expr
     in
-    go << hoistLambda
+    go << Expression.hoistLambda
 
 
 toContext : Dict String (Maybe Expression) -> Context

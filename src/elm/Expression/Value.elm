@@ -19,7 +19,8 @@ defaultValueContext =
 
 value : Dict String Value -> Expression -> Value
 value context =
-    innerValue (Dict.union context defaultValueContext)
+    Expression.hoistLambda
+        >> innerValue (Dict.union context defaultValueContext)
 
 
 innerValue : Dict String Value -> Expression -> Value
