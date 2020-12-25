@@ -1,3 +1,5 @@
+#include <sys/stat.h>
+
 #include "head.h"
 #include "out/tracer.cpp"
 
@@ -25,7 +27,12 @@ int main () {
     int yfrom = onlyTraced ? traceYFrom : 0;
     int yto = onlyTraced ? traceYTo : u_canvasHeight;
 
+    mkdir("out", 0755); // Purposefully ignore output
     debugFile = fopen("out/debug.log", "w+");
+    if(!debugFile) {
+        fprintf(stderr, "Cannot open debug file!\n");
+        return 1;
+    }
 
     printf("P3\n");
     printf("%d %d 255\n", (int)(xto - xfrom), (int)(yto - yfrom));
