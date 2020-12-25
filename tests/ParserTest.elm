@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, triple, two, vector, x, y, z, zero)
+import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, t, triple, two, vector, x, y, z, zero)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -297,17 +297,13 @@ tests =
     , ( "sin ( 0 c)", sin_ <| by [ zero, c ], "sin(0c)" )
     , ( "sin ( 0 c )", sin_ <| by [ zero, c ], "sin(0c)" )
     , ( "sin ( 0 c ) a", by [ sin_ <| by [ zero, c ], a ], "sin(0c)*a" )
+    , straight "dd(ii(ln(t), t, 1, a), a)" <| dd (ii (ln_ t) t one a) a
+    , straight "dd(ii(ln(t), t, a + 1, a²), a)" <| dd (ii (ln_ t) t (plus [ a, one ]) (square a)) a
     ]
 
 
 
 {-
-   Expression integral = parseOrFail("ii(ln(t),t,1,a)");
-   assertEquals("Fundamental theorem", "ln(a)", SimplificationHelper.simplify(derivativeOrFail(integral, 'a'))
-   .toString());
-   integral = parseOrFail("ii(ln(t),t,a+1,a^2)");
-   final Object integralSim = parseOrFail("2aln(a^2)-ln(a+1)");
-   assertSimplify(derivativeOrFail(integral, 'a').toString(), integralSim.toString());
    justParse("ii(ln(x),x,0,x+1)");
    justParse("ii(lnx,x,0,x+1)", "ii(ln(x),x,0,x+1)");
    justParse("iiln(x),x,0,x+1", "ii(ln(x),x,0,x)+1");
