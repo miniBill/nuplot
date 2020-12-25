@@ -292,7 +292,7 @@ export class NuPlot extends HTMLElement {
         this.reloadFragmentShader(this.buildFragmentShader(this.src));
       }
       this.delayedRenderFrame(
-        this.currIterations == this.minIterations ? 1000 : 100
+        this.currIterations == this.minIterations ? 300 : 100
       );
       this.wasZooming = false;
     } else if (this.currIterations >= this.maxIterations) {
