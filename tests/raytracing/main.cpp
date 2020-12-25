@@ -1,3 +1,5 @@
+#include "head.h"
+#include "out/tracer.cpp"
 
 #undef main
 
