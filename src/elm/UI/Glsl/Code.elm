@@ -58,7 +58,7 @@ straightOperationToGlsl op =
         GlslPower ->
             """
             vec2 cpow(vec2 w, vec2 z) {
-                if(w.y == 0.0 && z.y == 0.0) {
+                if(w.x >= 0.0 && w.y == 0.0 && z.y == 0.0) {
                     return vec2(pow(w.x, z.x), 0);
                 }
                 return cexp(by(cln(w), z));
