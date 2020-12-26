@@ -50,8 +50,8 @@ stepSimplify context expr =
         UnaryOperation Negate (List ls) ->
             List <| List.map (UnaryOperation Negate) ls
 
-        UnaryOperation uop e ->
-            UnaryOperation uop <| stepSimplify context e
+        UnaryOperation Negate e ->
+            UnaryOperation Negate <| stepSimplify context e
 
         Lambda x f ->
             Lambda x <| stepSimplify context f
