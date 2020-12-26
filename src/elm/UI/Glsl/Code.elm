@@ -184,6 +184,8 @@ straightFunctionToGlsl name =
         Tanh11 ->
             """
             float tanh(float x) {
+                if(abs(x) > 10.0)
+                    return sign(x);
                 float p = exp(x);
                 float m = exp(-x);
                 return (p - m) / (p + m);
