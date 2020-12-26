@@ -664,18 +664,25 @@ intervalFunctionToGlsl name =
             }
 
             vec4 gtan(vec4 z) {
-                return vec4(tan(z.x), 1.0 / pow(cos(z.x), 2.0) * z.yzw);
+                float c = cos(z.x);
+                return vec4(tan(z.x), 1.0 / (c * c) * z.yzw);
             }
             """
 
         Tanh11 ->
             """
-            TODO Tanh11
             """
 
         Tanh22 ->
             """
-            TODO Tanh22
+            vec2 itanh(vec2 z) {
+                return vec2(tanh(z.x), tanh(z.y));
+            }
+
+            vec4 gtanh(vec4 z) {
+                float c = 1.0 / cosh(z.x);
+                return vec4(tanh(z.x), c * c * z.yzw);
+            }
             """
 
 
@@ -1135,8 +1142,8 @@ main2D pixels =
             vec3 curr;"""
             ++ inner
             ++ """
-            vec3 yax = ax(x, deltaX * 2.0) * vec3(0,1,0);
-            vec3 xax = ax(y, deltaY * 2.0) * vec3(1,0,0);
+            vec3 yax = ax(x, deltaX) * vec3(0,1,0);
+            vec3 xax = ax(y, deltaY) * vec3(1,0,0);
             return vec4(max(px, max(xax, yax)), 1.0);
         }
         """
