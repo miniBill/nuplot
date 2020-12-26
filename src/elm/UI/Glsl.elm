@@ -364,7 +364,7 @@ dependenciesOf req =
             [ RequireFunction Exp22 ]
 
         RequireFunction Tanh22 ->
-            [ RequireFunction Exp22, RequireOperation GlslDivision ]
+            [ RequireFunction Cosh11, RequireFunction Tanh11, RequireFunction Exp22, RequireOperation GlslDivision ]
 
         RequireFunction Abs22 ->
             []
