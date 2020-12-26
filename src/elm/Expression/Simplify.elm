@@ -181,6 +181,21 @@ stepSimplifyPower ls rs =
                 (ipow rm rsi)
                 (List.map (\b -> ipow b rsi) om)
 
+        ( AssociativeOperation Addition la ma ra, Integer rsi ) ->
+            if rsi < 0 then
+                BinaryOperation Division one (ipow ls -rsi)
+
+            else
+                case rsi of
+                    0 ->
+                        Integer 1
+
+                    1 ->
+                        ls
+
+                    _ ->
+                        by [ ls, ipow ls (rsi - 1) ]
+
         ( Integer il, Integer ir ) ->
             if ir < 0 then
                 div one <| Integer <| il ^ -ir
@@ -241,10 +256,19 @@ stepSimplifyAssociative aop args =
 
                 Multiplication ->
                     by
+
+        groupStep =
+            case aop of
+                Addition ->
+                    groupStepAddition
+
+                Multiplication ->
+                    groupStepMultiplication
     in
     args
         |> List.concatMap extractop
-        |> squashAndGroupAssociative aop
+        |> sortByDegree aop
+        |> groupWith groupStep
         |> (case aop of
                 Addition ->
                     tryExtract (findSpecificInteger 0) (\( _, rest ) -> rest)
@@ -378,22 +402,6 @@ sortByDegree aop ee =
         letters
 
 
-squashAndGroupAssociative : AssociativeOperation -> List Expression -> List Expression
-squashAndGroupAssociative aop extracted =
-    let
-        groupStep =
-            case aop of
-                Addition ->
-                    groupStepAddition
-
-                Multiplication ->
-                    groupStepMultiplication
-    in
-    extracted
-        |> sortByDegree aop
-        |> groupWith groupStep
-
-
 groupStepAddition : Expression -> Expression -> Maybe Expression
 groupStepAddition curr last =
     case ( curr, last ) of
@@ -462,6 +470,12 @@ groupStepMultiplication curr last =
 
         ( Integer il, Integer ir ) ->
             Just <| Integer <| il * ir
+
+        ( AssociativeOperation Addition l m r, _ ) ->
+            Just <| plus <| by [ l, last ] :: by [ m, last ] :: List.map (\o -> by [ o, last ]) r
+
+        ( _, AssociativeOperation Addition l m r ) ->
+            Just <| plus <| by [ curr, l ] :: by [ curr, m ] :: List.map (\o -> by [ curr, o ]) r
 
         ( BinaryOperation Power pb pe, l ) ->
             if Expression.equals l pb then
