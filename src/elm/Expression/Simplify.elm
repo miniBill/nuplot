@@ -1,11 +1,12 @@
-module Expression.Simplify exposing (simplify, sortByDegree)
+module Expression.Simplify exposing (hoistLambda, simplify, sortByDegree)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute, visit)
 import Expression.Derivative
 import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
 import List
 import List.Extra as List
+import List.MyExtra exposing (groupWith)
 import Maybe.Extra as Maybe
 import Set
 
@@ -380,25 +381,6 @@ sortByDegree aop ee =
 squashAndGroupAssociative : AssociativeOperation -> List Expression -> List Expression
 squashAndGroupAssociative aop extracted =
     let
-        grouped =
-            case sortByDegree aop extracted of
-                [] ->
-                    []
-
-                shead :: stail ->
-                    List.foldl
-                        (\e ( last, acc ) ->
-                            case groupStep e last of
-                                Just c ->
-                                    ( c, acc )
-
-                                Nothing ->
-                                    ( e, last :: acc )
-                        )
-                        ( shead, [] )
-                        stail
-                        |> (\( last, acc ) -> last :: acc)
-
         groupStep =
             case aop of
                 Addition ->
@@ -407,7 +389,9 @@ squashAndGroupAssociative aop extracted =
                 Multiplication ->
                     groupStepMultiplication
     in
-    grouped
+    extracted
+        |> sortByDegree aop
+        |> groupWith groupStep
 
 
 groupStepAddition : Expression -> Expression -> Maybe Expression
@@ -506,7 +490,7 @@ groupStepMultiplication curr last =
         ( List _, List _ ) ->
             multiplyMatrices curr last
 
-        ( c, Lambda x f ) ->
+        ( Lambda x f, c ) ->
             Just <| partialSubstitute x c f
 
         _ ->
@@ -682,3 +666,58 @@ polyDegree var expr =
                     Nothing
     in
     res
+
+
+hoistLambda : Expression -> Expression
+hoistLambda =
+    visit <|
+        \expr ->
+            case expr of
+                Lambda x f ->
+                    Just <| Lambda x <| hoistLambda f
+
+                BinaryOperation Power b e ->
+                    case ( hoistLambda b, hoistLambda e ) of
+                        ( Lambda x f, he ) ->
+                            Just <| Lambda x <| hoistLambda <| BinaryOperation Power f he
+
+                        ( hb, he ) ->
+                            Nothing
+
+                AssociativeOperation Multiplication l m r ->
+                    let
+                        step curr last =
+                            case curr of
+                                Lambda x f ->
+                                    Just <| hoistLambda <| partialSubstitute x last f
+
+                                _ ->
+                                    Nothing
+
+                        grouped =
+                            groupWith step <| hoistLambda l :: hoistLambda m :: List.map hoistLambda r
+                    in
+                    Just <|
+                        case grouped of
+                            [] ->
+                                Integer 1
+
+                            [ x ] ->
+                                x
+
+                            x :: y :: zs ->
+                                AssociativeOperation Multiplication x y zs
+
+                Apply fn args ->
+                    case ( fn, List.map hoistLambda args ) of
+                        ( KnownFunction Plot, ha ) ->
+                            Nothing
+
+                        ( _, [ Lambda x f ] ) ->
+                            Just <| Lambda x <| hoistLambda <| Apply fn [ f ]
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing

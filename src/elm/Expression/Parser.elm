@@ -4,6 +4,7 @@ import Color exposing (white)
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), VariableStatus(..), defaultContext, getFreeVariables)
 import Expression.Cleaner as Cleaner
+import Expression.Simplify
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
 import List
 import List.Extra as List
@@ -160,7 +161,7 @@ expressionToGraph =
                     else
                         Explicit2D expr
     in
-    go << Expression.hoistLambda
+    go << Expression.Simplify.hoistLambda
 
 
 toContext : Dict String (Maybe Expression) -> Context

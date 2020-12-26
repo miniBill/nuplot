@@ -23,7 +23,6 @@ module Expression exposing
     , genericMatrixMultiplication
     , getFreeVariables
     , graphToString
-    , hoistLambda
     , partialSubstitute
     , pfullSubstitute
     , toPrintExpression
@@ -1252,42 +1251,3 @@ filterContext =
     Dict.toList
         >> List.filterMap (\( k, mv ) -> Maybe.map (Tuple.pair k) mv)
         >> Dict.fromList
-
-
-hoistLambda : Expression -> Expression
-hoistLambda =
-    visit <|
-        \expr ->
-            case expr of
-                Lambda x f ->
-                    Just <| Lambda x <| hoistLambda f
-
-                BinaryOperation Power b e ->
-                    case ( hoistLambda b, hoistLambda e ) of
-                        ( Lambda x f, he ) ->
-                            Just <| Lambda x <| hoistLambda <| BinaryOperation Power f he
-
-                        ( hb, he ) ->
-                            Nothing
-
-                AssociativeOperation Multiplication l m r ->
-                    case ( hoistLambda l, hoistLambda m, List.map hoistLambda r ) of
-                        ( Lambda x f, hm, [] ) ->
-                            Just <| hoistLambda <| partialSubstitute x hm f
-
-                        ( hl, hm, hr ) ->
-                            Nothing
-
-                Apply fn args ->
-                    case ( fn, List.map hoistLambda args ) of
-                        ( KnownFunction Plot, ha ) ->
-                            Nothing
-
-                        ( _, [ Lambda x f ] ) ->
-                            Just <| Lambda x <| hoistLambda <| Apply fn [ f ]
-
-                        _ ->
-                            Nothing
-
-                _ ->
-                    Nothing
