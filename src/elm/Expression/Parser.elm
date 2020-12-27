@@ -126,23 +126,19 @@ expressionToGraph =
                     expressionToGraph (RelationOperation rop (Replace ctx l) (Replace ctx r))
 
                 RelationOperation rop l r ->
-                    case ( l, rop, Set.member "y" <| getFreeVariables r ) of
-                        ( Variable "y", Equals, False ) ->
-                            if Set.member "z" <| getFreeVariables expr then
-                                Implicit3D expr
+                    if Set.member "z" <| getFreeVariables expr then
+                        Implicit3D expr
 
-                            else
+                    else
+                        case ( l, rop, Set.member "y" <| getFreeVariables r ) of
+                            ( Variable "y", Equals, False ) ->
                                 Explicit2D r
 
-                        ( _, Equals, _ ) ->
-                            if Set.member "z" <| getFreeVariables expr then
-                                Implicit3D expr
-
-                            else
+                            ( _, Equals, _ ) ->
                                 Implicit2D l r
 
-                        _ ->
-                            Relation2D expr
+                            _ ->
+                                Relation2D expr
 
                 List ls ->
                     GraphList <| List.map expressionToGraph ls
