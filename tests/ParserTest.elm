@@ -2,7 +2,7 @@ module ParserTest exposing (suite)
 
 import Dict
 import Expect
-import Expression exposing (Expression(..), RelationOperation(..))
+import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..))
 import Expression.Parser as Parser exposing (Problem(..))
 import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, t, triple, two, vector, x, y, z, zero)
 import Parser
@@ -300,6 +300,9 @@ tests =
     , straight "dd(ii(ln(t), t, 1, a), a)" <| dd (ii (ln_ t) t one a) a
     , straight "dd(ii(ln(t), t, a + 1, a²), a)" <| dd (ii (ln_ t) t (plus [ a, one ]) (square a)) a
     , straight "x => x" <| Lambda "x" x
+    , ( "max1,2,3,4,5,6", Apply (KnownFunction Max) (List.map Integer [ 1, 2, 3, 4, 5, 6 ]), "max(1, 2, 3, 4, 5, 6)" )
+    , ( "max1,ab", by [ Apply (KnownFunction Max) [ one, a ], b ], "max(1,a)*b" )
+    , ( "max(1,ab", Apply (KnownFunction Max) [ one, by [ a, b ] ], "max(1, a*b)" )
     ]
 
 

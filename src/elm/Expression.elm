@@ -623,7 +623,7 @@ greeks =
 
 
 type alias Context =
-    { functions : Trie ( FunctionName, Int )
+    { functions : Trie ( FunctionName, Maybe Int )
     , variables : Trie VariableStatus
     }
 
@@ -690,8 +690,6 @@ binaryFunctions : List ( String, KnownFunction )
 binaryFunctions =
     [ ( "atan2", Atan2 )
     , ( "dd", Dd )
-    , ( "min", Min )
-    , ( "max", Max )
     ]
 
 
@@ -703,6 +701,13 @@ ternaryFunctions =
 quaternaryFunctions : List ( String, KnownFunction )
 quaternaryFunctions =
     [ ( "ii", Ii ) ]
+
+
+arbitraryFunctions : List ( String, KnownFunction )
+arbitraryFunctions =
+    [ ( "min", Min )
+    , ( "max", Max )
+    ]
 
 
 defaultContext : Context
@@ -718,10 +723,11 @@ defaultContext =
     { functions =
         Trie.fromList <|
             List.concat
-                [ map 1 unaryFunctions
-                , map 2 binaryFunctions
-                , map 3 ternaryFunctions
-                , map 4 quaternaryFunctions
+                [ map (Just 1) unaryFunctions
+                , map (Just 2) binaryFunctions
+                , map (Just 3) ternaryFunctions
+                , map (Just 4) quaternaryFunctions
+                , map Nothing arbitraryFunctions
                 ]
     , variables = Trie.fromList <| List.map (\v -> ( v, Declared )) <| letters ++ Dict.keys greeks
     }

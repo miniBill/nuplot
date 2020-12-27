@@ -644,31 +644,54 @@ getFirstFree trie =
     go alphabeth
 
 
-parseArgs : Int -> Bool -> ExpressionParser (List Expression)
+parseArgs : Maybe Int -> Bool -> ExpressionParser (List Expression)
 parseArgs count greedy context =
     case count of
-        0 ->
+        Just 0 ->
             Parser.succeed []
 
-        1 ->
-            if greedy then
-                Parser.succeed (\e -> [ e ])
-                    |= Parser.lazy (\_ -> mainParser context)
-                    |. whitespace
+        Just 1 ->
+            Parser.succeed (\e -> [ e ])
+                |= Parser.lazy
+                    (\_ ->
+                        if greedy then
+                            mainParser context
 
-            else
-                Parser.succeed (\e -> [ e ])
-                    |= Parser.lazy (\_ -> powerParser context)
-                    |. whitespace
+                        else
+                            powerParser context
+                    )
+                |. whitespace
 
-        _ ->
+        Just c ->
             Parser.succeed (::)
                 |= Parser.lazy (\_ -> mainParser context)
                 |. whitespace
                 |. Parser.symbol (token ",")
                 |. whitespace
-                |= parseArgs (count - 1) greedy context
+                |= parseArgs (Just (c - 1)) greedy context
                 |. whitespace
+
+        Nothing ->
+            Parser.oneOf
+                [ Parser.succeed (::)
+                    |= Parser.backtrackable (Parser.lazy (\_ -> mainParser context))
+                    |. whitespace
+                    |. Parser.symbol (token ",")
+                    |. Parser.commit ()
+                    |. whitespace
+                    |= Parser.lazy (\_ -> parseArgs Nothing greedy context)
+                    |. whitespace
+                , Parser.succeed (\e -> [ e ])
+                    |= Parser.lazy
+                        (\_ ->
+                            if greedy then
+                                mainParser context
+
+                            else
+                                powerParser context
+                        )
+                    |. whitespace
+                ]
 
 
 isVariableLetter : Char -> Bool
