@@ -430,6 +430,7 @@ addsubtractionParser context =
                 , ( \l r -> minus l r, \_ -> Parser.symbol <| token "-" )
                 ]
             , item = multidivisionParser
+            , allowNegation = False
             }
             context
 
@@ -444,6 +445,7 @@ multidivisionParser context =
                 , ( \l r -> by [ l, r ], \_ -> Parser.succeed () )
                 ]
             , item = powerParser
+            , allowNegation = True
             }
             context
 
@@ -466,6 +468,7 @@ powerParser context =
 type alias SequenceData =
     { separators : List ( Expression -> Expression -> Expression, ExpressionParser () )
     , item : ExpressionParser Expression
+    , allowNegation : Bool
     }
 
 
@@ -488,16 +491,29 @@ multiSequenceHelp :
     SequenceData
     -> Expression
     -> ExpressionParser (Step Expression Expression)
-multiSequenceHelp { separators, item } acc context =
+multiSequenceHelp { allowNegation, separators, item } acc context =
     let
         separated =
             separators
                 |> List.map
                     (\( f, parser ) ->
-                        Parser.succeed (\e -> Loop <| f acc e)
-                            |. parser context
-                            |. whitespace
-                            |= item context
+                        Parser.getChompedString (parser context)
+                            |> Parser.andThen
+                                (\chomped ->
+                                    Parser.succeed (\mn e -> Loop <| f acc <| mn e)
+                                        |= (if allowNegation && not (String.isEmpty <| String.trim chomped) then
+                                                Parser.oneOf
+                                                    [ Parser.succeed negate_
+                                                        |. Parser.symbol (token "-")
+                                                    , Parser.succeed identity
+                                                    ]
+
+                                            else
+                                                Parser.succeed identity
+                                           )
+                                        |. whitespace
+                                        |= item context
+                                )
                     )
                 |> Parser.oneOf
                 |> (\p ->

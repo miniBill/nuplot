@@ -301,8 +301,11 @@ tests =
     , straight "dd(ii(ln(t), t, a + 1, a²), a)" <| dd (ii (ln_ t) t (plus [ a, one ]) (square a)) a
     , straight "x => x" <| Lambda "x" x
     , ( "max1,2,3,4,5,6", Apply (KnownFunction Max) (List.map Integer [ 1, 2, 3, 4, 5, 6 ]), "max(1, 2, 3, 4, 5, 6)" )
-    , ( "max1,ab", by [ Apply (KnownFunction Max) [ one, a ], b ], "max(1,a)*b" )
+    , ( "max1,ab", by [ Apply (KnownFunction Max) [ one, a ], b ], "max(1, a)*b" )
     , ( "max(1,ab", Apply (KnownFunction Max) [ one, by [ a, b ] ], "max(1, a*b)" )
+    , straight "-1" (negate_ <| Integer 1)
+    , ( "1+-2", plus [ one, negate_ two ], "1 - 2" )
+    , straight "1*-2" <| by [ one, negate_ two ]
     ]
 
 
