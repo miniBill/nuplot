@@ -2,7 +2,18 @@ module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToStrin
 
 import Color exposing (white)
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Context, Expression(..), Graph(..), RelationOperation(..), VariableStatus(..), defaultContext, getFreeVariables)
+import Expression
+    exposing
+        ( AssociativeOperation(..)
+        , BinaryOperation(..)
+        , Context
+        , Expression(..)
+        , Graph(..)
+        , RelationOperation(..)
+        , VariableStatus(..)
+        , defaultContext
+        , getFreeVariables
+        )
 import Expression.Cleaner as Cleaner
 import Expression.Simplify
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
@@ -18,11 +29,54 @@ type alias ExpressionParser a =
 
 
 type ParserContext
-    = ExpressionContext
+    = AddSubtractionContext
+    | AtomContext
+    | ExpressionContext
     | ListContext
+    | MultiDivisionContext
+    | NumberContext
+    | PowerContext
     | ReplacementContext
     | ReplacementListContext
-    | NumberContext
+    | VariableContext
+    | VectorContext
+
+
+contextToString : ParserContext -> String
+contextToString ctx =
+    case ctx of
+        AddSubtractionContext ->
+            "an addition or subtraction"
+
+        AtomContext ->
+            "an atom"
+
+        ExpressionContext ->
+            "an expression"
+
+        ListContext ->
+            "a list"
+
+        MultiDivisionContext ->
+            "a multiplication or a division"
+
+        NumberContext ->
+            "a number"
+
+        PowerContext ->
+            "an exponentiation"
+
+        ReplacementContext ->
+            "a replacement"
+
+        ReplacementListContext ->
+            "a replacement list"
+
+        VariableContext ->
+            "a variable"
+
+        VectorContext ->
+            "a vector"
 
 
 type Problem
@@ -32,6 +86,69 @@ type Problem
 
 errorsToString : String -> List (Parser.DeadEnd ParserContext Problem) -> String
 errorsToString input err =
+    let
+        errsString =
+            err
+                |> List.gatherEqualsBy (\{ col, contextStack } -> { col = col, contextStack = contextStack })
+                |> List.map problemGroupToString
+
+        problemGroupToString ( { col, contextStack, problem }, problems ) =
+            let
+                allProblems =
+                    problem :: List.map .problem problems
+
+                prefix =
+                    case contextStack of
+                        [] ->
+                            String.repeat (col + 1) " " ++ "^ "
+
+                        frame :: _ ->
+                            let
+                                pprefix =
+                                    if col == frame.col then
+                                        String.repeat (col + 1) " "
+
+                                    else
+                                        String.repeat (frame.col + 1) " "
+                                            ++ "|"
+                                            ++ String.repeat (col - frame.col - 1) "-"
+                            in
+                            pprefix ++ "^ While trying to parse " ++ contextToString frame.context ++ ". "
+            in
+            String.concat
+                [ prefix
+                , if List.any ((==) Unexpected) allProblems then
+                    if List.all ((==) Unexpected) allProblems then
+                        "Unexpected"
+
+                    else
+                        "Unexpected, expected "
+
+                  else
+                    "Expected "
+                , allProblems
+                    |> List.filterMap
+                        (\p ->
+                            case p of
+                                Unexpected ->
+                                    Nothing
+
+                                Expected e ->
+                                    Just e
+                        )
+                    |> (\expecteds ->
+                            case List.reverse expecteds of
+                                [] ->
+                                    ""
+
+                                [ single ] ->
+                                    single
+
+                                last :: init ->
+                                    String.join ", " (List.reverse init) ++ " or " ++ last
+                       )
+                ]
+    in
     String.join "\n" <|
         [ "Error parsing expression:"
         , "  " ++ input
@@ -40,49 +157,7 @@ errorsToString input err =
                     [ "No valid parse?" ]
 
                 else
-                    List.map
-                        (\( { col, problem }, problems ) ->
-                            let
-                                allProblems =
-                                    problem :: List.map .problem problems
-                            in
-                            String.concat
-                                [ String.repeat (col + 1) " "
-                                , "^--"
-                                , if List.any ((==) Unexpected) allProblems then
-                                    if List.all ((==) Unexpected) allProblems then
-                                        "Unexpected"
-
-                                    else
-                                        "Unexpected, expected: "
-
-                                  else
-                                    "Expected: "
-                                , allProblems
-                                    |> List.filterMap
-                                        (\p ->
-                                            case p of
-                                                Unexpected ->
-                                                    Nothing
-
-                                                Expected e ->
-                                                    Just e
-                                        )
-                                    |> (\expecteds ->
-                                            case List.reverse expecteds of
-                                                [] ->
-                                                    ""
-
-                                                [ single ] ->
-                                                    single
-
-                                                last :: init ->
-                                                    String.join ", " (List.reverse init) ++ " or " ++ last
-                                       )
-                                ]
-                        )
-                    <|
-                        List.gatherEqualsBy .col err
+                    errsString
                )
 
 
@@ -348,41 +423,44 @@ relationParser context =
 
 addsubtractionParser : ExpressionParser Expression
 addsubtractionParser context =
-    multiSequence
-        { separators =
-            [ ( \l r -> plus [ l, r ], \_ -> Parser.symbol <| token "+" )
-            , ( \l r -> minus l r, \_ -> Parser.symbol <| token "-" )
-            ]
-        , item = multidivisionParser
-        }
-        context
+    Parser.inContext AddSubtractionContext <|
+        multiSequence
+            { separators =
+                [ ( \l r -> plus [ l, r ], \_ -> Parser.symbol <| token "+" )
+                , ( \l r -> minus l r, \_ -> Parser.symbol <| token "-" )
+                ]
+            , item = multidivisionParser
+            }
+            context
 
 
 multidivisionParser : ExpressionParser Expression
 multidivisionParser context =
-    multiSequence
-        { separators =
-            [ ( \l r -> by [ l, r ], \_ -> Parser.symbol <| token "*" )
-            , ( \l r -> div l r, \_ -> Parser.symbol <| token "/" )
-            , ( \l r -> by [ l, r ], \_ -> Parser.succeed () )
-            ]
-        , item = powerParser
-        }
-        context
+    Parser.inContext MultiDivisionContext <|
+        multiSequence
+            { separators =
+                [ ( \l r -> by [ l, r ], \_ -> Parser.symbol <| token "*" )
+                , ( \l r -> div l r, \_ -> Parser.symbol <| token "/" )
+                , ( \l r -> by [ l, r ], \_ -> Parser.succeed () )
+                ]
+            , item = powerParser
+            }
+            context
 
 
 powerParser : ExpressionParser Expression
 powerParser context =
-    Parser.succeed (\atom maybePow -> maybePow atom)
-        |= atomParser context
-        |. whitespace
-        |= Parser.oneOf
-            [ Parser.succeed (\e b -> pow b e)
-                |. Parser.symbol (token "^")
-                |. whitespace
-                |= Parser.lazy (\_ -> powerParser context)
-            , Parser.succeed identity
-            ]
+    Parser.inContext PowerContext <|
+        Parser.succeed (\atom maybePow -> maybePow atom)
+            |= atomParser context
+            |. whitespace
+            |= Parser.oneOf
+                [ Parser.succeed (\e b -> pow b e)
+                    |. Parser.symbol (token "^")
+                    |. whitespace
+                    |= Parser.lazy (\_ -> powerParser context)
+                , Parser.succeed identity
+                ]
 
 
 type alias SequenceData =
@@ -436,51 +514,53 @@ multiSequenceHelp { separators, item } acc context =
 
 atomParser : ExpressionParser Expression
 atomParser context =
-    Parser.oneOf
-        [ Parser.succeed
-            (\es ->
-                case es of
-                    [ x ] ->
-                        x
+    Parser.inContext AtomContext <|
+        Parser.oneOf
+            [ Parser.inContext VectorContext <|
+                Parser.succeed
+                    (\es ->
+                        case es of
+                            [ x ] ->
+                                x
 
-                    _ ->
-                        vector es
-            )
-            |= Parser.sequence
-                { start = token "("
-                , separator = token ","
-                , end = token ""
-                , spaces = whitespace
-                , item = Parser.lazy (\_ -> mainParser context)
-                , trailing = Parser.Forbidden
-                }
-            |. whitespace
-            |. optional (Parser.symbol (token ")"))
-        , replacementParser context
-        , listParser context
-        , variableParser context
-        , Parser.andThen tryParseNumber <|
-            getChompedString <|
-                Parser.succeed ()
-                    |. Parser.chompIf (\c -> c == '.' || Char.isDigit c) (Expected "a digit, or a dot")
-                    |. Parser.chompWhile (\c -> c == '.' || Char.isDigit c)
-        ]
+                            _ ->
+                                vector es
+                    )
+                    |= Parser.sequence
+                        { start = token "("
+                        , separator = token ","
+                        , end = token ""
+                        , spaces = whitespace
+                        , item = Parser.lazy (\_ -> mainParser context)
+                        , trailing = Parser.Forbidden
+                        }
+                    |. whitespace
+                    |. optional (Parser.symbol (token ")"))
+            , replacementParser context
+            , listParser context
+            , Parser.inContext VariableContext <| variableParser context
+            , Parser.inContext NumberContext <|
+                Parser.andThen tryParseNumber <|
+                    getChompedString <|
+                        Parser.succeed ()
+                            |. Parser.chompIf (\c -> c == '.' || Char.isDigit c) (Expected "a digit, or a dot")
+                            |. Parser.chompWhile (\c -> c == '.' || Char.isDigit c)
+            ]
 
 
 tryParseNumber : String -> Parser ParserContext Problem Expression
 tryParseNumber n =
-    Parser.inContext NumberContext <|
-        case String.toInt n of
-            Just i ->
-                Parser.succeed <| Integer i
+    case String.toInt n of
+        Just i ->
+            Parser.succeed <| Integer i
 
-            Nothing ->
-                case String.toFloat n of
-                    Just f ->
-                        Parser.succeed <| Float f
+        Nothing ->
+            case String.toFloat n of
+                Just f ->
+                    Parser.succeed <| Float f
 
-                    Nothing ->
-                        Parser.problem (Expected "a number")
+                Nothing ->
+                    Parser.problem (Expected "a number")
 
 
 optional : Parser c x () -> Parser c x ()
