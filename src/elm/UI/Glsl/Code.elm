@@ -1,6 +1,6 @@
 module UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, thetaDelta, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
 
-import Expression exposing (Expression, PrintExpression(..), RelationOperation(..))
+import Expression exposing (Expression, FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -934,7 +934,16 @@ expressionToGlslPrec p expr =
             apply "cpow" [ l, r ]
 
         PApply name ex ->
-            apply ("c" ++ Expression.functionNameToString name) ex
+            if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
+                case List.map (expressionToGlslPrec 0) ex of
+                    [] ->
+                        "vec2(0)"
+
+                    head :: tail ->
+                        List.foldl (\e a -> "c" ++ Expression.functionNameToString name ++ "(" ++ a ++ "," ++ e ++ ")") head tail
+
+            else
+                apply ("c" ++ Expression.functionNameToString name) ex
 
         PList es ->
             "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (expressionToGlslPrec 0) es) ++ ")"
@@ -1025,7 +1034,16 @@ expressionToIntervalGlslPrec p expr =
             apply "ipow" [ l, r ]
 
         PApply name ex ->
-            apply ("i" ++ Expression.functionNameToString name) ex
+            if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
+                case List.map (expressionToIntervalGlslPrec 0) ex of
+                    [] ->
+                        "vec2(0)"
+
+                    head :: tail ->
+                        List.foldl (\e a -> "i" ++ Expression.functionNameToString name ++ "(" ++ a ++ "," ++ e ++ ")") head tail
+
+            else
+                apply ("i" ++ Expression.functionNameToString name) ex
 
         PList es ->
             "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (expressionToIntervalGlslPrec 0) es) ++ ")"
@@ -1109,7 +1127,16 @@ expressionToNormalGlslPrec p expr =
             apply "gpow" [ l, r ]
 
         PApply name ex ->
-            apply ("g" ++ Expression.functionNameToString name) ex
+            if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
+                case List.map (expressionToNormalGlslPrec 0) ex of
+                    [] ->
+                        "vec2(0)"
+
+                    head :: tail ->
+                        List.foldl (\e a -> "g" ++ Expression.functionNameToString name ++ "(" ++ a ++ "," ++ e ++ ")") head tail
+
+            else
+                apply ("g" ++ Expression.functionNameToString name) ex
 
         PList es ->
             "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (expressionToNormalGlslPrec 0) es) ++ ")"

@@ -28,6 +28,7 @@ module Expression exposing
     , toPrintExpression
     , toString
     , toTeXString
+    , variadicFunctions
     , visit
     )
 
@@ -703,8 +704,8 @@ quaternaryFunctions =
     [ ( "ii", Ii ) ]
 
 
-arbitraryFunctions : List ( String, KnownFunction )
-arbitraryFunctions =
+variadicFunctions : List ( String, KnownFunction )
+variadicFunctions =
     [ ( "min", Min )
     , ( "max", Max )
     ]
@@ -727,7 +728,7 @@ defaultContext =
                 , map (Just 2) binaryFunctions
                 , map (Just 3) ternaryFunctions
                 , map (Just 4) quaternaryFunctions
-                , map Nothing arbitraryFunctions
+                , map Nothing variadicFunctions
                 ]
     , variables = Trie.fromList <| List.map (\v -> ( v, Declared )) <| letters ++ Dict.keys greeks
     }
