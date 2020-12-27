@@ -727,7 +727,7 @@ toSrcImplicit suffix e =
     """
     float f""" ++ suffix ++ """(float x, float y) {
         vec2 complex = """ ++ expressionToGlsl e ++ """;
-        if(abs(complex.y) > """ ++ String.fromFloat epsilon ++ """) {
+        if(abs(complex.y) > """ ++ floatToGlsl epsilon ++ """) {
             return -1.0;
         }
         return complex.x > 0.0 ? 1.0 : 0.0;
@@ -811,7 +811,7 @@ toSrcRelation suffix e =
     """
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
         vec2 complex = """ ++ expressionToGlsl e ++ """;
-        return complex.x > 0.0 && abs(complex.y) < """ ++ String.fromFloat epsilon ++ """ ? vec3(0.8,0.5,0.5) : vec3(0,0,0);
+        return complex.x > 0.0 && abs(complex.y) < """ ++ floatToGlsl epsilon ++ """ ? vec3(0.8,0.5,0.5) : vec3(0,0,0);
     }
     """
 
@@ -901,7 +901,7 @@ expressionToGlslPrec p expr =
             "vec2(" ++ String.fromInt v ++ ",0)"
 
         PFloat f ->
-            "vec2(" ++ String.fromFloat f ++ ",0)"
+            "vec2(" ++ floatToGlsl f ++ ",0)"
 
         PNegate expression ->
             "(" ++ noninfix "-" expression ++ ")"
@@ -986,7 +986,7 @@ expressionToIntervalGlslPrec p expr =
             "dup(" ++ String.fromInt v ++ ".0)"
 
         PFloat f ->
-            "dup(" ++ String.fromFloat f ++ ")"
+            "dup(" ++ floatToGlsl f ++ ")"
 
         PNegate expression ->
             "ineg(" ++ expressionToIntervalGlslPrec 10 expression ++ ")"
@@ -1095,7 +1095,7 @@ expressionToNormalGlslPrec p expr =
             "gnum(" ++ String.fromInt v ++ ".0)"
 
         PFloat f ->
-            "gnum(" ++ String.fromFloat f ++ ")"
+            "gnum(" ++ floatToGlsl f ++ ")"
 
         PNegate expression ->
             "gneg(" ++ expressionToNormalGlslPrec 10 expression ++ ")"
@@ -1149,6 +1149,19 @@ expressionToNormalGlslPrec p expr =
             "vec4(0)"
 
 
+floatToGlsl : Float -> String
+floatToGlsl f =
+    let
+        s =
+            String.fromFloat f
+    in
+    if String.contains "." s then
+        s
+
+    else
+        s ++ ".0"
+
+
 mainGlsl : List { name : String, color : Bool } -> List String -> String
 mainGlsl pixel2 pixel3 =
     case ( pixel2, pixel3 ) of
@@ -1169,7 +1182,7 @@ main2D pixels =
             let
                 k =
                     if color then
-                        "hl2rgb(" ++ String.fromFloat (toFloat (i + 2) / pi) ++ ", 0.5)" ++ " * " ++ name
+                        "hl2rgb(" ++ floatToGlsl (toFloat (i + 2) / pi) ++ ", 0.5)" ++ " * " ++ name
 
                     else
                         name
@@ -1244,7 +1257,7 @@ main3D suffixes =
             String.join "\n" <| [ maxDepth ] ++ List.map suffixToBisect suffixes ++ [ raytrace ]
 
         colorCoeff =
-            String.fromFloat (1.19 - 0.2 * toFloat (List.length suffixes))
+            floatToGlsl (1.19 - 0.2 * toFloat (List.length suffixes))
 
         innerTrace =
             String.join "\n" (List.indexedMap suffixToRay suffixes)
