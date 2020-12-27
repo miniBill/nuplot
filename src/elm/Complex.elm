@@ -1,4 +1,4 @@
-module Complex exposing (Complex(..), abs, acos, arg, asin, atan, atan2, by, ceiling, cos, cosh, div, exp, floor, fromReal, i, im, ln, minus, negate, one, plus, power, re, round, sign, sin, sinh, sqrt, tan, tanh, toString, zero)
+module Complex exposing (Complex(..), abs, acos, arg, asin, atan, atan2, by, ceiling, cos, cosh, div, exp, floor, fromReal, i, im, ln, max, min, minus, negate, one, plus, power, re, round, sign, sin, sinh, sqrt, tan, tanh, toString, zero)
 
 
 type Complex
@@ -185,6 +185,24 @@ atan x =
 atan2 : Complex -> Complex -> Complex
 atan2 y x =
     fromReal <| arg <| plus x <| by i y
+
+
+min : Complex -> Complex -> Complex
+min ((Complex lr _) as l) ((Complex rr _) as r) =
+    if lr < rr then
+        l
+
+    else
+        r
+
+
+max : Complex -> Complex -> Complex
+max ((Complex lr _) as l) ((Complex rr _) as r) =
+    if lr > rr then
+        l
+
+    else
+        r
 
 
 sqrt : Complex -> Complex

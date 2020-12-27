@@ -106,6 +106,8 @@ type KnownFunction
     | Dd
     | Ii
       -- Misc
+    | Min
+    | Max
     | Round
     | Floor
     | Ceiling
@@ -688,6 +690,8 @@ binaryFunctions : List ( String, KnownFunction )
 binaryFunctions =
     [ ( "atan2", Atan2 )
     , ( "dd", Dd )
+    , ( "min", Min )
+    , ( "max", Max )
     ]
 
 
@@ -854,6 +858,12 @@ functionNameToString name =
 
         KnownFunction Round ->
             "round"
+
+        KnownFunction Min ->
+            "min"
+
+        KnownFunction Max ->
+            "max"
 
         UserFunction u ->
             u

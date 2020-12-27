@@ -393,6 +393,20 @@ straightFunctionToGlsl name =
             }
             """
 
+        Min222 ->
+            """
+            vec2 cmin(vec2 l, vec2 r) {
+                return l.x < r.x ? l : r;
+            }
+            """
+
+        Max222 ->
+            """
+            vec2 cmax(vec2 l, vec2 r) {
+                return l.x > r.x ? l : r;
+            }
+            """
+
 
 intervalFunctionToGlsl : GlslFunction -> String
 intervalFunctionToGlsl name =
@@ -682,6 +696,28 @@ intervalFunctionToGlsl name =
             vec4 gtanh(vec4 z) {
                 float c = 1.0 / cosh(z.x);
                 return vec4(tanh(z.x), c * c * z.yzw);
+            }
+            """
+
+        Min222 ->
+            """
+            vec2 imin(vec2 l, vec2 r) {
+                return vec2(min(l.x, r.x), min(l.y, r.y));
+            }
+
+            vec4 gmin(vec4 l, vec4 r) {
+                return l.x < r.x ? l : r;
+            }
+            """
+
+        Max222 ->
+            """
+            vec2 imax(vec2 l, vec2 r) {
+                return vec2(max(l.x, r.x), max(l.y, r.y));
+            }
+
+            vec4 gmax(vec4 l, vec4 r) {
+                return l.x > r.x ? l : r;
             }
             """
 

@@ -317,6 +317,12 @@ toGlslFunction name =
         Round ->
             Just Round22
 
+        Min ->
+            Just Min222
+
+        Max ->
+            Just Max222
+
         Det ->
             Nothing
 
@@ -376,6 +382,12 @@ dependenciesOf req =
             []
 
         RequireFunction Square22 ->
+            []
+
+        RequireFunction Min222 ->
+            []
+
+        RequireFunction Max222 ->
             []
 
         RequireFunction Ln22 ->

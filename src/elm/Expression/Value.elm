@@ -223,21 +223,14 @@ applyValue context name args =
         KnownFunction Round ->
             unaryFunctionValue context args Round Complex.round
 
-        KnownFunction Atan2 ->
-            case args of
-                [ y, x ] ->
-                    complexMap2
-                        { symbolic = \l r -> Apply name [ l, r ]
-                        , complex = Complex.atan2
-                        , list = Nothing
-                        , lambda = Nothing
-                        , context = context
-                        }
-                        (innerValue context y)
-                        (innerValue context x)
+        KnownFunction Min ->
+            binaryFunctionValue context args Min Complex.min
 
-                _ ->
-                    ErrorValue "Unexpected number of args to atan2, expected 2"
+        KnownFunction Max ->
+            binaryFunctionValue context args Max Complex.max
+
+        KnownFunction Atan2 ->
+            binaryFunctionValue context args Atan2 Complex.atan2
 
         KnownFunction Sqrt ->
             unaryFunctionValue context args Sqrt Complex.sqrt
@@ -387,37 +380,32 @@ unaryFunctionValue : Dict String Value -> List Expression -> KnownFunction -> (C
 unaryFunctionValue context args s f =
     case args of
         [ e ] ->
-            let
-                go w =
-                    case w of
-                        ComplexValue z ->
-                            ComplexValue <| f z
+            complexMap
+                { symbolic = \sv -> Apply (KnownFunction s) [ sv ]
+                , complex = f
+                , list = Nothing
+                , lambda = Nothing
+                }
+            <|
+                innerValue context e
 
-                        SymbolicValue sv ->
-                            SymbolicValue <| Apply (KnownFunction s) [ sv ]
+        _ ->
+            ErrorValue "Unexpected number of arguments, expected 1"
 
-                        ListValue ls ->
-                            ListValue <|
-                                List.map
-                                    (complexMap
-                                        { symbolic = \sv -> Apply (KnownFunction s) [ sv ]
-                                        , complex = f
-                                        , list = Nothing
-                                        , lambda = Nothing
-                                        }
-                                    )
-                                    ls
 
-                        ErrorValue err ->
-                            ErrorValue err
-
-                        LambdaValue y g ->
-                            LambdaValue y <| go g
-
-                        u ->
-                            ErrorValue <| "Unexpected argument: " ++ toString u
-            in
-            go <| innerValue context e
+binaryFunctionValue : Dict String Value -> List Expression -> KnownFunction -> (Complex -> Complex -> Complex) -> Value
+binaryFunctionValue context args s f =
+    case args of
+        [ l, r ] ->
+            complexMap2
+                { symbolic = \lv rv -> Apply (KnownFunction s) [ lv, rv ]
+                , complex = f
+                , list = Nothing
+                , lambda = Nothing
+                , context = context
+                }
+                (innerValue context l)
+                (innerValue context r)
 
         _ ->
             ErrorValue "Unexpected number of arguments, expected 1"
