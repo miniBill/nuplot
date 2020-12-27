@@ -124,6 +124,15 @@ simplificationTests =
     , ( by [ Lambda "x" <| sin_ x, y ]
       , sin_ y
       )
+    , ( Replace
+            (Dict.fromList
+                [ ( "x", Just <| by [ two, y ] )
+                , ( "y", Just <| by [ two, y ] )
+                ]
+            )
+            x
+      , by [ two, y ]
+      )
 
     {-
        , ( "5+10i", icomplex 5 10, "5 + 10i" )

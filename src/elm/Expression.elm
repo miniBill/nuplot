@@ -250,33 +250,34 @@ pvisit f expr =
 
 partialSubstitute : String -> Expression -> Expression -> Expression
 partialSubstitute var val =
+    fullSubstitute <| Dict.singleton var val
+
+
+fullSubstitute : Dict String Expression -> Expression -> Expression
+fullSubstitute dict =
     visit <|
         \expr ->
             case expr of
                 Replace vars e ->
                     Just <|
-                        Replace (Dict.map (\_ -> Maybe.map (partialSubstitute var val)) vars) <|
-                            if Dict.member var vars then
+                        Replace (Dict.map (\_ -> Maybe.map <| fullSubstitute dict) vars) <|
+                            let
+                                reduced =
+                                    Dict.filter (\k _ -> not <| Dict.member k vars) dict
+                            in
+                            if Dict.isEmpty reduced then
                                 e
 
                             else
-                                partialSubstitute var val e
+                                fullSubstitute dict e
 
                 Variable string ->
-                    Just <|
-                        if string == var then
-                            val
-
-                        else
-                            expr
+                    Dict.get string dict
+                        |> Maybe.withDefault expr
+                        |> Just
 
                 _ ->
                     Nothing
-
-
-fullSubstitute : Dict String Expression -> Expression -> Expression
-fullSubstitute ctx e =
-    List.foldl (\( k, v ) -> partialSubstitute k v) e (Dict.toList ctx)
 
 
 equals : Expression -> Expression -> Bool
@@ -878,43 +879,35 @@ functionNameToString name =
 
 ppartialSubstitute : String -> PrintExpression -> PrintExpression -> PrintExpression
 ppartialSubstitute var val =
+    pfullSubstitute <| Dict.singleton var (Just val)
+
+
+pfullSubstitute : Dict String (Maybe PrintExpression) -> PrintExpression -> PrintExpression
+pfullSubstitute dict =
     pvisit <|
         \expr ->
             case expr of
                 PReplace vars e ->
                     Just <|
-                        PReplace (Dict.map (\_ -> Maybe.map <| ppartialSubstitute var val) vars) <|
-                            if Dict.member var vars then
+                        PReplace (Dict.map (\_ -> Maybe.map <| pfullSubstitute dict) vars) <|
+                            let
+                                reduced =
+                                    Dict.filter (\k _ -> not <| Dict.member k vars) dict
+                            in
+                            if Dict.isEmpty reduced then
                                 e
 
                             else
-                                ppartialSubstitute var val e
+                                pfullSubstitute dict e
 
                 PVariable string ->
-                    Just <|
-                        if string == var then
-                            val
-
-                        else
-                            expr
+                    Dict.get string dict
+                        |> Maybe.andThen identity
+                        |> Maybe.withDefault expr
+                        |> Just
 
                 _ ->
                     Nothing
-
-
-pfullSubstitute : Dict String (Maybe PrintExpression) -> PrintExpression -> PrintExpression
-pfullSubstitute ctx e =
-    List.foldl
-        (\( k, mv ) ->
-            case mv of
-                Nothing ->
-                    identity
-
-                Just v ->
-                    ppartialSubstitute k v
-        )
-        e
-        (Dict.toList ctx)
 
 
 toTeXString : Expression -> String
