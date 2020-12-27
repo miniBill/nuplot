@@ -1,5 +1,4 @@
 efficient min/max [max = a+b-min ?]
-profile
 
 tacks on axes
 
@@ -14,3 +13,5 @@ Manual
 context in parser
 
 Close parens after typing ends [?]
+
+ * Profile [blocked by https://github.com/NixOS/nixpkgs/issues/107585]
