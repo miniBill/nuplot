@@ -1182,10 +1182,13 @@ main2D pixels =
             let
                 k =
                     if color then
-                        "hl2rgb(" ++ floatToGlsl (toFloat (i + 2) / pi) ++ ", 0.5)" ++ " * " ++ name
+                        "hl2rgb(" ++ h ++ ", 0.5)" ++ " * " ++ name
 
                     else
                         name
+
+                h =
+                    floatToGlsl <| (toFloat (i + 2) / pi)
             in
             """
             curr = """ ++ k ++ """(deltaX, deltaY, x, y);
@@ -1198,8 +1201,16 @@ main2D pixels =
     in
     deindent 8 <|
         """
-        float ax(float coord, float delta) {
-            return max(0.0, 1.0 - abs(coord/delta));
+        float ax(float coord, float delta, float otherCoord, float otherDelta) {
+            float across = 1.0 - abs(coord/delta);
+            if(across < -0.5)
+                return 0.0;
+            return max(0.0, across);
+                /*max(
+                    across,
+                    mod(log(abs(otherCoord)), 1.0) > 1.0 - otherDelta ? 1.0 : 0.0
+                )
+            );*/
         }
 
         vec4 pixel2 () {
@@ -1218,8 +1229,8 @@ main2D pixels =
             vec3 curr;"""
             ++ inner
             ++ """
-            vec3 yax = ax(x, deltaX) * vec3(0,1,0);
-            vec3 xax = ax(y, deltaY) * vec3(1,0,0);
+            vec3 yax = ax(x, deltaX, y, deltaY) * vec3(0,1,0);
+            vec3 xax = ax(y, deltaY, x, deltaX) * vec3(1,0,0);
             return vec4(max(px, max(xax, yax)), 1.0);
         }
         """
@@ -1254,7 +1265,7 @@ main3D suffixes =
             """
 
         head =
-            String.join "\n" <| [ maxDepth ] ++ List.map suffixToBisect suffixes ++ [ raytrace ]
+            String.join "\n" <| maxDepth :: List.map suffixToBisect suffixes ++ [ raytrace ]
 
         colorCoeff =
             floatToGlsl (1.19 - 0.2 * toFloat (List.length suffixes))

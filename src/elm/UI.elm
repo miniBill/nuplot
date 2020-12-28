@@ -3,8 +3,7 @@ port module UI exposing (main)
 import Browser
 import Browser.Dom
 import Browser.Events
-import Codec exposing (Codec, Value)
-import Dict
+import Codec exposing (Value)
 import Element exposing (Element, alignRight, centerX, centerY, el, fill, height, padding, paddingEach, text, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -18,7 +17,7 @@ import Model exposing (Document, Flags, Modal(..), Model, Msg(..), Output(..))
 import Task
 import UI.RowView
 import UI.Theme as Theme exposing (onEnter)
-import Zipper exposing (Zipper)
+import Zipper
 
 
 port save : Value -> Cmd msg
@@ -129,7 +128,7 @@ view model =
                                 Nothing ->
                                     el [ padding Theme.spacing ] <| text label
 
-                                Just c ->
+                                Just _ ->
                                     Element.row
                                         [ padding <| Theme.spacing // 2
                                         ]

@@ -171,7 +171,7 @@ partialSubstitute var val expr =
         GraphValue _ ->
             expr
 
-        ComplexValue c ->
+        ComplexValue _ ->
             expr
 
         ErrorValue _ ->

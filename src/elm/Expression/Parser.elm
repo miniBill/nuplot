@@ -1,6 +1,5 @@
 module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, expressionToGraph, parse)
 
-import Color exposing (white)
 import Dict exposing (Dict)
 import Expression
     exposing

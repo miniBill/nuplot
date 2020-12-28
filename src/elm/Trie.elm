@@ -1,7 +1,6 @@
-module Trie exposing (Trie, empty, fromList, get, getLongestPrefix, insert, isEmpty, size, union)
+module Trie exposing (Trie, empty, fromList, get, getLongestPrefix, insert, isEmpty, member, size, union)
 
 import Dict exposing (Dict)
-import Element exposing (alpha)
 import List.Extra as List
 
 
@@ -47,12 +46,8 @@ get key =
                     value
 
                 h :: t ->
-                    case Dict.get h children of
-                        Nothing ->
-                            Nothing
-
-                        Just child ->
-                            go t child
+                    Dict.get h children
+                        |> Maybe.andThen (go t)
     in
     go (String.toList key)
 

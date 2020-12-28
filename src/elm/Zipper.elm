@@ -97,14 +97,14 @@ allRight ((Zipper { before, curr, after }) as orig) =
             orig
 
         l :: i ->
-            Zipper { before = i ++ [ curr ] ++ before, curr = l, after = [] }
+            Zipper { before = i ++ curr :: before, curr = l, after = [] }
 
 
 map : (Bool -> Int -> a -> b) -> Zipper a -> List b
 map f (Zipper { before, curr, after }) =
     List.reverse (List.indexedMap (\i -> f False (-i - 1)) before)
-        ++ [ f True 0 curr ]
-        ++ List.indexedMap (\i -> f False (i + 1)) after
+        ++ f True 0 curr
+        :: List.indexedMap (\i -> f False (i + 1)) after
 
 
 append : a -> Zipper a -> Zipper a

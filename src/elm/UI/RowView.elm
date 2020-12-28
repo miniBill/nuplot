@@ -2,7 +2,7 @@ module UI.RowView exposing (view)
 
 import Complex
 import Dict
-import Element exposing (Attribute, Element, alignBottom, alignTop, centerX, el, fill, height, htmlAttribute, none, paddingXY, px, rgb, row, shrink, spacing, text, width)
+import Element exposing (Element, alignBottom, alignTop, centerX, el, fill, height, htmlAttribute, none, paddingXY, px, rgb, row, shrink, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -11,8 +11,6 @@ import Expression.NumericRange
 import Expression.Value
 import Html
 import Html.Attributes
-import Html.Events
-import Json.Decode as Decode
 import List.Extra as List
 import Model exposing (Msg(..), Output(..), Row)
 import UI.Glsl exposing (getGlsl)

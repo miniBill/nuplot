@@ -181,7 +181,7 @@ stepSimplifyPower ls rs =
                 (ipow rm rsi)
                 (List.map (\b -> ipow b rsi) om)
 
-        ( AssociativeOperation Addition la ma ra, Integer rsi ) ->
+        ( AssociativeOperation Addition _ _ _, Integer rsi ) ->
             if rsi < 0 then
                 BinaryOperation Division one (ipow ls -rsi)
 
@@ -465,7 +465,7 @@ groupStepMultiplication curr last =
         ( _, Integer 0 ) ->
             Just <| Integer 0
 
-        ( Integer 0, l ) ->
+        ( Integer 0, _ ) ->
             Just <| Integer 0
 
         ( Integer il, Integer ir ) ->
@@ -695,7 +695,7 @@ hoistLambda =
                         ( Lambda x f, he ) ->
                             Just <| Lambda x <| hoistLambda <| BinaryOperation Power f he
 
-                        ( hb, he ) ->
+                        ( _, _ ) ->
                             Nothing
 
                 AssociativeOperation Multiplication l m r ->
@@ -724,7 +724,7 @@ hoistLambda =
 
                 Apply fn args ->
                     case ( fn, List.map hoistLambda args ) of
-                        ( KnownFunction Plot, ha ) ->
+                        ( KnownFunction Plot, _ ) ->
                             Nothing
 
                         ( _, [ Lambda x f ] ) ->
