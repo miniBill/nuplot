@@ -1205,15 +1205,15 @@ main2D pixels =
             return log(x) / log(10.0);
         }
 
-        float ax(float coord, float delta, float otherCoord, float minDelta) {
-            float across = 1.0 - abs(coord/minDelta);
+        float ax(float coord, float otherCoord, float maxDelta) {
+            float across = 1.0 - abs(coord/maxDelta);
             if(across < -20.0)
                 return 0.0;
-            float smallUnit = pow(10.0, ceil(log10(minDelta)));
-            if(across < 0.0 && abs(otherCoord) < minDelta * 2.0)
+            float smallUnit = pow(10.0, ceil(log10(maxDelta)));
+            if(across < 0.0 && abs(otherCoord) < maxDelta * 2.0)
                 return 0.0;
             float unit = across < -6.0 ? smallUnit * 100.0 : across < -0.1 ? smallUnit * 10.0 : smallUnit * 5.0;
-            float parallel = mod(abs(otherCoord), unit) < minDelta ? 1.0 : 0.0;
+            float parallel = mod(abs(otherCoord), unit) < maxDelta ? 1.0 : 0.0;
             return max(0.0, max(across, parallel));
         }
 
@@ -1233,9 +1233,9 @@ main2D pixels =
             vec3 curr;"""
             ++ inner
             ++ """
-            float minDelta = min(deltaX, deltaY);
-            vec3 yax = ax(x, deltaX, y, minDelta) * vec3(0,1,0);
-            vec3 xax = ax(y, deltaY, x, minDelta) * vec3(1,0,0);
+            float maxDelta = max(deltaX, deltaY);
+            vec3 yax = ax(x, y, maxDelta) * vec3(0,1,0);
+            vec3 xax = ax(y, x, maxDelta) * vec3(1,0,0);
             return vec4(max(px, max(xax, yax)), 1.0);
         }
         """
