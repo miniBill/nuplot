@@ -1205,7 +1205,7 @@ main2D pixels =
             return log(x) / log(10.0);
         }
 
-        float ax(float coord, float otherCoord, float maxDelta) {
+        float axis(float coord, float otherCoord, float maxDelta) {
             float across = 1.0 - abs(coord/maxDelta);
             if(across < -20.0)
                 return 0.0;
@@ -1234,8 +1234,8 @@ main2D pixels =
             ++ inner
             ++ """
             float maxDelta = max(deltaX, deltaY);
-            vec3 yax = ax(x, y, maxDelta) * vec3(0,1,0);
-            vec3 xax = ax(y, x, maxDelta) * vec3(1,0,0);
+            vec3 yax = axis(x, y, maxDelta) * vec3(0,1,0);
+            vec3 xax = axis(y, x, maxDelta) * vec3(1,0,0);
             return vec4(max(px, max(xax, yax)), 1.0);
         }
         """
@@ -1396,10 +1396,6 @@ main3D suffixes =
     deindent 12 <|
         head
             ++ """
-            float ax(float coord, float delta) {
-                return max(0.0, 1.0 - abs(coord/delta));
-            }
-
             vec3 color(float y) {
                 float logRadius = log2(abs(y));
                 float powerRemainder = fract(logRadius);
