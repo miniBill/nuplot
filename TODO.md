@@ -1,5 +1,3 @@
-tacks on axes
-
 solve
 
 zoom finger
