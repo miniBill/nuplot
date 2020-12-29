@@ -18,8 +18,8 @@ int main () {
 
     int traceYFrom = 271;
     int traceYTo = 273;
-    int traceXFrom = 194;
-    int traceXTo = 195;
+    int traceXFrom = 198;
+    int traceXTo = 199;
 
     bool onlyTraced = false;
     int xfrom = onlyTraced ? traceXFrom : 0;
@@ -46,7 +46,7 @@ int main () {
                 ||
                 ((y == traceYFrom - 1 || y == traceYTo) && x >= traceXFrom - 1 && x <= traceXTo)
             )
-                gl_FragColor = vec4(1,0,0,0);
+                gl_FragColor = vec4(1,1,1,1);
             else
                 main_();
             if(trace)
