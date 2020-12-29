@@ -1145,15 +1145,14 @@ expressionToNormalGlslPrec p expr =
             infixl_ 6 " + " l r
 
         PRel op l r ->
-            let
-                op_ =
-                    if op == "=" then
-                        "=="
+            if op == "<=" || op == "<" then
+                infixl_ 6 " - " l r
 
-                    else
-                        op
-            in
-            "gnum(((" ++ expressionToNormalGlslPrec 10 l ++ ").x" ++ op_ ++ "(" ++ expressionToNormalGlslPrec 10 r ++ ").x) ? 1.0 : 0.0)"
+            else if op == "=" then
+                "(abs(" ++ infixl_ 6 " - " r l ++ "))"
+
+            else
+                infixl_ 6 " - " r l
 
         PBy l r ->
             apply "gby" [ l, r ]
