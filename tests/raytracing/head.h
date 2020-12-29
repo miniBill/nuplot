@@ -194,10 +194,12 @@ double dot(vec3 l, vec3 r) {
     return l.x * r.x + l.y * r.y + l.z * r.z;
 }
 
-vec3 faceforward(vec3 n, vec3 a, vec3 b) {
-    if(dot(a, b) < 0)
-        return n;
-    return -n;
+vec2 sin_(vec2 input) {
+    return vec2(sin(input.x), sin(input.y));
+}
+
+vec2 ceil(vec2 input) {
+    return vec2(ceil(input.x), ceil(input.y));
 }
 
 struct FragCoord {
@@ -323,14 +325,6 @@ trace33_2(interval_0)
 trace33_2(interval_1)
 trace33_2(interval)
 
-vec2 sin_(vec2 input) {
-    return vec2(sin(input.x), sin(input.y));
-}
-
-vec2 ceil(vec2 input) {
-    return vec2(ceil(input.x), ceil(input.y));
-}
-
 bool bisect_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
 bool bisect(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
     bool res = bisect_(l, r, max_distance, found, n);
@@ -341,7 +335,7 @@ bool bisect(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
     return res;
 }
 
-/* bool bisect_0_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
+bool bisect_0_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
 bool bisect_0(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
     bool res = bisect_0_(l, r, max_distance, found, n);
     vec3 to = l + max_distance * r;
@@ -359,7 +353,7 @@ bool bisect_1(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
         fprintf(debugFile, "bisect_1((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf) [%lf]\n\n",
             l.x, l.y, l.z, to.x, to.y, to.z, found.x, found.y, found.z, length(found - l));
     return res;
-} */
+}
 
 vec4 vec4_(vec3 l, double r) {
     return vec4(l, r);
