@@ -20,22 +20,50 @@ solve e x =
             SolutionError "The second argument of `solve` must be the variable you want to solve for"
 
 
+type Shortcut
+    = Shortcut SolutionTree (Dict String Shortcut)
+
+
 cut : SolutionTree -> SolutionTree
 cut =
     let
-        go shortcuts tree =
+        go tree =
             case tree of
                 SolutionError _ ->
-                    tree
+                    ( Dict.empty, tree )
 
-                _ ->
+                SolutionNone _ ->
+                    ( Dict.empty, tree )
+
+                SolutionForall _ ->
+                    ( Dict.empty, tree )
+
+                SolutionDone e ->
+                    ( Dict.singleton (Expression.toString e) (Shortcut tree Dict.empty), tree )
+
+                SolutionStep e n ->
                     let
-                        _ =
-                            Debug.log "TODO: cut" tree
+                        ( shortcuts, ncut ) =
+                            go n
+
+                        key =
+                            Expression.toString e
                     in
-                    tree
+                    case Dict.get key shortcuts of
+                        Nothing ->
+                            let
+                                res =
+                                    SolutionStep e ncut
+                            in
+                            ( Dict.insert key (Shortcut res shortcuts) shortcuts, res )
+
+                        Just (Shortcut shortTree lessShortcuts) ->
+                            ( Dict.insert key (Shortcut shortTree shortcuts) lessShortcuts, shortTree )
+
+                SolutionBranch ls ->
+                    ( Dict.empty, SolutionBranch <| List.map cut ls )
     in
-    go Dict.empty
+    go >> Tuple.second
 
 
 innerSolve : String -> Expression -> SolutionTree
