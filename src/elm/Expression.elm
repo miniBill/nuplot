@@ -877,11 +877,6 @@ functionNameToString name =
             u
 
 
-ppartialSubstitute : String -> PrintExpression -> PrintExpression -> PrintExpression
-ppartialSubstitute var val =
-    pfullSubstitute <| Dict.singleton var (Just val)
-
-
 pfullSubstitute : Dict String (Maybe PrintExpression) -> PrintExpression -> PrintExpression
 pfullSubstitute dict =
     pvisit <|
