@@ -103,6 +103,9 @@ getRange ctx e =
                     else
                         Complex
 
+                Apply (KnownFunction Pw) [ _, t, f ] ->
+                    union (getRange ctx t) (getRange ctx f)
+
                 Apply (KnownFunction _) [ c ] ->
                     if getRange ctx c == Complex then
                         Complex
