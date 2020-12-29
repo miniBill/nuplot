@@ -28,6 +28,10 @@ struct vec2 {
     friend vec2 operator * (double d, vec2 r) {
         return vec2(d * r.x, d * r.y);
     }
+
+    friend vec2 operator / (vec2 l, double r) {
+        return vec2(l.x / r, l.y / r);
+    }
 };
 
 struct vec3 {
@@ -88,6 +92,10 @@ struct vec4 {
         return vec4(-r.x, -r.y, -r.z, -r.w);
     }
 
+    friend vec4 operator / (vec4 l, double r) {
+        return vec4(l.x / r, l.y / r, l.z / r, l.w / r);
+    }
+
     vec3 ywz() {
         return vec3(y, w, z);
     }
@@ -141,6 +149,10 @@ double length(vec3 l) {
     return sqrt(l.x * l.x + l.y * l.y + l.z * l.z);
 }
 
+double length(vec4 l) {
+    return sqrt(l.x * l.x + l.y * l.y + l.z * l.z + l.w * l.w);
+}
+
 double atan(double y, double x) {
     return atan2(y, x);
 }
@@ -154,9 +166,28 @@ T mix(T x, T y, double a) {
     return x * (1 - a) + y * a;
 }
 
-template<class T>
-T normalize(T x) {
+vec2 normalize_(vec2 x) {
     return x / length(x);
+}
+
+vec3 normalize_(vec3 x) {
+    return x / length(x);
+}
+
+vec4 normalize_(vec4 x) {
+    return x / length(x);
+}
+
+vec3 cross_(vec3 a, vec3 b) {
+    return vec3(
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x
+    );
+}
+
+double dot(vec2 l, vec2 r) {
+    return l.x * r.x + l.y * r.y;
 }
 
 double dot(vec3 l, vec3 r) {
@@ -266,13 +297,16 @@ notrace2(iceiling)
 notrace2(icos)
 notrace2(icosh)
 notrace2(iexp)
+notrace2(iinverse)
 notrace2(iln)
 notrace2(ineg)
 notrace2(isin)
+notrace2(isqrt)
 notrace2(isquare)
 notrace2(sin)
 notrace22(by)
 notrace22(iby)
+notrace22(idiv)
 notrace22(ieq)
 notrace22(igt)
 notrace22(ileq)
@@ -283,6 +317,8 @@ notrace222(ipw)
 notrace3(normal_0)
 notrace3(normal_1)
 notrace3(normal)
+notrace3(normalize)
+notrace33(cross)
 trace33_2(interval_0)
 trace33_2(interval_1)
 trace33_2(interval)
@@ -329,7 +365,7 @@ vec4 vec4_(vec3 l, double r) {
     return vec4(l, r);
 }
 
-vec4 raytrace_(vec3 o, vec3 d, float max_distance, vec3 light);
-vec4 raytrace(vec3 o, vec3 d, float max_distance, vec3 light) {
-    return raytrace_(o, d, max_distance, light);
+vec4 raytrace_(vec3 o, vec3 d, float max_distance);
+vec4 raytrace(vec3 o, vec3 d, float max_distance) {
+    return raytrace_(o, d, max_distance);
 }
