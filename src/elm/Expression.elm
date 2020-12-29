@@ -115,6 +115,7 @@ type KnownFunction
     | Pw
     | Plot
     | Simplify
+    | Solve
 
 
 type UnaryOperation
@@ -692,6 +693,7 @@ binaryFunctions : List ( String, KnownFunction )
 binaryFunctions =
     [ ( "atan2", Atan2 )
     , ( "dd", Dd )
+    , ( "solve", Solve )
     ]
 
 
@@ -857,6 +859,9 @@ functionNameToString name =
 
         KnownFunction Simplify ->
             "simplify"
+
+        KnownFunction Solve ->
+            "solve"
 
         KnownFunction Floor ->
             "floor"

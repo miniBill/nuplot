@@ -5,6 +5,7 @@ import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), filterContext, fullSubstitute, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication)
 import Expression.Parser
 import Expression.Simplify
+import Expression.Solver
 import Expression.Utils as Utils
 
 
@@ -288,13 +289,34 @@ applyValue context name args =
         KnownFunction Ii ->
             ErrorValue "TODO"
 
+        KnownFunction Solve ->
+            case args of
+                [ e, x ] ->
+                    ListValue <|
+                        List.map
+                            (\s ->
+                                ListValue
+                                    [ case s of
+                                        Ok v ->
+                                            SymbolicValue v
+
+                                        Err ev ->
+                                            ErrorValue ev
+                                    ]
+                            )
+                        <|
+                            Expression.Solver.solve e x
+
+                _ ->
+                    ErrorValue "Error in solve: wrong number of arguments"
+
         KnownFunction Simplify ->
             case args of
                 [ e ] ->
                     SymbolicValue <| Expression.Simplify.simplify e
 
                 _ ->
-                    ErrorValue "Error in simplify"
+                    ErrorValue "Error in simplify: wrong number of arguments"
 
         KnownFunction Plot ->
             case args of
@@ -302,7 +324,7 @@ applyValue context name args =
                     GraphValue <| Expression.Parser.expressionToGraph e
 
                 _ ->
-                    ErrorValue "Error in plot"
+                    ErrorValue "Error in plot: wrong number of arguments"
 
         UserFunction _ ->
             ErrorValue "TODO"

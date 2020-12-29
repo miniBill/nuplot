@@ -338,6 +338,9 @@ toGlslFunction name =
         Simplify ->
             Nothing
 
+        Solve ->
+            Nothing
+
 
 dependenciesOf : Requirement -> List Requirement
 dependenciesOf req =
