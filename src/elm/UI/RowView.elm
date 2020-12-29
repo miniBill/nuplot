@@ -6,7 +6,7 @@ import Element exposing (Element, alignBottom, alignTop, centerX, el, fill, heig
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), genericAsMatrix)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), SolutionTree, UnaryOperation(..), Value(..), genericAsMatrix)
 import Expression.NumericRange
 import Expression.Value
 import Html
@@ -135,10 +135,20 @@ label x =
 
 viewExpression : Int -> Expression -> Element msg
 viewExpression pageWidth expr =
+    viewLaTeX pageWidth <| Expression.toTeXString expr
+
+
+viewSolutionTree : Int -> SolutionTree -> Element msg
+viewSolutionTree pageWidth tree =
+    viewLaTeX pageWidth <| Expression.solutionTreeToTeXString tree
+
+
+viewLaTeX : Int -> String -> Element msg
+viewLaTeX pageWidth tex =
     el [ height shrink, width shrink ] <|
         Element.html <|
             Html.node "math-jax"
-                [ Html.Attributes.attribute "tex-src" <| Expression.toTeXString expr
+                [ Html.Attributes.attribute "tex-src" tex
                 , Html.Attributes.attribute "container-width" <| String.fromInt <| pageWidth - 2 * Theme.spacing
                 ]
                 []
@@ -209,6 +219,9 @@ outputBlock model row =
                 GraphValue _ ->
                     Nothing
 
+                SolutionTreeValue _ ->
+                    Nothing
+
                 LambdaValue x f ->
                     Maybe.map (Lambda x) (asExpression f)
 
@@ -221,6 +234,9 @@ outputBlock model row =
                     case v of
                         SymbolicValue s ->
                             viewExpression model.pageWidth s
+
+                        SolutionTreeValue t ->
+                            viewSolutionTree model.pageWidth t
 
                         GraphValue g ->
                             el [ centerX ] <| draw model coeffs g

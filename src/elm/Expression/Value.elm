@@ -178,6 +178,9 @@ partialSubstitute var val expr =
         ErrorValue _ ->
             expr
 
+        SolutionTreeValue _ ->
+            expr
+
 
 matrixMultiplication : Dict String Value -> List Value -> List Value -> Value
 matrixMultiplication context l r =
@@ -292,20 +295,8 @@ applyValue context name args =
         KnownFunction Solve ->
             case args of
                 [ e, x ] ->
-                    ListValue <|
-                        List.map
-                            (\s ->
-                                ListValue
-                                    [ case s of
-                                        Ok v ->
-                                            SymbolicValue v
-
-                                        Err ev ->
-                                            ErrorValue ev
-                                    ]
-                            )
-                        <|
-                            Expression.Solver.solve e x
+                    SolutionTreeValue <|
+                        Expression.Solver.solve e x
 
                 _ ->
                     ErrorValue "Error in solve: wrong number of arguments"
@@ -397,6 +388,9 @@ determinant context val =
         LambdaValue _ _ ->
             val
 
+        SolutionTreeValue _ ->
+            ErrorValue "Cannot calculate the determinant of a solution"
+
 
 unaryFunctionValue : Dict String Value -> List Expression -> KnownFunction -> (Complex -> Complex) -> Value
 unaryFunctionValue context args s f =
@@ -453,6 +447,9 @@ toString v =
 
         LambdaValue x f ->
             "Lambda: " ++ x ++ " => " ++ toString f
+
+        SolutionTreeValue s ->
+            "SolutionTree: " ++ Expression.solutionTreeToString s
 
 
 relationValue : RelationOperation -> Complex -> Complex -> Complex
@@ -517,6 +514,9 @@ complexMap ({ lambda, symbolic, complex, list } as fs) v =
         GraphValue _ ->
             ErrorValue "Tried to apply function to graph"
 
+        SolutionTreeValue _ ->
+            ErrorValue "Tried to apply function to solution tree"
+
         SymbolicValue w ->
             SymbolicValue <| symbolic w
 
@@ -557,6 +557,12 @@ complexMap2 ({ symbolic, complex, list, lambda, context } as fs) v w =
 
         ( _, ErrorValue _ ) ->
             w
+
+        ( SolutionTreeValue _, _ ) ->
+            ErrorValue "Tried to apply function to solution tree"
+
+        ( _, SolutionTreeValue _ ) ->
+            ErrorValue "Tried to apply function to solution tree"
 
         ( LambdaValue x f, _ ) ->
             case lambda of
@@ -648,6 +654,9 @@ toSymbolic v =
             Apply (KnownFunction Plot) [ graphToExpression g ]
 
         ErrorValue _ ->
+            Integer 0
+
+        SolutionTreeValue _ ->
             Integer 0
 
 

@@ -1,72 +1,57 @@
 module Expression.Solver exposing (solve)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), UnaryOperation(..))
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Simplify exposing (simplify)
-import Expression.Utils exposing (by, div, ipow, minus, negate_, one, plus, sqrt_, square, vector, zero)
+import Expression.Utils exposing (by, div, ipow, minus, negate_, one, plus, sqrt_, square, zero)
 import List.Extra as List
 
 
-solve : Expression -> Expression -> List (Result String Expression)
+solve : Expression -> Expression -> SolutionTree
 solve e x =
     case x of
         Variable v ->
             simplify e
                 |> innerSolve v
-                |> (::) (Ok e)
+                |> SolutionStep e
                 |> cut
 
         _ ->
-            [ Err "The second argument of `solve` must be the variable you want to solve for" ]
+            SolutionError "The second argument of `solve` must be the variable you want to solve for"
 
 
-cut : List (Result String Expression) -> List (Result String Expression)
-cut ls =
+cut : SolutionTree -> SolutionTree
+cut =
     let
-        ts x =
-            case x of
-                Ok e ->
-                    Expression.toString e
+        go shortcuts tree =
+            case tree of
+                SolutionError _ ->
+                    tree
 
-                Err e ->
-                    "!ERR!" ++ e
+                _ ->
+                    let
+                        _ =
+                            Debug.log "TODO: cut" tree
+                    in
+                    tree
     in
-    ls
-        |> List.foldr
-            (\e ( acc, seen ) ->
-                case Dict.get (ts e) seen of
-                    Nothing ->
-                        ( e :: acc, Dict.insert (ts e) acc seen )
-
-                    Just shortcut ->
-                        ( e :: shortcut, seen )
-            )
-            ( [], Dict.empty )
-        |> Tuple.first
+    go Dict.empty
 
 
-innerSolve : String -> Expression -> List (Result String Expression)
+innerSolve : String -> Expression -> SolutionTree
 innerSolve v expr =
     case expr of
         RelationOperation Equals l r ->
-            Ok expr :: solveEquation v l r
+            SolutionStep expr <| solveEquation v l r
 
         RelationOperation _ _ _ ->
-            [ Err "Cannot solve disequations [yet!]" ]
+            SolutionError "Cannot solve disequations [yet!]"
 
         _ ->
-            [ Err "Cannot solve this" ]
+            SolutionError "Cannot solve this"
 
 
-type SolutionTree
-    = Forall String
-    | Error String
-    | None
-    | Step Expression SolutionTree
-    | Branch Expression (List SolutionTree)
-
-
-solveEquation : String -> Expression -> Expression -> List (Result String Expression)
+solveEquation : String -> Expression -> Expression -> SolutionTree
 solveEquation v l r =
     let
         eq =
@@ -89,9 +74,7 @@ solveEquation v l r =
         go e =
             case asPoly v e |> Result.map (Dict.map (always simplify)) of
                 Err err ->
-                    [ Err <| "Cannot solve " ++ Expression.toString e
-                    , Err err
-                    ]
+                    SolutionError <| "Cannot solve " ++ Expression.toString e ++ ", " ++ err
 
                 Ok coeffs ->
                     let
@@ -108,10 +91,10 @@ solveEquation v l r =
 
                         solve0 k =
                             if isZero k then
-                                [ Err <| "∀" ++ v ]
+                                SolutionForall v
 
                             else
-                                [ Err "No solution" ]
+                                SolutionNone v
 
                         solve1 a b =
                             if isZero a then
@@ -122,9 +105,8 @@ solveEquation v l r =
                                     sol =
                                         eqv <| div (neg b) a
                                 in
-                                [ Ok sol
-                                , Ok <| simplify sol
-                                ]
+                                SolutionStep sol <|
+                                    SolutionDone (simplify sol)
 
                         solve2 a b c =
                             if isZero a then
@@ -132,78 +114,67 @@ solveEquation v l r =
 
                             else if isZero b then
                                 let
-                                    solp =
+                                    solPlus =
                                         sqrt_ (div (neg c) a)
 
-                                    solm =
-                                        neg solp
+                                    branch sol =
+                                        SolutionStep (eqv sol) <|
+                                            SolutionDone (eqv <| simplify sol)
                                 in
-                                [ Ok <|
-                                    List
-                                        [ vector
-                                            [ eqv solp
-                                            , eqv <| simplify solp
-                                            ]
-                                        , vector
-                                            [ eqv solm
-                                            , eqv <| simplify solm
-                                            ]
-                                        ]
-                                ]
+                                SolutionBranch
+                                    [ branch solPlus
+                                    , branch <| neg solPlus
+                                    ]
 
                             else
                                 let
                                     delta =
                                         minus (square b) (by [ Integer 4, a, c ])
 
-                                    solp =
+                                    solPlus =
                                         div (plus [ neg b, sqrt_ delta ]) (by [ Integer 2, a ])
 
-                                    solm =
+                                    solMinus =
                                         div (minus (neg b) (sqrt_ delta)) (by [ Integer 2, a ])
+
+                                    branch sol =
+                                        SolutionStep (eqv sol) <|
+                                            SolutionDone (eqv <| simplify sol)
                                 in
-                                [ Ok <|
-                                    List
-                                        [ vector
-                                            [ eqv solp
-                                            , eqv <| simplify solp
-                                            ]
-                                        , vector
-                                            [ eqv solm
-                                            , eqv <| simplify solm
-                                            ]
-                                        ]
-                                ]
+                                SolutionBranch
+                                    [ branch solPlus
+                                    , branch solMinus
+                                    ]
                     in
-                    Ok (eq e zero)
-                        :: (case Dict.toList coeffs |> List.reverse |> List.filterNot (Tuple.second >> isZero) of
-                                [] ->
-                                    [ Err <| "Cannot solve " ++ Expression.toString e ]
+                    SolutionStep (eq e zero)
+                        (case Dict.toList coeffs |> List.reverse |> List.filterNot (Tuple.second >> isZero) of
+                            [] ->
+                                SolutionError <| "Cannot solve " ++ Expression.toString e
 
-                                [ ( 0, k ) ] ->
-                                    solve0 k
+                            [ ( 0, k ) ] ->
+                                solve0 k
 
-                                [ ( 1, a ) ] ->
-                                    solve1 a zero
+                            [ ( 1, a ) ] ->
+                                solve1 a zero
 
-                                [ ( 1, a ), ( 0, b ) ] ->
-                                    solve1 a b
+                            [ ( 1, a ), ( 0, b ) ] ->
+                                solve1 a b
 
-                                [ ( 2, a ) ] ->
-                                    solve2 a zero zero
+                            [ ( 2, a ) ] ->
+                                solve2 a zero zero
 
-                                [ ( 2, a ), ( 1, b ) ] ->
-                                    solve2 a b zero
+                            [ ( 2, a ), ( 1, b ) ] ->
+                                solve2 a b zero
 
-                                [ ( 2, a ), ( 0, c ) ] ->
-                                    solve2 a zero c
+                            [ ( 2, a ), ( 0, c ) ] ->
+                                solve2 a zero c
 
-                                [ ( 2, a ), ( 1, b ), ( 0, c ) ] ->
-                                    solve2 a b c
+                            [ ( 2, a ), ( 1, b ), ( 0, c ) ] ->
+                                solve2 a b c
 
-                                _ ->
-                                    [ Err <| "Cannot solve " ++ Expression.toString e ]
-                           )
+                            _ ->
+                                SolutionError <| "Cannot solve " ++ Expression.toString e
+                        )
     in
     case ( l, r ) of
         ( Integer 0, _ ) ->

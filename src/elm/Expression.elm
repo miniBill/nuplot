@@ -8,6 +8,7 @@ module Expression exposing
     , KnownFunction(..)
     , PrintExpression(..)
     , RelationOperation(..)
+    , SolutionTree(..)
     , UnaryOperation(..)
     , Value(..)
     , VariableStatus(..)
@@ -25,6 +26,8 @@ module Expression exposing
     , graphToString
     , partialSubstitute
     , pfullSubstitute
+    , solutionTreeToString
+    , solutionTreeToTeXString
     , toPrintExpression
     , toString
     , toTeXString
@@ -65,11 +68,21 @@ type Expression
 
 type Value
     = ErrorValue String
+    | SolutionTreeValue SolutionTree
     | SymbolicValue Expression
     | ComplexValue Complex
     | GraphValue Graph
     | LambdaValue String Value
     | ListValue (List Value)
+
+
+type SolutionTree
+    = SolutionForall String
+    | SolutionError String
+    | SolutionNone String
+    | SolutionDone Expression
+    | SolutionStep Expression SolutionTree
+    | SolutionBranch (List SolutionTree)
 
 
 type FunctionName
@@ -371,6 +384,28 @@ graphToString g =
 
         GraphList gs ->
             "GraphList [" ++ String.join ", " (List.map graphToString gs) ++ "]"
+
+
+solutionTreeToString : SolutionTree -> String
+solutionTreeToString tree =
+    case tree of
+        SolutionDone e ->
+            toString e
+
+        SolutionForall v ->
+            "∀" ++ v ++ "∈ ℝ"
+
+        SolutionError e ->
+            "Error: " ++ e
+
+        SolutionNone v ->
+            "∄" ++ v ++ "∈ ℝ"
+
+        SolutionStep e n ->
+            toString e ++ ", " ++ solutionTreeToString n
+
+        SolutionBranch ls ->
+            "(" ++ String.join ") (" (List.map solutionTreeToString ls) ++ ")"
 
 
 type PrintExpression
@@ -908,6 +943,32 @@ pfullSubstitute dict =
 
                 _ ->
                     Nothing
+
+
+solutionTreeToTeXString : SolutionTree -> String
+solutionTreeToTeXString tree =
+    case tree of
+        SolutionForall v ->
+            "\\forall " ++ v ++ " \\in \\mathbb{R}"
+
+        SolutionError e ->
+            "\\text{Error: " ++ e ++ "}"
+
+        SolutionNone v ->
+            "\\not \\exists " ++ v ++ " \\in \\mathbb{R}"
+
+        SolutionDone e ->
+            toTeXString e
+
+        SolutionStep e n ->
+            "\\begin{array}[t]{l}{" ++ toTeXString e ++ "}\\\\{" ++ solutionTreeToTeXString n ++ "}\\end{array}"
+
+        SolutionBranch children ->
+            "\\begin{array}[t]{"
+                ++ String.repeat (List.length children) "l"
+                ++ "}{"
+                ++ String.join "}&{" (List.map solutionTreeToTeXString children)
+                ++ "}\\end{array}"
 
 
 toTeXString : Expression -> String
