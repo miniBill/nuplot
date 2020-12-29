@@ -39,7 +39,8 @@ struct vec3 {
     double y;
     double z;
     vec3(vec2 xy, double z) : x(xy.x), y(xy.y), z(z) {}
-    vec3(double x = 0, double y = 0, double z = 0) : x(x), y(y), z(z) {}
+    vec3(double x) : x(x), y(0), z(0) {}
+    vec3(double x, double y, double z) : x(x), y(y), z(z) {}
 
     friend vec3 operator + (double d, vec3 r) {
         return vec3(d + r.x, d + r.y, d + r.z);
@@ -105,6 +106,17 @@ struct vec4 {
     }
 };
 
+struct FragCoord {
+    vec2 xy;
+    FragCoord() {}
+    FragCoord(vec2 xy) : xy(xy) {}
+};
+
+FragCoord gl_FragCoord;
+vec4 gl_FragColor;
+
+FILE* debugFile;
+
 vec3 abs(vec3 x) {
     return vec3(abs(x.x), abs(x.y), abs(x.z));
 }
@@ -167,15 +179,21 @@ T mix(T x, T y, double a) {
 }
 
 vec2 normalize_(vec2 x) {
-    return x / length(x);
+    double l = length(x);
+    if(l == 0) return x;
+    return x / l;
 }
 
 vec3 normalize_(vec3 x) {
-    return x / length(x);
+    double l = length(x);
+    if(l == 0) return x;
+    return x / l;
 }
 
 vec4 normalize_(vec4 x) {
-    return x / length(x);
+    double l = length(x);
+    if(l == 0) return x;
+    return x / l;
 }
 
 vec3 cross_(vec3 a, vec3 b) {
@@ -201,17 +219,6 @@ vec2 sin_(vec2 input) {
 vec2 ceil(vec2 input) {
     return vec2(ceil(input.x), ceil(input.y));
 }
-
-struct FragCoord {
-    vec2 xy;
-    FragCoord() {}
-    FragCoord(vec2 xy) : xy(xy) {}
-};
-
-FragCoord gl_FragCoord;
-vec4 gl_FragColor;
-
-FILE* debugFile;
 
 #define trace2(f) \
             vec2 f ## _(vec2 z); \
@@ -330,8 +337,9 @@ bool bisect(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
     bool res = bisect_(l, r, max_distance, found, n);
     vec3 to = l + max_distance * r;
     if(trace)
-        fprintf(debugFile, "bisect((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf) [found - eye = %lf]\n\n",
-            l.x, l.y, l.z, to.x, to.y, to.z, found.x, found.y, found.z, length(found - l));
+        fprintf(debugFile, "bisect((%lf, %lf, %lf), (%lf, %lf, %lf)) = %d, found = (%lf, %lf, %lf), normal = (%lf, %lf, %lf) [found - eye = %lf]\n\n",
+            l.x, l.y, l.z, to.x, to.y, to.z, res ? 1 : 0,
+            found.x, found.y, found.z, n.x, n.y, n.z, length(found - l));
     return res;
 }
 
@@ -340,8 +348,9 @@ bool bisect_0(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
     bool res = bisect_0_(l, r, max_distance, found, n);
     vec3 to = l + max_distance * r;
     if(trace)
-        fprintf(debugFile, "bisect_0((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf) [%lf]\n\n",
-            l.x, l.y, l.z, to.x, to.y, to.z, found.x, found.y, found.z, length(found - l));
+        fprintf(debugFile, "bisect_0((%lf, %lf, %lf), (%lf, %lf, %lf)) = %d, found = (%lf, %lf, %lf), normal = (%lf, %lf, %lf) [%lf]\n\n",
+            l.x, l.y, l.z, to.x, to.y, to.z, res ? 1 : 0,
+            found.x, found.y, found.z, n.x, n.y, n.z, length(found - l));
     return res;
 }
 
@@ -350,8 +359,9 @@ bool bisect_1(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {
     bool res = bisect_1_(l, r, max_distance, found, n);
     vec3 to = l + max_distance * r;
     if(trace)
-        fprintf(debugFile, "bisect_1((%lf, %lf, %lf), (%lf, %lf, %lf)) = (%lf, %lf, %lf) [%lf]\n\n",
-            l.x, l.y, l.z, to.x, to.y, to.z, found.x, found.y, found.z, length(found - l));
+        fprintf(debugFile, "bisect_1((%lf, %lf, %lf), (%lf, %lf, %lf)) = %d, found = (%lf, %lf, %lf), normal = (%lf, %lf, %lf) [%lf]\n\n",
+            l.x, l.y, l.z, to.x, to.y, to.z, res ? 1 : 0,
+            found.x, found.y, found.z, n.x, n.y, n.z, length(found - l));
     return res;
 }
 
