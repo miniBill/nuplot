@@ -131,11 +131,45 @@ intervalOperationToGlsl op =
 
         GlslPower ->
             """
+            float ipow(float b, int e) {
+                float fe = float(e);
+                if(mod(fe, 2.0) == 0.0)
+                    return pow(abs(b), fe);
+                else
+                    return b * pow(abs(b), fe - 1.0);
+            }
+
+            vec2 ipow(vec2 b, int e) {
+                if(e == 0)
+                    return vec2(1,1);
+                if(e == 1)
+                    return b;
+                float xe = ipow(b.x, e);
+                float ye = ipow(b.y, e);
+                float mn = min(xe, ye);
+                float mx = max(xe, ye);
+                if(mod(float(e), 2.0) == 0.0 && b.x <= 0.0 && b.y >= 0.0) {
+                    return vec2(
+                        min(0.0, mn),
+                        max(0.0, mx)
+                    );
+                }
+                return vec2(mn, mx);
+            }
+
             vec2 ipow(vec2 b, vec2 e) {
                 return iexp(iby(iln(b), e));
             }
 
+            vec4 gpow(vec4 b, int e) {
+                return vec4(pow(b.x, float(e)), float(e) * pow(b.x, float(e - 1)) * b.yzw);
+            }
+
             vec4 gpow(vec4 b, vec4 e) {
+                int ie = int(e.x);
+                if(float(ie) == e.x && e.y == 0.0 && e.z == 0.0 && e.w == 0.0) {
+                    return gpow(b, ie);
+                }
                 return gexp(gby(gln(b), e));
             }
             """
@@ -1030,6 +1064,13 @@ expressionToIntervalGlslPrec p expr =
         PPower l (PInteger 2) ->
             "isquare(" ++ expressionToIntervalGlslPrec 0 l ++ ")"
 
+        PPower l (PInteger ri) ->
+            let
+                ris =
+                    String.fromInt ri
+            in
+            "ipow(" ++ expressionToIntervalGlslPrec 0 l ++ ", " ++ ris ++ ")"
+
         PPower l r ->
             apply "ipow" [ l, r ]
 
@@ -1122,6 +1163,9 @@ expressionToNormalGlslPrec p expr =
 
         PPower l (PInteger 2) ->
             apply "gsquare" [ l ]
+
+        PPower l (PInteger ri) ->
+            "gpow(" ++ expressionToNormalGlslPrec 0 l ++ ", " ++ String.fromInt ri ++ ")"
 
         PPower l r ->
             apply "gpow" [ l, r ]
