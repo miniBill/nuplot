@@ -164,6 +164,19 @@ stepSimplifyDivision ls rs =
         ( _, Variable "i" ) ->
             by [ ls, negate_ i ]
 
+        ( _, Integer 1 ) ->
+            ls
+
+        ( Integer 0, _ ) ->
+            ls
+
+        ( Integer n, Integer d ) ->
+            if modBy d n == 0 then
+                Integer (n // d)
+
+            else
+                div ls rs
+
         _ ->
             if Expression.equals ls rs then
                 one
