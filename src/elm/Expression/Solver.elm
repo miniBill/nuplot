@@ -149,7 +149,7 @@ solveEquation v l r =
                     SolutionStep (eq e zero)
                         (case Dict.toList coeffs |> List.reverse |> List.filterNot (Tuple.second >> isZero) of
                             [] ->
-                                SolutionError <| "Cannot solve " ++ Expression.toString e
+                                solve0 zero
 
                             [ ( 0, k ) ] ->
                                 solve0 k
@@ -173,7 +173,7 @@ solveEquation v l r =
                                 solve2 a b c
 
                             _ ->
-                                SolutionError <| "Cannot solve " ++ Expression.toString e
+                                SolutionError <| "Cannot solve " ++ Expression.toString (eq e zero)
                         )
     in
     case ( l, r ) of

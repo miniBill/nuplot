@@ -162,15 +162,6 @@ errorsToString input err =
 
 parse : String -> Result (List (Parser.DeadEnd ParserContext Problem)) Expression
 parse input =
-    let
-        log _ =
-            {- if String.contains "DEBUG" input then
-                   Debug.log msg
-
-               else
-            -}
-            identity
-    in
     input
         |> String.trim
         |> Cleaner.cleanInput
@@ -179,13 +170,7 @@ parse input =
                 |= mainParser defaultContext
                 |. Parser.end Unexpected
             )
-        |> Result.map
-            (\r ->
-                r
-                    |> log "raw"
-                    |> Expression.Utils.squash
-                    |> log "after squash"
-            )
+        |> Result.map Expression.Utils.squash
 
 
 expressionToGraph : Expression -> Graph
