@@ -533,6 +533,20 @@ toStringPrec p e =
         PAdd l (PNegate r) ->
             infixl_ 6 " - " l r
 
+        PAdd l (PFloat pf) ->
+            if pf < 0 then
+                infixl_ 6 " - " l (PFloat -pf)
+
+            else
+                infixl_ 6 " + " l (PFloat pf)
+
+        PAdd l (PInteger pi) ->
+            if pi < 0 then
+                infixl_ 6 " - " l (PInteger -pi)
+
+            else
+                infixl_ 6 " + " l (PInteger pi)
+
         PAdd l r ->
             infixl_ 6 " + " l r
 
@@ -1218,6 +1232,13 @@ toTeXStringPrec p e =
 
             PAdd l (PNegate r) ->
                 infixl_ 6 " - " l r
+
+            PAdd l (PFloat pf) ->
+                if pf < 0 then
+                    infixl_ 6 " - " l (PFloat -pf)
+
+                else
+                    infixl_ 6 " + " l (PFloat pf)
 
             PAdd l (PInteger pi) ->
                 if pi < 0 then
