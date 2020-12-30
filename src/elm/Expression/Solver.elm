@@ -3,7 +3,7 @@ module Expression.Solver exposing (solve)
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Simplify exposing (simplify)
-import Expression.Utils exposing (by, div, ipow, minus, negate_, one, plus, sqrt_, square, zero)
+import Expression.Utils exposing (by, div, i, ipow, minus, negate_, one, plus, pow, sqrt_, square, zero)
 import List.Extra as List
 
 
@@ -82,126 +82,52 @@ innerSolve v expr =
 solveEquation : String -> Expression -> Expression -> SolutionTree
 solveEquation v l r =
     let
-        eq =
-            RelationOperation Equals
-
-        eqv =
-            RelationOperation Equals (Variable v)
-
-        neg b =
-            case b of
-                Integer q ->
-                    Integer -q
-
-                UnaryOperation Negate q ->
-                    q
-
-                _ ->
-                    negate_ b
-
-        go e =
-            case asPoly v e |> Result.map (Dict.map (always simplify)) of
+        go expr =
+            case asPoly v expr |> Result.map (Dict.map (always simplify)) of
                 Err err ->
-                    SolutionError <| "Cannot solve " ++ Expression.toString e ++ ", " ++ err
+                    SolutionError <| "Cannot solve " ++ Expression.toString expr ++ ", " ++ err
 
                 Ok coeffs ->
-                    let
-                        isZero k =
-                            case k of
-                                Integer i ->
-                                    i == 0
-
-                                Float f ->
-                                    f == 0
-
-                                _ ->
-                                    False
-
-                        solve0 k =
-                            if isZero k then
-                                SolutionForall v
-
-                            else
-                                SolutionNone v
-
-                        solve1 a b =
-                            if isZero a then
-                                solve0 b
-
-                            else
-                                let
-                                    sol =
-                                        eqv <| div (neg b) a
-                                in
-                                SolutionStep sol <|
-                                    SolutionDone (simplify sol)
-
-                        solve2 a b c =
-                            if isZero a then
-                                solve1 b c
-
-                            else if isZero b then
-                                let
-                                    solPlus =
-                                        sqrt_ (div (neg c) a)
-
-                                    branch sol =
-                                        SolutionStep (eqv sol) <|
-                                            SolutionDone (eqv <| simplify sol)
-                                in
-                                SolutionBranch
-                                    [ branch solPlus
-                                    , branch <| neg solPlus
-                                    ]
-
-                            else
-                                let
-                                    delta =
-                                        minus (square b) (by [ Integer 4, a, c ])
-
-                                    solPlus =
-                                        div (plus [ neg b, sqrt_ delta ]) (by [ Integer 2, a ])
-
-                                    solMinus =
-                                        div (minus (neg b) (sqrt_ delta)) (by [ Integer 2, a ])
-
-                                    branch sol =
-                                        SolutionStep (eqv sol) <|
-                                            SolutionDone (eqv <| simplify sol)
-                                in
-                                SolutionBranch
-                                    [ branch solPlus
-                                    , branch solMinus
-                                    ]
-                    in
-                    SolutionStep (eq e zero)
+                    SolutionStep (RelationOperation Equals expr zero)
                         (case Dict.toList coeffs |> List.reverse |> List.filterNot (Tuple.second >> isZero) of
                             [] ->
-                                solve0 zero
+                                solve0 v zero
 
                             [ ( 0, k ) ] ->
-                                solve0 k
+                                solve0 v k
 
                             [ ( 1, a ) ] ->
-                                solve1 a zero
+                                solve1 v a zero
 
                             [ ( 1, a ), ( 0, b ) ] ->
-                                solve1 a b
+                                solve1 v a b
 
                             [ ( 2, a ) ] ->
-                                solve2 a zero zero
+                                solve2 v a zero zero
 
                             [ ( 2, a ), ( 1, b ) ] ->
-                                solve2 a b zero
+                                solve2 v a b zero
 
                             [ ( 2, a ), ( 0, c ) ] ->
-                                solve2 a zero c
+                                solve2 v a zero c
 
                             [ ( 2, a ), ( 1, b ), ( 0, c ) ] ->
-                                solve2 a b c
+                                solve2 v a b c
+
+                            [ ( 4, a ) ] ->
+                                solve4Biquad v a zero zero
+
+                            [ ( 4, a ), ( 0, e ) ] ->
+                                solve4Biquad v a zero e
+
+                            [ ( 4, a ), ( 2, c ), ( 0, e ) ] ->
+                                solve4Biquad v a c e
+
+                            [ ( 4, a ), ( 2, c ) ] ->
+                                solve4Biquad v a c zero
 
                             _ ->
-                                SolutionError <| "Cannot solve " ++ Expression.toString (eq e zero)
+                                SolutionError <| "Cannot solve " ++ Expression.toString (RelationOperation Equals expr zero)
                         )
     in
     case ( l, r ) of
@@ -213,6 +139,148 @@ solveEquation v l r =
 
         _ ->
             go (minus l r)
+
+
+isZero : Expression -> Bool
+isZero k =
+    case k of
+        Integer i ->
+            i == 0
+
+        Float f ->
+            f == 0
+
+        _ ->
+            False
+
+
+neg : Expression -> Expression
+neg b =
+    case b of
+        Integer q ->
+            Integer -q
+
+        UnaryOperation Negate q ->
+            q
+
+        _ ->
+            negate_ b
+
+
+solIs : String -> Expression -> Expression
+solIs =
+    RelationOperation Equals << Variable
+
+
+solve0 : String -> Expression -> SolutionTree
+solve0 v k =
+    if isZero k then
+        SolutionForall v
+
+    else
+        SolutionNone v
+
+
+solve1 : String -> Expression -> Expression -> SolutionTree
+solve1 v a b =
+    if isZero a then
+        solve0 v b
+
+    else
+        let
+            sol =
+                solIs v <| div (neg b) a
+        in
+        SolutionStep sol <|
+            SolutionDone (simplify sol)
+
+
+solve2 : String -> Expression -> Expression -> Expression -> SolutionTree
+solve2 v a b c =
+    if isZero a then
+        solve1 v b c
+
+    else if isZero b then
+        let
+            solPlus =
+                sqrt_ (div (neg c) a)
+
+            branch sol =
+                SolutionStep (solIs v sol) <|
+                    SolutionDone (solIs v <| simplify sol)
+        in
+        SolutionBranch
+            [ branch solPlus
+            , branch <| neg solPlus
+            ]
+
+    else
+        let
+            delta =
+                minus (square b) (by [ Integer 4, a, c ])
+
+            solPlus =
+                div (plus [ neg b, sqrt_ delta ]) (by [ Integer 2, a ])
+
+            solMinus =
+                div (minus (neg b) (sqrt_ delta)) (by [ Integer 2, a ])
+
+            branch sol =
+                SolutionStep (solIs v sol) <|
+                    SolutionDone (solIs v <| simplify sol)
+        in
+        SolutionBranch
+            [ branch solPlus
+            , branch solMinus
+            ]
+
+
+solve4Biquad : String -> Expression -> Expression -> Expression -> SolutionTree
+solve4Biquad v a c e =
+    if isZero a then
+        solve2 v c zero e
+
+    else if isZero c then
+        let
+            solPlus =
+                if a == Integer 1 then
+                    pow (neg e) (div one (Integer 4))
+
+                else
+                    pow (div (neg e) a) (div one (Integer 4))
+
+            branch sol =
+                SolutionStep (solIs v sol) <|
+                    SolutionDone (solIs v <| simplify sol)
+        in
+        SolutionBranch
+            [ branch solPlus
+            , branch <| neg solPlus
+            , branch <| by [ i, solPlus ]
+            , branch <| by [ neg i, solPlus ]
+            ]
+
+    else
+        let
+            delta =
+                minus (square c) (by [ Integer 4, a, e ])
+
+            solPlus =
+                sqrt_ <| div (plus [ neg c, sqrt_ delta ]) (by [ Integer 2, a ])
+
+            solMinus =
+                sqrt_ <| div (minus (neg c) (sqrt_ delta)) (by [ Integer 2, a ])
+
+            branch sol =
+                SolutionStep (solIs v sol) <|
+                    SolutionDone (solIs v <| simplify sol)
+        in
+        SolutionBranch
+            [ branch solPlus
+            , branch solMinus
+            , branch <| neg solPlus
+            , branch <| neg solMinus
+            ]
 
 
 asPoly : String -> Expression -> Result String (Dict Int Expression)
