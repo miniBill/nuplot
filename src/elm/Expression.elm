@@ -1292,6 +1292,26 @@ toTeXStringPrec p e =
             PPower l (PDiv (PInteger 1) s) ->
                 paren (p > 8) <| "\\sqrt[" ++ toTeXStringPrec 0 s ++ "]{" ++ toTeXStringPrec 0 l ++ "}"
 
+            PPower (PApply name args) (PFloat i) ->
+                paren (p > 10) <|
+                    "\\mathrm{"
+                        ++ functionNameToString name
+                        ++ "}^{"
+                        ++ String.fromFloat i
+                        ++ "}\\left("
+                        ++ String.join ", " (List.map (toTeXStringPrec 0) args)
+                        ++ "\\right)"
+
+            PPower (PApply name args) (PInteger i) ->
+                paren (p > 10) <|
+                    "\\mathrm{"
+                        ++ functionNameToString name
+                        ++ "}^{"
+                        ++ String.fromInt i
+                        ++ "}\\left("
+                        ++ String.join ", " (List.map (toTeXStringPrec 0) args)
+                        ++ "\\right)"
+
             PPower l r ->
                 paren (p > 8) <| toTeXStringPrec 9 l ++ "^{" ++ toTeXStringPrec 0 r ++ "}"
 
