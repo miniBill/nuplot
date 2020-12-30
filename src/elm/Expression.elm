@@ -1286,6 +1286,12 @@ toTeXStringPrec p e =
             PDiv l r ->
                 paren (p > 7) <| "\\frac" ++ toTeXStringPrec 7 l ++ toTeXStringPrec 8 r
 
+            PPower l (PDiv (PInteger 1) (PInteger 2)) ->
+                paren (p > 8) <| "\\sqrt{" ++ toTeXStringPrec 0 l ++ "}"
+
+            PPower l (PDiv (PInteger 1) s) ->
+                paren (p > 8) <| "\\sqrt[" ++ toTeXStringPrec 0 s ++ "]{" ++ toTeXStringPrec 0 l ++ "}"
+
             PPower l r ->
                 paren (p > 8) <| toTeXStringPrec 9 l ++ "^{" ++ toTeXStringPrec 0 r ++ "}"
 
