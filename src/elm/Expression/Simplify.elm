@@ -3,7 +3,7 @@ module Expression.Simplify exposing (hoistLambda, simplify, sortByDegree, stepSi
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute, visit)
 import Expression.Derivative
-import Expression.Utils exposing (by, cos_, div, i, icomplex, im, ipow, minus, negate_, one, plus, pow, re, sin_, two, zero)
+import Expression.Utils exposing (by, cos_, div, i, icomplex, im, ipow, minus, negate_, one, plus, pow, re, sin_, square, two, zero)
 import List
 import List.Extra as List
 import List.MyExtra exposing (groupWith)
@@ -236,12 +236,76 @@ stepSimplifyDivision ls rs =
             else
                 div ls rs
 
+        ( _, AssociativeOperation Addition l m r ) ->
+            let
+                ( reals, immaginaries ) =
+                    (l :: m :: r)
+                        |> List.foldl
+                            (\e ( ar, ai ) ->
+                                case isImmaginary e of
+                                    Just k ->
+                                        ( ar, k :: ai )
+
+                                    Nothing ->
+                                        ( e :: ar, ai )
+                            )
+                            ( [], [] )
+
+                plusReals =
+                    plus reals
+
+                plusImmaginaries =
+                    plus immaginaries
+
+                inverted =
+                    div
+                        (minus plusReals <| by [ Variable "i", plusImmaginaries ])
+                        (plus [ square plusReals, square plusImmaginaries ])
+            in
+            case ( immaginaries, ls ) of
+                ( [], _ ) ->
+                    div ls rs
+
+                ( _, Integer 1 ) ->
+                    inverted
+
+                _ ->
+                    by [ ls, inverted ]
+
         _ ->
             if Expression.equals ls rs then
                 one
 
             else
                 div ls rs
+
+
+isImmaginary : Expression -> Maybe Expression
+isImmaginary e =
+    case e of
+        Variable "i" ->
+            Just one
+
+        AssociativeOperation Multiplication ll mm rr ->
+            let
+                nonIs =
+                    List.filterNot ((==) (Variable "i")) (ll :: mm :: rr)
+            in
+            case modBy 4 <| List.length rr + 2 - List.length nonIs of
+                0 ->
+                    Nothing
+
+                1 ->
+                    Just <| by nonIs
+
+                2 ->
+                    Nothing
+
+                _ ->
+                    Just <| negate_ <| by nonIs
+
+        _ ->
+            Nothing
 
 
 stepSimplifyPower : Expression -> Expression -> Expression

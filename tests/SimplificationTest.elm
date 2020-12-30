@@ -11,7 +11,7 @@ import Test exposing (Test, describe, test)
 suite : Test
 suite =
     let
-        toTests ( from, to ) =
+        toTestsSimplify ( from, to ) =
             let
                 simplified =
                     Expression.Simplify.simplify from
@@ -31,7 +31,19 @@ suite =
                         (Expression.toString doublySimplified ++ " = " ++ Debug.toString doublySimplified)
             ]
 
-        toTest ( aop, from, to ) =
+        toTestsStepSimplify ( from, to ) =
+            let
+                stepSimplified =
+                    Expression.Simplify.stepSimplify Dict.empty from
+            in
+            [ test (Expression.toString from ++ " step simplifies to " ++ Expression.toString to) <|
+                \_ ->
+                    Expect.equal
+                        (Expression.toString to ++ " = " ++ Debug.toString to)
+                        (Expression.toString stepSimplified ++ " = " ++ Debug.toString stepSimplified)
+            ]
+
+        toTestSort ( aop, from, to ) =
             let
                 sorted =
                     Expression.Simplify.sortByDegree aop from
@@ -44,9 +56,11 @@ suite =
     in
     describe "The Expression.Simplify module"
         [ describe "Expression.Simplify.simplify" <|
-            List.concatMap toTests simplificationTests
+            List.concatMap toTestsSimplify simplificationTests
+        , describe "Expression.Simplify.stepSimplify" <|
+            List.concatMap toTestsStepSimplify stepSimplificationTests
         , describe "Expression.Simplify.sortByDegree" <|
-            List.map toTest sortTests
+            List.map toTestSort sortTests
         ]
 
 
@@ -268,4 +282,19 @@ sortTests =
             by [ a, g, m, r ]
       in
       ( Addition, [ afmn, agmr, negate_ afmn ], [ afmn, negate_ afmn, agmr ] )
+    ]
+
+
+stepSimplificationTests : List ( Expression, Expression )
+stepSimplificationTests =
+    let
+        iy =
+            by [ i, y ]
+    in
+    [ ( div one <| plus [ x, iy ]
+      , div (minus x iy) (plus [ square x, square y ])
+      )
+    , ( div (minus x iy) (plus [ square x, square y ])
+      , div (minus x iy) (plus [ square x, square y ])
+      )
     ]
