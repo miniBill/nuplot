@@ -3,7 +3,7 @@ module Expression.Simplify exposing (hoistLambda, simplify, sortByDegree, stepSi
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute, visit)
 import Expression.Derivative
-import Expression.Utils exposing (by, cos_, div, i, icomplex, ipow, negate_, one, plus, pow, sin_, two, zero)
+import Expression.Utils exposing (by, cos_, div, i, icomplex, im, ipow, minus, negate_, one, plus, pow, re, sin_, two, zero)
 import List
 import List.Extra as List
 import List.MyExtra exposing (groupWith)
@@ -154,8 +154,64 @@ stepSimplifyApply fname sargs =
                 ( Det, [ expr ] ) ->
                     Expression.Utils.determinant expr
 
+                ( Re, _ ) ->
+                    stepSimplifyRe sargs
+
+                ( Im, [ AssociativeOperation Addition l m r ] ) ->
+                    plus <| List.map im <| l :: m :: r
+
+                ( Im, [ Variable v ] ) ->
+                    if v == "i" then
+                        one
+
+                    else
+                        zero
+
+                ( Im, [ Integer _ ] ) ->
+                    zero
+
+                ( Im, [ Float _ ] ) ->
+                    zero
+
+                ( Im, [ AssociativeOperation Multiplication l m r ] ) ->
+                    let
+                        rest =
+                            by (m :: r)
+                    in
+                    plus [ by [ re l, im rest ], by [ im l, re rest ] ]
+
                 _ ->
                     Apply fname sargs
+
+
+stepSimplifyRe : List Expression -> Expression
+stepSimplifyRe sargs =
+    case sargs of
+        [ AssociativeOperation Addition l m r ] ->
+            plus <| List.map re <| l :: m :: r
+
+        [ Variable v ] ->
+            if v == "i" then
+                zero
+
+            else
+                Variable v
+
+        [ Integer i ] ->
+            Integer i
+
+        [ Float i ] ->
+            Float i
+
+        [ AssociativeOperation Multiplication l m r ] ->
+            let
+                rest =
+                    by (m :: r)
+            in
+            minus (by [ re l, re rest ]) (by [ im l, im rest ])
+
+        _ ->
+            Apply (KnownFunction Re) sargs
 
 
 stepSimplifyDivision : Expression -> Expression -> Expression
