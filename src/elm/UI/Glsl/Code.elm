@@ -967,9 +967,13 @@ expressionToGlslPrec p expr =
         PPower l r ->
             apply "cpow" [ l, r ]
 
+        PApply (KnownFunction Simplify) [ e ] ->
+            expressionToGlslPrec p e
+
         PApply name ex ->
             if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
                 case List.map (expressionToGlslPrec 0) ex of
+                    -- TODO: is this really necessary?
                     [] ->
                         "vec2(0)"
 
