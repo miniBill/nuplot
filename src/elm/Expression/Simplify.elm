@@ -1,4 +1,4 @@
-module Expression.Simplify exposing (hoistLambda, simplify, sortByDegree)
+module Expression.Simplify exposing (hoistLambda, simplify, sortByDegree, stepSimplify)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute, visit)
@@ -126,6 +126,9 @@ stepSimplifyApply fname sargs =
                         else
                             Integer r
 
+                    else if i < 0 then
+                        by [ Variable "i", Apply fname [ Integer -i ] ]
+
                     else
                         Apply fname sargs
 
@@ -215,6 +218,24 @@ stepSimplifyPower ls rs =
 
             else
                 Integer <| il ^ ir
+
+        ( Integer b, BinaryOperation Division (Integer en) (Integer ed) ) ->
+            if b == 0 then
+                Integer 0
+
+            else if b == 1 then
+                Integer 1
+
+            else
+                let
+                    appr =
+                        floor <| toFloat b ^ (toFloat en / toFloat ed)
+                in
+                if appr ^ ed == b ^ en then
+                    Integer appr
+
+                else
+                    pow (Integer (b ^ en)) (div one (Integer ed))
 
         ( Variable "i", Integer ir ) ->
             case modBy 4 ir of
