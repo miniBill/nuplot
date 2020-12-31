@@ -187,6 +187,15 @@ stepSimplifyApply fname sargs =
 stepSimplifyRe : List Expression -> Expression
 stepSimplifyRe sargs =
     case sargs of
+        [ BinaryOperation Division (AssociativeOperation Addition l m r) d ] ->
+            plus <| List.map (\c -> re <| div c d) (l :: m :: r)
+
+        [ BinaryOperation Division n (Integer d) ] ->
+            div (re n) (Integer d)
+
+        [ UnaryOperation Negate c ] ->
+            negate_ <| re c
+
         [ AssociativeOperation Addition l m r ] ->
             plus <| List.map re <| l :: m :: r
 
@@ -285,6 +294,9 @@ isImmaginary e =
     case e of
         Variable "i" ->
             Just one
+
+        UnaryOperation Negate c ->
+            Maybe.map negate_ <| isImmaginary c
 
         AssociativeOperation Multiplication ll mm rr ->
             let
