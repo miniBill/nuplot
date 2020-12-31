@@ -861,7 +861,7 @@ hoistLambda =
                         ( Lambda x f, he ) ->
                             Just <| Lambda x <| hoistLambda <| BinaryOperation Power f he
 
-                        ( _, _ ) ->
+                        _ ->
                             Nothing
 
                 AssociativeOperation Multiplication l m r ->

@@ -1,4 +1,4 @@
-module Model exposing (Document, Flags, Modal(..), Model, Msg(..), Output(..), Row, documentsCodec, emptyRow)
+module Model exposing (Document, Flags, Modal(..), Model, Msg(..), Output(..), Row, Size, documentsCodec, emptyRow)
 
 import Codec exposing (Codec)
 import Expression exposing (Expression)
