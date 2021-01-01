@@ -118,14 +118,20 @@ statusLine pageWidth row =
 
 viewError : String -> Element msg
 viewError e =
-    Element.paragraph
-        [ alignTop
-        , Font.family [ Font.monospace ]
-        , Font.color <| rgb 1 0 0
-        ]
-    <|
-        List.map text <|
-            String.split "\n" e
+    let
+        viewErrorLine l =
+            Element.paragraph
+                [ htmlAttribute <| Html.Attributes.class "pre" ]
+                [ text l ]
+    in
+    e
+        |> String.split "\n"
+        |> List.map viewErrorLine
+        |> Element.textColumn
+            [ alignTop
+            , Font.family [ Font.monospace ]
+            , Font.color <| rgb 1 0 0
+            ]
 
 
 label : String -> Element msg

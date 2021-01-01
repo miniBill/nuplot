@@ -12,6 +12,7 @@ import Element.Input as Input
 import Element.Lazy
 import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
 import Expression.Parser
+import Html
 import List.Extra as List
 import Model exposing (Document, Flags, Modal(..), Model, Msg(..), Output(..))
 import Task
@@ -181,7 +182,13 @@ view model =
         , height fill
         , Element.inFront <| viewModal model
         ]
-        [ documentPickerView
+        [ Element.html <|
+            Html.node "style"
+                []
+                [ -- preserve whitespace in errors display
+                  Html.text "div.pre > div {white-space: pre-wrap !important;}"
+                ]
+        , documentPickerView
         , documentView
         ]
 
