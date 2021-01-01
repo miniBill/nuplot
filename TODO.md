@@ -1,4 +1,4 @@
-solve
+solve - Ruffini
 
 zoom finger
 fix 3d navigation
@@ -6,10 +6,8 @@ fix 3d navigation
 
 Manual
 
-context in parser
-
 Close parens after typing ends [?]
 
  * Profile [blocked by https://github.com/NixOS/nixpkgs/issues/107585]
 
-efficient min/max [max = a+b-min ?]
+efficient min/max [?] [max = a+b-min ?]
