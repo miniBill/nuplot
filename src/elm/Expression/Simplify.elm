@@ -39,7 +39,11 @@ stepSimplify context expr =
             Dict.get v context |> Maybe.withDefault expr
 
         Replace vars e ->
-            fullSubstitute (filterContext vars) e
+            step1 context
+                { andThen = fullSubstitute (filterContext vars)
+                , ifChanged = Replace vars
+                }
+                e
 
         UnaryOperation Negate (UnaryOperation Negate e) ->
             e
@@ -48,7 +52,11 @@ stepSimplify context expr =
             Integer -ni
 
         UnaryOperation Negate (List ls) ->
-            List <| List.map (UnaryOperation Negate) ls
+            stepList context
+                { andThen = \ss -> List <| List.map (UnaryOperation Negate) ss
+                , ifChanged = \ss -> UnaryOperation Negate <| List ss
+                }
+                ls
 
         UnaryOperation Negate e ->
             UnaryOperation Negate <| stepSimplify context e
@@ -57,44 +65,100 @@ stepSimplify context expr =
             Lambda x <| stepSimplify context f
 
         BinaryOperation bop l r ->
-            let
-                ls =
-                    stepSimplify context l
+            step2 context
+                { andThen =
+                    case bop of
+                        Division ->
+                            stepSimplifyDivision
 
-                rs =
-                    stepSimplify context r
-            in
-            case bop of
-                Division ->
-                    stepSimplifyDivision ls rs
-
-                Power ->
-                    stepSimplifyPower ls rs
+                        Power ->
+                            stepSimplifyPower
+                , ifChanged = BinaryOperation bop
+                }
+                l
+                r
 
         RelationOperation rop l r ->
-            let
-                ls =
-                    stepSimplify context l
-
-                rs =
-                    stepSimplify context r
-            in
-            RelationOperation rop ls rs
+            step2 context
+                { andThen = RelationOperation rop
+                , ifChanged = RelationOperation rop
+                }
+                l
+                r
 
         AssociativeOperation aop l r o ->
-            stepSimplifyAssociative aop <| List.map (stepSimplify context) (l :: r :: o)
+            stepList context
+                { andThen = stepSimplifyAssociative aop
+                , ifChanged =
+                    if aop == Addition then
+                        plus
+
+                    else
+                        by
+                }
+                (l :: r :: o)
 
         Apply name args ->
-            stepSimplifyApply name <| List.map (stepSimplify context) args
+            stepList context
+                { andThen = stepSimplifyApply name
+                , ifChanged = Apply name
+                }
+                args
 
         List es ->
-            List <| List.map (stepSimplify context) es
+            stepList context
+                { andThen = List
+                , ifChanged = List
+                }
+                es
 
         Integer _ ->
             expr
 
         Float _ ->
             expr
+
+
+step1 : Dict String Expression -> { andThen : Expression -> Expression, ifChanged : Expression -> Expression } -> Expression -> Expression
+step1 context { andThen, ifChanged } arg =
+    let
+        sarg =
+            stepSimplify context arg
+    in
+    if Expression.equals arg sarg then
+        andThen sarg
+
+    else
+        ifChanged sarg
+
+
+step2 : Dict String Expression -> { andThen : Expression -> Expression -> Expression, ifChanged : Expression -> Expression -> Expression } -> Expression -> Expression -> Expression
+step2 context { andThen, ifChanged } arg1 arg2 =
+    let
+        sarg1 =
+            stepSimplify context arg1
+
+        sarg2 =
+            stepSimplify context arg2
+    in
+    if Expression.equals arg1 sarg1 && Expression.equals arg2 sarg2 then
+        andThen sarg1 sarg2
+
+    else
+        ifChanged sarg1 sarg2
+
+
+stepList : Dict String Expression -> { andThen : List Expression -> Expression, ifChanged : List Expression -> Expression } -> List Expression -> Expression
+stepList context { andThen, ifChanged } args =
+    let
+        sargs =
+            List.map (stepSimplify context) args
+    in
+    if List.map2 Expression.equals args sargs |> List.all identity then
+        andThen sargs
+
+    else
+        ifChanged sargs
 
 
 stepSimplifyApply : FunctionName -> List Expression -> Expression
@@ -105,32 +169,8 @@ stepSimplifyApply fname sargs =
 
         KnownFunction name ->
             case ( name, sargs ) of
-                ( Sqrt, [ Integer i ] ) ->
-                    let
-                        a =
-                            abs i
-
-                        f =
-                            toFloat a
-
-                        s =
-                            sqrt f
-
-                        r =
-                            truncate s
-                    in
-                    if r * r == a then
-                        if i < 0 then
-                            icomplex 0 r
-
-                        else
-                            Integer r
-
-                    else if i < 0 then
-                        by [ Variable "i", Apply fname [ Integer -i ] ]
-
-                    else
-                        Apply fname sargs
+                ( Sqrt, _ ) ->
+                    stepSimplifySqrt sargs
 
                 ( Sinh, [ AssociativeOperation Multiplication l r o ] ) ->
                     case extract (findSpecificVariable "i") (l :: r :: o) of
@@ -182,6 +222,94 @@ stepSimplifyApply fname sargs =
 
                 _ ->
                     Apply fname sargs
+
+
+stepSimplifySqrt : List Expression -> Expression
+stepSimplifySqrt sargs =
+    case sargs of
+        [ Integer j ] ->
+            let
+                a =
+                    abs j
+
+                r =
+                    truncate (sqrt <| toFloat a)
+
+                s =
+                    if r * r == a then
+                        Integer r
+
+                    else
+                        let
+                            ( outer, inner ) =
+                                abs a
+                                    |> factor
+                                    |> List.foldl
+                                        (\( f, e ) ( o, i ) ->
+                                            ( o * f ^ (e // 2)
+                                            , i * f ^ modBy 2 e
+                                            )
+                                        )
+                                        ( 1, 1 )
+                        in
+                        case ( outer, inner ) of
+                            ( _, 1 ) ->
+                                Integer outer
+
+                            ( 1, _ ) ->
+                                Apply (KnownFunction Sqrt) [ Integer inner ]
+
+                            _ ->
+                                by [ Integer outer, Apply (KnownFunction Sqrt) [ Integer inner ] ]
+            in
+            if j < 0 then
+                by [ Variable "i", s ]
+
+            else
+                s
+
+        _ ->
+            Apply (KnownFunction Sqrt) sargs
+
+
+factor : Int -> List ( Int, Int )
+factor =
+    let
+        plusOne k dict =
+            Dict.insert k (1 + Maybe.withDefault 0 (Dict.get k dict)) dict
+
+        go acc i =
+            if i <= 1 then
+                acc
+
+            else
+                case List.find (\p -> modBy p i == 0) smallPrimes of
+                    Just p ->
+                        go (plusOne p acc) (i // p)
+
+                    Nothing ->
+                        let
+                            p =
+                                naive 1009 i
+                        in
+                        go (plusOne p acc) (i // p)
+
+        naive p i =
+            if modBy p i == 0 then
+                p
+
+            else if p * p >= i then
+                i
+
+            else
+                naive (p + 2) i
+    in
+    go Dict.empty >> Dict.toList
+
+
+smallPrimes : List number
+smallPrimes =
+    [ 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997 ]
 
 
 stepSimplifyRe : List Expression -> Expression
