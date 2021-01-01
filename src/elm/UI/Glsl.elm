@@ -323,6 +323,9 @@ toGlslFunction name =
         Max ->
             Just Max222
 
+        Mod ->
+            Just Mod22
+
         Det ->
             Nothing
 
@@ -391,6 +394,9 @@ dependenciesOf req =
             []
 
         RequireFunction Max222 ->
+            []
+
+        RequireFunction Mod22 ->
             []
 
         RequireFunction Ln22 ->

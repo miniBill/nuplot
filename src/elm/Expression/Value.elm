@@ -292,6 +292,9 @@ applyValue context name args =
         KnownFunction Ii ->
             ErrorValue "TODO"
 
+        KnownFunction Mod ->
+            ErrorValue "TODO"
+
         KnownFunction Solve ->
             case args of
                 [ e, x ] ->

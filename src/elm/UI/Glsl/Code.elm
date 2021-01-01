@@ -441,6 +441,13 @@ straightFunctionToGlsl name =
             }
             """
 
+        Mod22 ->
+            """
+            vec2 cmod(vec2 l, vec2 r) {
+                return vec2(mod(l.x, r.x), 0);
+            }
+            """
+
 
 intervalFunctionToGlsl : GlslFunction -> String
 intervalFunctionToGlsl name =
@@ -755,6 +762,11 @@ intervalFunctionToGlsl name =
             }
             """
 
+        Mod22 ->
+            """
+            TODO Mod22
+            """
+
 
 toSrcImplicit : String -> Expression -> String
 toSrcImplicit suffix e =
@@ -946,8 +958,15 @@ expressionToGlslPrec p expr =
         PAdd l r ->
             infixl_ 6 " + " l r
 
-        PRel rel l r ->
-            "vec2((" ++ expressionToGlslPrec 10 l ++ ".x " ++ rel ++ " " ++ expressionToGlslPrec 10 r ++ ".x) ? 1.0 : 0.0,0.0)"
+        PRel op l r ->
+            if op == "<=" || op == "<" then
+                infixl_ 6 " - " l r
+
+            else if op == "=" then
+                "(abs(" ++ infixl_ 6 " - " r l ++ "))"
+
+            else
+                infixl_ 6 " - " r l
 
         PBy l r ->
             apply "by" [ l, r ]

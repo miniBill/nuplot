@@ -19,6 +19,7 @@ type GlslFunction
     | Log1022
     | Max222
     | Min222
+    | Mod22
     | Pw22
     | Re22
     | Round22

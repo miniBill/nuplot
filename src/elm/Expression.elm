@@ -129,6 +129,7 @@ type KnownFunction
     | Plot
     | Simplify
     | Solve
+    | Mod
 
 
 type UnaryOperation
@@ -743,6 +744,7 @@ binaryFunctions =
     [ ( "atan2", Atan2 )
     , ( "dd", Dd )
     , ( "solve", Solve )
+    , ( "mod", Mod )
     ]
 
 
@@ -926,6 +928,9 @@ functionNameToString name =
 
         KnownFunction Max ->
             "max"
+
+        KnownFunction Mod ->
+            "mod"
 
         UserFunction u ->
             u
