@@ -2,7 +2,7 @@ module Expression.Solver exposing (solve)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
-import Expression.Simplify exposing (simplify)
+import Expression.Simplify exposing (simplify, stepSimplify)
 import Expression.Utils exposing (by, div, i, ipow, minus, negate_, one, plus, pow, sqrt_, square, zero)
 import List.Extra as List
 
@@ -191,8 +191,28 @@ solve1 v a b =
             sol =
                 solIs v <| div (neg b) a
         in
-        SolutionStep sol <|
-            SolutionDone (simplify sol)
+        stepSimplify SolutionDone sol
+
+
+stepSimplify : (Expression -> SolutionTree) -> Expression -> SolutionTree
+stepSimplify final =
+    let
+        go i e =
+            if i <= 0 then
+                final e
+
+            else
+                let
+                    next =
+                        Expression.Simplify.stepSimplify Dict.empty e
+                in
+                if Expression.equals next e then
+                    final e
+
+                else
+                    SolutionStep e <| go (i - 1) next
+    in
+    go 100
 
 
 solve2 : String -> Expression -> Expression -> Expression -> SolutionTree
@@ -206,8 +226,7 @@ solve2 v a b c =
                 sqrt_ (div (neg c) a)
 
             branch sol =
-                SolutionStep (solIs v sol) <|
-                    SolutionDone (solIs v <| simplify sol)
+                stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
             [ branch solPlus
@@ -226,8 +245,7 @@ solve2 v a b c =
                 div (minus (neg b) (sqrt_ delta)) (by [ Integer 2, a ])
 
             branch sol =
-                SolutionStep (solIs v sol) <|
-                    SolutionDone (solIs v <| simplify sol)
+                stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
             [ branch solPlus
@@ -250,8 +268,7 @@ solve4Biquad v a c e =
                     pow (div (neg e) a) (div one (Integer 4))
 
             branch sol =
-                SolutionStep (solIs v sol) <|
-                    SolutionDone (solIs v <| simplify sol)
+                stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
             [ branch solPlus
@@ -272,8 +289,7 @@ solve4Biquad v a c e =
                 sqrt_ <| div (minus (neg c) (sqrt_ delta)) (by [ Integer 2, a ])
 
             branch sol =
-                SolutionStep (solIs v sol) <|
-                    SolutionDone (solIs v <| simplify sol)
+                stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
             [ branch solPlus
