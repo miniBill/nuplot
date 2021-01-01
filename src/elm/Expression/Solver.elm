@@ -88,47 +88,47 @@ solveEquation v l r =
                     SolutionError <| "Cannot solve " ++ Expression.toString expr ++ ", " ++ err
 
                 Ok coeffs ->
-                    SolutionStep (RelationOperation Equals expr zero)
-                        (case Dict.toList coeffs |> List.reverse |> List.filterNot (Tuple.second >> isZero) of
-                            [] ->
-                                solve0 v zero
+                    SolutionStep (RelationOperation Equals expr zero) <|
+                        SolutionStep (coeffsToEq v coeffs) <|
+                            case Dict.toList coeffs |> List.reverse |> List.filterNot (Tuple.second >> isZero) of
+                                [] ->
+                                    solve0 v zero
 
-                            [ ( 0, k ) ] ->
-                                solve0 v k
+                                [ ( 0, k ) ] ->
+                                    solve0 v k
 
-                            [ ( 1, a ) ] ->
-                                solve1 v a zero
+                                [ ( 1, a ) ] ->
+                                    solve1 v a zero
 
-                            [ ( 1, a ), ( 0, b ) ] ->
-                                solve1 v a b
+                                [ ( 1, a ), ( 0, b ) ] ->
+                                    solve1 v a b
 
-                            [ ( 2, a ) ] ->
-                                solve2 v a zero zero
+                                [ ( 2, a ) ] ->
+                                    solve2 v a zero zero
 
-                            [ ( 2, a ), ( 1, b ) ] ->
-                                solve2 v a b zero
+                                [ ( 2, a ), ( 1, b ) ] ->
+                                    solve2 v a b zero
 
-                            [ ( 2, a ), ( 0, c ) ] ->
-                                solve2 v a zero c
+                                [ ( 2, a ), ( 0, c ) ] ->
+                                    solve2 v a zero c
 
-                            [ ( 2, a ), ( 1, b ), ( 0, c ) ] ->
-                                solve2 v a b c
+                                [ ( 2, a ), ( 1, b ), ( 0, c ) ] ->
+                                    solve2 v a b c
 
-                            [ ( 4, a ) ] ->
-                                solve4Biquad v a zero zero
+                                [ ( 4, a ) ] ->
+                                    solve4Biquad v a zero zero
 
-                            [ ( 4, a ), ( 0, e ) ] ->
-                                solve4Biquad v a zero e
+                                [ ( 4, a ), ( 0, e ) ] ->
+                                    solve4Biquad v a zero e
 
-                            [ ( 4, a ), ( 2, c ), ( 0, e ) ] ->
-                                solve4Biquad v a c e
+                                [ ( 4, a ), ( 2, c ), ( 0, e ) ] ->
+                                    solve4Biquad v a c e
 
-                            [ ( 4, a ), ( 2, c ) ] ->
-                                solve4Biquad v a c zero
+                                [ ( 4, a ), ( 2, c ) ] ->
+                                    solve4Biquad v a c zero
 
-                            _ ->
-                                SolutionError <| "Cannot solve " ++ Expression.toString (RelationOperation Equals expr zero)
-                        )
+                                _ ->
+                                    SolutionError <| "Cannot solve " ++ Expression.toString (RelationOperation Equals expr zero)
     in
     case ( l, r ) of
         ( Integer 0, _ ) ->
@@ -139,6 +139,61 @@ solveEquation v l r =
 
         _ ->
             go (minus l r)
+
+
+coeffsToEq : String -> Dict Int Expression -> Expression
+coeffsToEq v coeffs =
+    coeffs
+        |> Dict.toList
+        |> List.reverse
+        |> List.filterMap
+            (\( e, c ) ->
+                if e == 0 then
+                    if isZero c then
+                        Nothing
+
+                    else
+                        Just c
+
+                else
+                    let
+                        p =
+                            if e == 1 then
+                                Variable v
+
+                            else
+                                ipow (Variable v) e
+                    in
+                    if isZero c then
+                        Nothing
+
+                    else
+                        case c of
+                            Integer i ->
+                                if i == 1 then
+                                    Just p
+
+                                else if i == -1 then
+                                    Just <| negate_ p
+
+                                else
+                                    Just <| by [ c, p ]
+
+                            Float f ->
+                                if f == 1 then
+                                    Just p
+
+                                else if f == -1 then
+                                    Just <| negate_ p
+
+                                else
+                                    Just <| by [ c, p ]
+
+                            _ ->
+                                Just <| by [ c, p ]
+            )
+        |> plus
+        |> (\l -> RelationOperation Equals l zero)
 
 
 isZero : Expression -> Bool

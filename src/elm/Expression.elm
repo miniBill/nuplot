@@ -1318,6 +1318,9 @@ toTeXStringPrec p e =
             PApply (KnownFunction Abs) [ ex ] ->
                 paren (p > 10) <| "\\left|" ++ toTeXStringPrec 0 ex ++ "\\right|"
 
+            PApply (KnownFunction Sqrt) [ ex ] ->
+                paren (p > 10) <| "\\sqrt{" ++ toTeXStringPrec 0 ex ++ "}"
+
             PApply name [ (PList _) as ex ] ->
                 paren (p > 10) <| "\\mathrm{" ++ functionNameToString name ++ "}" ++ toTeXStringPrec 0 ex
 
