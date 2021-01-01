@@ -3,7 +3,7 @@ module Expression.Simplify exposing (hoistLambda, simplify, sortByDegree, stepSi
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute, visit)
 import Expression.Derivative
-import Expression.Utils exposing (by, cos_, div, i, icomplex, im, ipow, minus, negate_, one, plus, pow, re, sin_, square, two, zero)
+import Expression.Utils exposing (by, cos_, div, i, im, ipow, minus, negate_, one, plus, pow, re, sin_, square, two, zero)
 import List
 import List.Extra as List
 import List.MyExtra exposing (groupWith)
