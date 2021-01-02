@@ -748,8 +748,8 @@ asList l =
 
 
 groupStepMultiplication : Expression -> Expression -> Maybe Expression
-groupStepMultiplication curr last =
-    case ( curr, last ) of
+groupStepMultiplication left right =
+    case ( left, right ) of
         ( Integer 1, l ) ->
             Just l
 
@@ -766,10 +766,10 @@ groupStepMultiplication curr last =
             Just <| Integer <| il * ir
 
         ( AssociativeOperation Addition l m r, _ ) ->
-            Just <| plus <| by [ l, last ] :: by [ m, last ] :: List.map (\o -> by [ o, last ]) r
+            Just <| plus <| by [ l, right ] :: by [ m, right ] :: List.map (\o -> by [ o, right ]) r
 
         ( _, AssociativeOperation Addition l m r ) ->
-            Just <| plus <| by [ curr, l ] :: by [ curr, m ] :: List.map (\o -> by [ curr, o ]) r
+            Just <| plus <| by [ left, l ] :: by [ left, m ] :: List.map (\o -> by [ left, o ]) r
 
         ( BinaryOperation Power pb pe, l ) ->
             if Expression.equals l pb then
@@ -784,7 +784,7 @@ groupStepMultiplication curr last =
                 Nothing
 
         ( _, BinaryOperation Power pb pe ) ->
-            if Expression.equals curr pb then
+            if Expression.equals left pb then
                 case pe of
                     Integer pei ->
                         Just (ipow pb <| pei + 1)
@@ -796,14 +796,14 @@ groupStepMultiplication curr last =
                 Nothing
 
         ( List _, List _ ) ->
-            multiplyMatrices curr last
+            multiplyMatrices left right
 
         ( Lambda x f, c ) ->
             Just <| partialSubstitute x c f
 
         _ ->
-            if Expression.equals curr last then
-                Just <| ipow last 2
+            if Expression.equals left right then
+                Just <| ipow right 2
 
             else
                 Nothing
