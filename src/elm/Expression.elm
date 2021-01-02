@@ -301,10 +301,16 @@ equals l r =
         ( UnaryOperation lop le, UnaryOperation rop re ) ->
             (lop == rop) && equals le re
 
+        ( UnaryOperation _ _, _ ) ->
+            False
+
         ( BinaryOperation lop ll lr, BinaryOperation rop rl rr ) ->
             (lop == rop)
                 && equals ll rl
                 && equals lr rr
+
+        ( BinaryOperation _ _ _, _ ) ->
+            False
 
         ( AssociativeOperation lop ll lr lo, AssociativeOperation rop rl rr ro ) ->
             (lop == rop)
@@ -312,17 +318,32 @@ equals l r =
                 && equals lr rr
                 && listEquals lo ro
 
+        ( AssociativeOperation _ _ _ _, _ ) ->
+            False
+
         ( Apply lname largs, Apply rname rargs ) ->
             lname == rname && listEquals largs rargs
+
+        ( Apply _ _, _ ) ->
+            False
 
         ( Variable lv, Variable rv ) ->
             lv == rv
 
+        ( Variable _, _ ) ->
+            False
+
         ( Integer li, Integer ri ) ->
             li == ri
 
+        ( Integer _, _ ) ->
+            False
+
         ( Float lf, Float rf ) ->
             lf == rf
+
+        ( Float _, _ ) ->
+            False
 
         ( Replace ls le, Replace rs re ) ->
             let
@@ -346,10 +367,34 @@ equals l r =
                         (Dict.toList rs)
                     )
 
+        ( Replace _ _, _ ) ->
+            False
+
         ( List ls, List rs ) ->
             listEquals ls rs
 
-        _ ->
+        ( List _, _ ) ->
+            False
+
+        ( RelationOperation lop ll lr, RelationOperation rop rl rr ) ->
+            lop == rop && equals ll rl && equals lr rr
+
+        ( RelationOperation _ _ _, _ ) ->
+            False
+
+        ( Lambda x f, Lambda y g ) ->
+            let
+                -- Yes, this is bad.
+                -- Yes, this is enough for now
+                goat =
+                    Variable "GOATFINDER"
+
+                res =
+                    equals (partialSubstitute x goat f) (partialSubstitute y goat g)
+            in
+            res
+
+        ( Lambda _ _, _ ) ->
             False
 
 
