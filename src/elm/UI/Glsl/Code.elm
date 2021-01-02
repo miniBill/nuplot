@@ -794,7 +794,9 @@ toSrcImplicit suffix e =
 toSrcPolar : String -> Expression -> String
 toSrcPolar suffix e =
     """
-    float f""" ++ suffix ++ """(float r, float t) {
+    float f""" ++ suffix ++ """(float x, float y, float deltaT) {
+        float r = sqrt(x*x + y*y);
+        float t = atanPlus(y, x) + deltaT;
         vec2 complex = """ ++ expressionToGlsl e ++ """;
         if(abs(complex.y) > """ ++ floatToGlsl epsilon ++ """) {
             return -1.0;
@@ -803,16 +805,16 @@ toSrcPolar suffix e =
     }
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        float r = sqrt(x*x + y*y);
-        float t = atanPlus(y, x);
-        float deltaR = sqrt(deltaX*deltaX + deltaY*deltaY);
+        float t = 0.0;
 
-        for(int i = 0; i < 4 * MAX_ITERATIONS; i++) {
-            float h = f""" ++ suffix ++ """(r,t);
-            float l = f""" ++ suffix ++ """(r - deltaR,t);
-            if(h < 0.0 || l < 0.0)
+        for(int i = 0; i < MAX_ITERATIONS / 10; i++) {
+            float h = f""" ++ suffix ++ """(x, y, t);
+            float l = f""" ++ suffix ++ """(x + sign(x) * deltaX, y, t);
+            float u = f""" ++ suffix ++ """(x, y + sign(y) * deltaY, t);
+            float ul = f""" ++ suffix ++ """(x + sign(x) * deltaX, y + sign(y) * deltaY, t);
+            if(h < 0.0 || l < 0.0 || u < 0.0 || ul < 0.0)
                 break;
-            if(h != l)
+            if(h != l || h != u || h != ul)
                 return vec3(1,1,1);
             t += radians(360.0);
         }
