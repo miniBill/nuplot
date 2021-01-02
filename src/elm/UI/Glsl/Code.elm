@@ -804,9 +804,9 @@ toSrcPolar suffix e =
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
         float r = sqrt(x*x + y*y);
-        float t = mod(2.0 * radians(180.0) + atan(y, x), 2.0 * radians(180.0));
+        float t = atanPlus(y, x);
         float deltaR = sqrt(deltaX*deltaX + deltaY*deltaY);
-        float deltaT = mod(2.0 * radians(180.0) + atan(y - deltaY, x - deltaX), 2.0 * radians(180.0)) - t;
+        float deltaT = atanPlus(y - deltaY, x - deltaX) - t;
         float h = f""" ++ suffix ++ """(r,t);
         float l = f""" ++ suffix ++ """(r + deltaR,t);
         float ul = f""" ++ suffix ++ """(r + deltaR,t - deltaT);
