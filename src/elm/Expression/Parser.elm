@@ -7,14 +7,16 @@ import Expression
         , BinaryOperation(..)
         , Context
         , Expression(..)
+        , FunctionName(..)
         , Graph(..)
+        , KnownFunction(..)
         , RelationOperation(..)
         , VariableStatus(..)
         , defaultContext
         , getFreeVariables
         )
 import Expression.Cleaner as Cleaner
-import Expression.Simplify
+import Expression.Simplify exposing (simplify)
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
 import List
 import List.Extra as List
@@ -201,6 +203,9 @@ expressionToGraph =
 
                 List ls ->
                     GraphList <| List.map expressionToGraph ls
+
+                Apply (KnownFunction Simplify) [ e ] ->
+                    go <| simplify e
 
                 _ ->
                     let
