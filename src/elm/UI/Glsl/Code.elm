@@ -808,8 +808,8 @@ toSrcPolar suffix e =
         float deltaR = sqrt(deltaX*deltaX + deltaY*deltaY);
         float deltaT = atanPlus(y - deltaY, x - deltaX) - t;
         float h = f""" ++ suffix ++ """(r,t);
-        float l = f""" ++ suffix ++ """(r + deltaR,t);
-        float ul = f""" ++ suffix ++ """(r + deltaR,t - deltaT);
+        float l = f""" ++ suffix ++ """(r - deltaR,t);
+        float ul = f""" ++ suffix ++ """(r - deltaR,t - deltaT);
         float u = f""" ++ suffix ++ """(r,t - deltaT);
         return (h != l || h != u || h != ul)
             && (h >= 0.0 && l >= 0.0 && ul >= 0.0 && u >= 0.0)
