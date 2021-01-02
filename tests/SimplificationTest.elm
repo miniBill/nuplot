@@ -2,9 +2,10 @@ module SimplificationTest exposing (suite)
 
 import Dict
 import Expect
-import Expression exposing (AssociativeOperation(..), Expression(..))
+import Expression exposing (AssociativeOperation(..), Expression(..), RelationOperation(..))
+import Expression.Parser
 import Expression.Simplify
-import Expression.Utils exposing (a, b, by, c, complex, cos_, cosh_, div, double, f, g, i, int, ipow, m, minus, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, triple, two, x, y, z, zero)
+import Expression.Utils exposing (a, atan2_, b, by, c, complex, cos_, cosh_, div, double, f, g, i, int, ipow, m, minus, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, triple, two, x, y, z, zero)
 import Test exposing (Test, describe, test)
 
 
@@ -288,6 +289,14 @@ sortTests =
 stepSimplificationTests : List ( Expression, Expression )
 stepSimplificationTests =
     let
+        parseOrBreak s =
+            case Expression.Parser.parse s of
+                Ok e ->
+                    e
+
+                Err e ->
+                    Debug.todo <| "ERROR IN PARSING " ++ s
+
         iy =
             by [ i, y ]
     in
@@ -296,5 +305,10 @@ stepSimplificationTests =
       )
     , ( div (minus x iy) (plus [ square x, square y ])
       , div (minus x iy) (plus [ square x, square y ])
+      )
+    , ( parseOrBreak "[r=sqrt(x²+y²);t=atan2(y,x)]r=2/t"
+      , RelationOperation Equals
+            (sqrt_ <| plus [ square x, square y ])
+            (div (Integer 2) (atan2_ y x))
       )
     ]
