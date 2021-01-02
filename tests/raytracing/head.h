@@ -5,7 +5,6 @@
 
 #define main() main_()
 #define float double // Yes, really
-#define abs fabs
 
 struct vec2 {
     double x;
@@ -29,8 +28,16 @@ struct vec2 {
         return vec2(d * r.x, d * r.y);
     }
 
+    friend vec2 operator * (vec2 l, vec2 r) {
+        return vec2(l.x * r.x, l.y * r.y);
+    }
+
     friend vec2 operator / (vec2 l, double r) {
         return vec2(l.x / r, l.y / r);
+    }
+
+    friend vec2 operator / (vec2 l, vec2 r) {
+        return vec2(l.x / r.x, l.y / r.y);
     }
 };
 
@@ -38,6 +45,7 @@ struct vec3 {
     double x;
     double y;
     double z;
+    vec3() : x(0), y(0), z(0) {}
     vec3(vec2 xy, double z) : x(xy.x), y(xy.y), z(z) {}
     vec3(double x) : x(x), y(0), z(0) {}
     vec3(double x, double y, double z) : x(x), y(y), z(z) {}
@@ -62,6 +70,10 @@ struct vec3 {
         return vec3(-l.x, -l.y, -l.z);
     }
 
+    friend vec3 operator * (vec3 l, vec3 r) {
+        return vec3(l.x * r.x, l.y * r.y, l.z * r.z);
+    }
+
     friend vec3 operator * (vec3 r, double d) {
         return vec3(d * r.x, d * r.y, d * r.z);
     }
@@ -72,6 +84,10 @@ struct vec3 {
 
     friend vec3 operator / (vec3 r, double d) {
         return vec3(r.x / d, r.y / d, r.z / d);
+    }
+
+    friend bool operator == (vec3 l, vec3 r) {
+        return l.x == r.x && l.y == r.y && l.z == r.z;
     }
 };
 
@@ -117,8 +133,16 @@ vec4 gl_FragColor;
 
 FILE* debugFile;
 
-vec3 abs(vec3 x) {
-    return vec3(abs(x.x), abs(x.y), abs(x.z));
+double abs_(double i) {
+    return fabs(i);
+}
+
+vec2 abs_(vec2 x) {
+    return vec2(fabs(x.x), fabs(x.y));
+}
+
+vec3 abs_(vec3 x) {
+    return vec3(fabs(x.x), fabs(x.y), fabs(x.z));
 }
 
 double mod(double x, double y) {
@@ -151,6 +175,10 @@ double min(double l, double r) {
 
 double max(double l, double r) {
     return l >= r ? l : r;
+}
+
+vec3 max(vec3 l, vec3 r) {
+    return vec3(max(l.x, r.x), max(l.y, r.y), max(l.z, r.z));
 }
 
 double length(vec2 l) {
@@ -219,6 +247,12 @@ vec2 sin_(vec2 input) {
 vec2 ceil(vec2 input) {
     return vec2(ceil(input.x), ceil(input.y));
 }
+
+#define notrace1(f) \
+            float f ## _(float z); \
+            float f (float z) { \
+                return f ## _(z); \
+            }
 
 #define trace2(f) \
             vec2 f ## _(vec2 z); \
@@ -299,6 +333,9 @@ vec2 ceil(vec2 input) {
 
 bool trace;
 
+notrace1(abs)
+trace2(abs)
+notrace3(abs)
 notrace2(cexp)
 notrace2(cln)
 notrace2(iabs)

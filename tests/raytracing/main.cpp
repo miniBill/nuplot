@@ -16,10 +16,10 @@ int main () {
     u_canvasHeight = 300;
     u_zoomCenter = vec2(0, 0);
 
-    int traceYFrom = 271;
-    int traceYTo = 273;
-    int traceXFrom = 198;
-    int traceXTo = 199;
+    int traceYFrom = 145;
+    int traceYTo = 155;
+    int traceXFrom = 195;
+    int traceXTo = 205;
 
     bool onlyTraced = false;
     int xfrom = onlyTraced ? traceXFrom : 0;
