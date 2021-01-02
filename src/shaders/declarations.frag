@@ -24,5 +24,5 @@ vec4 gnum(float f) {
 }
 
 float atanPlus(float y, float x) {
-    return mod(2.0 * radians(180.0) + atan(y, x), 2.0 * radians(180.0));
+    return mod(radians(360.0) + atan(y, x), radians(360.0));
 }

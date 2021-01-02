@@ -806,14 +806,17 @@ toSrcPolar suffix e =
         float r = sqrt(x*x + y*y);
         float t = atanPlus(y, x);
         float deltaR = sqrt(deltaX*deltaX + deltaY*deltaY);
-        float deltaT = atanPlus(y - deltaY, x - deltaX) - t;
-        float h = f""" ++ suffix ++ """(r,t);
-        float l = f""" ++ suffix ++ """(r - deltaR,t);
-        float ul = f""" ++ suffix ++ """(r - deltaR,t - deltaT);
-        float u = f""" ++ suffix ++ """(r,t - deltaT);
-        return (h != l || h != u || h != ul)
-            && (h >= 0.0 && l >= 0.0 && ul >= 0.0 && u >= 0.0)
-                ? vec3(1,1,1) : vec3(0,0,0);
+
+        for(int i = 0; i < 4 * MAX_ITERATIONS; i++) {
+            float h = f""" ++ suffix ++ """(r,t);
+            float l = f""" ++ suffix ++ """(r - deltaR,t);
+            if(h < 0.0 || l < 0.0)
+                break;
+            if(h != l)
+                return vec3(1,1,1);
+            t += radians(360.0);
+        }
+        return vec3(0,0,0);
     }
     """
 
