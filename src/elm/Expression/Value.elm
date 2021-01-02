@@ -637,6 +637,9 @@ toSymbolic v =
                 Contour e ->
                     e
 
+                Polar2D e ->
+                    e
+
                 GraphList gs ->
                     List <| List.map graphToExpression gs
     in

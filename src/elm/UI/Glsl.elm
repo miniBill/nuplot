@@ -7,7 +7,7 @@ import List
 import List.Extra as List
 import List.MyExtra as List
 import SortedAnySet as Set
-import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
+import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcPolar, toSrcRelation)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -35,6 +35,9 @@ getGlsl graph =
                 Implicit2D l r ->
                     build2d toSrcImplicit prefix <|
                         Expression.Utils.minus l r
+
+                Polar2D e ->
+                    build2d toSrcPolar prefix e
 
                 Relation2D e ->
                     build2d toSrcRelation prefix e

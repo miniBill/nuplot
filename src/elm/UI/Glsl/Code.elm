@@ -1,4 +1,4 @@
-module UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, thetaDelta, toSrc3D, toSrcContour, toSrcImplicit, toSrcRelation)
+module UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, thetaDelta, toSrc3D, toSrcContour, toSrcImplicit, toSrcPolar, toSrcRelation)
 
 import Expression exposing (Expression, FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
@@ -784,6 +784,33 @@ toSrcImplicit suffix e =
         float l = f""" ++ suffix ++ """(x - deltaX,y);
         float ul = f""" ++ suffix ++ """(x - deltaX,y - deltaY);
         float u = f""" ++ suffix ++ """(x,y - deltaY);
+        return (h != l || h != u || h != ul)
+            && (h >= 0.0 && l >= 0.0 && ul >= 0.0 && u >= 0.0)
+                ? vec3(1,1,1) : vec3(0,0,0);
+    }
+    """
+
+
+toSrcPolar : String -> Expression -> String
+toSrcPolar suffix e =
+    """
+    float f""" ++ suffix ++ """(float r, float t) {
+        vec2 complex = """ ++ expressionToGlsl e ++ """;
+        if(abs(complex.y) > """ ++ floatToGlsl epsilon ++ """) {
+            return -1.0;
+        }
+        return complex.x > 0.0 ? 1.0 : 0.0;
+    }
+
+    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
+        float r = sqrt(x*x + y*y);
+        float t = mod(2.0 * radians(180.0) + atan(y, x), 2.0 * radians(180.0));
+        float deltaR = sqrt(deltaX*deltaX + deltaY*deltaY);
+        float deltaT = mod(2.0 * radians(180.0) + atan(y - deltaY, x - deltaX), 2.0 * radians(180.0)) - t;
+        float h = f""" ++ suffix ++ """(r,t);
+        float l = f""" ++ suffix ++ """(r + deltaR,t);
+        float ul = f""" ++ suffix ++ """(r + deltaR,t - deltaT);
+        float u = f""" ++ suffix ++ """(r,t - deltaT);
         return (h != l || h != u || h != ul)
             && (h >= 0.0 && l >= 0.0 && ul >= 0.0 && u >= 0.0)
                 ? vec3(1,1,1) : vec3(0,0,0);

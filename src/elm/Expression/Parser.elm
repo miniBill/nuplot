@@ -190,6 +190,9 @@ expressionToGraph =
                     if Set.member "z" <| getFreeVariables expr then
                         Implicit3D expr
 
+                    else if Set.member "r" <| getFreeVariables expr then
+                        Polar2D <| minus l r
+
                     else
                         case ( l, rop, Set.member "y" <| getFreeVariables r ) of
                             ( Variable "y", Equals, False ) ->
