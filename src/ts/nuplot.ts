@@ -1,6 +1,15 @@
 import { throws } from "assert";
 import declarations from "../shaders/declarations.frag";
 
+declare class ClipboardItem {
+  constructor(data: { [mimeType: string]: Blob });
+}
+declare global {
+  interface Clipboard {
+    write(items: ClipboardItem[]): void;
+  }
+}
+
 export class NuPlot extends HTMLElement {
   wrapper: HTMLElement;
   label: HTMLElement;
@@ -47,48 +56,85 @@ export class NuPlot extends HTMLElement {
     this.canvas = this.wrapper.appendChild(document.createElement("canvas"));
     this.initCanvas();
 
-    const exportButton = this.wrapper.appendChild(
-      document.createElement("div")
-    );
-    exportButton.innerText = "💾";
-    exportButton.style.position = "absolute";
-    exportButton.style.top = "10px";
-    exportButton.style.right = "10px";
-    exportButton.style.cursor = "pointer";
-    exportButton.onclick = this.onExportButtonClick.bind(this);
+    const saveButton = this.wrapper.appendChild(document.createElement("div"));
+    saveButton.innerText = "💾";
+    saveButton.style.position = "absolute";
+    saveButton.style.top = "10px";
+    saveButton.style.right = "10px";
+    saveButton.style.cursor = "pointer";
+    saveButton.onclick = this.onSaveButtonClick.bind(this);
+
+    if (typeof ClipboardItem !== "undefined") {
+      const copyButton = this.wrapper.appendChild(
+        document.createElement("div")
+      );
+      copyButton.innerText = "⎘";
+      copyButton.style.position = "absolute";
+      copyButton.style.top = "7px";
+      copyButton.style.right = "40px";
+      copyButton.style.cursor = "pointer";
+      copyButton.style.padding = "2px 5px";
+      copyButton.style.background = "white";
+      copyButton.onclick = this.onCopyButtonClick.bind(this);
+    }
 
     // attach the created elements to the shadow DOM
     shadowRoow.append(this.wrapper);
   }
 
-  onExportButtonClick(ev: MouseEvent) {
-    const widthString = window.prompt("Exported image width:", "1920");
-    if (!widthString) return;
-    const heightString = window.prompt("Exported image height:", "1080");
-    if (!heightString) return;
-    const name = window.prompt("Exported image name:", "export.png");
-    if (!name) return;
+  onSaveButtonClick(ev: MouseEvent) {
+    this.withFilledCanvas(true, () => {
+      const name = window.prompt("Exported image name:", "export.png");
+      if (!name) return;
+
+      const dataUrl = this.canvas.toDataURL();
+      var downloadElement = document.createElement("a");
+      downloadElement.setAttribute("href", dataUrl);
+      downloadElement.setAttribute("download", name);
+      downloadElement.click();
+    });
+  }
+
+  onCopyButtonClick(ev: MouseEvent) {
+    this.withFilledCanvas(false, () =>
+      this.canvas.toBlob((blob) => {
+        if (blob != null)
+          navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      })
+    );
+  }
+
+  withFilledCanvas(changeSize: boolean, callback: () => void) {
+    let oldWidth = 0;
+    let oldHeight = 0;
+
+    if (changeSize) {
+      const widthString = window.prompt("Exported image width:", "1920");
+
+      if (!widthString) return;
+      const heightString = window.prompt("Exported image height:", "1080");
+
+      if (!heightString) return;
+
+      oldWidth = this.canvas.width;
+      oldHeight = this.canvas.height;
+      this.canvas.width = +(widthString || 1920);
+      this.canvas.height = +(heightString || 1080);
+    }
 
     const oldIterations = this.currIterations;
-    const oldWith = this.canvas.width;
-    const oldHeight = this.canvas.height;
-
     this.currIterations = this.maxIterations;
-    this.canvas.width = +(widthString || 1920);
-    this.canvas.height = +(heightString || 1080);
 
     this.reloadFragmentShader(this.buildFragmentShader(this.src));
     this.doRender();
-    const dataUrl = this.canvas.toDataURL();
-    var downloadElement = document.createElement("a");
-    downloadElement.setAttribute("href", dataUrl);
-    downloadElement.setAttribute("download", name);
-    downloadElement.click();
+    callback();
 
-    this.canvas.width = oldWith;
-    this.canvas.height = oldHeight;
+    if (changeSize) {
+      this.canvas.width = oldWidth;
+      this.canvas.height = oldHeight;
 
-    this.doRender();
+      this.doRender();
+    }
 
     this.currIterations = oldIterations;
     this.reloadFragmentShader(this.buildFragmentShader(this.src));
