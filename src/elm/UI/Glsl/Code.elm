@@ -780,6 +780,8 @@ toSrcImplicit suffix e =
     }
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
+        x += deltaX / 2.0;
+        y += deltaY / 2.0;
         float h = f""" ++ suffix ++ """(x,y);
         float l = f""" ++ suffix ++ """(x - deltaX,y);
         float ul = f""" ++ suffix ++ """(x - deltaX,y - deltaY);
