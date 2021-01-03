@@ -48,6 +48,7 @@ type Graph
     | Relation2D Expression
     | Implicit2D Expression Expression
     | Polar2D Expression
+    | Parametric2D Expression Expression
     | Implicit3D Expression
     | Contour Expression
     | GraphList (List Graph)
@@ -425,6 +426,9 @@ graphToString g =
 
         Polar2D e ->
             "Polar2D " ++ toString e
+
+        Parametric2D x y ->
+            "Parametric2D " ++ toString x ++ ", " ++ toString y
 
         Implicit3D e ->
             "Implicit3D " ++ toString e

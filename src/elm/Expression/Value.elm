@@ -640,6 +640,9 @@ toSymbolic v =
                 Polar2D e ->
                     e
 
+                Parametric2D x y ->
+                    List [ x, y ]
+
                 GraphList gs ->
                     List <| List.map graphToExpression gs
     in

@@ -1,5 +1,3 @@
-Parametric graphs
-
 solve - Ruffini
 
 zoom finger

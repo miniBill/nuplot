@@ -1,6 +1,7 @@
-module UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, thetaDelta, toSrc3D, toSrcContour, toSrcImplicit, toSrcPolar, toSrcRelation)
+module UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, thetaDelta, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
 
-import Expression exposing (Expression, FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
+import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
+import Expression.Utils exposing (minus, plus, square)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -834,6 +835,71 @@ toSrcPolar suffix e =
     """
 
 
+toSrcParametric : String -> Expression -> String
+toSrcParametric suffix e =
+    """
+    vec2 interval""" ++ suffix ++ """(vec2 p, float from, float to) {
+        vec2 x = vec2(p.x,p.x);
+        vec2 y = vec2(p.y,p.y);
+        vec2 t = from < to ? vec2(from, to) : vec2(to, from);
+        return """ ++ expressionToIntervalGlsl e ++ """;
+    }
+
+    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
+        float max_distance = pow(2.0, 10.0);
+        float from = -max_distance / 2.0;
+        float to = max_distance / 2.0;
+        vec2 p = vec2(x, y);
+        int depth = 0;
+        int choices = 0;
+        float ithreshold = 10.0 * deltaX * deltaX;
+        for(int it = 0; it < MAX_ITERATIONS; it++) {
+            float midpoint = mix(from, to, 0.5);
+            vec2 front = interval""" ++ suffix ++ """(p, from, midpoint);
+            vec2 back = interval""" ++ suffix ++ """(p, midpoint, to);
+            if(depth >= MAX_DEPTH
+                || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
+                || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
+                )
+                    return vec3(1,1,1);
+            if(front.x <= 0.0 && front.y >= 0.0) {
+                to = midpoint;
+                depth++;
+                choices *= 2;
+            } else if(back.x <= 0.0 && back.y >= 0.0) {
+                from = midpoint;
+                depth++;
+                choices = choices * 2 + 1;
+            } else {
+                // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
+                for(int j = MAX_DEPTH - 1; j > 0; j--) {
+                    if(j > depth)
+                        continue;
+                    depth--;
+                    choices /= 2;
+                    if(choices / 2 * 2 == choices) {
+                        midpoint = to;
+                        to = to + (to - from);
+                        vec2 back = interval""" ++ suffix ++ """(p, midpoint, to);
+                        if(back.x <= 0.0 && back.y >= 0.0) {
+                            from = midpoint;
+                            depth++;
+                            choices = choices * 2 + 1;
+                            break;
+                        }
+                    } else {
+                        from = from - (to - from);
+                    }
+                }
+                if(depth == 0)
+                    return vec3(0,0,0);
+            }
+        }
+        return vec3(0,0,0);
+    }
+    """
+
+
 thetaDelta : String
 thetaDelta =
     """
@@ -1329,7 +1395,7 @@ main2D pixels =
         vec4 pixel2 () {
             vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
             vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
-            
+
             vec2 viewportSize = (u_viewportWidth / u_canvasWidth) * canvasSize;
             vec2 uv = uv_centered / canvasSize * viewportSize;
             vec2 c = u_zoomCenter + uv;
@@ -1373,13 +1439,8 @@ toSrc3D suffix e =
 main3D : List String -> String
 main3D suffixes =
     let
-        maxDepth =
-            """
-            #define MAX_DEPTH 30
-            """
-
         head =
-            String.join "\n" <| maxDepth :: List.map suffixToBisect suffixes ++ [ raytrace ]
+            String.join "\n" <| List.map suffixToBisect suffixes ++ [ raytrace ]
 
         colorCoeff =
             floatToGlsl (1.19 - 0.2 * toFloat (List.length suffixes))

@@ -179,6 +179,10 @@ expressionToGraph : Expression -> Graph
 expressionToGraph =
     let
         go expr =
+            let
+                free =
+                    getFreeVariables expr
+            in
             case expr of
                 Lambda x f ->
                     expressionToGraph <| Expression.partialSubstitute x (Variable "x") f
@@ -187,14 +191,10 @@ expressionToGraph =
                     expressionToGraph (RelationOperation rop (Replace ctx l) (Replace ctx r))
 
                 RelationOperation rop l r ->
-                    let
-                        free =
-                            getFreeVariables expr
-                    in
                     if Set.member "z" <| free then
                         Implicit3D expr
 
-                    else if Set.member "r" free || Set.member "t" free then
+                    else if Set.member "r" free then
                         Polar2D <| minus l r
 
                     else
@@ -209,18 +209,26 @@ expressionToGraph =
                                 Relation2D expr
 
                 List ls ->
-                    GraphList <| List.map expressionToGraph ls
+                    if Set.member "t" free then
+                        case ls of
+                            [ x, y ] ->
+                                Parametric2D x y
+
+                            _ ->
+                                GraphList <| List.map expressionToGraph ls
+
+                    else
+                        GraphList <| List.map expressionToGraph ls
 
                 Apply (KnownFunction Simplify) [ e ] ->
                     go <| simplify e
 
                 _ ->
-                    let
-                        free =
-                            getFreeVariables expr
-                    in
                     if Set.member "z" free then
                         Implicit3D expr
+
+                    else if Set.member "r" free then
+                        Polar2D expr
 
                     else if Set.member "y" free then
                         Contour expr

@@ -331,6 +331,20 @@ vec2 ceil(vec2 input) {
                 return f ## _(l, m, r); \
             }
 
+#define trace211_2(f) \
+            vec2 f ## _(vec2 a, float b, float c); \
+            vec2 f (vec2 a, float b, float c) { \
+                vec2 res = f ## _(a, b, c); \
+                if(trace) fprintf(debugFile, "  " #f "((%lf, %lf), %lf, %lf) = [%lf, %lf]\n", a.x, a.y, b, c, res.x, res.y); \
+                return res; \
+            }
+
+#define notrace211_2(f) \
+            vec2 f ## _(vec2 a, float b, float c); \
+            vec2 f (vec2 a, float b, float c) { \
+                return f ## _(a, b, c); \
+            }
+
 bool trace;
 
 notrace1(abs)
@@ -368,6 +382,7 @@ notrace33(cross)
 trace33_2(interval_0)
 trace33_2(interval_1)
 trace33_2(interval)
+trace211_2(interval)
 
 bool bisect_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
 bool bisect(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {

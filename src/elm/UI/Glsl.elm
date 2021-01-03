@@ -2,12 +2,12 @@ module UI.Glsl exposing (getGlsl)
 
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..))
-import Expression.Utils
+import Expression.Utils exposing (minus, plus, square)
 import List
 import List.Extra as List
 import List.MyExtra as List
 import SortedAnySet as Set
-import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcPolar, toSrcRelation)
+import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -38,6 +38,22 @@ getGlsl graph =
 
                 Polar2D e ->
                     build2d toSrcPolar prefix e
+
+                Parametric2D x y ->
+                    let
+                        e =
+                            plus
+                                [ square (minus (Variable "x") x)
+                                , square (minus (Variable "y") y)
+                                ]
+                    in
+                    { expr = e
+                    , srcExpr = toSrcParametric prefix e
+                    , interval = IntervalOnly
+                    , thetaDelta = False
+                    , pixel2D = [ { name = "pixel" ++ prefix, color = True } ]
+                    , pixel3D = []
+                    }
 
                 Relation2D e ->
                     build2d toSrcRelation prefix e
