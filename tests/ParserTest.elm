@@ -306,40 +306,37 @@ tests =
     , straight "-1" (negate_ <| Integer 1)
     , ( "1+-2", plus [ one, negate_ two ], "1 - 2" )
     , straight "1*-2" <| by [ one, negate_ two ]
+    , ( "ii(ln(x),x,0,x+1)", ii (ln_ x) x zero (plus [ x, one ]), "ii(ln(x), x, 0, x + 1)" )
+    , ( "ii(lnx,x,0,x+1)", ii (ln_ x) x zero (plus [ x, one ]), "ii(ln(x), x, 0, x + 1)" )
+    , ( "iiln(x),x,0,x+1", plus [ ii (ln_ x) x zero x, one ], "ii(ln(x), x, 0, x) + 1" )
+    , ( "ii(expx,x,lnx,x)", ii (exp_ x) x (ln_ x) x, "ii(exp(x), x, ln(x), x)" )
+    , ( "ii(a,x,0,x)", ii a x zero x, "ii(a, x, 0, x)" )
+    , ( "ln(x+sqrt(x^2+1))", ln_ <| plus [ x, sqrt_ <| plus [ square x, one ] ], "ln(x + sqrt(x² + 1))" )
+    , straight "a < b" (RelationOperation LessThan a b)
+    , straight "a ⩽ b" (RelationOperation LessThanOrEquals a b)
+    , straight "a = b" (RelationOperation Equals a b)
+    , straight "a ⩾ b" (RelationOperation GreaterThanOrEquals a b)
+    , straight "a > b" (RelationOperation GreaterThan a b)
+    , ( "a≤b", RelationOperation LessThanOrEquals a b, "a ⩽ b" )
+    , ( "a≥b", RelationOperation GreaterThanOrEquals a b, "a ⩾ b" )
+    , ( "ea", by [ Variable "e", a ], "e*a" )
+    , ( "sin(x)cos(x)", by [ sin_ x, cos_ x ], "sin(x)*cos(x)" )
+    , ( "cos(x)sin(x)", by [ cos_ x, sin_ x ], "cos(x)*sin(x)" )
+    , ( "sinxcosx-cosxsinx", minus (by [ sin_ x, cos_ x ]) (by [ cos_ x, sin_ x ]), "sin(x)*cos(x) - cos(x)*sin(x)" )
+    , ( "sinxcosx", by [ sin_ x, cos_ x ], "sin(x)*cos(x)" )
+    , ( "xx+1", plus [ by [ x, x ], one ], "x*x + 1" )
+    , straight "e^x" <| pow (Variable "e") x
+    , ( "ln(ex)", ln_ <| by [ Variable "e", x ], "ln(e*x)" )
+    , straight "exp(x)" <| exp_ x
+
+    -- Check values for those
+    , straight "1/x" <| div one x
+    , straight "1/0" <| div one zero
     ]
 
 
 
 {-
-   justParse("ii(ln(x),x,0,x+1)");
-   justParse("ii(lnx,x,0,x+1)", "ii(ln(x),x,0,x+1)");
-   justParse("iiln(x),x,0,x+1", "ii(ln(x),x,0,x)+1");
-   justParse("ii(expx,x,lnx,x)", "ii(e^x,x,ln(x),x)");
-   assertSimplify("ii(a,x,0,x)", "ax");
-   checkWithDerivatives("ln(x+sqrt(x^2+1))", "sqrt(x^2+1)/abs(x^2+1)", "?", 'x');
-   justParse("a=b", "a=b");
-   justParse("a<b", "a<b");
-   justParse("a>b", "a>b");
-   justParse("a<=b", "a≤b");
-   justParse("a>=b", "a≥b");
-   assertSimplify("ea", "ae");
-   justParse("sin(x)cos(x)");
-   justParse("cos(x)sin(x)");
-   assertSimplify("sinxcosx-cosxsinx", "0");
-   checkWithDerivatives("sinxcosx", "sin(x)cos(x)", "cos(x)^2-sin(x)^2", "-4sin(x)cos(x)", 'x');
-   assertSimplify("xx+1", "x^2+1");
-   final IValue dzero = justParse("1/x");
-   final double dval = dzero.value('x', 0).toDouble();
-   assertTrue("Implicit div0 is not Infinity", Double.isInfinite(dval));
-   final IValue explicitZero = parseOrFail("1/0");
-   final double explicitVal = explicitZero.dvalue();
-   assertTrue("Explicit div0 is not Infinity", Double.isInfinite(explicitVal));
-   final IValue explicitSZero = justParse("1/0");
-   final double explicitSVal = explicitSZero.dvalue();
-   assertTrue("Explicit simplfied div0 is not NaN", Double.isInfinite(explicitSVal));
-   checkWithDerivatives("e^x", "e^x", "?", 'x');
-   checkWithDerivatives("ln(ex)", "1/x", "-1/x^2", 'x');
-   assertSimplify("exp(x)", "e^x");
    assertSimplify("(a^(b+c))/(a^b)", "a^c");
    assertSimplify("e^(lna)", "a");
    assertSimplify("ln(e^a)", "a");
