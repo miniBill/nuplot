@@ -1003,13 +1003,13 @@ expressionToGlslPrec p expr =
 
         PRel op l r ->
             if op == "<=" || op == "<" then
-                infixl_ 6 " - " l r
+                infixl_ 6 " - " r l
 
             else if op == "=" then
                 "(abs(" ++ infixl_ 6 " - " r l ++ "))"
 
             else
-                infixl_ 6 " - " r l
+                infixl_ 6 " - " l r
 
         PBy l r ->
             apply "by" [ l, r ]
@@ -1212,13 +1212,13 @@ expressionToNormalGlslPrec p expr =
 
         PRel op l r ->
             if op == "<=" || op == "<" then
-                infixl_ 6 " - " l r
+                infixl_ 6 " - " r l
 
             else if op == "=" then
                 "(abs(" ++ infixl_ 6 " - " r l ++ "))"
 
             else
-                infixl_ 6 " - " r l
+                infixl_ 6 " - " l r
 
         PBy l r ->
             apply "gby" [ l, r ]
