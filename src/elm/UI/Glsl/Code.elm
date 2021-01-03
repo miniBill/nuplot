@@ -798,7 +798,10 @@ toSrcPolar suffix e =
         float r = sqrt(x*x + y*y);
         float t = atanPlus(y, x) + deltaT;
         // Avoid the branch cut at {x > 0, y = 0}
-        if(t < ot) t += radians(360.0);
+        if(abs(t - ot) > radians(180.0)) {
+            if(t < ot) t += radians(360.0);
+            else t -= radians(360.0);
+        }
         vec2 complex = """ ++ expressionToGlsl e ++ """;
         if(abs(complex.y) > """ ++ floatToGlsl epsilon ++ """) {
             return -1.0;
@@ -808,15 +811,15 @@ toSrcPolar suffix e =
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
         float t = 0.0;
-        float dx = sign(y) * deltaX;
-        float dy = sign(x) * deltaY;
+        x += deltaX / 2.0;
+        y += deltaY / 2.0;
         float ot = atanPlus(y, x);
 
         for(int i = 0; i < MAX_ITERATIONS / 10; i++) {
             float h = f""" ++ suffix ++ """(x, y, t, ot);
-            float l = f""" ++ suffix ++ """(x - dx, y, t, ot);
-            float u = f""" ++ suffix ++ """(x, y + dy, t, ot);
-            float ul = f""" ++ suffix ++ """(x - dx, y + dy, t, ot);
+            float l = f""" ++ suffix ++ """(x - deltaX, y, t, ot);
+            float u = f""" ++ suffix ++ """(x, y - deltaY, t, ot);
+            float ul = f""" ++ suffix ++ """(x - deltaX, y - deltaY, t, ot);
             if(h < 0.0 || l < 0.0 || u < 0.0 || ul < 0.0)
                 break;
             if(h != l || h != u || h != ul)
