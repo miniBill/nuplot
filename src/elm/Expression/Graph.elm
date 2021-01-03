@@ -51,7 +51,10 @@ fromExpression =
                                 Relation2D expr
 
                 List ls ->
-                    if Set.member "t" free then
+                    if Set.member "r" free then
+                        GraphList <| List.map fromExpression ls
+
+                    else if Set.member "t" free then
                         case ls of
                             [ x, y ] ->
                                 Parametric2D x y
