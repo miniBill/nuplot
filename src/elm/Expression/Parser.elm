@@ -187,10 +187,14 @@ expressionToGraph =
                     expressionToGraph (RelationOperation rop (Replace ctx l) (Replace ctx r))
 
                 RelationOperation rop l r ->
-                    if Set.member "z" <| getFreeVariables expr then
+                    let
+                        free =
+                            getFreeVariables expr
+                    in
+                    if Set.member "z" <| free then
                         Implicit3D expr
 
-                    else if Set.member "r" <| getFreeVariables expr then
+                    else if Set.member "r" free || Set.member "t" free then
                         Polar2D <| minus l r
 
                     else
