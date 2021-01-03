@@ -1428,9 +1428,11 @@ toSrc3D suffix e =
     }
 
     vec2 interval""" ++ suffix ++ """(vec3 f, vec3 t) {
-        vec2 x = f.x < t.x ? vec2(f.x, t.x) : vec2(t.x, f.x);
-        vec2 z = f.y < t.y ? vec2(f.y, t.y) : vec2(t.y, f.y);
-        vec2 y = f.z < t.z ? vec2(f.z, t.z) : vec2(t.z, f.z);
+        vec3 mn = min(f, t);
+        vec3 mx = max(f, t);
+        vec2 x = vec2(mn.x, mx.x);
+        vec2 z = vec2(mn.y, mx.y);
+        vec2 y = vec2(mn.z, mx.z);
         return """ ++ expressionToIntervalGlsl e ++ """;
     }
     """
