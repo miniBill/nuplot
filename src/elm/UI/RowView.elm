@@ -6,9 +6,10 @@ import Element exposing (Element, alignBottom, alignTop, centerX, el, fill, heig
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), SolutionTree, UnaryOperation(..), Value(..), genericAsMatrix)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree, UnaryOperation(..), genericAsMatrix)
+import Expression.Graph exposing (Graph(..))
 import Expression.NumericRange
-import Expression.Value
+import Expression.Value exposing (Value(..))
 import Html
 import Html.Attributes
 import List.Extra as List

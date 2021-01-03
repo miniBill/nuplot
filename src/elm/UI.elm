@@ -10,7 +10,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Lazy
-import Expression exposing (Expression(..), Graph(..), RelationOperation(..))
+import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Parser
 import Html
 import List.Extra as List

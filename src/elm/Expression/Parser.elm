@@ -1,4 +1,4 @@
-module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, expressionToGraph, parse)
+module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, parse)
 
 import Dict exposing (Dict)
 import Expression
@@ -8,7 +8,6 @@ import Expression
         , Context
         , Expression(..)
         , FunctionName(..)
-        , Graph(..)
         , KnownFunction(..)
         , RelationOperation(..)
         , VariableStatus(..)
@@ -18,6 +17,7 @@ import Expression
 import Expression.Cleaner as Cleaner
 import Expression.Simplify exposing (simplify)
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
+import Expression.Value
 import List
 import List.Extra as List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), getChompedString)
@@ -173,70 +173,6 @@ parse input =
                 |. Parser.end Unexpected
             )
         |> Result.map Expression.Utils.squash
-
-
-expressionToGraph : Expression -> Graph
-expressionToGraph =
-    let
-        go expr =
-            let
-                free =
-                    getFreeVariables expr
-            in
-            case expr of
-                Lambda x f ->
-                    expressionToGraph <| Expression.partialSubstitute x (Variable "x") f
-
-                Replace ctx (RelationOperation rop l r) ->
-                    expressionToGraph (RelationOperation rop (Replace ctx l) (Replace ctx r))
-
-                RelationOperation rop l r ->
-                    if Set.member "z" <| free then
-                        Implicit3D expr
-
-                    else if Set.member "r" free then
-                        Polar2D <| minus l r
-
-                    else
-                        case ( l, rop, Set.member "y" <| getFreeVariables r ) of
-                            ( Variable "y", Equals, False ) ->
-                                Explicit2D r
-
-                            ( _, Equals, _ ) ->
-                                Implicit2D l r
-
-                            _ ->
-                                Relation2D expr
-
-                List ls ->
-                    if Set.member "t" free then
-                        case ls of
-                            [ x, y ] ->
-                                Parametric2D x y
-
-                            _ ->
-                                GraphList <| List.map expressionToGraph ls
-
-                    else
-                        GraphList <| List.map expressionToGraph ls
-
-                Apply (KnownFunction Simplify) [ e ] ->
-                    go <| simplify e
-
-                _ ->
-                    if Set.member "z" free then
-                        Implicit3D expr
-
-                    else if Set.member "r" free then
-                        Polar2D expr
-
-                    else if Set.member "y" free then
-                        Contour expr
-
-                    else
-                        Explicit2D expr
-    in
-    go << Expression.Simplify.hoistLambda
 
 
 toContext : Dict String (Maybe Expression) -> Context

@@ -4,13 +4,11 @@ module Expression exposing
     , Context
     , Expression(..)
     , FunctionName(..)
-    , Graph(..)
     , KnownFunction(..)
     , PrintExpression(..)
     , RelationOperation(..)
     , SolutionTree(..)
     , UnaryOperation(..)
-    , Value(..)
     , VariableStatus(..)
     , defaultContext
     , equals
@@ -23,7 +21,6 @@ module Expression exposing
     , genericMatrixAddition
     , genericMatrixMultiplication
     , getFreeVariables
-    , graphToString
     , partialSubstitute
     , pfullSubstitute
     , solutionTreeToString
@@ -43,17 +40,6 @@ import Set exposing (Set)
 import Trie exposing (Trie)
 
 
-type Graph
-    = Explicit2D Expression
-    | Relation2D Expression
-    | Implicit2D Expression Expression
-    | Polar2D Expression
-    | Parametric2D Expression Expression
-    | Implicit3D Expression
-    | Contour Expression
-    | GraphList (List Graph)
-
-
 type Expression
     = Integer Int
     | Float Float
@@ -66,16 +52,6 @@ type Expression
     | Apply FunctionName (List Expression)
     | Replace (Dict String (Maybe Expression)) Expression
     | List (List Expression)
-
-
-type Value
-    = ErrorValue String
-    | SolutionTreeValue SolutionTree
-    | SymbolicValue Expression
-    | ComplexValue Complex
-    | GraphValue Graph
-    | LambdaValue String Value
-    | ListValue (List Value)
 
 
 type SolutionTree
@@ -410,34 +386,6 @@ toString : Expression -> String
 toString =
     toPrintExpression
         >> toStringPrec 0
-
-
-graphToString : Graph -> String
-graphToString g =
-    case g of
-        Explicit2D e ->
-            "Explicit2D " ++ toString e
-
-        Relation2D e ->
-            "Relation2D " ++ toString e
-
-        Implicit2D l r ->
-            "Implicit2D " ++ toString (RelationOperation Equals l r)
-
-        Polar2D e ->
-            "Polar2D " ++ toString e
-
-        Parametric2D x y ->
-            "Parametric2D " ++ toString x ++ ", " ++ toString y
-
-        Implicit3D e ->
-            "Implicit3D " ++ toString e
-
-        Contour c ->
-            "Contour " ++ toString c
-
-        GraphList gs ->
-            "GraphList [" ++ String.join ", " (List.map graphToString gs) ++ "]"
 
 
 solutionTreeToString : SolutionTree -> String

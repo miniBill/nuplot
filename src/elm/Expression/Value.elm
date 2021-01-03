@@ -1,12 +1,22 @@
-module Expression.Value exposing (complexToSymbolic, toString, value)
+module Expression.Value exposing (Value(..), complexToSymbolic, toString, value)
 
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), Graph(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), Value(..), filterContext, fullSubstitute, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication)
-import Expression.Parser
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree, UnaryOperation(..), filterContext, fullSubstitute, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication)
+import Expression.Graph exposing (Graph(..))
 import Expression.Simplify
 import Expression.Solver
 import Expression.Utils as Utils
+
+
+type Value
+    = ErrorValue String
+    | SolutionTreeValue SolutionTree
+    | SymbolicValue Expression
+    | ComplexValue Complex
+    | GraphValue Graph
+    | LambdaValue String Value
+    | ListValue (List Value)
 
 
 defaultValueContext : Dict String Value
@@ -315,7 +325,7 @@ applyValue context name args =
         KnownFunction Plot ->
             case args of
                 [ e ] ->
-                    GraphValue <| Expression.Parser.expressionToGraph e
+                    GraphValue <| Expression.Graph.fromExpression e
 
                 _ ->
                     ErrorValue "Error in plot: wrong number of arguments"
@@ -446,7 +456,7 @@ toString v =
             Expression.toString s
 
         GraphValue g ->
-            "Graph: " ++ Expression.graphToString g
+            "Graph: " ++ Expression.Graph.toString g
 
         LambdaValue x f ->
             "Lambda: " ++ x ++ " => " ++ toString f
