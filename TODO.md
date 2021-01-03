@@ -1,4 +1,3 @@
-Polar graphs
 Parametric graphs
 
 solve - Ruffini
