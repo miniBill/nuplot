@@ -1471,9 +1471,6 @@ main3D suffixes =
                         normal = normalize(o - found);
                     }
                     vec3 offseted = found + 0.00001 * max_distance * normalize(o - found);
-                    //vec3 offseted = found + 0.0001 * (o - found);
-                    //vec3 offseted = found + 0.01 * (o - found);
-                    //vec3 offseted = found + 0.01 * normal;
                     if(0 == 1) { }
                     """ ++ innerLightTrace ++ """
                     float dt = max(0.0, dot(normal, light_direction));
