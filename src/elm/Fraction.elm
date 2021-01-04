@@ -1,0 +1,60 @@
+module Fraction exposing (Fraction, build, by, div, divisor, fromInt, negate, plus, pow, toPair)
+
+import Expression.Simplify exposing (igcd)
+
+
+type Fraction
+    = Fraction Int Int
+
+
+fromInt : Int -> Fraction
+fromInt i =
+    Fraction i 1
+
+
+plus : Fraction -> Fraction -> Fraction
+plus (Fraction ln ld) (Fraction rn rd) =
+    build (ln * rd + rn * ld) (ld * rd)
+
+
+negate : Fraction -> Fraction
+negate (Fraction n d) =
+    Fraction -n d
+
+
+by : Fraction -> Fraction -> Fraction
+by (Fraction ln ld) (Fraction rn rd) =
+    build (ln * rn) (ld * rd)
+
+
+div : Fraction -> Fraction -> Fraction
+div (Fraction ln ld) (Fraction rn rd) =
+    build (ln * rd) (ld * rn)
+
+
+divisor : Fraction -> Int
+divisor (Fraction _ d) =
+    d
+
+
+pow : Fraction -> Int -> Fraction
+pow (Fraction n d) p =
+    Fraction (n ^ p) (d ^ p)
+
+
+build : Int -> Int -> Fraction
+build n d =
+    if d < 0 then
+        build -n -d
+
+    else
+        let
+            g =
+                abs <| igcd n d
+        in
+        Fraction (n // g) (d // g)
+
+
+toPair : Fraction -> ( Int, Int )
+toPair (Fraction n d) =
+    ( n, d )

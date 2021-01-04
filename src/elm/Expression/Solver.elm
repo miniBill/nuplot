@@ -4,7 +4,10 @@ import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Simplify exposing (igcd, simplify, stepSimplify)
 import Expression.Utils exposing (by, div, factor, i, ipow, minus, negate_, one, plus, pow, sqrt_, square, zero)
+import Fraction
 import List.Extra as List
+import Result
+import Result.Extra as Result
 
 
 solve : Expression -> Expression -> SolutionTree
@@ -128,14 +131,14 @@ solveEquation v l r =
 
                                 cleanCoeffs ->
                                     case findRationalRoot cleanCoeffs of
-                                        Just { root, rest } ->
+                                        Ok { root, rest } ->
                                             SolutionBranch
                                                 [ go (RelationOperation Equals (Variable v) root)
                                                 , go (RelationOperation Equals rest zero)
                                                 ]
 
-                                        Nothing ->
-                                            SolutionError <| "Cannot solve " ++ Expression.toString (coeffsToEq v coeffs)
+                                        Err e ->
+                                            SolutionError <| "Cannot solve " ++ Expression.toString (coeffsToEq v coeffs) ++ ", " ++ e
     in
     case ( l, r ) of
         ( Integer 0, _ ) ->
@@ -148,60 +151,57 @@ solveEquation v l r =
             go (minus l r)
 
 
-findRationalRoot : List ( Int, Expression ) -> Maybe { root : Expression, rest : Expression }
+findRationalRoot : List ( Int, Expression ) -> Result String { root : Expression, rest : Expression }
 findRationalRoot coeffs =
     let
-        reduce ( n, d ) =
-            let
-                g =
-                    igcd n d
-            in
-            ( n // g, d // g )
-
-        ratPlus =
-            Maybe.map2 (\( ln, ld ) ( rn, rd ) -> reduce ( ln * rd + rn * ld, ld * rd ))
-
-        ratBy =
-            Maybe.map2 (\( ln, ld ) ( rn, rd ) -> reduce ( ln * rn, ld * rd ))
-
-        ratDiv =
-            Maybe.map2 (\( nn, nd ) ( dn, dd ) -> reduce ( nn * dd, nd * dn ))
-
-        asRat e =
+        asFraction e =
             case e of
                 Integer i ->
-                    Just ( i, 1 )
+                    Ok <| Fraction.fromInt i
 
                 BinaryOperation Division n d ->
-                    ratDiv
-                        (asRat n)
-                        (asRat d)
+                    Result.map2 Fraction.div
+                        (asFraction n)
+                        (asFraction d)
 
                 AssociativeOperation Addition l m r ->
-                    List.foldl ratPlus (asRat l) <| List.map asRat (m :: r)
+                    List.foldl (Result.map2 Fraction.plus) (asFraction l) <| List.map asFraction (m :: r)
 
                 AssociativeOperation Multiplication l m r ->
-                    List.foldl ratBy (asRat l) <| List.map asRat (m :: r)
+                    List.foldl (Result.map2 Fraction.by) (asFraction l) <| List.map asFraction (m :: r)
+
+                UnaryOperation Negate inner ->
+                    asFraction inner
+                        |> Result.map Fraction.negate
 
                 _ ->
-                    Nothing
+                    Err <| Expression.toString e ++ " is not a fraction"
 
-        rats =
-            coeffs |> List.filterMap (\( d, e ) -> Maybe.map (Tuple.pair d) (asRat e))
+        maybeRats =
+            coeffs
+                |> List.map (\( d, e ) -> Result.map (Tuple.pair d) (asFraction e))
+                |> Result.combine
 
-        findRoot () =
+        findRoot rats =
             let
-                ( _, commonMultiple ) =
+                commonMultiple =
                     rats
                         |> List.map Tuple.second
-                        |> List.foldl1 (\( ln, ld ) ( rn, rd ) -> reduce ( ln * rn, ld * rd ))
-                        |> Maybe.withDefault ( 1, 1 )
+                        |> List.foldl (\f a -> abs <| Fraction.divisor f * a // igcd (Fraction.divisor f) a) 1
 
-                simplified =
-                    rats |> List.map (Tuple.mapSecond (\( n, d ) -> n * commonMultiple // d))
+                reduced =
+                    rats
+                        |> List.map
+                            (Tuple.mapSecond
+                                (Fraction.toPair
+                                    >> (\( n, d ) ->
+                                            n * commonMultiple // d
+                                       )
+                                )
+                            )
 
                 known =
-                    simplified
+                    reduced
                         |> List.find (\( d, _ ) -> d == 0)
                         |> Maybe.map Tuple.second
                         |> Maybe.withDefault 0
@@ -210,7 +210,7 @@ findRationalRoot coeffs =
                     allDivisors known
 
                 head =
-                    simplified
+                    reduced
                         |> List.sortBy (\( d, _ ) -> -d)
                         |> List.head
                         |> Maybe.map Tuple.second
@@ -223,33 +223,52 @@ findRationalRoot coeffs =
                     n
                         |> abs
                         |> factor
-                        |> (::) ( 1, 1 )
+                        |> (::) ( 1, 0 )
                         |> List.map (\( f, m ) -> List.initialize (m + 1) (\e -> f ^ e))
+                        |> List.cartesianProduct
+                        |> List.map List.product
 
                 potentials =
-                    List.concatMap
-                        (\n ->
-                            List.map (Tuple.pair n) potentialsD
-                        )
-                        potentialsN
+                    potentialsN
+                        |> List.concatMap
+                            (\n ->
+                                List.map (Fraction.build n) potentialsD
+                            )
+                        |> List.uniqueBy Fraction.toPair
+
+                root =
+                    List.find isRoot potentials
+
+                isRoot r =
+                    reduced
+                        |> List.map (\( d, c ) -> Fraction.by (Fraction.fromInt c) <| Fraction.pow r d)
+                        |> List.foldl1 Fraction.plus
+                        |> Maybe.map Fraction.toPair
+                        |> Maybe.withDefault ( -1, 1 )
+                        |> (==) ( 0, 1 )
+
+                reducedDict =
+                    Dict.fromList reduced
+
+                res =
+                    Nothing
 
                 _ =
-                    Debug.log "findRoot"
-                        { head = head
-                        , known = known
-                        , simplified = simplified
-                        , potentials = potentials
-                        , potentialsN = potentialsN
-                        , potentialsD = potentialsD
-                        }
+                    Debug.log
+                        (String.join "\n"
+                            [ "reduced = " ++ Debug.toString reduced
+                            , "potentials = " ++ Debug.toString potentials
+                            , "potentialsN = " ++ Debug.toString potentialsN
+                            , "potentialsD = " ++ Debug.toString potentialsD
+                            , "root = " ++ Debug.toString root
+                            ]
+                        )
+                        ()
             in
-            Nothing
+            res
+                |> Result.fromMaybe "no rational root found, and no simple formula is usable"
     in
-    if List.length rats == List.length coeffs then
-        findRoot ()
-
-    else
-        Nothing
+    maybeRats |> Result.andThen findRoot
 
 
 coeffsToEq : String -> Dict Int Expression -> Expression

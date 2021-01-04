@@ -58,6 +58,16 @@ stepSimplify context expr =
                 }
                 ls
 
+        UnaryOperation Negate (BinaryOperation Division (UnaryOperation Negate n) d) ->
+            div n d
+
+        UnaryOperation Negate (BinaryOperation Division (Integer i) d) ->
+            if i < 0 then
+                div (Integer -i) d
+
+            else
+                UnaryOperation Negate <| div (Integer i) (stepSimplify context d)
+
         UnaryOperation Negate e ->
             UnaryOperation Negate <| stepSimplify context e
 
