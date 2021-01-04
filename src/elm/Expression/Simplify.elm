@@ -686,6 +686,15 @@ groupStepAddition curr last =
             else
                 Nothing
 
+        ( BinaryOperation Division ln ld, BinaryOperation Division rn rd ) ->
+            Just <| div (plus [ by [ ln, rd ], by [ rn, ld ] ]) (by [ ld, rd ])
+
+        ( BinaryOperation Division ln ld, r ) ->
+            Just <| div (plus [ ln, by [ ld, r ] ]) ld
+
+        ( l, BinaryOperation Division rn rd ) ->
+            Just <| div (plus [ by [ l, rd ], rn ]) rd
+
         ( List _, List _ ) ->
             addMatrices curr last
 
@@ -754,6 +763,12 @@ groupStepMultiplication left right =
 
             else
                 Nothing
+
+        ( BinaryOperation Division ln ld, r ) ->
+            Just <| div (by [ ln, r ]) ld
+
+        ( l, BinaryOperation Division rn rd ) ->
+            Just <| div (by [ l, rn ]) rd
 
         ( List _, List _ ) ->
             multiplyMatrices left right

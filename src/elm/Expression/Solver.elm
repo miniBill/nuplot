@@ -200,20 +200,31 @@ findRationalRoot coeffs =
                 simplified =
                     rats |> List.map (Tuple.mapSecond (\( n, d ) -> n * commonMultiple // d))
 
-                potentialsN =
+                known =
                     simplified
                         |> List.find (\( d, _ ) -> d == 0)
                         |> Maybe.map Tuple.second
                         |> Maybe.withDefault 0
-                        |> factor
 
-                potentialsD =
+                potentialsN =
+                    allDivisors known
+
+                head =
                     simplified
                         |> List.sortBy (\( d, _ ) -> -d)
                         |> List.head
                         |> Maybe.map Tuple.second
                         |> Maybe.withDefault 1
+
+                potentialsD =
+                    allDivisors head
+
+                allDivisors n =
+                    n
+                        |> abs
                         |> factor
+                        |> (::) ( 1, 1 )
+                        |> List.map (\( f, m ) -> List.initialize (m + 1) (\e -> f ^ e))
 
                 potentials =
                     List.concatMap
@@ -223,7 +234,14 @@ findRationalRoot coeffs =
                         potentialsN
 
                 _ =
-                    Debug.log "potentials" potentials
+                    Debug.log "findRoot"
+                        { head = head
+                        , known = known
+                        , simplified = simplified
+                        , potentials = potentials
+                        , potentialsN = potentialsN
+                        , potentialsD = potentialsD
+                        }
             in
             Nothing
     in
@@ -502,6 +520,11 @@ asPoly v e =
             inner
                 |> asPoly v
                 |> Result.map (Dict.map (always negate_))
+
+        BinaryOperation Division n ((Integer _) as d) ->
+            n
+                |> asPoly v
+                |> Result.map (Dict.map (\_ q -> div q d))
 
         BinaryOperation Power b (Integer ex) ->
             if ex < 0 then
