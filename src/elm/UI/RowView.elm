@@ -6,6 +6,7 @@ import Element exposing (Element, alignBottom, alignTop, centerX, el, fill, heig
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Element.Lazy
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree, UnaryOperation(..), genericAsMatrix)
 import Expression.Graph exposing (Graph(..))
 import Expression.NumericRange
@@ -18,8 +19,8 @@ import UI.Glsl exposing (getGlsl)
 import UI.Theme as Theme exposing (onEnter)
 
 
-draw : { a | pageWidth : Int, pageHeight : Int } -> { wdiv : Int, hdiv : Int } -> Graph -> Element msg
-draw { pageWidth, pageHeight } { wdiv, hdiv } graph =
+draw : { width : Int, height : Int } -> { wdiv : Int, hdiv : Int } -> Graph -> Element msg
+draw { width, height } { wdiv, hdiv } graph =
     let
         isCompletelyReal g =
             case g of
@@ -55,10 +56,10 @@ draw { pageWidth, pageHeight } { wdiv, hdiv } graph =
                 "0"
 
         imageWidth =
-            min 1920 <| pageWidth - (1 + wdiv) * 3 * Theme.spacing
+            min 1920 <| width - (1 + wdiv) * 3 * Theme.spacing
 
         imageHeight =
-            min 1080 <| pageHeight - (6 + hdiv) * 3 * Theme.spacing
+            min 1080 <| height - (6 + hdiv) * 3 * Theme.spacing
     in
     Element.html <|
         Html.node "nu-plot"
@@ -73,14 +74,14 @@ draw { pageWidth, pageHeight } { wdiv, hdiv } graph =
 
 
 view : { width : Int, height : Int } -> Int -> Row -> Element Msg
-view { width, height } index row =
+view size index row =
     Theme.column
         [ Element.width fill
         , alignTop
         ]
         [ inputLine index row
-        , outputBlock { pageWidth = width, pageHeight = height } row
-        , statusLine width row
+        , Element.Lazy.lazy2 outputBlock size row.output
+        , statusLine size.width row
         ]
 
 
@@ -201,8 +202,8 @@ bracketed l r blocks =
     row [ spacing 1, paddingXY 2 0 ] [ l, grid, r ]
 
 
-outputBlock : { a | pageHeight : Int, pageWidth : Int } -> Row -> Element msg
-outputBlock model row =
+outputBlock : { height : Int, width : Int } -> Output -> Element msg
+outputBlock ({ height, width } as size) output =
     let
         showExpr e =
             e
@@ -235,18 +236,18 @@ outputBlock model row =
         viewValue coeffs v =
             case asExpression v of
                 Just ex ->
-                    viewExpression model.pageWidth ex
+                    viewExpression width ex
 
                 Nothing ->
                     case v of
                         SymbolicValue s ->
-                            viewExpression model.pageWidth s
+                            viewExpression width s
 
                         SolutionTreeValue t ->
-                            viewSolutionTree model.pageWidth t
+                            viewSolutionTree width t
 
                         GraphValue g ->
-                            el [ centerX ] <| draw model coeffs g
+                            el [ centerX ] <| draw size coeffs g
 
                         ComplexValue c ->
                             text <| Complex.toString c
@@ -257,7 +258,7 @@ outputBlock model row =
                         LambdaValue x f ->
                             case asExpression f of
                                 Just e ->
-                                    viewExpression model.pageWidth <| Lambda x e
+                                    viewExpression width <| Lambda x e
 
                                 Nothing ->
                                     Element.row [] [ text <| x ++ " => ", viewValue coeffs f ]
@@ -297,7 +298,7 @@ outputBlock model row =
                                                 ls
                                         ]
     in
-    case row.output of
+    case output of
         Empty ->
             none
 
@@ -305,7 +306,7 @@ outputBlock model row =
             none
 
         Parsed e ->
-            Theme.column [ alignTop, width fill ]
+            Theme.column [ alignTop, Element.width fill ]
                 [ text "Value:"
                 , showExpr e
                 ]
