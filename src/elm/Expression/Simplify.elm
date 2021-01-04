@@ -3,7 +3,7 @@ module Expression.Simplify exposing (hoistLambda, igcd, simplify, sortByDegree, 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute, visit)
 import Expression.Derivative
-import Expression.Utils exposing (by, cos_, div, i, im, ipow, minus, negate_, one, plus, pow, re, sin_, square, two, zero)
+import Expression.Utils exposing (by, cos_, div, factor, i, im, ipow, minus, negate_, one, plus, pow, re, sin_, square, two, zero)
 import List
 import List.Extra as List
 import List.MyExtra exposing (groupWith)
@@ -270,46 +270,6 @@ stepSimplifySqrt sargs =
 
         _ ->
             Apply (KnownFunction Sqrt) sargs
-
-
-factor : Int -> List ( Int, Int )
-factor =
-    let
-        plusOne k dict =
-            Dict.insert k (1 + Maybe.withDefault 0 (Dict.get k dict)) dict
-
-        go acc i =
-            if i <= 1 then
-                acc
-
-            else
-                case List.find (\p -> modBy p i == 0) smallPrimes of
-                    Just p ->
-                        go (plusOne p acc) (i // p)
-
-                    Nothing ->
-                        let
-                            p =
-                                naive 1009 i
-                        in
-                        go (plusOne p acc) (i // p)
-
-        naive p i =
-            if modBy p i == 0 then
-                p
-
-            else if p * p >= i then
-                i
-
-            else
-                naive (p + 2) i
-    in
-    go Dict.empty >> Dict.toList
-
-
-smallPrimes : List number
-smallPrimes =
-    [ 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997 ]
 
 
 stepSimplifyRe : List Expression -> Expression
@@ -886,7 +846,10 @@ lcm l r =
 
 igcd : Int -> Int -> Int
 igcd ll rr =
-    if ll < rr then
+    if ll < 0 then
+        -(igcd -ll rr)
+
+    else if ll < rr then
         igcd rr ll
 
     else if rr == 0 then

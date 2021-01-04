@@ -3,7 +3,7 @@ module Expression.Solver exposing (solve)
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Simplify exposing (igcd, simplify, stepSimplify)
-import Expression.Utils exposing (by, div, i, ipow, minus, negate_, one, plus, pow, sqrt_, square, zero)
+import Expression.Utils exposing (by, div, factor, i, ipow, minus, negate_, one, plus, pow, sqrt_, square, zero)
 import List.Extra as List
 
 
@@ -190,6 +190,41 @@ findRationalRoot coeffs =
             coeffs |> List.filterMap (\( d, e ) -> Maybe.map (Tuple.pair d) (asRat e))
 
         findRoot () =
+            let
+                ( _, commonMultiple ) =
+                    rats
+                        |> List.map Tuple.second
+                        |> List.foldl1 (\( ln, ld ) ( rn, rd ) -> reduce ( ln * rn, ld * rd ))
+                        |> Maybe.withDefault ( 1, 1 )
+
+                simplified =
+                    rats |> List.map (Tuple.mapSecond (\( n, d ) -> n * commonMultiple // d))
+
+                potentialsN =
+                    simplified
+                        |> List.find (\( d, _ ) -> d == 0)
+                        |> Maybe.map Tuple.second
+                        |> Maybe.withDefault 0
+                        |> factor
+
+                potentialsD =
+                    simplified
+                        |> List.sortBy (\( d, _ ) -> -d)
+                        |> List.head
+                        |> Maybe.map Tuple.second
+                        |> Maybe.withDefault 1
+                        |> factor
+
+                potentials =
+                    List.concatMap
+                        (\n ->
+                            List.map (Tuple.pair n) potentialsD
+                        )
+                        potentialsN
+
+                _ =
+                    Debug.log "potentials" potentials
+            in
             Nothing
     in
     if List.length rats == List.length coeffs then
