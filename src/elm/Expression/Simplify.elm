@@ -1,4 +1,4 @@
-module Expression.Simplify exposing (hoistLambda, simplify, sortByDegree, stepSimplify)
+module Expression.Simplify exposing (hoistLambda, igcd, simplify, sortByDegree, stepSimplify)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute, visit)
@@ -871,18 +871,7 @@ lcm l r =
                 l
 
             ( Integer li, Integer ri ) ->
-                let
-                    gcd ll rr =
-                        if ll < rr then
-                            gcd rr ll
-
-                        else if rr == 0 then
-                            ll
-
-                        else
-                            gcd rr (modBy rr ll)
-                in
-                Integer <| li * ri // gcd li ri
+                Integer <| li * ri // igcd li ri
 
             ( Variable lv, Variable rv ) ->
                 if lv == rv then
@@ -893,6 +882,18 @@ lcm l r =
 
             _ ->
                 by [ l, r ]
+
+
+igcd : Int -> Int -> Int
+igcd ll rr =
+    if ll < rr then
+        igcd rr ll
+
+    else if rr == 0 then
+        ll
+
+    else
+        igcd rr (modBy rr ll)
 
 
 denominatorLcm : List Expression -> Expression

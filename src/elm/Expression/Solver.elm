@@ -2,7 +2,7 @@ module Expression.Solver exposing (solve)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
-import Expression.Simplify exposing (simplify, stepSimplify)
+import Expression.Simplify exposing (igcd, simplify, stepSimplify)
 import Expression.Utils exposing (by, div, i, ipow, minus, negate_, one, plus, pow, sqrt_, square, zero)
 import List.Extra as List
 
@@ -11,9 +11,8 @@ solve : Expression -> Expression -> SolutionTree
 solve e x =
     case x of
         Variable v ->
-            simplify e
-                |> innerSolve v
-                |> SolutionStep e
+            e
+                |> stepSimplify (innerSolve v)
                 |> cut
 
         _ ->
@@ -76,7 +75,7 @@ innerSolve v expr =
             SolutionError "Cannot solve disequations [yet!]"
 
         _ ->
-            SolutionError "Cannot solve this"
+            innerSolve v <| RelationOperation Equals expr zero
 
 
 solveEquation : String -> Expression -> Expression -> SolutionTree
@@ -127,8 +126,16 @@ solveEquation v l r =
                                 [ ( 4, a ), ( 2, c ) ] ->
                                     solve4Biquad v a c zero
 
-                                _ ->
-                                    SolutionError <| "Cannot solve " ++ Expression.toString (RelationOperation Equals expr zero)
+                                cleanCoeffs ->
+                                    case findRationalRoot cleanCoeffs of
+                                        Just { root, rest } ->
+                                            SolutionBranch
+                                                [ go (RelationOperation Equals (Variable v) root)
+                                                , go (RelationOperation Equals rest zero)
+                                                ]
+
+                                        Nothing ->
+                                            SolutionError <| "Cannot solve " ++ Expression.toString (coeffsToEq v coeffs)
     in
     case ( l, r ) of
         ( Integer 0, _ ) ->
@@ -139,6 +146,57 @@ solveEquation v l r =
 
         _ ->
             go (minus l r)
+
+
+findRationalRoot : List ( Int, Expression ) -> Maybe { root : Expression, rest : Expression }
+findRationalRoot coeffs =
+    let
+        reduce ( n, d ) =
+            let
+                g =
+                    igcd n d
+            in
+            ( n // g, d // g )
+
+        ratPlus =
+            Maybe.map2 (\( ln, ld ) ( rn, rd ) -> reduce ( ln * rd + rn * ld, ld * rd ))
+
+        ratBy =
+            Maybe.map2 (\( ln, ld ) ( rn, rd ) -> reduce ( ln * rn, ld * rd ))
+
+        ratDiv =
+            Maybe.map2 (\( nn, nd ) ( dn, dd ) -> reduce ( nn * dd, nd * dn ))
+
+        asRat e =
+            case e of
+                Integer i ->
+                    Just ( i, 1 )
+
+                BinaryOperation Division n d ->
+                    ratDiv
+                        (asRat n)
+                        (asRat d)
+
+                AssociativeOperation Addition l m r ->
+                    List.foldl ratPlus (asRat l) <| List.map asRat (m :: r)
+
+                AssociativeOperation Multiplication l m r ->
+                    List.foldl ratBy (asRat l) <| List.map asRat (m :: r)
+
+                _ ->
+                    Nothing
+
+        rats =
+            coeffs |> List.filterMap (\( d, e ) -> Maybe.map (Tuple.pair d) (asRat e))
+
+        findRoot () =
+            Nothing
+    in
+    if List.length rats == List.length coeffs then
+        findRoot ()
+
+    else
+        Nothing
 
 
 coeffsToEq : String -> Dict Int Expression -> Expression
