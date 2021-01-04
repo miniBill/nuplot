@@ -1,4 +1,4 @@
-module Fraction exposing (Fraction, build, by, div, divisor, fromInt, negate, plus, pow, toPair)
+module Fraction exposing (Fraction, build, by, div, divisor, fromInt, isZero, negate, plus, pow, toPair)
 
 import Expression.Simplify exposing (igcd)
 
@@ -58,3 +58,8 @@ build n d =
 toPair : Fraction -> ( Int, Int )
 toPair (Fraction n d) =
     ( n, d )
+
+
+isZero : Fraction -> Bool
+isZero (Fraction n _) =
+    n == 0

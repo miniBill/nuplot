@@ -130,11 +130,11 @@ solveEquation v l r =
                                     solve4Biquad v a c zero
 
                                 cleanCoeffs ->
-                                    case findRationalRoot cleanCoeffs of
+                                    case findRationalRoot v cleanCoeffs of
                                         Ok { root, rest } ->
                                             SolutionBranch
-                                                [ go (RelationOperation Equals (Variable v) root)
-                                                , go (RelationOperation Equals rest zero)
+                                                [ innerSolve v <| RelationOperation Equals (Variable v) root
+                                                , innerSolve v <| RelationOperation Equals rest zero
                                                 ]
 
                                         Err e ->
@@ -151,8 +151,8 @@ solveEquation v l r =
             go (minus l r)
 
 
-findRationalRoot : List ( Int, Expression ) -> Result String { root : Expression, rest : Expression }
-findRationalRoot coeffs =
+findRationalRoot : String -> List ( Int, Expression ) -> Result String { root : Expression, rest : Expression }
+findRationalRoot v coeffs =
     let
         asFraction e =
             case e of
@@ -234,10 +234,103 @@ findRationalRoot coeffs =
                             (\n ->
                                 List.map (Fraction.build n) potentialsD
                             )
+                        |> List.concatMap (\f -> [ f, Fraction.negate f ])
                         |> List.uniqueBy Fraction.toPair
+                        |> List.sortBy fractionToFloat
 
-                root =
-                    List.find isRoot potentials
+                fractionToFloat f =
+                    let
+                        ( n, d ) =
+                            Fraction.toPair f
+                    in
+                    toFloat n / toFloat d
+
+                res =
+                    potentials
+                        |> List.filterMap tryDivision
+                        |> List.head
+
+                reducedDict =
+                    Dict.fromList reduced
+
+                degree =
+                    Dict.keys reducedDict |> List.maximum |> Maybe.withDefault 0
+
+                getCoeff d =
+                    Fraction.fromInt <| Maybe.withDefault 0 <| Dict.get d reducedDict
+
+                tryDivision potential =
+                    List.range 0 (degree - 1)
+                        |> List.foldr
+                            (\d ( r, a ) ->
+                                let
+                                    k =
+                                        getCoeff d
+
+                                    r_ =
+                                        Fraction.plus k (Fraction.by r potential)
+                                in
+                                ( r_, r :: a )
+                            )
+                            ( getCoeff degree, [] )
+                        |> (\( r, c ) ->
+                                if Fraction.isZero r then
+                                    let
+                                        toExpr f =
+                                            let
+                                                ( n, d ) =
+                                                    Fraction.toPair f
+                                            in
+                                            if d == 1 then
+                                                Integer n
+
+                                            else if n == 0 then
+                                                Integer 0
+
+                                            else
+                                                div (Integer n) (Integer d)
+                                    in
+                                    Just
+                                        { root = toExpr potential
+                                        , rest =
+                                            c
+                                                |> List.indexedMap
+                                                    (\e k ->
+                                                        let
+                                                            ke =
+                                                                toExpr k
+                                                        in
+                                                        if Fraction.isZero k then
+                                                            Nothing
+
+                                                        else
+                                                            Just <|
+                                                                case e of
+                                                                    0 ->
+                                                                        toExpr k
+
+                                                                    1 ->
+                                                                        if ke == Integer 1 then
+                                                                            Variable v
+
+                                                                        else
+                                                                            by [ toExpr k, Variable v ]
+
+                                                                    _ ->
+                                                                        if ke == Integer 1 then
+                                                                            ipow (Variable v) e
+
+                                                                        else
+                                                                            by [ toExpr k, ipow (Variable v) e ]
+                                                    )
+                                                |> List.filterMap identity
+                                                |> List.reverse
+                                                |> plus
+                                        }
+
+                                else
+                                    Nothing
+                           )
 
                 isRoot r =
                     reduced
@@ -246,24 +339,6 @@ findRationalRoot coeffs =
                         |> Maybe.map Fraction.toPair
                         |> Maybe.withDefault ( -1, 1 )
                         |> (==) ( 0, 1 )
-
-                reducedDict =
-                    Dict.fromList reduced
-
-                res =
-                    Nothing
-
-                _ =
-                    Debug.log
-                        (String.join "\n"
-                            [ "reduced = " ++ Debug.toString reduced
-                            , "potentials = " ++ Debug.toString potentials
-                            , "potentialsN = " ++ Debug.toString potentialsN
-                            , "potentialsD = " ++ Debug.toString potentialsD
-                            , "root = " ++ Debug.toString root
-                            ]
-                        )
-                        ()
             in
             res
                 |> Result.fromMaybe "no rational root found, and no simple formula is usable"
@@ -408,14 +483,18 @@ solve2 v a b c =
     else if isZero b then
         let
             solPlus =
-                sqrt_ (div (neg c) a)
+                if a == Integer 1 then
+                    sqrt_ <| neg c
+
+                else
+                    sqrt_ (div (neg c) a)
 
             branch sol =
                 stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
-            [ branch solPlus
-            , branch <| neg solPlus
+            [ branch <| neg solPlus
+            , branch solPlus
             ]
 
     else
@@ -433,8 +512,8 @@ solve2 v a b c =
                 stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
-            [ branch solPlus
-            , branch solMinus
+            [ branch solMinus
+            , branch solPlus
             ]
 
 

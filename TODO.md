@@ -1,4 +1,3 @@
-* solve - Ruffini
 * solve (x-pi)(x-e)
 * zoom finger
 * fix 3d navigation
