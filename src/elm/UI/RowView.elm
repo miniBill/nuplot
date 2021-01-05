@@ -165,7 +165,11 @@ viewSolutionTree pageWidth tree =
             [ viewLaTeX pageWidth <| Expression.toTeXString e ]
 
         SolutionBranch children ->
-            [ Element.row [ spacing Theme.spacing ] <| List.map (\c -> Element.column [ spacing Theme.spacing, alignTop ] <| viewSolutionTree pageWidth c) children ]
+            let
+                br =
+                    el [ width <| px 1, height fill, Border.width 1 ] none
+            in
+            [ Element.row [ spacing Theme.spacing ] <| List.intersperse br <| List.map (\c -> Element.column [ spacing Theme.spacing, alignTop ] <| viewSolutionTree pageWidth c) children ]
 
 
 viewLaTeX : Int -> String -> Element msg
