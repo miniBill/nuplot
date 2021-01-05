@@ -3,7 +3,7 @@ module Expression.Simplify exposing (hoistLambda, igcd, simplify, sortByDegree, 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute, visit)
 import Expression.Derivative
-import Expression.Utils exposing (by, cos_, div, factor, i, im, ipow, minus, negate_, one, plus, pow, re, sin_, square, two, zero)
+import Expression.Utils exposing (asPoly, by, cos_, div, factor, i, im, ipow, minus, negate_, one, plus, pow, re, sin_, square, two, zero)
 import List
 import List.Extra as List
 import List.MyExtra exposing (groupOneWith)
@@ -667,30 +667,30 @@ sortByDegree aop ee =
 
 
 groupStepAddition : Expression -> Expression -> Maybe Expression
-groupStepAddition curr last =
-    case ( curr, last ) of
+groupStepAddition left right =
+    case ( left, right ) of
         ( _, Integer 0 ) ->
-            Just curr
+            Just left
 
         ( Integer il, Integer ir ) ->
             Just <| Integer <| il + ir
 
         ( _, AssociativeOperation Multiplication (Integer c) mon [] ) ->
-            if Expression.equals curr mon then
+            if Expression.equals left mon then
                 Just <| by [ Integer (c + 1), mon ]
 
             else
                 Nothing
 
         ( UnaryOperation Negate nl, _ ) ->
-            if Expression.equals nl last then
+            if Expression.equals nl right then
                 Just zero
 
             else
                 Nothing
 
         ( _, UnaryOperation Negate nr ) ->
-            if Expression.equals nr curr then
+            if Expression.equals nr left then
                 Just zero
 
             else
@@ -706,14 +706,43 @@ groupStepAddition curr last =
             Just <| div (plus [ by [ l, rd ], rn ]) rd
 
         ( List _, List _ ) ->
-            addMatrices curr last
+            addMatrices left right
 
         _ ->
-            if Expression.equals curr last then
-                Just <| by [ two, last ]
+            if Expression.equals left right then
+                Just <| by [ two, right ]
 
             else
-                Nothing
+                case Set.toList <| getFreeVariables left of
+                    [ var ] ->
+                        let
+                            _ =
+                                Debug.log "one free var" var
+
+                            _ =
+                                Debug.log "lpoly" (asPoly var left |> Result.map Dict.toList)
+                        in
+                        case
+                            Result.map2 Tuple.pair
+                                (asPoly var left |> Result.map Dict.toList)
+                                (asPoly var right |> Result.map Dict.toList)
+                        of
+                            Ok ( [ ( dl, cl ) ], [ ( dr, cr ) ] ) ->
+                                let
+                                    _ =
+                                        Debug.log "one monomial"
+                                in
+                                if dl == dr then
+                                    Just <| by [ plus [ cl, cr ], ipow (Variable var) dl ]
+
+                                else
+                                    Nothing
+
+                            _ ->
+                                Nothing
+
+                    _ ->
+                        Nothing
 
 
 asList : Expression -> Maybe (List Expression)

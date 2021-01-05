@@ -3,7 +3,7 @@ module Expression.Solver exposing (solve)
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Simplify exposing (igcd, simplify, stepSimplify)
-import Expression.Utils exposing (by, div, factor, i, ipow, minus, negate_, one, plus, pow, sqrt_, square, zero)
+import Expression.Utils exposing (asPoly, by, byShort, div, divShort, factor, i, ipow, isZero, minus, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
 import Fraction
 import List.Extra as List
 import Result
@@ -401,32 +401,6 @@ coeffsToEq v coeffs =
         |> (\l -> RelationOperation Equals l zero)
 
 
-isZero : Expression -> Bool
-isZero k =
-    case k of
-        Integer i ->
-            i == 0
-
-        Float f ->
-            f == 0
-
-        _ ->
-            False
-
-
-neg : Expression -> Expression
-neg b =
-    case b of
-        Integer q ->
-            Integer -q
-
-        UnaryOperation Negate q ->
-            q
-
-        _ ->
-            negate_ b
-
-
 solIs : String -> Expression -> Expression
 solIs =
     RelationOperation Equals << Variable
@@ -449,7 +423,7 @@ solve1 v a b =
     else
         let
             sol =
-                solIs v <| div (neg b) a
+                solIs v <| divShort (negateShort b) a
         in
         stepSimplify SolutionDone sol
 
@@ -483,30 +457,26 @@ solve2 v a b c =
     else if isZero b then
         let
             solPlus =
-                if a == Integer 1 then
-                    sqrt_ <| neg c
-
-                else
-                    sqrt_ (div (neg c) a)
+                sqrt_ (divShort (negateShort c) a)
 
             branch sol =
                 stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
-            [ branch <| neg solPlus
+            [ branch <| negateShort solPlus
             , branch solPlus
             ]
 
     else
         let
             delta =
-                minus (square b) (by [ Integer 4, a, c ])
+                minus (square b) (byShort [ Integer 4, a, c ])
 
             solPlus =
-                div (plus [ neg b, sqrt_ delta ]) (by [ Integer 2, a ])
+                divShort (plusShort [ negateShort b, sqrt_ delta ]) (byShort [ Integer 2, a ])
 
             solMinus =
-                div (minus (neg b) (sqrt_ delta)) (by [ Integer 2, a ])
+                divShort (minus (negateShort b) (sqrt_ delta)) (byShort [ Integer 2, a ])
 
             branch sol =
                 stepSimplify SolutionDone (solIs v sol)
@@ -525,32 +495,28 @@ solve4Biquad v a c e =
     else if isZero c then
         let
             solPlus =
-                if a == Integer 1 then
-                    pow (neg e) (div one (Integer 4))
-
-                else
-                    pow (div (neg e) a) (div one (Integer 4))
+                pow (divShort (negateShort e) a) (div one (Integer 4))
 
             branch sol =
                 stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
             [ branch solPlus
-            , branch <| neg solPlus
-            , branch <| by [ i, solPlus ]
-            , branch <| by [ neg i, solPlus ]
+            , branch <| negateShort solPlus
+            , branch <| byShort [ i, solPlus ]
+            , branch <| byShort [ negateShort i, solPlus ]
             ]
 
     else
         let
             delta =
-                minus (square c) (by [ Integer 4, a, e ])
+                minus (square c) (byShort [ Integer 4, a, e ])
 
             solPlus =
-                sqrt_ <| div (plus [ neg c, sqrt_ delta ]) (by [ Integer 2, a ])
+                sqrt_ <| div (plus [ negateShort c, sqrt_ delta ]) (byShort [ Integer 2, a ])
 
             solMinus =
-                sqrt_ <| div (minus (neg c) (sqrt_ delta)) (by [ Integer 2, a ])
+                sqrt_ <| div (minus (negateShort c) (sqrt_ delta)) (byShort [ Integer 2, a ])
 
             branch sol =
                 stepSimplify SolutionDone (solIs v sol)
@@ -558,81 +524,6 @@ solve4Biquad v a c e =
         SolutionBranch
             [ branch solPlus
             , branch solMinus
-            , branch <| neg solPlus
-            , branch <| neg solMinus
+            , branch <| negateShort solPlus
+            , branch <| negateShort solMinus
             ]
-
-
-asPoly : String -> Expression -> Result String (Dict Int Expression)
-asPoly v e =
-    case e of
-        AssociativeOperation Addition l m r ->
-            List.foldl
-                (Result.map2 <|
-                    \el acc ->
-                        Dict.merge
-                            Dict.insert
-                            (\k a b -> Dict.insert k <| plus [ a, b ])
-                            Dict.insert
-                            el
-                            acc
-                            Dict.empty
-                )
-                (Ok <| Dict.empty)
-                (List.map (asPoly v) (l :: m :: r))
-
-        AssociativeOperation Multiplication l m r ->
-            (l :: m :: r)
-                |> List.map (asPoly v >> Result.map Dict.toList)
-                |> List.foldl
-                    (Result.map2 <|
-                        \el acc ->
-                            acc
-                                |> List.concatMap (\acc_e -> el |> List.map (Tuple.pair acc_e))
-                                |> List.map (\( ( dl, cl ), ( dr, cr ) ) -> ( dl + dr, by [ cl, cr ] ))
-                    )
-                    (Ok [ ( 0, one ) ])
-                |> Result.map
-                    (\ls ->
-                        ls
-                            |> List.gatherEqualsBy Tuple.first
-                            |> List.map (\( ( d, f ), ts ) -> ( d, plus <| f :: List.map Tuple.second ts ))
-                            |> Dict.fromList
-                    )
-
-        Integer _ ->
-            Ok <| Dict.singleton 0 e
-
-        Float _ ->
-            Ok <| Dict.singleton 0 e
-
-        Variable w ->
-            Ok <|
-                if v == w then
-                    Dict.singleton 1 one
-
-                else
-                    Dict.singleton 0 e
-
-        UnaryOperation Negate inner ->
-            inner
-                |> asPoly v
-                |> Result.map (Dict.map (always negate_))
-
-        BinaryOperation Division n ((Integer _) as d) ->
-            n
-                |> asPoly v
-                |> Result.map (Dict.map (\_ q -> div q d))
-
-        BinaryOperation Power b (Integer ex) ->
-            if ex < 0 then
-                Err ("Cannot extract coefficients from " ++ Expression.toString e)
-
-            else if ex == 0 then
-                Ok <| Dict.singleton 0 one
-
-            else
-                asPoly v <| by [ b, ipow b (ex - 1) ]
-
-        _ ->
-            Err ("Cannot extract coefficients from " ++ Expression.toString e)
