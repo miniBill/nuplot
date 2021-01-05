@@ -1,7 +1,7 @@
 module Expression.Derivative exposing (derivative)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), filterContext, fullSubstitute)
-import Expression.Utils exposing (by, div, ipow, ln_, minus, one, plus, pow, square, zero)
+import Expression.Utils exposing (by, byShort, div, ipow, ipowShort, ln_, minus, one, plus, pow, square, zero)
 
 
 derivative : String -> Expression -> Expression
@@ -55,7 +55,7 @@ derivative var expr =
                 zero
 
             else
-                by [ ex, ipow (Variable v) (i - 1) ]
+                byShort [ ex, ipowShort (Variable v) (i - 1) ]
 
         BinaryOperation Power f g ->
             let
