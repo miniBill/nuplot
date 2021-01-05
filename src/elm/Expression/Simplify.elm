@@ -6,7 +6,7 @@ import Expression.Derivative
 import Expression.Utils exposing (by, cos_, div, factor, i, im, ipow, minus, negate_, one, plus, pow, re, sin_, square, two, zero)
 import List
 import List.Extra as List
-import List.MyExtra exposing (groupWith)
+import List.MyExtra exposing (groupOneWith)
 import Maybe.Extra as Maybe
 import Set
 
@@ -532,7 +532,7 @@ stepSimplifyAssociative aop args =
     args
         |> List.concatMap extractop
         |> sortByDegree aop
-        |> groupWith groupStep
+        |> groupOneWith groupStep
         |> (case aop of
                 Addition ->
                     tryExtract (findSpecificInteger 0) (\( _, rest ) -> rest)
@@ -992,7 +992,7 @@ hoistLambda =
                                     Nothing
 
                         grouped =
-                            groupWith step <| hoistLambda l :: hoistLambda m :: List.map hoistLambda r
+                            groupOneWith step <| hoistLambda l :: hoistLambda m :: List.map hoistLambda r
                     in
                     Just <|
                         case grouped of

@@ -1,4 +1,4 @@
-module List.MyExtra exposing (groupWith, unzip3)
+module List.MyExtra exposing (groupOneWith, unzip3)
 
 
 unzip3 : List ( a, b, c ) -> ( List a, List b, List c )
@@ -6,22 +6,26 @@ unzip3 =
     List.foldr (\( x, y, z ) ( xs, ys, zs ) -> ( x :: xs, y :: ys, z :: zs )) ( [], [], [] )
 
 
-groupWith : (a -> a -> Maybe a) -> List a -> List a
-groupWith step list =
+groupOneWith : (a -> a -> Maybe a) -> List a -> List a
+groupOneWith step list =
     case List.reverse list of
         [] ->
             []
 
         slast :: sinit ->
             List.foldl
-                (\e ( last, acc ) ->
-                    case step e last of
-                        Just c ->
-                            ( c, acc )
+                (\e ( last, acc, done ) ->
+                    if done then
+                        ( e, last :: acc, True )
 
-                        Nothing ->
-                            ( e, last :: acc )
+                    else
+                        case step e last of
+                            Just c ->
+                                ( c, acc, True )
+
+                            Nothing ->
+                                ( e, last :: acc, False )
                 )
-                ( slast, [] )
+                ( slast, [], False )
                 sinit
-                |> (\( last, acc ) -> last :: acc)
+                |> (\( last, acc, _ ) -> last :: acc)
