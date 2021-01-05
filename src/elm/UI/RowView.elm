@@ -7,7 +7,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Lazy
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree, UnaryOperation(..), genericAsMatrix)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..), genericAsMatrix)
 import Expression.Graph exposing (Graph(..))
 import Expression.NumericRange
 import Expression.Value exposing (Value(..))
@@ -146,9 +146,26 @@ viewExpression pageWidth expr =
     viewLaTeX pageWidth <| Expression.toTeXString expr
 
 
-viewSolutionTree : Int -> SolutionTree -> Element msg
+viewSolutionTree : Int -> SolutionTree -> List (Element msg)
 viewSolutionTree pageWidth tree =
-    viewLaTeX pageWidth <| Expression.solutionTreeToTeXString tree
+    case tree of
+        SolutionStep e c ->
+            viewLaTeX pageWidth (Expression.toTeXString e) :: viewSolutionTree pageWidth c
+
+        SolutionForall v ->
+            [ viewLaTeX pageWidth <| "\\forall " ++ v ++ " \\in \\mathbb{R}" ]
+
+        SolutionError e ->
+            [ text <| "Error: " ++ e ]
+
+        SolutionNone v ->
+            [ viewLaTeX pageWidth <| "\\not \\exists " ++ v ++ " \\in \\mathbb{R}" ]
+
+        SolutionDone e ->
+            [ viewLaTeX pageWidth <| Expression.toTeXString e ]
+
+        SolutionBranch children ->
+            [ Element.row [ spacing Theme.spacing ] <| List.map (\c -> Element.column [ spacing Theme.spacing, alignTop ] <| viewSolutionTree pageWidth c) children ]
 
 
 viewLaTeX : Int -> String -> Element msg
@@ -244,7 +261,7 @@ outputBlock ({ height, width } as size) output =
                             viewExpression width s
 
                         SolutionTreeValue t ->
-                            viewSolutionTree width t
+                            Element.column [ spacing Theme.spacing ] <| viewSolutionTree (width - 2 * Theme.spacing) t
 
                         GraphValue g ->
                             el [ centerX ] <| draw size coeffs g
