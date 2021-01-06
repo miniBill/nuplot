@@ -95,7 +95,6 @@ inputLine index row =
             , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
             , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
             , Element.htmlAttribute <| Html.Attributes.spellcheck False
-            , Element.htmlAttribute <| Html.Attributes.attribute "type" "url"
             ]
             { label = Input.labelHidden "Input"
             , onChange = Input index
