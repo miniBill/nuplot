@@ -98,7 +98,7 @@ stepSimplify context expr =
 
         AssociativeOperation aop l r o ->
             stepList context
-                { andThen = stepSimplifyAssociative aop
+                { andThen = stepSimplifyAssociative context aop
                 , ifChanged =
                     if aop == Addition then
                         plus
@@ -486,8 +486,8 @@ stepSimplifyPower ls rs =
             pow ls rs
 
 
-stepSimplifyAssociative : AssociativeOperation -> List Expression -> Expression
-stepSimplifyAssociative aop args =
+stepSimplifyAssociative : Dict String Expression -> AssociativeOperation -> List Expression -> Expression
+stepSimplifyAssociative context aop args =
     let
         extractop e =
             case e of
@@ -528,22 +528,29 @@ stepSimplifyAssociative aop args =
 
                 Multiplication ->
                     groupStepMultiplication
+
+        andThen : List Expression -> Expression
+        andThen ls =
+            ls
+                |> groupOneWith groupStep
+                |> (case aop of
+                        Addition ->
+                            tryExtract (findSpecificInteger 0) (\( _, rest ) -> rest)
+
+                        Multiplication ->
+                            tryExtract (findSpecificInteger -1) (\( _, rest ) -> [ negate_ <| build rest ])
+                                >> tryExtract findNegate (\( negated, rest ) -> [ negate_ <| build <| negated :: rest ])
+                   )
+                |> sortByDegree aop
+                |> build
     in
     args
         |> List.concatMap extractop
         |> sortByDegree aop
-        |> groupOneWith groupStep
-        |> (case aop of
-                Addition ->
-                    tryExtract (findSpecificInteger 0) (\( _, rest ) -> rest)
-
-                Multiplication ->
-                    tryExtract (findSpecificInteger -1) (\( _, rest ) -> [ negate_ <| build rest ])
-                        >> tryExtract findNegate (\( negated, rest ) -> [ negate_ <| build <| negated :: rest ])
-                        >> tryExtract findAdditionList (\( adds, rest ) -> [ plus <| List.map (\x -> by <| x :: rest) adds ])
-           )
-        |> sortByDegree aop
-        |> build
+        |> stepList context
+            { ifChanged = build
+            , andThen = andThen
+            }
 
 
 tryExtract : (a -> Maybe b) -> (( b, List a ) -> List a) -> List a -> List a
