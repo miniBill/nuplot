@@ -96,6 +96,9 @@ stepSimplify context expr =
                 l
                 r
 
+        AssociativeOperation Multiplication l r [ AssociativeOperation Addition al ar ao ] ->
+            plus <| List.map (\o -> by [ l, r, o ]) (al :: ar :: ao)
+
         AssociativeOperation aop l r o ->
             stepList context
                 { andThen = stepSimplifyAssociative context aop
@@ -774,6 +777,18 @@ groupStepMultiplication left right =
 
         ( _, AssociativeOperation Addition l m r ) ->
             Just <| plus <| by [ left, l ] :: by [ left, m ] :: List.map (\o -> by [ left, o ]) r
+
+        ( BinaryOperation Power lb le, BinaryOperation Power rb re ) ->
+            if Expression.equals lb rb then
+                case ( le, re ) of
+                    ( Integer lei, Integer rei ) ->
+                        Just (ipow lb <| lei + rei)
+
+                    _ ->
+                        Just (pow lb <| plus [ le, re ])
+
+            else
+                Nothing
 
         ( BinaryOperation Power pb pe, l ) ->
             if Expression.equals l pb then

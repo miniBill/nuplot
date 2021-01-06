@@ -16,7 +16,7 @@ groupOneWith step list =
                         ( Just e, acc )
 
                     Just lst ->
-                        case step lst e of
+                        case step e lst of
                             Just c ->
                                 ( Nothing, c :: acc )
 
