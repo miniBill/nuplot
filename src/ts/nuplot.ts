@@ -222,6 +222,7 @@ export class NuPlot extends HTMLElement {
     this.canvas.onpointerup = (e) => this.canvasOnPointerUp(e);
     this.canvas.onpointercancel = (e) => this.canvasOnPointerUp(e);
     this.canvas.onpointermove = (e) => this.canvasOnPointerMove(e);
+    this.canvas.onwheel = (e) => this.canvasOnWheel(e);
     this.canvas.style.touchAction = "none";
 
     /* display initial frame */
@@ -287,6 +288,14 @@ export class NuPlot extends HTMLElement {
     return ((x - froml) / (fromu - froml)) * (tou - tol) + tol;
   }
 
+  canvasOnWheel(e: WheelEvent): boolean {
+    // TODO: zoom on mouse location
+    this.viewportWidth *= 1 + e.deltaY * 0.006;
+    this.renderOnAnimationFrame(true);
+    // Intercept it
+    return false;
+  }
+
   canvasOnPointerDown(e: PointerEvent) {
     this.resetOriginal();
 
@@ -314,7 +323,7 @@ export class NuPlot extends HTMLElement {
     this.pointers[e.pointerId] = pointer;
 
     if (this.is3D) {
-      // Todo
+      // TODO: 3D movement
     } else {
       switch (Object.keys(this.originalPointers).length) {
         case 1:
