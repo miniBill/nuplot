@@ -1,9 +1,26 @@
-module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darken, fontSize, grid, onEnter, row, spacing, whiteLines, wrappedRow)
+module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, lightIconAttrs, onEnter, row, spacing, whiteLines, wrappedRow)
 
+import Ant.Icon
 import Color
 import Element exposing (Attribute, Color, Element, none, rgb, shrink)
 import Html.Events
 import Json.Decode as Decode
+
+
+darkIconAttrs : List (Ant.Icon.Attribute msg)
+darkIconAttrs =
+    [ Ant.Icon.width 24
+    , Ant.Icon.height 24
+    , Ant.Icon.fill colors.iconDarkColor
+    ]
+
+
+lightIconAttrs : List (Ant.Icon.Attribute msg)
+lightIconAttrs =
+    [ Ant.Icon.width 24
+    , Ant.Icon.height 24
+    , Ant.Icon.fill colors.iconLightColor
+    ]
 
 
 fontSize : number
@@ -31,13 +48,11 @@ bracketBorderWidth =
     2
 
 
-colors :
-    { background : Color
-    , selectedDocument : Color
-    , unselectedDocument : Color
-    }
+colors : { background : Color, iconDarkColor : Color, iconLightColor : Color, selectedDocument : Color, unselectedDocument : Color }
 colors =
     { background = rgb 0.9 0.9 0.9
+    , iconDarkColor = rgb 0.1 0.1 0.1
+    , iconLightColor = rgb 0.9 0.9 0.9
     , selectedDocument = rgb 0.8 0.8 0.9
     , unselectedDocument = rgb 0.8 0.8 0.8
     }

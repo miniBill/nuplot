@@ -10,6 +10,10 @@ window.MathJax = {
   },
 };
 
+declare class ClipboardItem {
+  constructor(data: { [mimeType: string]: Blob });
+}
+
 customElements.define("nu-plot", NuPlot);
 customElements.define("math-jax", MathJaxElement);
 
@@ -38,10 +42,21 @@ function innerInit(Elm: ElmType, saved: any) {
 
   var app = Elm.UI.init({
     node: node,
-    flags: saved,
+    flags: {
+      saved: saved,
+      hasClipboard: typeof ClipboardItem !== "undefined",
+    },
   });
-  app.ports.save.subscribe((value) => {
+  app.ports.persist.subscribe((value) => {
     localForage.setItem(storageKey, value);
+  });
+  app.ports.save.subscribe((id) => {
+    var element = document.getElementById(id) as NuPlot;
+    element?.save();
+  });
+  app.ports.copy.subscribe((id) => {
+    var element = document.getElementById(id) as NuPlot;
+    element?.copy();
   });
 }
 

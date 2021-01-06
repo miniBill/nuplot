@@ -1,8 +1,10 @@
 module UI.RowView exposing (view)
 
+import Ant.Icon as Icon
+import Ant.Icons as Icons
 import Complex
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, el, fill, height, htmlAttribute, none, paddingXY, px, rgb, row, shrink, spacing, text, width)
+import Element exposing (Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, rgb, row, shrink, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -20,8 +22,8 @@ import UI.Glsl exposing (getGlsl)
 import UI.Theme as Theme exposing (onEnter)
 
 
-draw : String -> { width : Int, height : Int } -> { wdiv : Int, hdiv : Int } -> Graph -> Element msg
-draw id { width, height } { wdiv, hdiv } graph =
+draw : Bool -> { width : Int, height : Int } -> String -> { wdiv : Int, hdiv : Int } -> Graph -> Element Msg
+draw hasClipboard { width, height } id { wdiv, hdiv } graph =
     let
         isCompletelyReal g =
             case g of
@@ -61,28 +63,52 @@ draw id { width, height } { wdiv, hdiv } graph =
 
         imageHeight =
             min 1080 <| height - (6 + hdiv) * 3 * Theme.spacing
-    in
-    Element.html <|
-        Html.node "nu-plot"
-            [ Html.Attributes.id id
-            , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl graph
-            , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
-            , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
-            , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
-            , Html.Attributes.attribute "completely-real" <| boolToIntString <| isCompletelyReal graph
-            , Html.Attributes.attribute "is-3d" <| boolToIntString <| is3D graph
+
+        saveButton =
+            Input.button []
+                { label = Icons.saveOutlined Theme.lightIconAttrs
+                , onPress = Just <| Save id
+                }
+
+        copyButton =
+            if hasClipboard then
+                Input.button []
+                    { label = Icons.copyOutlined Theme.lightIconAttrs
+                    , onPress = Just <| Copy id
+                    }
+
+            else
+                none
+
+        buttonsRow =
+            Theme.row [ alignRight, alignTop, padding Theme.spacing ] [ copyButton, saveButton ]
+
+        attrs =
+            [ inFront buttonsRow
             ]
-            []
+    in
+    el attrs <|
+        Element.html <|
+            Html.node "nu-plot"
+                [ Html.Attributes.id id
+                , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl graph
+                , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
+                , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
+                , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
+                , Html.Attributes.attribute "completely-real" <| boolToIntString <| isCompletelyReal graph
+                , Html.Attributes.attribute "is-3d" <| boolToIntString <| is3D graph
+                ]
+                []
 
 
-view : { width : Int, height : Int } -> Int -> Row -> Element Msg
-view size index row =
+view : Bool -> { width : Int, height : Int } -> Int -> Row -> Element Msg
+view hasClipboard size index row =
     Theme.column
         [ Element.width fill
         , alignTop
         ]
         [ inputLine index row
-        , Element.Lazy.lazy3 outputBlock ("canvas" ++ String.fromInt index) size row.output
+        , Element.Lazy.lazy4 outputBlock ("canvas" ++ String.fromInt index) hasClipboard size row.output
         , statusLine size.width row
         ]
 
@@ -105,7 +131,7 @@ inputLine index row =
             }
         , Input.button [ Font.bold, htmlAttribute <| Html.Attributes.title "Press Enter to calculate" ]
             { onPress = Just <| Calculate index
-            , label = text "⏎"
+            , label = Icons.enterOutlined Theme.darkIconAttrs
             }
         ]
 
@@ -186,7 +212,7 @@ viewLaTeX pageWidth tex =
         Element.html <|
             Html.node "math-jax"
                 [ Html.Attributes.attribute "tex-src" tex
-                , Html.Attributes.attribute "container-width" <| String.fromInt <| pageWidth - 2 * Theme.spacing
+                , Html.Attributes.attribute "container-width" <| String.fromInt <| pageWidth - 4 * Theme.spacing
                 ]
                 []
 
@@ -231,8 +257,8 @@ bracketed l r blocks =
     row [ spacing 1, paddingXY 2 0 ] [ l, grid, r ]
 
 
-outputBlock : String -> { height : Int, width : Int } -> Output -> Element msg
-outputBlock blockId ({ height, width } as size) output =
+outputBlock : String -> Bool -> { height : Int, width : Int } -> Output -> Element Msg
+outputBlock blockId hasClipboard ({ height, width } as size) output =
     let
         showExpr e =
             e
@@ -276,7 +302,7 @@ outputBlock blockId ({ height, width } as size) output =
                             Element.column [ spacing Theme.spacing ] <| viewSolutionTree (width - 2 * Theme.spacing) t
 
                         GraphValue g ->
-                            el [ centerX ] <| draw id size coeffs g
+                            el [ centerX ] <| draw hasClipboard size id coeffs g
 
                         ComplexValue c ->
                             text <| Complex.toString c

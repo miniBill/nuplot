@@ -7,13 +7,16 @@ import Zipper exposing (Zipper)
 
 
 type alias Flags =
-    JD.Value
+    { saved : JD.Value
+    , hasClipboard : Bool
+    }
 
 
 type alias Model =
     { documents : Maybe (Zipper Document)
     , modal : Maybe Modal
     , size : Size
+    , hasClipboard : Bool
     }
 
 
@@ -92,3 +95,5 @@ type Msg
     | Resized Size
     | DismissModal
     | SetModal Modal
+    | Save String
+    | Copy String

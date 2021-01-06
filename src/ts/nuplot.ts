@@ -1,4 +1,3 @@
-import { throws } from "assert";
 import declarations from "../shaders/declarations.frag";
 
 declare class ClipboardItem {
@@ -67,33 +66,11 @@ export class NuPlot extends HTMLElement {
     this.canvas = this.wrapper.appendChild(document.createElement("canvas"));
     this.initCanvas();
 
-    const saveButton = this.wrapper.appendChild(document.createElement("div"));
-    saveButton.innerText = "💾";
-    saveButton.style.position = "absolute";
-    saveButton.style.top = "10px";
-    saveButton.style.right = "10px";
-    saveButton.style.cursor = "pointer";
-    saveButton.onclick = this.onSaveButtonClick.bind(this);
-
-    if (typeof ClipboardItem !== "undefined") {
-      const copyButton = this.wrapper.appendChild(
-        document.createElement("div")
-      );
-      copyButton.innerText = "⎘";
-      copyButton.style.position = "absolute";
-      copyButton.style.top = "7px";
-      copyButton.style.right = "40px";
-      copyButton.style.cursor = "pointer";
-      copyButton.style.padding = "2px 5px";
-      copyButton.style.background = "white";
-      copyButton.onclick = this.onCopyButtonClick.bind(this);
-    }
-
     // attach the created elements to the shadow DOM
     shadowRoow.append(this.wrapper);
   }
 
-  onSaveButtonClick(ev: MouseEvent) {
+  save() {
     this.withFilledCanvas(true, () => {
       const name = window.prompt("Exported image name:", "export.png");
       if (!name) return;
@@ -106,7 +83,7 @@ export class NuPlot extends HTMLElement {
     });
   }
 
-  onCopyButtonClick(ev: MouseEvent) {
+  copy() {
     this.withFilledCanvas(false, () =>
       this.canvas.toBlob((blob) => {
         if (blob != null)

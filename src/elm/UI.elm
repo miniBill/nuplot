@@ -21,7 +21,13 @@ import UI.Theme as Theme exposing (onEnter)
 import Zipper
 
 
-port save : Value -> Cmd msg
+port persist : Value -> Cmd msg
+
+
+port copy : String -> Cmd msg
+
+
+port save : String -> Cmd msg
 
 
 main : Program Flags Model Msg
@@ -41,10 +47,10 @@ main =
 
 
 init : Flags -> ( Model, Cmd Msg )
-init flags =
+init { saved, hasClipboard } =
     let
         documents =
-            case Codec.decodeValue Model.documentsCodec flags of
+            case Codec.decodeValue Model.documentsCodec saved of
                 Ok docs ->
                     docs
 
@@ -81,6 +87,7 @@ init flags =
     ( { documents = documents
       , size = { width = 1024, height = 768 }
       , modal = Nothing
+      , hasClipboard = hasClipboard
       }
     , Task.perform Resized measure
     )
@@ -174,7 +181,7 @@ view model =
 
         documentView =
             model.documents
-                |> Maybe.map (Zipper.selected >> viewDocument model.size)
+                |> Maybe.map (Zipper.selected >> viewDocument model.hasClipboard model.size)
                 |> Maybe.withDefault (Element.text "Select a document")
     in
     Theme.column
@@ -249,15 +256,15 @@ viewModal model =
                 ]
 
 
-viewDocument : { width : Int, height : Int } -> Document -> Element Msg
-viewDocument size { rows } =
+viewDocument : Bool -> { width : Int, height : Int } -> Document -> Element Msg
+viewDocument hasClipboard size { rows } =
     Element.column
         [ Element.spacing <| 2 * Theme.spacing
         , Element.padding Theme.spacing
         , width fill
         ]
     <|
-        List.indexedMap (\index row -> Element.Lazy.lazy3 UI.RowView.view size index row) rows
+        List.indexedMap (\index row -> Element.Lazy.lazy4 UI.RowView.view hasClipboard size index row) rows
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -310,7 +317,7 @@ update msg model =
                                     |> Zipper.allRight
             in
             ( { model | documents = documents }
-            , save <| Codec.encodeToValue Model.documentsCodec documents
+            , persist <| Codec.encodeToValue Model.documentsCodec documents
             )
 
         SelectDocument i ->
@@ -319,7 +326,7 @@ update msg model =
                     Maybe.map (Zipper.right i) model.documents
             in
             ( { model | documents = documents }
-            , save <| Codec.encodeToValue Model.documentsCodec documents
+            , persist <| Codec.encodeToValue Model.documentsCodec documents
             )
 
         CloseDocument { ask, index } ->
@@ -338,7 +345,7 @@ update msg model =
                         Maybe.andThen (Zipper.removeAt index) model.documents
                 in
                 ( { model | documents = documents, modal = Nothing }
-                , save <| Codec.encodeToValue Model.documentsCodec documents
+                , persist <| Codec.encodeToValue Model.documentsCodec documents
                 )
 
         RenameDocument n ->
@@ -369,6 +376,12 @@ update msg model =
         SetModal m ->
             ( { model | modal = Just m }, Cmd.none )
 
+        Copy id ->
+            ( model, copy id )
+
+        Save id ->
+            ( model, save id )
+
 
 updateCurrent : (Document -> Document) -> Model -> ( Model, Cmd msg )
 updateCurrent f model =
@@ -385,7 +398,7 @@ updateCurrent f model =
                     Just <| Zipper.setSelected doc docs
             in
             ( { model | documents = documents }
-            , save <| Codec.encodeToValue Model.documentsCodec documents
+            , persist <| Codec.encodeToValue Model.documentsCodec documents
             )
 
 
