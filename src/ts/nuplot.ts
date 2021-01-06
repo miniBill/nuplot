@@ -213,6 +213,7 @@ export class NuPlot extends HTMLElement {
     this.canvas.onpointerup = () => this.canvasOnPointerUp();
     this.canvas.onpointercancel = () => this.canvasOnPointerUp();
     this.canvas.onpointermove = (e) => this.canvasOnPointerMove(e);
+    this.canvas.style.touchAction = "none";
 
     /* display initial frame */
     this.rafRenderFrame();
@@ -245,6 +246,7 @@ export class NuPlot extends HTMLElement {
       // central wheel
       this.resetZoom();
     } else {
+      this.canvas.setPointerCapture(e.pointerId);
       // In 3D, these are not actually used to zoom, but it's still useful as a signal
       const zoom_speed = 0.02;
       this.zoom_factor = e.buttons & 1 ? 1 - zoom_speed : 1 + zoom_speed;
@@ -450,7 +452,8 @@ export class NuPlot extends HTMLElement {
 ${built}`;
     if (
       process.env.NODE_ENV === "development" &&
-      this.currIterations == this.maxIterations
+      this.currIterations == this.maxIterations &&
+      false
     )
       console.info(built);
 
