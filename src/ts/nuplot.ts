@@ -10,6 +10,11 @@ declare global {
   }
 }
 
+type Point = {
+  x: number;
+  y: number;
+};
+
 export class NuPlot extends HTMLElement {
   wrapper: HTMLElement;
   label: HTMLElement;
@@ -28,17 +33,23 @@ export class NuPlot extends HTMLElement {
   currIterations = 400;
   maxIterations = 400;
 
-  /* these hold the state of zoom operation */
-  zoom_center!: number[];
-  target_zoom_center!: number[];
-  viewport_width!: number;
-  zoom_factor!: number;
-
-  pendingRaf = -1;
+  hadPointersDown = false;
+  pendingRequestAnimationFrame = -1;
   pendingTimeout = -1;
-  wasZooming = false;
+
+  pointers: { [pointerId: number]: Point } = {};
+  originalPointers: { [pointerId: number]: Point } = {};
+
   phi = 0;
   theta = 0;
+  originalPhi = 0;
+  originalTheta = 0;
+
+  zoomCenter!: Point;
+  viewportWidth!: number;
+
+  originalZoomCenter!: Point;
+  originalViewportWidth!: number;
 
   constructor() {
     super();
@@ -126,14 +137,14 @@ export class NuPlot extends HTMLElement {
     this.currIterations = this.maxIterations;
 
     this.reloadFragmentShader(this.buildFragmentShader(this.src));
-    this.doRender();
+    this.render();
     callback();
 
     if (changeSize) {
       this.canvas.width = oldWidth;
       this.canvas.height = oldHeight;
 
-      this.doRender();
+      this.render();
     }
 
     this.currIterations = oldIterations;
@@ -141,12 +152,10 @@ export class NuPlot extends HTMLElement {
   }
 
   resetZoom() {
-    this.zoom_center = [0.0, 0.0];
-    this.target_zoom_center = [0.0, 0.0];
-    this.viewport_width = 2 * Math.PI;
-    this.zoom_factor = 1;
-    this.phi = 0;
-    this.theta = 0;
+    this.zoomCenter = this.originalZoomCenter = { x: 0, y: 0 };
+    this.viewportWidth = this.originalViewportWidth = 2 * Math.PI;
+    this.phi = this.originalPhi = 0;
+    this.theta = this.originalTheta = 0;
   }
 
   private initCanvas() {
@@ -210,13 +219,13 @@ export class NuPlot extends HTMLElement {
     /* input handling */
     this.canvas.onpointerdown = (e) => this.canvasOnPointerDown(e);
     this.canvas.oncontextmenu = () => false;
-    this.canvas.onpointerup = () => this.canvasOnPointerUp();
-    this.canvas.onpointercancel = () => this.canvasOnPointerUp();
+    this.canvas.onpointerup = (e) => this.canvasOnPointerUp(e);
+    this.canvas.onpointercancel = (e) => this.canvasOnPointerUp(e);
     this.canvas.onpointermove = (e) => this.canvasOnPointerMove(e);
     this.canvas.style.touchAction = "none";
 
     /* display initial frame */
-    this.rafRenderFrame();
+    this.renderOnAnimationFrame();
   }
 
   private buildFragmentShader(expr: string) {
@@ -241,48 +250,143 @@ export class NuPlot extends HTMLElement {
     return shader;
   }
 
+  fromScreen(x: number, y: number): Point {
+    return {
+      x: NuPlot.project(x, 0, this.canvas.width, this.minx(), this.maxx()),
+      y: NuPlot.project(y, 0, this.canvas.height, this.miny(), this.maxy()),
+    };
+  }
+
+  minx(): number {
+    return this.zoomCenter.x - this.viewportWidth / 2.0;
+  }
+
+  maxx(): number {
+    return this.zoomCenter.x + this.viewportWidth / 2.0;
+  }
+
+  miny(): number {
+    return this.zoomCenter.y - this.viewportHeight / 2.0;
+  }
+
+  maxy(): number {
+    return this.zoomCenter.y - this.viewportHeight / 2.0;
+  }
+
+  get viewportHeight() {
+    return (this.viewportWidth / this.canvas.width) * this.canvas.height;
+  }
+
+  static project(
+    x: number,
+    froml: number,
+    fromu: number,
+    tol: number,
+    tou: number
+  ): number {
+    return ((x - froml) / (fromu - froml)) * (tou - tol) + tol;
+  }
+
   canvasOnPointerDown(e: PointerEvent) {
+    this.resetOriginal();
+
     if (e.buttons == 4) {
       // central wheel
       this.resetZoom();
     } else {
       this.canvas.setPointerCapture(e.pointerId);
-      // In 3D, these are not actually used to zoom, but it's still useful as a signal
-      const zoom_speed = 0.02;
-      this.zoom_factor = e.buttons & 1 ? 1 - zoom_speed : 1 + zoom_speed;
+      this.pointers[e.pointerId] = this.originalPointers[e.pointerId] = {
+        x: e.offsetX,
+        y: e.offsetY,
+      };
     }
-    this.rafRenderFrame(true);
+    this.renderOnAnimationFrame(true);
     return true;
   }
 
   canvasOnPointerMove(e: PointerEvent) {
-    if (this.is3D && this.zoom_factor != 1.0) {
-      this.phi += e.movementX / 100.0;
-      this.theta += e.movementY / 100.0;
+    if (!(e.pointerId in this.originalPointers))
+      // Central mouse button
+      return;
+
+    const original = this.originalPointers[e.pointerId];
+    const pointer = { x: e.offsetX, y: e.offsetY };
+    this.pointers[e.pointerId] = pointer;
+
+    if (this.is3D) {
+      // Todo
     } else {
-      this.target_zoom_center[0] = e.offsetX / this.canvas.width;
-      this.target_zoom_center[1] = 1 - e.offsetY / this.canvas.height;
+      switch (Object.keys(this.originalPointers).length) {
+        case 1:
+          const x =
+            this.originalZoomCenter.x +
+            ((original.x - pointer.x) / this.canvas.width) * this.viewportWidth;
+          const y =
+            this.originalZoomCenter.y +
+            ((pointer.y - original.y) / this.canvas.height) *
+              this.viewportHeight;
+          this.zoomCenter = { x: x, y: y };
+          break;
+
+        case 2:
+          const otherId = +Object.keys(this.pointers).filter(
+            (k) => +k != e.pointerId
+          )[0];
+          if (
+            !(otherId in this.originalPointers) ||
+            !(otherId in this.pointers)
+          ) {
+            console.info("Not found???");
+            return;
+          }
+          const otherOriginal = this.originalPointers[otherId];
+          const other = this.pointers[otherId];
+          this.viewportWidth =
+            (this.originalViewportWidth / NuPlot.distance(pointer, other)) *
+            NuPlot.distance(original, otherOriginal);
+
+          break;
+
+        case 0:
+        default:
+          break;
+      }
     }
-
-    return true;
+    this.renderOnAnimationFrame(true);
   }
 
-  canvasOnPointerUp() {
-    this.zoom_factor = 1.0;
+  static distance(l: Point, r: Point): number {
+    const dx = l.x - r.x;
+    const dy = l.y - r.y;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
-  delayedRenderFrame(delay: number) {
-    if (this.pendingRaf >= 0 || this.pendingTimeout >= 0) return;
+  canvasOnPointerUp(e: PointerEvent) {
+    delete this.pointers[e.pointerId];
+    this.resetOriginal();
+  }
+
+  private resetOriginal() {
+    this.originalPhi = this.phi;
+    this.originalTheta = this.theta;
+    this.originalViewportWidth = this.viewportWidth;
+    this.originalZoomCenter = Object.assign({}, this.zoomCenter);
+    this.originalPointers = Object.assign({}, this.pointers);
+  }
+
+  renderWithDelay(delay: number) {
+    if (this.pendingRequestAnimationFrame >= 0 || this.pendingTimeout >= 0)
+      return;
     this.pendingTimeout = window.setTimeout(() => {
       this.pendingTimeout = -1;
-      this.pendingRaf = window.requestAnimationFrame(
-        this.renderFrame.bind(this)
+      this.pendingRequestAnimationFrame = window.requestAnimationFrame(
+        this.maybeRender.bind(this)
       );
     }, delay);
   }
 
-  rafRenderFrame(rightNow: boolean = false) {
-    if (this.pendingRaf >= 0) return;
+  renderOnAnimationFrame(rightNow: boolean = false) {
+    if (this.pendingRequestAnimationFrame >= 0) return;
     if (this.pendingTimeout >= 0)
       if (rightNow) {
         window.clearTimeout(this.pendingTimeout);
@@ -290,71 +394,52 @@ export class NuPlot extends HTMLElement {
       } else {
         return;
       }
-    this.pendingRaf = window.requestAnimationFrame(this.renderFrame.bind(this));
+    this.pendingRequestAnimationFrame = window.requestAnimationFrame(
+      this.maybeRender.bind(this)
+    );
   }
 
-  renderFrame() {
-    this.pendingRaf = -1;
+  maybeRender() {
+    this.pendingRequestAnimationFrame = -1;
 
     if (this.gl == null || this.program == null) return;
 
-    if (this.zoom_factor != 1.0) {
-      if (!this.is3D) {
-        const minx = this.zoom_center[0] - this.viewport_width / 2;
-
-        let viewport_height =
-          (this.viewport_width * this.gl.canvas.height) / this.gl.canvas.width;
-
-        const miny = this.zoom_center[1] - viewport_height / 2;
-
-        const targetX = this.target_zoom_center[0] * this.viewport_width + minx;
-        const targetY = this.target_zoom_center[1] * viewport_height + miny;
-
-        this.viewport_width *= this.zoom_factor;
-        viewport_height *= this.zoom_factor;
-
-        if (this.zoom_factor < 1) {
-          const newMinx =
-            targetX - this.target_zoom_center[0] * this.viewport_width;
-          this.zoom_center[0] = newMinx + this.viewport_width / 2;
-
-          const newMiny =
-            targetY - this.target_zoom_center[1] * viewport_height;
-          this.zoom_center[1] = newMiny + viewport_height / 2;
-        }
-      }
-
+    if (this.hasPointersDown()) {
       if (this.currIterations == this.minIterations) {
-        this.doRender();
+        this.render();
       } else {
         this.currIterations = this.minIterations;
         this.reloadFragmentShader(this.buildFragmentShader(this.src));
       }
-      this.rafRenderFrame();
-      this.wasZooming = true;
+      this.renderOnAnimationFrame();
+      this.hadPointersDown = true;
     } else if (this.currIterations < this.maxIterations) {
-      this.doRender();
-      if (!this.wasZooming) {
+      this.render();
+      if (!this.hadPointersDown) {
         this.currIterations *= 4;
         this.currIterations = Math.min(this.currIterations, this.maxIterations);
         this.reloadFragmentShader(this.buildFragmentShader(this.src));
       }
-      this.delayedRenderFrame(
+      this.renderWithDelay(
         this.currIterations == this.minIterations ? 300 : 100
       );
-      this.wasZooming = false;
+      this.hadPointersDown = false;
     } else if (this.currIterations >= this.maxIterations) {
-      this.doRender();
+      this.render();
       this.currIterations = this.minIterations;
       this.reloadFragmentShader(this.buildFragmentShader(this.src));
-      this.wasZooming = false;
+      this.hadPointersDown = false;
     } else {
-      this.doRender();
-      this.wasZooming = false;
+      this.render();
+      this.hadPointersDown = false;
     }
   }
 
-  doRender() {
+  private hasPointersDown() {
+    return Object.keys(this.originalPointers).length > 0;
+  }
+
+  render() {
     if (this.gl == null || this.program == null) return;
 
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
@@ -362,10 +447,10 @@ export class NuPlot extends HTMLElement {
     /* bind inputs & render frame */
     this.uniform1f("u_whiteLines", this.whiteLines);
     this.uniform1f("u_completelyReal", this.completelyReal);
-    this.uniform1f("u_viewportWidth", this.viewport_width);
+    this.uniform1f("u_viewportWidth", this.viewportWidth);
     this.uniform1f("u_canvasWidth", this.canvas.width);
     this.uniform1f("u_canvasHeight", this.canvas.height);
-    this.uniform2f("u_zoomCenter", this.zoom_center[0], this.zoom_center[1]);
+    this.uniform2f("u_zoomCenter", this.zoomCenter.x, this.zoomCenter.y);
     this.uniform1f("u_phi", this.phi);
     this.uniform1f("u_theta", this.theta);
 
@@ -393,30 +478,25 @@ export class NuPlot extends HTMLElement {
       case "canvas-width":
         if (!newValue) return;
         this.canvas.width = +newValue;
-        this.rafRenderFrame();
         break;
 
       case "canvas-height":
         if (!newValue) return;
         this.canvas.height = +newValue;
-        this.rafRenderFrame();
         break;
 
       case "white-lines":
         if (!newValue) return;
         this.whiteLines = +newValue;
-        this.rafRenderFrame();
         break;
 
       case "completely-real":
         if (!newValue) return;
         this.completelyReal = +newValue;
-        this.rafRenderFrame();
         break;
 
       case "is-3d":
         if (!newValue) return;
-        this.canvasOnPointerUp();
         this.is3D = +newValue;
         break;
 
@@ -425,9 +505,9 @@ export class NuPlot extends HTMLElement {
         this.currIterations = this.maxIterations;
         this.src = newValue;
         this.reloadFragmentShader(this.buildFragmentShader(this.src));
-        this.rafRenderFrame();
         break;
     }
+    this.renderOnAnimationFrame();
   }
 
   reloadFragmentShader(src: string) {

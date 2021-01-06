@@ -89,7 +89,14 @@ inputLine : Int -> Row -> Element Msg
 inputLine index row =
     Theme.row [ width fill ]
         [ text <| "In[" ++ String.fromInt index ++ "]"
-        , Input.text [ width fill, onEnter <| Calculate index ]
+        , Input.text
+            [ width fill
+            , onEnter <| Calculate index
+            , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
+            , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
+            , Element.htmlAttribute <| Html.Attributes.spellcheck False
+            , Element.htmlAttribute <| Html.Attributes.attribute "type" "url"
+            ]
             { label = Input.labelHidden "Input"
             , onChange = Input index
             , placeholder = Nothing
