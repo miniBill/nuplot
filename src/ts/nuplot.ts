@@ -45,10 +45,10 @@ export class NuPlot extends HTMLElement {
   originalPhi = 0;
   originalTheta = 0;
 
-  zoomCenter!: Point;
+  center!: Point;
   viewportWidth!: number;
 
-  originalZoomCenter!: Point;
+  originalCenter!: Point;
   originalViewportWidth!: number;
 
   constructor() {
@@ -152,7 +152,7 @@ export class NuPlot extends HTMLElement {
   }
 
   resetZoom() {
-    this.zoomCenter = this.originalZoomCenter = { x: 0, y: 0 };
+    this.center = this.originalCenter = { x: 0, y: 0 };
     this.viewportWidth = this.originalViewportWidth = 2 * Math.PI;
     this.phi = this.originalPhi = 0;
     this.theta = this.originalTheta = 0;
@@ -223,6 +223,7 @@ export class NuPlot extends HTMLElement {
     this.canvas.onpointercancel = (e) => this.canvasOnPointerUp(e);
     this.canvas.onpointermove = (e) => this.canvasOnPointerMove(e);
     this.canvas.onwheel = (e) => this.canvasOnWheel(e);
+    this.canvas.ondblclick = () => this.resetZoom();
     this.canvas.style.touchAction = "none";
 
     /* display initial frame */
@@ -259,19 +260,19 @@ export class NuPlot extends HTMLElement {
   }
 
   minx(): number {
-    return this.zoomCenter.x - this.viewportWidth / 2.0;
+    return this.center.x - this.viewportWidth / 2.0;
   }
 
   maxx(): number {
-    return this.zoomCenter.x + this.viewportWidth / 2.0;
+    return this.center.x + this.viewportWidth / 2.0;
   }
 
   miny(): number {
-    return this.zoomCenter.y - this.viewportHeight / 2.0;
+    return this.center.y - this.viewportHeight / 2.0;
   }
 
   maxy(): number {
-    return this.zoomCenter.y - this.viewportHeight / 2.0;
+    return this.center.y - this.viewportHeight / 2.0;
   }
 
   get viewportHeight() {
@@ -289,8 +290,22 @@ export class NuPlot extends HTMLElement {
   }
 
   canvasOnWheel(e: WheelEvent): boolean {
-    // TODO: zoom on mouse location
-    this.viewportWidth *= 1 + e.deltaY * 0.006;
+    // newCenter.x == oldCenter.x + oldWidth * (1 - k) * (e.x / canW - 1 / 2)
+    // newMiny - oldMiny == (e.y / canH) * (oldHeight * (1 - k))
+    // (e.y / canH) * (k * oldHeight) + newMiny == (e.y / canH) * oldHeight + oldMiny
+
+    const k = 1 + e.deltaY * 0.003;
+
+    this.center = {
+      x:
+        this.center.x +
+        this.viewportWidth * (1 - k) * (e.offsetX / this.canvas.width - 0.5),
+      y:
+        this.center.y +
+        this.viewportHeight * (1 - k) * (0.5 - e.offsetY / this.canvas.height),
+    };
+
+    this.viewportWidth *= k;
     this.renderOnAnimationFrame(true);
     // Intercept it
     return false;
@@ -328,13 +343,13 @@ export class NuPlot extends HTMLElement {
       switch (Object.keys(this.originalPointers).length) {
         case 1:
           const x =
-            this.originalZoomCenter.x +
+            this.originalCenter.x +
             ((original.x - pointer.x) / this.canvas.width) * this.viewportWidth;
           const y =
-            this.originalZoomCenter.y +
+            this.originalCenter.y +
             ((pointer.y - original.y) / this.canvas.height) *
               this.viewportHeight;
-          this.zoomCenter = { x: x, y: y };
+          this.center = { x: x, y: y };
           break;
 
         case 2:
@@ -379,7 +394,7 @@ export class NuPlot extends HTMLElement {
     this.originalPhi = this.phi;
     this.originalTheta = this.theta;
     this.originalViewportWidth = this.viewportWidth;
-    this.originalZoomCenter = Object.assign({}, this.zoomCenter);
+    this.originalCenter = Object.assign({}, this.center);
     this.originalPointers = Object.assign({}, this.pointers);
   }
 
@@ -459,7 +474,7 @@ export class NuPlot extends HTMLElement {
     this.uniform1f("u_viewportWidth", this.viewportWidth);
     this.uniform1f("u_canvasWidth", this.canvas.width);
     this.uniform1f("u_canvasHeight", this.canvas.height);
-    this.uniform2f("u_zoomCenter", this.zoomCenter.x, this.zoomCenter.y);
+    this.uniform2f("u_zoomCenter", this.center.x, this.center.y);
     this.uniform1f("u_phi", this.phi);
     this.uniform1f("u_theta", this.theta);
 
