@@ -202,6 +202,8 @@ export class NuPlot extends HTMLElement {
     this.canvas.onwheel = (e) => this.canvasOnWheel(e);
     this.canvas.ondblclick = () => this.resetZoom();
     this.canvas.style.touchAction = "none";
+    // Sync with Theme.elm
+    this.canvas.style.borderRadius = "3px";
 
     /* display initial frame */
     this.renderOnAnimationFrame();

@@ -109,13 +109,29 @@ view model =
                                     Theme.colors.unselectedDocument
                         ]
 
-                documentTabButton selected msg closeMsg label =
+                documentTabButton { selected, onPress, closeMsg, label, index } =
                     Input.button
-                        [ Border.widthEach
+                        [ Border.roundEach
+                            { topLeft =
+                                if index == 0 then
+                                    Theme.roundness
+
+                                else
+                                    0
+                            , topRight =
+                                if index < 0 then
+                                    Theme.roundness
+
+                                else
+                                    0
+                            , bottomLeft = 0
+                            , bottomRight = 0
+                            }
+                        , Border.widthEach
                             { left = 1
                             , top = 1
                             , right =
-                                if msg == NewDocument then
+                                if index < 0 then
                                     1
 
                                 else
@@ -130,7 +146,7 @@ view model =
                                 Theme.colors.unselectedDocument
                         , focusStyle selected
                         ]
-                        { onPress = Just msg
+                        { onPress = Just onPress
                         , label =
                             case closeMsg of
                                 Nothing ->
@@ -158,19 +174,29 @@ view model =
                         }
 
                 toDocumentTabButton selected index doc =
-                    documentTabButton selected
-                        (if selected then
-                            RenameDocument Nothing
+                    documentTabButton
+                        { selected = selected
+                        , onPress =
+                            if selected then
+                                RenameDocument Nothing
 
-                         else
-                            SelectDocument index
-                        )
-                        (Just <| CloseDocument { ask = True, index = index })
-                        doc.name
+                            else
+                                SelectDocument index
+                        , closeMsg = Just <| CloseDocument { ask = True, index = index }
+                        , label = doc.name
+                        , index = index
+                        }
 
                 buttons =
                     Maybe.withDefault [] (Maybe.map (Zipper.map toDocumentTabButton) model.documents)
-                        ++ [ documentTabButton False NewDocument Nothing "+" ]
+                        ++ [ documentTabButton
+                                { selected = False
+                                , onPress = NewDocument
+                                , closeMsg = Nothing
+                                , label = "+"
+                                , index = -1
+                                }
+                           ]
             in
             Element.row
                 [ paddingEach { top = Theme.spacing, left = Theme.spacing, right = Theme.spacing, bottom = 0 }

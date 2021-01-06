@@ -1,4 +1,4 @@
-module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, lightIconAttrs, onEnter, row, spacing, whiteLines, wrappedRow)
+module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, lightIconAttrs, onEnter, roundness, row, spacing, whiteLines, wrappedRow)
 
 import Ant.Icon
 import Color
@@ -21,6 +21,12 @@ lightIconAttrs =
     , Ant.Icon.height 24
     , Ant.Icon.fill colors.iconLightColor
     ]
+
+
+roundness : number
+roundness =
+    -- Sync with nuplot.ts
+    3
 
 
 fontSize : number
