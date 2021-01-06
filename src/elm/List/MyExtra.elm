@@ -8,24 +8,27 @@ unzip3 =
 
 groupOneWith : (a -> a -> Maybe a) -> List a -> List a
 groupOneWith step list =
-    case List.reverse list of
-        [] ->
-            []
+    list
+        |> List.foldr
+            (\e ( last, acc ) ->
+                case last of
+                    Nothing ->
+                        ( Just e, acc )
 
-        slast :: sinit ->
-            List.foldl
-                (\e ( last, acc, done ) ->
-                    if done then
-                        ( e, last :: acc, True )
-
-                    else
-                        case step e last of
+                    Just lst ->
+                        case step lst e of
                             Just c ->
-                                ( c, acc, True )
+                                ( Nothing, c :: acc )
 
                             Nothing ->
-                                ( e, last :: acc, False )
-                )
-                ( slast, [], False )
-                sinit
-                |> (\( last, acc, _ ) -> last :: acc)
+                                ( Just e, lst :: acc )
+            )
+            ( Nothing, [] )
+        |> (\( last, acc ) ->
+                case last of
+                    Just l ->
+                        l :: acc
+
+                    Nothing ->
+                        acc
+           )
