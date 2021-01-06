@@ -13,14 +13,15 @@ import Expression.NumericRange
 import Expression.Value exposing (Value(..))
 import Html
 import Html.Attributes
+import Json.Encode
 import List.Extra as List
 import Model exposing (Msg(..), Output(..), Row)
 import UI.Glsl exposing (getGlsl)
 import UI.Theme as Theme exposing (onEnter)
 
 
-draw : { width : Int, height : Int } -> { wdiv : Int, hdiv : Int } -> Graph -> Element msg
-draw { width, height } { wdiv, hdiv } graph =
+draw : String -> { width : Int, height : Int } -> { wdiv : Int, hdiv : Int } -> Graph -> Element msg
+draw id { width, height } { wdiv, hdiv } graph =
     let
         isCompletelyReal g =
             case g of
@@ -63,7 +64,8 @@ draw { width, height } { wdiv, hdiv } graph =
     in
     Element.html <|
         Html.node "nu-plot"
-            [ Html.Attributes.attribute "expr-src" <| getGlsl graph
+            [ Html.Attributes.id id
+            , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl graph
             , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
             , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
             , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
@@ -80,7 +82,7 @@ view size index row =
         , alignTop
         ]
         [ inputLine index row
-        , Element.Lazy.lazy2 outputBlock size row.output
+        , Element.Lazy.lazy3 outputBlock ("canvas" ++ String.fromInt index) size row.output
         , statusLine size.width row
         ]
 
@@ -229,13 +231,13 @@ bracketed l r blocks =
     row [ spacing 1, paddingXY 2 0 ] [ l, grid, r ]
 
 
-outputBlock : { height : Int, width : Int } -> Output -> Element msg
-outputBlock ({ height, width } as size) output =
+outputBlock : String -> { height : Int, width : Int } -> Output -> Element msg
+outputBlock blockId ({ height, width } as size) output =
     let
         showExpr e =
             e
                 |> Expression.Value.value Dict.empty
-                |> viewValue { wdiv = 1, hdiv = 1 }
+                |> viewValue blockId { wdiv = 1, hdiv = 1 }
 
         asExpression v =
             case v of
@@ -260,7 +262,7 @@ outputBlock ({ height, width } as size) output =
                 LambdaValue x f ->
                     Maybe.map (Lambda x) (asExpression f)
 
-        viewValue coeffs v =
+        viewValue id coeffs v =
             case asExpression v of
                 Just ex ->
                     viewExpression width ex
@@ -274,7 +276,7 @@ outputBlock ({ height, width } as size) output =
                             Element.column [ spacing Theme.spacing ] <| viewSolutionTree (width - 2 * Theme.spacing) t
 
                         GraphValue g ->
-                            el [ centerX ] <| draw size coeffs g
+                            el [ centerX ] <| draw id size coeffs g
 
                         ComplexValue c ->
                             text <| Complex.toString c
@@ -288,7 +290,7 @@ outputBlock ({ height, width } as size) output =
                                     viewExpression width <| Lambda x e
 
                                 Nothing ->
-                                    Element.row [] [ text <| x ++ " => ", viewValue coeffs f ]
+                                    Element.row [] [ text <| x ++ " => ", viewValue id coeffs f ]
 
                         ListValue ls ->
                             case
@@ -305,22 +307,25 @@ outputBlock ({ height, width } as size) output =
                             of
                                 Just m ->
                                     roundBracketed <|
-                                        List.map
-                                            (List.map
-                                                (viewValue
-                                                    { wdiv = coeffs.wdiv * Maybe.withDefault 1 (Maybe.map List.length <| List.head m)
-                                                    , hdiv = coeffs.hdiv * List.length m
-                                                    }
-                                                )
+                                        List.indexedMap
+                                            (\y ->
+                                                List.indexedMap
+                                                    (\x ->
+                                                        viewValue (id ++ "_" ++ String.fromInt y ++ "_" ++ String.fromInt x)
+                                                            { wdiv = coeffs.wdiv * Maybe.withDefault 1 (Maybe.map List.length <| List.head m)
+                                                            , hdiv = coeffs.hdiv * List.length m
+                                                            }
+                                                    )
                                             )
                                             m
 
                                 Nothing ->
                                     roundBracketed
                                         [ List.intersperse (label ", ") <|
-                                            List.map
-                                                (viewValue
-                                                    { coeffs | wdiv = coeffs.wdiv * List.length ls }
+                                            List.indexedMap
+                                                (\i ->
+                                                    viewValue (id ++ "_" ++ String.fromInt i)
+                                                        { coeffs | wdiv = coeffs.wdiv * List.length ls }
                                                 )
                                                 ls
                                         ]

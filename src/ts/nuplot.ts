@@ -523,14 +523,15 @@ export class NuPlot extends HTMLElement {
         if (!newValue) return;
         this.is3D = +newValue;
         break;
-
-      case "expr-src":
-        if (newValue == this.src) return;
-        this.currIterations = this.maxIterations;
-        this.src = newValue;
-        this.reloadFragmentShader(this.buildFragmentShader(this.src));
-        break;
     }
+    this.renderOnAnimationFrame();
+  }
+
+  set exprSrc(newValue: string) {
+    if (newValue == this.src) return;
+    this.currIterations = this.maxIterations;
+    this.src = newValue;
+    this.reloadFragmentShader(this.buildFragmentShader(this.src));
     this.renderOnAnimationFrame();
   }
 
@@ -595,7 +596,6 @@ ${NuPlot.withLines(built)}`;
 
   static get observedAttributes() {
     return [
-      "expr-src",
       "canvas-width",
       "canvas-height",
       "white-lines",
