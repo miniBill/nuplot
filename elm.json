@@ -16,14 +16,17 @@
             "elm-community/maybe-extra": "5.2.0",
             "elm-community/result-extra": "2.4.0",
             "elm-explorations/test": "1.2.2",
+            "lemol/ant-design-icons-elm-ui": "1.0.0",
             "mdgriffith/elm-ui": "1.1.8",
             "miniBill/elm-codec": "2.0.0"
         },
         "indirect": {
             "elm/random": "1.0.0",
+            "elm/svg": "1.0.1",
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
-            "elm/virtual-dom": "1.0.2"
+            "elm/virtual-dom": "1.0.2",
+            "lemol/ant-design-icons-elm": "2.0.0"
         }
     },
     "test-dependencies": {
