@@ -49,6 +49,7 @@ export class NuPlot extends HTMLElement {
 
   originalCenter!: Point;
   originalViewportWidth!: number;
+  hasWebGl2!: boolean;
 
   constructor() {
     super();
@@ -138,7 +139,9 @@ export class NuPlot extends HTMLElement {
   private initCanvas() {
     this.canvas.width = this.canvas.height = 400;
 
-    this.gl = this.canvas.getContext("webgl");
+    this.gl = this.canvas.getContext("webgl2");
+    this.hasWebGl2 = this.gl !== null;
+    if (!this.gl) this.gl = this.canvas.getContext("webgl");
 
     if (this.gl == null) return;
 
@@ -201,6 +204,17 @@ export class NuPlot extends HTMLElement {
     this.canvas.onpointermove = (e) => this.canvasOnPointerMove(e);
     this.canvas.onwheel = (e) => this.canvasOnWheel(e);
     this.canvas.ondblclick = () => this.resetZoom();
+    this.canvas.addEventListener(
+      "webglcontextlost",
+      (e) => {
+        if (this.pendingRequestAnimationFrame >= 0)
+          cancelAnimationFrame(this.pendingRequestAnimationFrame);
+        if (this.pendingTimeout >= 0) clearTimeout(this.pendingTimeout);
+        this.wrapper.removeChild(this.canvas);
+        this.label.innerHTML = "Broken.<br/>Try reloading";
+      },
+      false
+    );
     this.canvas.style.touchAction = "none";
     // Sync with Theme.elm
     this.canvas.style.borderRadius = "3px";
@@ -210,8 +224,7 @@ export class NuPlot extends HTMLElement {
   }
 
   private buildFragmentShader(expr: string) {
-    const res = `${declarations}\n${expr}`;
-    return res;
+    return `${declarations}\n${expr}`;
   }
 
   compileAndAttachShader(type: number, src: string): WebGLShader | null {
@@ -534,6 +547,17 @@ export class NuPlot extends HTMLElement {
 
     built = `#define MAX_ITERATIONS ${this.currIterations.toString()}
 ${built}`;
+    if (this.hasWebGl2) {
+      const translated = built
+        .replace("attribute", "in")
+        .replace("gl_FragColor", "fragColor")
+        .replace("float sinh", "float sinh_")
+        .replace("float cosh", "float cosh_");
+      built = `#version 300 es
+precision highp float;
+out vec4 fragColor;
+${translated}`;
+    }
     if (
       process.env.NODE_ENV === "development" &&
       this.currIterations == this.maxIterations &&
