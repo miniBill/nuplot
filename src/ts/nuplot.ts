@@ -286,7 +286,7 @@ export class NuPlot extends HTMLElement {
     // newMiny - oldMiny == (e.y / canH) * (oldHeight * (1 - k))
     // (e.y / canH) * (k * oldHeight) + newMiny == (e.y / canH) * oldHeight + oldMiny
 
-    const k = 1 + e.deltaY * 0.003;
+    const k = 1 + Math.sign(e.deltaY) * 0.06;
 
     this.center = {
       x:
@@ -329,44 +329,42 @@ export class NuPlot extends HTMLElement {
     const pointer = { x: e.offsetX, y: e.offsetY };
     this.pointers[e.pointerId] = pointer;
 
-    if (this.is3D) {
-      // TODO: 3D movement
-    } else {
-      switch (Object.keys(this.originalPointers).length) {
-        case 1:
-          const x =
-            this.originalCenter.x +
-            ((original.x - pointer.x) / this.canvas.width) * this.viewportWidth;
-          const y =
-            this.originalCenter.y +
-            ((pointer.y - original.y) / this.canvas.height) *
-              this.viewportHeight;
+    switch (Object.keys(this.originalPointers).length) {
+      case 1:
+        const dx = (original.x - pointer.x) / this.canvas.width;
+        const dy = (pointer.y - original.y) / this.canvas.height;
+        if (this.is3D) {
+          this.theta = this.originalTheta + dy * 2;
+          this.phi = this.originalPhi + dx * 2;
+        } else {
+          const x = this.originalCenter.x + dx * this.viewportWidth;
+          const y = this.originalCenter.y + dy * this.viewportHeight;
           this.center = { x: x, y: y };
           break;
+        }
 
-        case 2:
-          const otherId = +Object.keys(this.pointers).filter(
-            (k) => +k != e.pointerId
-          )[0];
-          if (
-            !(otherId in this.originalPointers) ||
-            !(otherId in this.pointers)
-          ) {
-            console.info("Not found???");
-            return;
-          }
-          const otherOriginal = this.originalPointers[otherId];
-          const other = this.pointers[otherId];
-          this.viewportWidth =
-            (this.originalViewportWidth / NuPlot.distance(pointer, other)) *
-            NuPlot.distance(original, otherOriginal);
+      case 2:
+        const otherId = +Object.keys(this.pointers).filter(
+          (k) => +k != e.pointerId
+        )[0];
+        if (
+          !(otherId in this.originalPointers) ||
+          !(otherId in this.pointers)
+        ) {
+          console.info("Not found???");
+          return;
+        }
+        const otherOriginal = this.originalPointers[otherId];
+        const other = this.pointers[otherId];
+        this.viewportWidth =
+          (this.originalViewportWidth / NuPlot.distance(pointer, other)) *
+          NuPlot.distance(original, otherOriginal);
 
-          break;
+        break;
 
-        case 0:
-        default:
-          break;
-      }
+      case 0:
+      default:
+        break;
     }
     this.renderOnAnimationFrame(true);
   }

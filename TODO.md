@@ -1,3 +1,4 @@
+* Fix save image
 * save/load
 * solve (x-pi)(x-e)
 * fix 3d navigation
