@@ -11,6 +11,7 @@ devDependencies:
   parcel-bundler: 1.12.4
   parcel-plugin-ogimage: 1.2.0
   parcel-plugin-pwa-manifest: 3.0.10_parcel-bundler@1.12.4
+  parcel-plugin-static-files-copy: 2.5.0
   typescript: 4.1.2
 lockfileVersion: 5.2
 packages:
@@ -4795,6 +4796,13 @@ packages:
       parcel-bundler: ^1.12.4
     resolution:
       integrity: sha512-ZAo8VKqcGgjfJztxIIIGUGFiHhRV50h/FAr/4afsti9u60bGl5ETQdyPxq0kWKV4M07fqaNKGswieP0ayzRtjw==
+  /parcel-plugin-static-files-copy/2.5.0:
+    dependencies:
+      minimatch: 3.0.4
+      path: 0.12.7
+    dev: true
+    resolution:
+      integrity: sha512-5rxOPw3iV+WXhePfByoIxsUlL4I0o95CgcF31gwgnhPuj2q6tVPuzEAJsag9bWJr5Vd/SXFPTNsUAGAg4jP07Q==
   /parse-asn1/5.1.6:
     dependencies:
       asn1.js: 5.4.1
@@ -6902,4 +6910,5 @@ specifiers:
   parcel-bundler: ^1.12.4
   parcel-plugin-ogimage: ^1.2.0
   parcel-plugin-pwa-manifest: ^3.0.10
+  parcel-plugin-static-files-copy: ^2.5.0
   typescript: ^4.1.2
