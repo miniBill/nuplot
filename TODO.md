@@ -1,4 +1,5 @@
 * save/load
+* undo/redo
 * solve (x-pi)(x-e)
 * fix 3d navigation
 * User functions
