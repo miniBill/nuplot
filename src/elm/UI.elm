@@ -284,13 +284,18 @@ viewModal model =
 
 viewDocument : Bool -> { width : Int, height : Int } -> Document -> Element Msg
 viewDocument hasClipboard size { rows } =
+    let
+        rowsViews =
+            List.indexedMap (\index row -> Element.Lazy.lazy4 UI.RowView.view hasClipboard size index row) rows
+    in
     Element.column
         [ Element.spacing <| 2 * Theme.spacing
         , Element.padding Theme.spacing
         , width fill
+        , height fill
+        , Element.scrollbarY
         ]
-    <|
-        List.indexedMap (\index row -> Element.Lazy.lazy4 UI.RowView.view hasClipboard size index row) rows
+        (rowsViews ++ [ el [ height fill ] Element.none ])
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
