@@ -116,7 +116,7 @@ view hasClipboard size index row =
 inputLine : Int -> Row -> Element Msg
 inputLine index row =
     Theme.row [ width fill ]
-        [ text <| "In[" ++ String.fromInt index ++ "]"
+        [ text <| "In [" ++ String.fromInt index ++ "]"
         , Input.text
             [ width fill
             , onEnter <| Calculate index
