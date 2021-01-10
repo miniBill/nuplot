@@ -331,12 +331,13 @@ export class NuPlot extends HTMLElement {
 
     switch (Object.keys(this.originalPointers).length) {
       case 1:
-        const dx = (pointer.x - original.x) / this.canvas.width;
+        var dx = (pointer.x - original.x) / this.canvas.width;
         const dy = (pointer.y - original.y) / this.canvas.height;
         if (this.is3D) {
           this.theta = this.originalTheta + dy * 3;
           this.phi = this.originalPhi + dx * 3;
         } else {
+          dx *= -1;
           const x = this.originalCenter.x + dx * this.viewportWidth;
           const y = this.originalCenter.y + dy * this.viewportHeight;
           this.center = { x: x, y: y };
