@@ -17,7 +17,9 @@ import Html
 import Html.Attributes
 import Json.Encode
 import List.Extra as List
-import Model exposing (Msg(..), Output(..), Row)
+import Markdown.Parser
+import Markdown.Renderer
+import Model exposing (Msg(..), Output(..), Row(..))
 import UI.Glsl exposing (getGlsl)
 import UI.Theme as Theme exposing (onEnter)
 
@@ -103,17 +105,51 @@ draw hasClipboard { width, height } id { wdiv, hdiv } graph =
 
 view : Bool -> { width : Int, height : Int } -> Int -> Row -> Element Msg
 view hasClipboard size index row =
-    Theme.column
-        [ Element.width fill
-        , alignTop
-        ]
-        [ inputLine index row
-        , Element.Lazy.lazy4 outputBlock ("canvas" ++ String.fromInt index) hasClipboard size row.output
-        , statusLine size.width row
-        ]
+    case row of
+        CodeRow r ->
+            Theme.column
+                [ Element.width fill
+                , alignTop
+                ]
+                [ inputLine index r
+                , Element.Lazy.lazy4 outputBlock ("canvas" ++ String.fromInt index) hasClipboard size r.output
+                , statusLine size.width r.output
+                ]
+
+        MarkdownRow m ->
+            let
+                _ =
+                    m
+                        |> Markdown.Parser.parse
+                        |> Result.withDefault []
+                        |> Markdown.Renderer.render Markdown.Renderer.defaultHtmlRenderer
+                        |> Result.withDefault []
+                        |> List.map Element.html
+                        |> Theme.column [ Element.width fill, alignTop ]
+                        |> (\e ->
+                                Theme.row [ Element.width fill ]
+                                    [ e
+                                    , Input.button [ alignRight ]
+                                        { label = text "To code"
+                                        , onPress = Nothing
+                                        }
+                                    ]
+                           )
+            in
+            Input.text
+                [ width fill
+                , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
+                , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
+                , Element.htmlAttribute <| Html.Attributes.spellcheck False
+                ]
+                { label = Input.labelHidden "Input"
+                , onChange = Input index
+                , placeholder = Nothing
+                , text = m
+                }
 
 
-inputLine : Int -> Row -> Element Msg
+inputLine : Int -> { a | input : String } -> Element Msg
 inputLine index row =
     Theme.row [ width fill ]
         [ text <| "In [" ++ String.fromInt index ++ "]"
@@ -136,9 +172,9 @@ inputLine index row =
         ]
 
 
-statusLine : Int -> Row -> Element msg
-statusLine pageWidth row =
-    case row.output of
+statusLine : Int -> Output -> Element msg
+statusLine pageWidth output =
+    case output of
         Empty ->
             none
 

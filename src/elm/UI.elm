@@ -12,13 +12,15 @@ import Element.Input as Input
 import Element.Lazy
 import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Parser
+import File
+import File.Select
 import Html
 import List.Extra as List
-import Model exposing (Document, Flags, Modal(..), Model, Msg(..), Output(..))
+import Model exposing (Document, Flags, Menu(..), Modal(..), Model, Msg(..), Output(..), Row(..))
 import Task
 import UI.RowView
 import UI.Theme as Theme exposing (onEnter)
-import Zipper
+import Zipper exposing (Zipper)
 
 
 port persist : Value -> Cmd msg
@@ -63,9 +65,10 @@ init { saved, hasClipboard } =
                             }
 
         emptyRow x =
-            { input = x
-            , output = Empty
-            }
+            CodeRow
+                { input = x
+                , output = Empty
+                }
 
         default =
             [ "{{plotsinx, plot(x<y), plot(x²+y²=3)}, {[zx+iy]plotexp(1/z), plot(x²+y²+z²=3), plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}}"
@@ -88,6 +91,7 @@ init { saved, hasClipboard } =
       , size = { width = 1024, height = 768 }
       , modal = Nothing
       , hasClipboard = hasClipboard
+      , openMenu = Nothing
       }
     , Task.perform Resized measure
     )
@@ -96,115 +100,6 @@ init { saved, hasClipboard } =
 view : Model -> Element Msg
 view model =
     let
-        documentPickerView =
-            let
-                focusStyle selected =
-                    Element.focused
-                        [ Background.color <|
-                            Theme.darken <|
-                                if selected then
-                                    Theme.colors.selectedDocument
-
-                                else
-                                    Theme.colors.unselectedDocument
-                        ]
-
-                documentTabButton { selected, onPress, closeMsg, label, index } =
-                    Input.button
-                        [ Border.roundEach
-                            { topLeft =
-                                if index == 0 then
-                                    Theme.roundness
-
-                                else
-                                    0
-                            , topRight =
-                                if index < 0 then
-                                    Theme.roundness
-
-                                else
-                                    0
-                            , bottomLeft = 0
-                            , bottomRight = 0
-                            }
-                        , Border.widthEach
-                            { left = 1
-                            , top = 1
-                            , right =
-                                if index < 0 then
-                                    1
-
-                                else
-                                    0
-                            , bottom = 0
-                            }
-                        , Background.color <|
-                            if selected then
-                                Theme.colors.selectedDocument
-
-                            else
-                                Theme.colors.unselectedDocument
-                        , focusStyle selected
-                        ]
-                        { onPress = Just onPress
-                        , label =
-                            case closeMsg of
-                                Nothing ->
-                                    el [ padding Theme.spacing ] <| text label
-
-                                Just _ ->
-                                    Element.row
-                                        [ padding <| Theme.spacing // 2
-                                        ]
-                                        [ el [ padding <| Theme.spacing // 2 ] <| text label
-                                        , Input.button
-                                            [ padding <| Theme.spacing // 2
-                                            , focusStyle selected
-                                            , Background.color <|
-                                                if selected then
-                                                    Theme.colors.selectedDocument
-
-                                                else
-                                                    Theme.colors.unselectedDocument
-                                            ]
-                                            { onPress = closeMsg
-                                            , label = text "X"
-                                            }
-                                        ]
-                        }
-
-                toDocumentTabButton selected index doc =
-                    documentTabButton
-                        { selected = selected
-                        , onPress =
-                            if selected then
-                                RenameDocument Nothing
-
-                            else
-                                SelectDocument index
-                        , closeMsg = Just <| CloseDocument { ask = True, index = index }
-                        , label = doc.name
-                        , index = index
-                        }
-
-                buttons =
-                    Maybe.withDefault [] (Maybe.map (Zipper.map toDocumentTabButton) model.documents)
-                        ++ [ documentTabButton
-                                { selected = False
-                                , onPress = NewDocument
-                                , closeMsg = Nothing
-                                , label = "+"
-                                , index = -1
-                                }
-                           ]
-            in
-            Element.row
-                [ paddingEach { top = Theme.spacing, left = Theme.spacing, right = Theme.spacing, bottom = 0 }
-                , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
-                , width fill
-                ]
-                buttons
-
         documentView =
             model.documents
                 |> Maybe.map (Zipper.selected >> viewDocument model.hasClipboard model.size)
@@ -221,9 +116,151 @@ view model =
                 [ -- preserve whitespace in errors display
                   Html.text "div.pre > div {white-space: pre-wrap !important;}"
                 ]
-        , documentPickerView
+        , toolbar model
+        , documentPicker model.documents
         , documentView
         ]
+
+
+toolbar : Model -> Element Msg
+toolbar { openMenu } =
+    Theme.row [ width fill ]
+        [ Input.button
+            [ Border.widthEach { top = 0, left = 0, right = 1, bottom = 1 }
+            , padding Theme.spacing
+            , Element.below <|
+                if openMenu == Just File then
+                    Element.column [ Background.color Theme.colors.background ]
+                        [ Input.button
+                            [ Border.widthEach { top = 1, left = 0, right = 1, bottom = 1 }
+                            , padding Theme.spacing
+                            ]
+                            { onPress = Just Open
+                            , label = text "Open"
+                            }
+                        ]
+
+                else
+                    Element.none
+            ]
+            { onPress = Just <| ToggleMenu File
+            , label = text "File"
+            }
+        ]
+
+
+documentPicker : Maybe (Zipper Document) -> Element Msg
+documentPicker documents =
+    let
+        toDocumentTabButton selected index doc =
+            documentTabButton
+                { selected = selected
+                , onPress =
+                    if selected then
+                        RenameDocument Nothing
+
+                    else
+                        SelectDocument index
+                , closeMsg = Just <| CloseDocument { ask = True, index = index }
+                , label = doc.name
+                , index = index
+                }
+
+        buttons =
+            Maybe.withDefault [] (Maybe.map (Zipper.map toDocumentTabButton) documents)
+                ++ [ documentTabButton
+                        { selected = False
+                        , onPress = NewDocument
+                        , closeMsg = Nothing
+                        , label = "+"
+                        , index = -1
+                        }
+                   ]
+    in
+    Element.row
+        [ Element.paddingXY Theme.spacing 0
+        , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
+        , width fill
+        ]
+        buttons
+
+
+documentTabButton : { a | selected : Bool, onPress : msg, closeMsg : Maybe msg, label : String, index : number } -> Element msg
+documentTabButton { selected, onPress, closeMsg, label, index } =
+    let
+        focusStyle s =
+            Element.focused
+                [ Background.color <|
+                    Theme.darken <|
+                        if s then
+                            Theme.colors.selectedDocument
+
+                        else
+                            Theme.colors.unselectedDocument
+                ]
+    in
+    Input.button
+        [ Border.roundEach
+            { topLeft =
+                if index == 0 then
+                    Theme.roundness
+
+                else
+                    0
+            , topRight =
+                if index < 0 then
+                    Theme.roundness
+
+                else
+                    0
+            , bottomLeft = 0
+            , bottomRight = 0
+            }
+        , Border.widthEach
+            { left = 1
+            , top = 1
+            , right =
+                if index < 0 then
+                    1
+
+                else
+                    0
+            , bottom = 0
+            }
+        , Background.color <|
+            if selected then
+                Theme.colors.selectedDocument
+
+            else
+                Theme.colors.unselectedDocument
+        , focusStyle selected
+        ]
+        { onPress = Just onPress
+        , label =
+            case closeMsg of
+                Nothing ->
+                    el [ padding Theme.spacing ] <| text label
+
+                Just _ ->
+                    Element.row
+                        [ padding <| Theme.spacing // 2
+                        ]
+                        [ el [ padding <| Theme.spacing // 2 ] <| text label
+                        , Input.button
+                            [ padding <| Theme.spacing // 2
+                            , focusStyle selected
+                            , Background.color <|
+                                if selected then
+                                    Theme.colors.selectedDocument
+
+                                else
+                                    Theme.colors.unselectedDocument
+                            ]
+                            { onPress = closeMsg
+                            , label = text "X"
+                            }
+                        ]
+        }
 
 
 viewModal : Model -> Element Msg
@@ -300,32 +337,65 @@ viewDocument hasClipboard size { rows } =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        updateCalcRow row =
+            List.filterNot
+                (\r ->
+                    case r of
+                        CodeRow { input } ->
+                            String.isEmpty input
+
+                        MarkdownRow i ->
+                            String.isEmpty i
+                )
+                >> (\rs -> rs ++ [ Model.emptyRow ])
+    in
     case msg of
         Input row input ->
             updateCurrent
                 (\curr ->
-                    let
-                        rows_ =
+                    { curr
+                        | rows =
                             curr.rows
-                                |> List.updateAt row (\r -> { r | input = input })
-                                |> List.filterNot (String.isEmpty << .input)
-                                |> (\rs -> rs ++ [ Model.emptyRow ])
-                    in
-                    { curr | rows = rows_, changed = True }
+                                |> List.updateAt row
+                                    (\r ->
+                                        case r of
+                                            CodeRow cr ->
+                                                CodeRow { cr | input = input }
+
+                                            MarkdownRow _ ->
+                                                if String.startsWith ">" input then
+                                                    CodeRow
+                                                        { input = String.dropLeft 1 input
+                                                        , output = Empty
+                                                        }
+
+                                                else
+                                                    MarkdownRow input
+                                    )
+                                |> updateCalcRow row
+                        , changed = True
+                    }
                 )
                 model
 
         Calculate row ->
             updateCurrent
                 (\curr ->
-                    let
-                        rows_ =
+                    { curr
+                        | rows =
                             curr.rows
-                                |> List.updateAt row (\r -> { r | output = parseOrError r.input })
-                                |> List.filterNot (String.isEmpty << .input)
-                                |> (\rs -> rs ++ [ Model.emptyRow ])
-                    in
-                    { curr | rows = rows_ }
+                                |> List.updateAt row
+                                    (\r ->
+                                        case r of
+                                            CodeRow cr ->
+                                                CodeRow { cr | output = parseOrError cr.input }
+
+                                            MarkdownRow _ ->
+                                                r
+                                    )
+                                |> updateCalcRow row
+                    }
                 )
                 model
 
@@ -412,6 +482,34 @@ update msg model =
 
         Save id ->
             ( model, save id )
+
+        ToggleMenu menu ->
+            if model.openMenu == Just menu then
+                ( { model | openMenu = Nothing }, Cmd.none )
+
+            else
+                ( { model | openMenu = Just menu }, Cmd.none )
+
+        Open ->
+            ( model, File.Select.file [ "text/plain", ".txt" ] SelectedFileForOpen )
+
+        SelectedFileForOpen file ->
+            ( model, Task.perform (ReadFile (File.name file)) (File.toString file) )
+
+        ReadFile name file ->
+            let
+                document =
+                    Model.documentFromFile name file
+            in
+            ( { model
+                | documents =
+                    model.documents
+                        |> Maybe.map (Zipper.append document)
+                        |> Maybe.withDefault (Zipper.singleton document)
+                        |> Just
+              }
+            , Cmd.none
+            )
 
 
 updateCurrent : (Document -> Document) -> Model -> ( Model, Cmd msg )
