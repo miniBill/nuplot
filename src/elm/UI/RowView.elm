@@ -59,11 +59,17 @@ draw hasClipboard { width, height } id { wdiv, hdiv } graph =
             else
                 "0"
 
+        rawImageWidth =
+            min 1920 <| width - (6 + wdiv) * 3 * Theme.spacing
+
         imageWidth =
-            min 1920 <| width - (1 + wdiv) * 3 * Theme.spacing
+            rawImageWidth
+
+        rawImageHeight =
+            min 1080 <| height - (6 + hdiv) * 3 * Theme.spacing
 
         imageHeight =
-            min 1080 <| height - (6 + hdiv) * 3 * Theme.spacing
+            rawImageHeight
 
         saveButton =
             Input.button []
@@ -312,7 +318,7 @@ bracketed l r blocks =
 outputBlock : String -> Bool -> { height : Int, width : Int } -> Output -> Element CellMsg
 outputBlock blockId hasClipboard ({ height, width } as size) output =
     let
-        showExpr : Expression -> Element CellMsg
+        showExpr : Expression -> ( Element CellMsg, Bool )
         showExpr e =
             e
                 |> Expression.Value.value Dict.empty
@@ -341,53 +347,54 @@ outputBlock blockId hasClipboard ({ height, width } as size) output =
                 LambdaValue x f ->
                     Maybe.map (Lambda x) (asExpression f)
 
-        viewValue : String -> { hdiv : Int, wdiv : Int } -> Value -> Element CellMsg
+        viewValue : String -> { hdiv : Int, wdiv : Int } -> Value -> ( Element CellMsg, Bool )
         viewValue id coeffs v =
             case asExpression v of
                 Just ex ->
-                    viewExpression width ex
+                    ( viewExpression width ex, False )
 
                 Nothing ->
                     case v of
                         SymbolicValue s ->
-                            viewExpression width s
+                            ( viewExpression width s, False )
 
                         SolutionTreeValue t ->
-                            Element.column [ spacing Theme.spacing ] <| viewSolutionTree (width - 2 * Theme.spacing) t
+                            ( Element.column [ spacing Theme.spacing ] <| viewSolutionTree (width - 2 * Theme.spacing) t, False )
 
                         GraphValue g ->
-                            el [ centerX ] <| draw hasClipboard size id coeffs g
+                            ( draw hasClipboard size id coeffs g, True )
 
                         ComplexValue c ->
-                            text <| Complex.toString c
+                            ( text <| Complex.toString c, False )
 
                         ErrorValue err ->
-                            viewError err
+                            ( viewError err, False )
 
                         LambdaValue x f ->
                             case asExpression f of
                                 Just e ->
-                                    viewExpression width <| Lambda x e
+                                    ( viewExpression width <| Lambda x e, False )
 
                                 Nothing ->
-                                    Element.row [] [ text <| x ++ " => ", viewValue id coeffs f ]
+                                    ( Element.row [] [ text <| x ++ " => ", Tuple.first (viewValue id coeffs f) ], False )
 
                         ListValue ls ->
-                            case
-                                v
-                                    |> genericAsMatrix
-                                        (\w ->
-                                            case w of
-                                                ListValue us ->
-                                                    Just us
+                            let
+                                unpack =
+                                    List.unzip >> (\( es, gs ) -> ( es, List.all identity gs ))
 
-                                                _ ->
-                                                    Nothing
-                                        )
-                            of
+                                valueAsList w =
+                                    case w of
+                                        ListValue us ->
+                                            Just us
+
+                                        _ ->
+                                            Nothing
+                            in
+                            case genericAsMatrix valueAsList v of
                                 Just m ->
-                                    roundBracketed <|
-                                        List.indexedMap
+                                    m
+                                        |> List.indexedMap
                                             (\y ->
                                                 List.indexedMap
                                                     (\x ->
@@ -396,19 +403,20 @@ outputBlock blockId hasClipboard ({ height, width } as size) output =
                                                             , hdiv = coeffs.hdiv * List.length m
                                                             }
                                                     )
+                                                    >> unpack
                                             )
-                                            m
+                                        |> unpack
+                                        |> Tuple.mapFirst roundBracketed
 
                                 Nothing ->
-                                    roundBracketed
-                                        [ List.intersperse (label ", ") <|
-                                            List.indexedMap
-                                                (\i ->
-                                                    viewValue (id ++ "_" ++ String.fromInt i)
-                                                        { coeffs | wdiv = coeffs.wdiv * List.length ls }
-                                                )
-                                                ls
-                                        ]
+                                    ls
+                                        |> List.indexedMap
+                                            (\i ->
+                                                viewValue (id ++ "_" ++ String.fromInt i)
+                                                    { coeffs | wdiv = coeffs.wdiv * List.length ls }
+                                            )
+                                        |> unpack
+                                        |> Tuple.mapFirst (\e -> roundBracketed [ e ])
     in
     case output of
         Empty ->
@@ -418,4 +426,15 @@ outputBlock blockId hasClipboard ({ height, width } as size) output =
             none
 
         Parsed e ->
-            el [ Element.width fill ] <| showExpr e
+            let
+                ( child, isPlot ) =
+                    showExpr e
+            in
+            el
+                [ if isPlot then
+                    centerX
+
+                  else
+                    Element.width fill
+                ]
+                child
