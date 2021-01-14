@@ -1380,7 +1380,7 @@ main2D pixels =
 
         float axis(float coord, float otherCoord, float maxDelta) {
             float across = 1.0 - abs(coord/maxDelta);
-            if(across < -20.0)
+            if(across < -12.0)
                 return 0.0;
             float smallUnit = pow(10.0, ceil(log10(maxDelta)));
             if(across < 0.0 && abs(otherCoord) < maxDelta * 2.0)

@@ -373,10 +373,10 @@ update msg model =
                         (\r ->
                             case r.data of
                                 CodeRow _ ->
-                                    { r | data = CodeRow <| parseOrError r.input }
+                                    { r | editing = False, data = CodeRow <| parseOrError r.input }
 
                                 MarkdownRow ->
-                                    r
+                                    { r | editing = False }
                         )
 
                 StartEditing ->
