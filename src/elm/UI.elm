@@ -16,7 +16,7 @@ import File
 import File.Select
 import Html
 import List.Extra as List
-import Model exposing (Document, Flags, Menu(..), Modal(..), Model, Msg(..), Output(..), Row(..))
+import Model exposing (CellMsg(..), Document, Flags, Menu(..), Modal(..), Model, Msg(..), Output(..), Row, RowData(..))
 import Task
 import UI.RowView
 import UI.Theme as Theme exposing (onEnter)
@@ -65,10 +65,10 @@ init { saved, hasClipboard } =
                             }
 
         emptyRow x =
-            CodeRow
-                { input = x
-                , output = Empty
-                }
+            { input = x
+            , editing = False
+            , data = CodeRow Empty
+            }
 
         default =
             [ "{{plotsinx, plot(x<y), plot(x²+y²=3)}, {[zx+iy]plotexp(1/z), plot(x²+y²+z²=3), plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}}"
@@ -338,66 +338,58 @@ viewDocument hasClipboard size { rows } =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        updateCalcRow row =
-            List.filterNot
-                (\r ->
-                    case r of
-                        CodeRow { input } ->
-                            String.isEmpty input
-
-                        MarkdownRow i ->
-                            String.isEmpty i
-                )
+        filterEmpty row =
+            List.filterNot (.input >> String.isEmpty)
                 >> (\rs -> rs ++ [ Model.emptyRow ])
     in
     case msg of
-        Input row input ->
-            updateCurrent
-                (\curr ->
-                    { curr
-                        | rows =
-                            curr.rows
-                                |> List.updateAt row
-                                    (\r ->
-                                        case r of
-                                            CodeRow cr ->
-                                                CodeRow { cr | input = input }
+        CellMsg row cmsg ->
+            let
+                updateRow changed rowF =
+                    updateCurrent
+                        (\curr ->
+                            { curr
+                                | rows =
+                                    curr.rows
+                                        |> List.updateAt row rowF
+                                        |> filterEmpty row
+                                , changed = curr.changed || changed
+                            }
+                        )
+                        model
+            in
+            case cmsg of
+                Copy id ->
+                    ( model, copy id )
 
-                                            MarkdownRow _ ->
-                                                if String.startsWith ">" input then
-                                                    CodeRow
-                                                        { input = String.dropLeft 1 input
-                                                        , output = Empty
-                                                        }
+                Save id ->
+                    ( model, save id )
 
-                                                else
-                                                    MarkdownRow input
-                                    )
-                                |> updateCalcRow row
-                        , changed = True
-                    }
-                )
-                model
+                Input input ->
+                    updateRow True (\r -> { r | input = input })
 
-        Calculate row ->
-            updateCurrent
-                (\curr ->
-                    { curr
-                        | rows =
-                            curr.rows
-                                |> List.updateAt row
-                                    (\r ->
-                                        case r of
-                                            CodeRow cr ->
-                                                CodeRow { cr | output = parseOrError cr.input }
+                Calculate ->
+                    updateRow False
+                        (\r ->
+                            case r.data of
+                                CodeRow _ ->
+                                    { r | data = CodeRow <| parseOrError r.input }
 
-                                            MarkdownRow _ ->
-                                                r
-                                    )
-                                |> updateCalcRow row
-                    }
-                )
-                model
+                                MarkdownRow ->
+                                    r
+                        )
+
+                StartEditing ->
+                    updateRow False (\r -> { r | editing = True })
+
+                EndEditing ->
+                    updateRow False (\r -> { r | editing = False })
+
+                ToCode ->
+                    updateRow True (\r -> { r | data = CodeRow Empty })
+
+                ToMarkdown ->
+                    updateRow True (\r -> { r | data = MarkdownRow })
 
         NewDocument ->
             let
@@ -476,12 +468,6 @@ update msg model =
 
         SetModal m ->
             ( { model | modal = Just m }, Cmd.none )
-
-        Copy id ->
-            ( model, copy id )
-
-        Save id ->
-            ( model, save id )
 
         ToggleMenu menu ->
             if model.openMenu == Just menu then

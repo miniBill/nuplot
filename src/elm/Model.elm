@@ -1,4 +1,4 @@
-module Model exposing (Document, Flags, Menu(..), Modal(..), Model, Msg(..), Output(..), Row(..), Size, documentFromFile, documentsCodec, emptyRow)
+module Model exposing (CellMsg(..), Document, Flags, Menu(..), Modal(..), Model, Msg(..), Output(..), Row, RowData(..), Size, documentFromFile, documentsCodec, emptyRow)
 
 import Codec exposing (Codec)
 import Expression exposing (Expression)
@@ -85,32 +85,41 @@ rowsParser =
         }
 
 
+unescape : String -> String
+unescape =
+    String.trim
+        >> String.replace "\\n" "\n"
+        >> String.replace "\\\\" "\\"
+
+
+escape : String -> String
+escape =
+    String.replace "\\" "\\\\"
+        >> String.replace "\n" "\\n"
+
+
 rowParser : Parser Row
 rowParser =
     let
         codeRow =
-            Parser.succeed
-                (\input ->
-                    CodeRow
-                        { input =
-                            input
-                                |> String.trim
-                                |> String.replace "\\n" "\n"
-                                |> String.replace "\\\\" "\\"
-                        , output = Empty
-                        }
-                )
+            Parser.succeed (CodeRow Empty)
                 |. Parser.symbol ">"
-                |= Parser.getChompedString (Parser.chompWhile (\c -> c /= '\n'))
 
         markdownRow =
-            Parser.succeed (MarkdownRow << String.trim)
-                |= Parser.getChompedString (Parser.chompWhile (\c -> c /= '\n'))
+            Parser.succeed MarkdownRow
     in
-    Parser.oneOf
-        [ codeRow
-        , markdownRow
-        ]
+    Parser.succeed
+        (\data input ->
+            { input = input
+            , editing = False
+            , data = data
+            }
+        )
+        |= Parser.oneOf
+            [ codeRow
+            , markdownRow
+            ]
+        |= Parser.getChompedString (Parser.chompWhile (\c -> c /= '\n'))
 
 
 type alias Size =
@@ -119,12 +128,16 @@ type alias Size =
     }
 
 
-type Row
-    = CodeRow
-        { input : String
-        , output : Output
-        }
-    | MarkdownRow String
+type alias Row =
+    { input : String
+    , editing : Bool
+    , data : RowData
+    }
+
+
+type RowData
+    = CodeRow Output
+    | MarkdownRow
 
 
 rowCodec : Codec Row
@@ -132,31 +145,34 @@ rowCodec =
     Codec.map
         (\i ->
             if String.startsWith ">" i then
-                CodeRow
-                    { input = String.trim <| String.dropLeft 1 i
-                    , output = Empty
-                    }
+                { input = String.trim <| String.dropLeft 1 i
+                , editing = False
+                , data = CodeRow Empty
+                }
 
             else
-                MarkdownRow i
+                { input = i
+                , editing = False
+                , data = MarkdownRow
+                }
         )
         (\r ->
-            case r of
-                MarkdownRow mr ->
-                    mr
+            case r.data of
+                MarkdownRow ->
+                    r.input
 
-                CodeRow { input } ->
-                    "> " ++ input
+                CodeRow _ ->
+                    "> " ++ r.input
         )
         Codec.string
 
 
 emptyRow : Row
 emptyRow =
-    CodeRow
-        { input = ""
-        , output = Empty
-        }
+    { input = ""
+    , editing = True
+    , data = CodeRow Empty
+    }
 
 
 type Output
@@ -166,21 +182,29 @@ type Output
 
 
 type Msg
-    = Input Int String
-    | Calculate Int
-    | NewDocument
+    = NewDocument
     | SelectDocument Int
     | RenameDocument (Maybe String)
     | CloseDocument { ask : Bool, index : Int }
     | Resized Size
     | DismissModal
     | SetModal Modal
-    | Save String
-    | Copy String
     | ToggleMenu Menu
     | Open
     | SelectedFileForOpen File
     | ReadFile String String
+    | CellMsg Int CellMsg
+
+
+type CellMsg
+    = EndEditing
+    | ToCode
+    | ToMarkdown
+    | StartEditing
+    | Calculate
+    | Input String
+    | Save String
+    | Copy String
 
 
 type Menu

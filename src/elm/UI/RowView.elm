@@ -19,12 +19,12 @@ import Json.Encode
 import List.Extra as List
 import Markdown.Parser
 import Markdown.Renderer
-import Model exposing (Msg(..), Output(..), Row(..))
+import Model exposing (CellMsg(..), Msg(..), Output(..), Row, RowData(..))
 import UI.Glsl exposing (getGlsl)
 import UI.Theme as Theme exposing (onEnter)
 
 
-draw : Bool -> { width : Int, height : Int } -> String -> { wdiv : Int, hdiv : Int } -> Graph -> Element Msg
+draw : Bool -> { width : Int, height : Int } -> String -> { wdiv : Int, hdiv : Int } -> Graph -> Element CellMsg
 draw hasClipboard { width, height } id { wdiv, hdiv } graph =
     let
         isCompletelyReal g =
@@ -104,70 +104,90 @@ draw hasClipboard { width, height } id { wdiv, hdiv } graph =
 
 
 view : Bool -> { width : Int, height : Int } -> Int -> Row -> Element Msg
-view hasClipboard size index row =
-    case row of
-        CodeRow r ->
-            Theme.column
-                [ Element.width fill
-                , alignTop
-                ]
-                [ inputLine index r
-                , Element.Lazy.lazy4 outputBlock ("canvas" ++ String.fromInt index) hasClipboard size r.output
-                , statusLine size.width r.output
-                ]
+view hasClipboard size index { input, editing, data } =
+    Element.map (CellMsg index) <|
+        case data of
+            CodeRow output ->
+                Theme.column
+                    [ Element.width fill
+                    , alignTop
+                    ]
+                    [ codeInputLine index input
+                    , Element.Lazy.lazy4 outputBlock ("canvas" ++ String.fromInt index) hasClipboard size output
+                    , statusLine size.width output
+                    ]
 
-        MarkdownRow m ->
-            let
-                _ =
-                    m
+            MarkdownRow ->
+                if editing then
+                    Theme.row [ Element.width fill ]
+                        [ Input.multiline
+                            [ width fill
+                            , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
+                            , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
+                            , Element.htmlAttribute <| Html.Attributes.spellcheck False
+                            ]
+                            { label = Input.labelHidden "Input"
+                            , onChange = Input
+                            , placeholder = Nothing
+                            , text = input
+                            , spellcheck = False
+                            }
+                        , Input.button [ htmlAttribute <| Html.Attributes.title "End editing" ]
+                            { onPress = Just EndEditing
+                            , label = Icons.enterOutlined Theme.darkIconAttrs
+                            }
+                        , Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Convert to Code cell" ]
+                            { label = Icons.swapOutlined Theme.darkIconAttrs
+                            , onPress = Just ToCode
+                            }
+                        ]
+
+                else
+                    input
                         |> Markdown.Parser.parse
                         |> Result.withDefault []
                         |> Markdown.Renderer.render Markdown.Renderer.defaultHtmlRenderer
                         |> Result.withDefault []
-                        |> List.map Element.html
-                        |> Theme.column [ Element.width fill, alignTop ]
+                        |> List.map (\e -> Element.paragraph [] [ Element.html e ])
+                        |> Element.textColumn [ Element.width fill, alignTop ]
                         |> (\e ->
                                 Theme.row [ Element.width fill ]
                                     [ e
-                                    , Input.button [ alignRight ]
-                                        { label = text "To code"
-                                        , onPress = Nothing
+                                    , Input.button [ htmlAttribute <| Html.Attributes.title "Edit" ]
+                                        { onPress = Just StartEditing
+                                        , label = Icons.editOutlined Theme.darkIconAttrs
+                                        }
+                                    , Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Convert to Code cell" ]
+                                        { label = Icons.swapOutlined Theme.darkIconAttrs
+                                        , onPress = Just ToCode
                                         }
                                     ]
                            )
-            in
-            Input.text
-                [ width fill
-                , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
-                , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
-                , Element.htmlAttribute <| Html.Attributes.spellcheck False
-                ]
-                { label = Input.labelHidden "Input"
-                , onChange = Input index
-                , placeholder = Nothing
-                , text = m
-                }
 
 
-inputLine : Int -> { a | input : String } -> Element Msg
-inputLine index row =
+codeInputLine : Int -> String -> Element CellMsg
+codeInputLine index input =
     Theme.row [ width fill ]
         [ text <| "In [" ++ String.fromInt index ++ "]"
         , Input.text
             [ width fill
-            , onEnter <| Calculate index
+            , onEnter Calculate
             , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
             , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
             , Element.htmlAttribute <| Html.Attributes.spellcheck False
             ]
             { label = Input.labelHidden "Input"
-            , onChange = Input index
+            , onChange = Input
             , placeholder = Nothing
-            , text = row.input
+            , text = input
             }
-        , Input.button [ Font.bold, htmlAttribute <| Html.Attributes.title "Press Enter to calculate" ]
-            { onPress = Just <| Calculate index
+        , Input.button [ htmlAttribute <| Html.Attributes.title "Press Enter to calculate" ]
+            { onPress = Just Calculate
             , label = Icons.enterOutlined Theme.darkIconAttrs
+            }
+        , Input.button [ htmlAttribute <| Html.Attributes.title "Convert to Markdown cell" ]
+            { label = Icons.swapOutlined Theme.darkIconAttrs
+            , onPress = Just ToMarkdown
             }
         ]
 
@@ -182,10 +202,12 @@ statusLine pageWidth output =
             viewError e
 
         Parsed e ->
-            Theme.column [ alignTop, width <| Element.maximum 200 fill ]
-                [ text "Interpreted as: "
-                , viewExpression pageWidth e
-                ]
+            {- Theme.column [ alignTop, width <| Element.maximum 200 fill ]
+               [ text "Interpreted as: "
+               , viewExpression pageWidth e
+               ]
+            -}
+            none
 
 
 viewError : String -> Element msg
@@ -293,9 +315,10 @@ bracketed l r blocks =
     row [ spacing 1, paddingXY 2 0 ] [ l, grid, r ]
 
 
-outputBlock : String -> Bool -> { height : Int, width : Int } -> Output -> Element Msg
+outputBlock : String -> Bool -> { height : Int, width : Int } -> Output -> Element CellMsg
 outputBlock blockId hasClipboard ({ height, width } as size) output =
     let
+        showExpr : Expression -> Element CellMsg
         showExpr e =
             e
                 |> Expression.Value.value Dict.empty
@@ -324,6 +347,7 @@ outputBlock blockId hasClipboard ({ height, width } as size) output =
                 LambdaValue x f ->
                     Maybe.map (Lambda x) (asExpression f)
 
+        viewValue : String -> { hdiv : Int, wdiv : Int } -> Value -> Element CellMsg
         viewValue id coeffs v =
             case asExpression v of
                 Just ex ->
@@ -400,7 +424,4 @@ outputBlock blockId hasClipboard ({ height, width } as size) output =
             none
 
         Parsed e ->
-            Theme.column [ alignTop, Element.width fill ]
-                [ text "Value:"
-                , showExpr e
-                ]
+            el [ Element.width fill ] <| showExpr e
