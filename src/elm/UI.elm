@@ -4,7 +4,7 @@ import Browser
 import Browser.Dom
 import Browser.Events
 import Codec exposing (Value)
-import Element exposing (Element, alignRight, centerX, centerY, el, fill, height, padding, paddingEach, text, width)
+import Element exposing (Element, alignRight, centerX, centerY, el, fill, height, padding, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -16,7 +16,7 @@ import File
 import File.Select
 import Html
 import List.Extra as List
-import Model exposing (CellMsg(..), Document, Flags, Menu(..), Modal(..), Model, Msg(..), Output(..), Row, RowData(..))
+import Model exposing (CellMsg(..), Document, Flags, Menu(..), Modal(..), Model, Msg(..), Output(..), RowData(..))
 import Task
 import UI.RowView
 import UI.Theme as Theme exposing (onEnter)

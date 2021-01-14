@@ -24,7 +24,6 @@ module Expression exposing
     , partialSubstitute
     , pfullSubstitute
     , solutionTreeToString
-    , solutionTreeToTeXString
     , toPrintExpression
     , toString
     , toTeXString
@@ -963,32 +962,6 @@ pfullSubstitute dict =
 
                 _ ->
                     Nothing
-
-
-solutionTreeToTeXString : SolutionTree -> String
-solutionTreeToTeXString tree =
-    case tree of
-        SolutionForall v ->
-            "\\forall " ++ v ++ " \\in \\mathbb{R}"
-
-        SolutionError e ->
-            "\\text{Error: " ++ e ++ "}"
-
-        SolutionNone v ->
-            "\\not \\exists " ++ v ++ " \\in \\mathbb{R}"
-
-        SolutionDone e ->
-            toTeXString e
-
-        SolutionStep e n ->
-            "\\begin{array}[t]{l}{" ++ toTeXString e ++ "}\\\\{" ++ solutionTreeToTeXString n ++ "}\\end{array}"
-
-        SolutionBranch children ->
-            "\\begin{array}[t]{"
-                ++ String.repeat (List.length children) "l"
-                ++ "}{"
-                ++ String.join "}&{" (List.map solutionTreeToTeXString children)
-                ++ "}\\end{array}"
 
 
 toTeXString : Expression -> String

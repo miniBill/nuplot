@@ -3,7 +3,6 @@ module Model exposing (CellMsg(..), Document, Flags, Menu(..), Modal(..), Model,
 import Codec exposing (Codec)
 import Expression exposing (Expression)
 import File exposing (File)
-import Html.Attributes exposing (type_)
 import Json.Decode as JD
 import Parser exposing ((|.), (|=), Parser)
 import Zipper exposing (Zipper)

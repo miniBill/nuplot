@@ -331,14 +331,6 @@ findRationalRoot v coeffs =
                                 else
                                     Nothing
                            )
-
-                isRoot r =
-                    reduced
-                        |> List.map (\( d, c ) -> Fraction.by (Fraction.fromInt c) <| Fraction.pow r d)
-                        |> List.foldl1 Fraction.plus
-                        |> Maybe.map Fraction.toPair
-                        |> Maybe.withDefault ( -1, 1 )
-                        |> (==) ( 0, 1 )
             in
             res
                 |> Result.fromMaybe "no rational root found, and no simple formula is usable"

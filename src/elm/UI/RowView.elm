@@ -1,6 +1,5 @@
 module UI.RowView exposing (view)
 
-import Ant.Icon as Icon
 import Ant.Icons as Icons
 import Complex
 import Dict
@@ -21,7 +20,7 @@ import Markdown.Parser
 import Markdown.Renderer
 import Model exposing (CellMsg(..), Msg(..), Output(..), Row, RowData(..))
 import UI.Glsl exposing (getGlsl)
-import UI.Theme as Theme exposing (onEnter)
+import UI.Theme as Theme
 
 
 draw : Bool -> { width : Int, height : Int } -> String -> { wdiv : Int, hdiv : Int } -> Graph -> Element CellMsg
@@ -120,18 +119,7 @@ view hasClipboard size index { input, editing, data } =
             MarkdownRow ->
                 if editing then
                     Theme.row [ Element.width fill ]
-                        [ Input.multiline
-                            [ width fill
-                            , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
-                            , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
-                            , Element.htmlAttribute <| Html.Attributes.spellcheck False
-                            ]
-                            { label = Input.labelHidden "Input"
-                            , onChange = Input
-                            , placeholder = Nothing
-                            , text = input
-                            , spellcheck = False
-                            }
+                        [ inputBox input
                         , Input.button [ htmlAttribute <| Html.Attributes.title "End editing" ]
                             { onPress = Just EndEditing
                             , label = Icons.enterOutlined Theme.darkIconAttrs
@@ -165,22 +153,28 @@ view hasClipboard size index { input, editing, data } =
                            )
 
 
+inputBox : String -> Element CellMsg
+inputBox input =
+    Input.multiline
+        [ width fill
+        , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
+        , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
+        , Element.htmlAttribute <| Html.Attributes.spellcheck False
+        , Theme.onCtrlEnter Calculate
+        ]
+        { label = Input.labelHidden "Input"
+        , onChange = Input
+        , placeholder = Nothing
+        , text = input
+        , spellcheck = False
+        }
+
+
 codeInputLine : Int -> String -> Element CellMsg
 codeInputLine index input =
     Theme.row [ width fill ]
         [ text <| "In [" ++ String.fromInt index ++ "]"
-        , Input.text
-            [ width fill
-            , onEnter Calculate
-            , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
-            , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
-            , Element.htmlAttribute <| Html.Attributes.spellcheck False
-            ]
-            { label = Input.labelHidden "Input"
-            , onChange = Input
-            , placeholder = Nothing
-            , text = input
-            }
+        , inputBox input
         , Input.button [ htmlAttribute <| Html.Attributes.title "Press Enter to calculate" ]
             { onPress = Just Calculate
             , label = Icons.enterOutlined Theme.darkIconAttrs

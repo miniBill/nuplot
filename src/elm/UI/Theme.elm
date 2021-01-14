@@ -1,4 +1,4 @@
-module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, lightIconAttrs, onEnter, roundness, row, spacing, whiteLines, wrappedRow)
+module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, lightIconAttrs, onCtrlEnter, onEnter, roundness, row, spacing, whiteLines, wrappedRow)
 
 import Ant.Icon
 import Color
@@ -139,6 +139,23 @@ onEnter msg =
         |> Decode.andThen
             (\s ->
                 if s == "Enter" then
+                    Decode.succeed msg
+
+                else
+                    Decode.fail "ignored"
+            )
+        |> Html.Events.on "keyup"
+        |> Element.htmlAttribute
+
+
+onCtrlEnter : msg -> Attribute msg
+onCtrlEnter msg =
+    Decode.map2 Tuple.pair
+        (Decode.field "key" Decode.string)
+        (Decode.field "ctrlKey" Decode.bool)
+        |> Decode.andThen
+            (\( s, ctrl ) ->
+                if s == "Enter" && ctrl then
                     Decode.succeed msg
 
                 else

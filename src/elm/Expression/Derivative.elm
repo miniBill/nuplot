@@ -1,7 +1,7 @@
 module Expression.Derivative exposing (derivative)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), filterContext, fullSubstitute)
-import Expression.Utils exposing (by, byShort, div, ipow, ipowShort, ln_, minus, one, plus, pow, square, zero)
+import Expression.Utils exposing (by, byShort, div, ipowShort, ln_, minus, one, plus, pow, square, zero)
 
 
 derivative : String -> Expression -> Expression

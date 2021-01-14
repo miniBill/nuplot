@@ -504,7 +504,7 @@ asPoly var expr =
                 |> asPoly var
                 |> Result.map (Dict.map (always negateShort))
 
-        BinaryOperation Division num ((Integer _) as den) ->
+        BinaryOperation Division num (Integer _) ->
             num
                 |> asPoly var
                 |> Result.map (Dict.map (\_ coeff -> divShort coeff d))

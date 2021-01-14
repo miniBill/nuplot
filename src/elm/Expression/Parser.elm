@@ -12,16 +12,12 @@ import Expression
         , RelationOperation(..)
         , VariableStatus(..)
         , defaultContext
-        , getFreeVariables
         )
 import Expression.Cleaner as Cleaner
-import Expression.Simplify exposing (simplify)
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
-import Expression.Value
 import List
 import List.Extra as List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), getChompedString)
-import Set
 import Trie exposing (Trie)
 
 
