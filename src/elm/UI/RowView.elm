@@ -381,7 +381,7 @@ outputBlock blockId hasClipboard ({ height, width } as size) output =
                         ListValue ls ->
                             let
                                 unpack =
-                                    List.unzip >> (\( es, gs ) -> ( es, List.all identity gs ))
+                                    List.unzip >> (\( es, gs ) -> ( es, List.any identity gs ))
 
                                 valueAsList w =
                                     case w of

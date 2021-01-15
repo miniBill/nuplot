@@ -764,7 +764,13 @@ intervalFunctionToGlsl name =
 
         Mod22 ->
             """
-            TODO Mod22
+            vec2 imod(vec2 x, vec2 y) {
+                return x + ineg(iby(y, ifloor(idiv(x, y))));
+            }
+            
+            vec4 gmod(vec4 l, vec4 r) {
+                return vec4(mod(l.x, r.x), l.yzw);
+            }
             """
 
 

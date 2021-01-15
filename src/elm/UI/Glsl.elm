@@ -417,7 +417,7 @@ dependenciesOf req =
             []
 
         RequireFunction Mod22 ->
-            []
+            [ RequireOperation GlslDivision, RequireOperation GlslMultiplication, RequireFunction Floor22, RequireOperation GlslNegation ]
 
         RequireFunction Ln22 ->
             []
