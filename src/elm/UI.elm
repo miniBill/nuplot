@@ -5,7 +5,7 @@ import Browser
 import Browser.Dom
 import Browser.Events
 import Codec exposing (Value)
-import Element.WithContext as Element exposing (alignRight, centerX, centerY, el, fill, height, padding, width)
+import Element.WithContext as Element exposing (alignRight, centerX, centerY, el, fill, height, padding, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -155,37 +155,46 @@ toolbar { openMenu } =
         moreButton =
             Input.button
                 [ alignRight
-                , padding <| Theme.spacing // 2
+                , centerY
+                , padding Theme.spacing
                 , Border.rounded 999
+                , Element.mouseOver [ Background.color <| Theme.darken Theme.colors.background ]
                 ]
                 { onPress = Just <| ToggleMenu <| not openMenu
                 , label =
                     Element.element <| Icons.moreOutlined Theme.smallDarkIconAttrs
                 }
 
-        topBorder =
-            Border.widthEach { top = 1, left = 0, right = 0, bottom = 0 }
-
         dropdown () =
             let
-                btn msg lbl =
-                    Input.button [ padding Theme.spacing ]
+                btn border msg lbl =
+                    Input.button
+                        [ Border.widthEach { top = 1, left = 0, right = 0, bottom = 0 }
+                        , padding Theme.spacing
+                        , width fill
+                        ]
                         { onPress = Just msg
                         , label = text lbl
                         }
             in
-            Element.column [ alignRight, Background.color Theme.colors.background, Border.width 1 ]
-                [ btn OpenFile { en = "Open", it = "Apri" }
-                , btn SaveFile { en = "Save", it = "Salva" }
-                , Element.row [ topBorder ]
-                    [ btn (Language En) <| L10N.invariant "🇬🇧"
-                    , btn (Language It) <| L10N.invariant "🇮🇹"
+            Element.column
+                [ Element.moveDown 1
+                , alignRight
+                , Background.color Theme.colors.background
+                , Border.widthEach { top = 0, left = 1, right = 1, bottom = 1 }
+                ]
+                [ btn False OpenFile { en = "Open", it = "Apri" }
+                , btn True SaveFile { en = "Save", it = "Salva" }
+                , Element.row []
+                    [ btn True (Language En) <| L10N.invariant "🇬🇧"
+                    , el [ height fill, Border.widthEach { top = 0, bottom = 0, right = 1, left = 0 } ] Element.none
+                    , btn True (Language It) <| L10N.invariant "🇮🇹"
                     ]
                 ]
     in
     el
         [ width fill
-        , padding <| Theme.spacing // 2
+        , padding <| Theme.spacing // 4
         , if openMenu then
             Element.below <| dropdown ()
 
@@ -234,6 +243,7 @@ documentPicker ({ documents } as model) =
         [ Element.paddingEach { left = Theme.spacing, right = Theme.spacing, top = Theme.spacing, bottom = 0 }
         , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
         , width fill
+        , spacing <| Theme.spacing // 2
         ]
     <|
         buttons
@@ -256,11 +266,11 @@ ellipsize s =
 documentTabButton : { a | selected : Bool, onPress : msg, closeMsg : Maybe msg, label : Element msg, index : number, title : L10N String } -> Element msg
 documentTabButton { selected, onPress, closeMsg, label, title, index } =
     let
-        focusStyle s =
+        focusStyle =
             Element.focused
                 [ Background.color <|
                     Theme.darken <|
-                        if s then
+                        if selected then
                             Theme.colors.selectedDocument
 
                         else
@@ -269,30 +279,15 @@ documentTabButton { selected, onPress, closeMsg, label, title, index } =
     in
     Input.button
         [ Border.roundEach
-            { topLeft =
-                if index == 0 then
-                    Theme.roundness
-
-                else
-                    0
-            , topRight =
-                if index < 0 then
-                    Theme.roundness
-
-                else
-                    0
+            { topLeft = Theme.roundness
+            , topRight = Theme.roundness
             , bottomLeft = 0
             , bottomRight = 0
             }
         , Border.widthEach
             { left = 1
             , top = 1
-            , right =
-                if index < 0 then
-                    1
-
-                else
-                    0
+            , right = 1
             , bottom = 0
             }
         , Background.color <|
@@ -301,14 +296,13 @@ documentTabButton { selected, onPress, closeMsg, label, title, index } =
 
             else
                 Theme.colors.unselectedDocument
-        , focusStyle selected
+        , focusStyle
         , L10N.title title
         ]
         { onPress = Just onPress
         , label =
             Element.row
-                [ padding <| Theme.spacing // 2
-                ]
+                [ padding <| Theme.spacing // 2 ]
                 [ el [ padding <| Theme.spacing // 2 ] label
                 , case closeMsg of
                     Nothing ->
@@ -317,7 +311,7 @@ documentTabButton { selected, onPress, closeMsg, label, title, index } =
                     Just _ ->
                         Input.button
                             [ padding <| Theme.spacing // 2
-                            , focusStyle selected
+                            , focusStyle
                             , Background.color <|
                                 if selected then
                                     Theme.colors.selectedDocument
