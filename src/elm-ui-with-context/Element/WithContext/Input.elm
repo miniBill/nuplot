@@ -186,7 +186,7 @@ Alternatively, see if it's reasonable to _not_ display an input if you'd normall
 
 import Element as Vanilla
 import Element.Input as Input
-import Element.WithContext as Element exposing (Attribute, Element, element)
+import Element.WithContext exposing (Attribute, Element, element)
 import Element.WithContext.Internal exposing (attribute, attributes, run, wrapAttrs)
 
 
@@ -303,15 +303,6 @@ button =
             , label = run context label
             }
         )
-
-
-{-| -}
-type alias Checkbox context msg =
-    { onChange : Maybe (Bool -> msg)
-    , icon : Maybe (Element context msg)
-    , checked : Bool
-    , label : Label context msg
-    }
 
 
 {-|
@@ -432,27 +423,6 @@ slider =
             , step = config.step
             }
         )
-
-
-type alias TextInput =
-    { type_ : TextKind
-    , spellchecked : Bool
-    , autofill : Maybe String
-    }
-
-
-type TextKind
-    = TextInputNode String
-    | TextArea
-
-
-{-| -}
-type alias Text context msg =
-    { onChange : String -> msg
-    , text : String
-    , placeholder : Maybe (Placeholder context msg)
-    , label : Label context msg
-    }
 
 
 textHelper :
@@ -722,17 +692,6 @@ radioHelper context config =
     , selected = config.selected
     , label = runLabel context config.label
     }
-
-
-type Found
-    = NotFound
-    | BeforeFound
-    | AfterFound
-
-
-type Orientation
-    = Row
-    | Column
 
 
 {-| Attach this attribute to any `Input` that you would like to be automatically focused when the page loads.

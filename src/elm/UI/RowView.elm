@@ -234,11 +234,6 @@ viewError e =
             ]
 
 
-label : String -> Element msg
-label x =
-    el [ alignBottom ] <| text x
-
-
 viewExpression : Int -> Expression -> Element msg
 viewExpression pageWidth expr =
     viewLaTeX pageWidth <| Expression.toTeXString expr

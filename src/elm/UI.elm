@@ -1,12 +1,11 @@
 port module UI exposing (main)
 
-import Ant.Icon
 import Ant.Icons as Icons
 import Browser
 import Browser.Dom
 import Browser.Events
 import Codec exposing (Value)
-import Element.WithContext as Element exposing (alignRight, centerX, centerY, el, fill, height, htmlAttribute, padding, width)
+import Element.WithContext as Element exposing (alignRight, centerX, centerY, el, fill, height, padding, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -24,8 +23,8 @@ import Model exposing (CellMsg(..), Context, Document, Flags, Language(..), Moda
 import Task
 import UI.L10N as L10N exposing (L10N, text, title)
 import UI.RowView
-import UI.Theme as Theme exposing (onEnter, onKey)
-import Zipper exposing (Zipper)
+import UI.Theme as Theme exposing (onKey)
+import Zipper
 
 
 type alias Element msg =
@@ -586,9 +585,6 @@ update msg =
                             let
                                 doc =
                                     Zipper.selected docs
-
-                                documents =
-                                    Just <| Zipper.setSelected doc docs
                             in
                             ( model, File.Download.string "export.txt" "text/plain" <| Model.documentToFile doc )
 

@@ -58,13 +58,3 @@ apply2 context fn a b =
 apply3 : context -> (c -> d -> e -> Element context msg) -> c -> d -> e -> Vanilla.Element msg
 apply3 context fn a b c =
     run context <| fn a b c
-
-
-apply4 : context -> (c -> d -> e -> f -> Element context msg) -> c -> d -> e -> f -> Vanilla.Element msg
-apply4 context fn a b c d =
-    run context <| fn a b c d
-
-
-apply5 : context -> (c -> d -> e -> f -> g -> Element context msg) -> c -> d -> e -> f -> g -> Vanilla.Element msg
-apply5 context fn a b c d e =
-    run context <| fn a b c d e

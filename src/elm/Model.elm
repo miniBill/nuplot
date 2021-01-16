@@ -4,7 +4,6 @@ import Codec exposing (Codec)
 import Expression exposing (Expression)
 import File exposing (File)
 import Json.Decode as JD
-import Parser exposing ((|.), (|=), Parser)
 import Zipper exposing (Zipper)
 
 

@@ -213,7 +213,6 @@ You'll also need to retrieve the initial window size. You can either use [`Brows
 -}
 
 import Element
-import Element.Region exposing (description)
 import Element.WithContext.Internal as Internal exposing (Attr(..), Attribute, Element(..), attr, attribute, attributes, run, runAttribute, wrapAttrs, wrapContainer)
 import Html exposing (Html)
 
