@@ -96,8 +96,8 @@ allRight ((Zipper { before, curr, after }) as orig) =
         [] ->
             orig
 
-        l :: i ->
-            Zipper { before = i ++ curr :: before, curr = l, after = [] }
+        end :: tail ->
+            Zipper { before = tail ++ curr :: before, curr = end, after = [] }
 
 
 map : (Bool -> Int -> a -> b) -> Zipper a -> List b

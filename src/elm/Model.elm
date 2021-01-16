@@ -4,6 +4,7 @@ import Codec exposing (Codec)
 import Expression exposing (Expression)
 import File exposing (File)
 import Json.Decode as JD
+import List.Extra as List
 import Zipper exposing (Zipper)
 
 
@@ -83,7 +84,10 @@ documentToFile { rows } =
                         |> List.map (\l -> "> " ++ l)
                         |> String.join "\n"
     in
-    String.join "\n\n" <| List.map rowToString rows
+    rows
+        |> List.filterNot (.input >> String.isEmpty)
+        |> List.map rowToString
+        |> String.join "\n\n"
 
 
 documentFromFile : String -> String -> Document
@@ -91,7 +95,18 @@ documentFromFile name file =
     file
         |> String.split "\n\n"
         |> List.concatMap parseRow
-        |> (\rows -> { name = name, changed = False, rows = rows })
+        |> (\rows ->
+                { name = name
+                , changed = False
+                , rows =
+                    rows
+                        ++ [ { input = ""
+                             , data = CodeRow Empty
+                             , editing = True
+                             }
+                           ]
+                }
+           )
 
 
 parseRow : String -> List Row

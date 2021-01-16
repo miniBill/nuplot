@@ -601,6 +601,7 @@ update msg =
                             model.documents
                                 |> Maybe.map (Zipper.append document)
                                 |> Maybe.withDefault (Zipper.singleton document)
+                                |> Zipper.allRight
                                 |> Just
                       }
                     , Cmd.none
