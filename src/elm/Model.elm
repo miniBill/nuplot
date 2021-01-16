@@ -1,4 +1,4 @@
-module Model exposing (CellMsg(..), Document, Flags, Menu(..), Modal(..), Model, Msg(..), Output(..), Row, RowData(..), Size, documentFromFile, documentsCodec, emptyRow)
+module Model exposing (CellMsg(..), Document, Flags, Modal(..), Model, Msg(..), Output(..), Row, RowData(..), Size, documentFromFile, documentsCodec, emptyRow)
 
 import Codec exposing (Codec)
 import Expression exposing (Expression)
@@ -19,7 +19,7 @@ type alias Model =
     , modal : Maybe Modal
     , size : Size
     , hasClipboard : Bool
-    , openMenu : Maybe Menu
+    , openMenu : Bool
     }
 
 
@@ -188,7 +188,7 @@ type Msg
     | Resized Size
     | DismissModal
     | SetModal Modal
-    | ToggleMenu Menu
+    | ToggleMenu Bool
     | Open
     | SelectedFileForOpen File
     | ReadFile String String
@@ -204,7 +204,3 @@ type CellMsg
     | Input String
     | Save String
     | Copy String
-
-
-type Menu
-    = File

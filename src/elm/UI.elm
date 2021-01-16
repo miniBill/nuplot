@@ -1,10 +1,11 @@
 port module UI exposing (main)
 
+import Ant.Icons as Icons
 import Browser
 import Browser.Dom
 import Browser.Events
 import Codec exposing (Value)
-import Element exposing (Element, alignRight, centerX, centerY, el, fill, height, padding, text, width)
+import Element exposing (Element, alignRight, centerX, centerY, el, fill, height, htmlAttribute, padding, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -15,8 +16,9 @@ import Expression.Parser
 import File
 import File.Select
 import Html
+import Html.Attributes
 import List.Extra as List
-import Model exposing (CellMsg(..), Document, Flags, Menu(..), Modal(..), Model, Msg(..), Output(..), RowData(..))
+import Model exposing (CellMsg(..), Document, Flags, Modal(..), Model, Msg(..), Output(..), RowData(..))
 import Task
 import UI.RowView
 import UI.Theme as Theme exposing (onEnter)
@@ -91,7 +93,7 @@ init { saved, hasClipboard } =
       , size = { width = 1024, height = 768 }
       , modal = Nothing
       , hasClipboard = hasClipboard
-      , openMenu = Nothing
+      , openMenu = False
       }
     , Task.perform Resized measure
     )
@@ -116,41 +118,49 @@ view model =
                 [ -- preserve whitespace in errors display
                   Html.text "div.pre > div {white-space: pre-wrap !important;}"
                 ]
-        , toolbar model
-        , documentPicker model.documents
+        , documentPicker model
         , documentView
         ]
 
 
 toolbar : Model -> Element Msg
 toolbar { openMenu } =
-    Theme.row [ width fill ]
-        [ Input.button
-            [ Border.widthEach { top = 0, left = 0, right = 1, bottom = 1 }
-            , padding Theme.spacing
-            , Element.below <|
-                if openMenu == Just File then
-                    Element.column [ Background.color Theme.colors.background ]
-                        [ Input.button
-                            [ Border.widthEach { top = 1, left = 0, right = 1, bottom = 1 }
-                            , padding Theme.spacing
-                            ]
-                            { onPress = Just Open
-                            , label = text "Open"
-                            }
-                        ]
+    let
+        moreButton =
+            Input.button
+                [ alignRight
+                , padding <| Theme.spacing // 2
+                , Border.rounded 999
+                ]
+                { onPress = Just <| ToggleMenu <| not openMenu
+                , label = Icons.moreOutlined Theme.darkIconAttrs
+                }
 
-                else
-                    Element.none
-            ]
-            { onPress = Just <| ToggleMenu File
-            , label = text "File"
-            }
+        dropdown () =
+            Element.column [ alignRight, Background.color Theme.colors.background, Border.width 1 ]
+                [ Input.button
+                    [ Border.widthEach { top = 0, left = 0, right = 0, bottom = 0 }
+                    , padding Theme.spacing
+                    ]
+                    { onPress = Just Open
+                    , label = text "Open"
+                    }
+                ]
+    in
+    el
+        [ width fill
+        , padding <| Theme.spacing // 2
+        , if openMenu then
+            Element.below <| dropdown ()
+
+          else
+            Element.htmlAttribute <| Html.Attributes.title "Menu"
         ]
+        moreButton
 
 
-documentPicker : Maybe (Zipper Document) -> Element Msg
-documentPicker documents =
+documentPicker : Model -> Element Msg
+documentPicker ({ documents } as model) =
     let
         toDocumentTabButton selected index doc =
             documentTabButton
@@ -162,8 +172,9 @@ documentPicker documents =
                     else
                         SelectDocument index
                 , closeMsg = Just <| CloseDocument { ask = True, index = index }
-                , label = doc.name
+                , label = text <| ellipsize doc.name
                 , index = index
+                , title = doc.name
                 }
 
         buttons =
@@ -172,21 +183,33 @@ documentPicker documents =
                         { selected = False
                         , onPress = NewDocument
                         , closeMsg = Nothing
-                        , label = "+"
+                        , label = Icons.fileAddOutlined Theme.darkIconAttrs
                         , index = -1
+                        , title = "New document"
                         }
                    ]
     in
     Element.row
-        [ Element.paddingXY Theme.spacing 0
+        [ Element.paddingEach { left = Theme.spacing, right = Theme.spacing, top = Theme.spacing, bottom = 0 }
         , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
         , width fill
         ]
+    <|
         buttons
+            ++ [ toolbar model ]
 
 
-documentTabButton : { a | selected : Bool, onPress : msg, closeMsg : Maybe msg, label : String, index : number } -> Element msg
-documentTabButton { selected, onPress, closeMsg, label, index } =
+ellipsize : String -> String
+ellipsize s =
+    if String.length s < 10 then
+        s
+
+    else
+        String.left 10 s ++ "..."
+
+
+documentTabButton : { a | selected : Bool, onPress : msg, closeMsg : Maybe msg, label : Element msg, index : number, title : String } -> Element msg
+documentTabButton { selected, onPress, closeMsg, label, title, index } =
     let
         focusStyle s =
             Element.focused
@@ -234,19 +257,20 @@ documentTabButton { selected, onPress, closeMsg, label, index } =
             else
                 Theme.colors.unselectedDocument
         , focusStyle selected
+        , htmlAttribute <| Html.Attributes.title title
         ]
         { onPress = Just onPress
         , label =
-            case closeMsg of
-                Nothing ->
-                    el [ padding Theme.spacing ] <| text label
+            Element.row
+                [ padding <| Theme.spacing // 2
+                ]
+                [ el [ padding <| Theme.spacing // 2 ] label
+                , case closeMsg of
+                    Nothing ->
+                        Element.none
 
-                Just _ ->
-                    Element.row
-                        [ padding <| Theme.spacing // 2
-                        ]
-                        [ el [ padding <| Theme.spacing // 2 ] <| text label
-                        , Input.button
+                    Just _ ->
+                        Input.button
                             [ padding <| Theme.spacing // 2
                             , focusStyle selected
                             , Background.color <|
@@ -257,9 +281,9 @@ documentTabButton { selected, onPress, closeMsg, label, index } =
                                     Theme.colors.unselectedDocument
                             ]
                             { onPress = closeMsg
-                            , label = text "X"
+                            , label = Icons.closeOutlined Theme.darkIconAttrs
                             }
-                        ]
+                ]
         }
 
 
@@ -336,166 +360,165 @@ viewDocument hasClipboard size { rows } =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update msg =
     let
         filterEmpty row =
             List.filterNot (.input >> String.isEmpty)
                 >> (\rs -> rs ++ [ Model.emptyRow ])
-    in
-    case msg of
-        CellMsg row cmsg ->
-            let
-                updateRow changed rowF =
-                    updateCurrent
-                        (\curr ->
-                            { curr
-                                | rows =
-                                    curr.rows
-                                        |> List.updateAt row rowF
-                                        |> filterEmpty row
-                                , changed = curr.changed || changed
-                            }
-                        )
-                        model
-            in
-            case cmsg of
-                Copy id ->
-                    ( model, copy id )
 
-                Save id ->
-                    ( model, save id )
+        inner model =
+            case msg of
+                CellMsg row cmsg ->
+                    let
+                        updateRow changed rowF =
+                            updateCurrent
+                                (\curr ->
+                                    { curr
+                                        | rows =
+                                            curr.rows
+                                                |> List.updateAt row rowF
+                                                |> filterEmpty row
+                                        , changed = curr.changed || changed
+                                    }
+                                )
+                                model
+                    in
+                    case cmsg of
+                        Copy id ->
+                            ( model, copy id )
 
-                Input input ->
-                    updateRow True (\r -> { r | input = input })
+                        Save id ->
+                            ( model, save id )
 
-                Calculate ->
-                    updateRow False
-                        (\r ->
-                            case r.data of
-                                CodeRow _ ->
-                                    { r | editing = False, data = CodeRow <| parseOrError r.input }
+                        Input input ->
+                            updateRow True (\r -> { r | input = input })
 
-                                MarkdownRow ->
-                                    { r | editing = False }
-                        )
+                        Calculate ->
+                            updateRow False
+                                (\r ->
+                                    case r.data of
+                                        CodeRow _ ->
+                                            { r | editing = False, data = CodeRow <| parseOrError r.input }
 
-                StartEditing ->
-                    updateRow False (\r -> { r | editing = True })
-
-                EndEditing ->
-                    updateRow False (\r -> { r | editing = False })
-
-                ToCode ->
-                    updateRow True (\r -> { r | data = CodeRow Empty })
-
-                ToMarkdown ->
-                    updateRow True (\r -> { r | data = MarkdownRow })
-
-        NewDocument ->
-            let
-                newDocument =
-                    { name = "Untitled"
-                    , rows = [ Model.emptyRow ]
-                    , changed = False
-                    }
-
-                documents =
-                    Just <|
-                        case model.documents of
-                            Nothing ->
-                                Zipper.singleton newDocument
-
-                            Just docs ->
-                                Zipper.append newDocument docs
-                                    |> Zipper.allRight
-            in
-            ( { model | documents = documents }
-            , persist <| Codec.encodeToValue Model.documentsCodec documents
-            )
-
-        SelectDocument i ->
-            let
-                documents =
-                    Maybe.map (Zipper.right i) model.documents
-            in
-            ( { model | documents = documents }
-            , persist <| Codec.encodeToValue Model.documentsCodec documents
-            )
-
-        CloseDocument { ask, index } ->
-            if ask then
-                if model.modal /= Nothing then
-                    ( model, Cmd.none )
-
-                else
-                    ( { model | modal = Just <| ModalClose index }
-                    , Cmd.none
-                    )
-
-            else
-                let
-                    documents =
-                        Maybe.andThen (Zipper.removeAt index) model.documents
-                in
-                ( { model | documents = documents, modal = Nothing }
-                , persist <| Codec.encodeToValue Model.documentsCodec documents
-                )
-
-        RenameDocument n ->
-            case n of
-                Nothing ->
-                    if model.modal /= Nothing then
-                        ( model, Cmd.none )
-
-                    else
-                        case model.documents of
-                            Nothing ->
-                                ( model, Cmd.none )
-
-                            Just docs ->
-                                ( { model | modal = Just <| ModalRename (Zipper.selected docs).name }
-                                , Cmd.none
+                                        MarkdownRow ->
+                                            { r | editing = False }
                                 )
 
-                Just name ->
-                    updateCurrent (\doc -> { doc | name = name }) { model | modal = Nothing }
+                        StartEditing ->
+                            updateRow False (\r -> { r | editing = True })
 
-        Resized size ->
-            ( { model | size = size }, Cmd.none )
+                        EndEditing ->
+                            updateRow False (\r -> { r | editing = False })
 
-        DismissModal ->
-            ( { model | modal = Nothing }, Cmd.none )
+                        ToCode ->
+                            updateRow True (\r -> { r | data = CodeRow Empty })
 
-        SetModal m ->
-            ( { model | modal = Just m }, Cmd.none )
+                        ToMarkdown ->
+                            updateRow True (\r -> { r | data = MarkdownRow })
 
-        ToggleMenu menu ->
-            if model.openMenu == Just menu then
-                ( { model | openMenu = Nothing }, Cmd.none )
+                NewDocument ->
+                    let
+                        newDocument =
+                            { name = "Untitled"
+                            , rows = [ Model.emptyRow ]
+                            , changed = False
+                            }
 
-            else
-                ( { model | openMenu = Just menu }, Cmd.none )
+                        documents =
+                            Just <|
+                                case model.documents of
+                                    Nothing ->
+                                        Zipper.singleton newDocument
 
-        Open ->
-            ( model, File.Select.file [ "text/plain", ".txt" ] SelectedFileForOpen )
+                                    Just docs ->
+                                        Zipper.append newDocument docs
+                                            |> Zipper.allRight
+                    in
+                    ( { model | documents = documents }
+                    , persist <| Codec.encodeToValue Model.documentsCodec documents
+                    )
 
-        SelectedFileForOpen file ->
-            ( model, Task.perform (ReadFile (File.name file)) (File.toString file) )
+                SelectDocument i ->
+                    let
+                        documents =
+                            Maybe.map (Zipper.right i) model.documents
+                    in
+                    ( { model | documents = documents }
+                    , persist <| Codec.encodeToValue Model.documentsCodec documents
+                    )
 
-        ReadFile name file ->
-            let
-                document =
-                    Model.documentFromFile name file
-            in
-            ( { model
-                | documents =
-                    model.documents
-                        |> Maybe.map (Zipper.append document)
-                        |> Maybe.withDefault (Zipper.singleton document)
-                        |> Just
-              }
-            , Cmd.none
-            )
+                CloseDocument { ask, index } ->
+                    if ask then
+                        if model.modal /= Nothing then
+                            ( model, Cmd.none )
+
+                        else
+                            ( { model | modal = Just <| ModalClose index }
+                            , Cmd.none
+                            )
+
+                    else
+                        let
+                            documents =
+                                Maybe.andThen (Zipper.removeAt index) model.documents
+                        in
+                        ( { model | documents = documents, modal = Nothing }
+                        , persist <| Codec.encodeToValue Model.documentsCodec documents
+                        )
+
+                RenameDocument n ->
+                    case n of
+                        Nothing ->
+                            if model.modal /= Nothing then
+                                ( model, Cmd.none )
+
+                            else
+                                case model.documents of
+                                    Nothing ->
+                                        ( model, Cmd.none )
+
+                                    Just docs ->
+                                        ( { model | modal = Just <| ModalRename (Zipper.selected docs).name }
+                                        , Cmd.none
+                                        )
+
+                        Just name ->
+                            updateCurrent (\doc -> { doc | name = name }) { model | modal = Nothing }
+
+                Resized size ->
+                    ( { model | size = size }, Cmd.none )
+
+                DismissModal ->
+                    ( { model | modal = Nothing }, Cmd.none )
+
+                SetModal m ->
+                    ( { model | modal = Just m }, Cmd.none )
+
+                ToggleMenu openMenu ->
+                    ( { model | openMenu = openMenu }, Cmd.none )
+
+                Open ->
+                    ( model, File.Select.file [ "text/plain", ".txt" ] SelectedFileForOpen )
+
+                SelectedFileForOpen file ->
+                    ( model, Task.perform (ReadFile (File.name file)) (File.toString file) )
+
+                ReadFile name file ->
+                    let
+                        document =
+                            Model.documentFromFile name file
+                    in
+                    ( { model
+                        | documents =
+                            model.documents
+                                |> Maybe.map (Zipper.append document)
+                                |> Maybe.withDefault (Zipper.singleton document)
+                                |> Just
+                      }
+                    , Cmd.none
+                    )
+    in
+    \model -> inner { model | openMenu = False }
 
 
 updateCurrent : (Document -> Document) -> Model -> ( Model, Cmd msg )
