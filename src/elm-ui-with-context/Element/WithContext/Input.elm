@@ -6,7 +6,7 @@ module Element.WithContext.Input exposing
     , Placeholder, placeholder
     , username, newPassword, currentPassword, email, search, spellChecked
     , slider, Thumb, thumb, defaultThumb
-    , radio, radioRow, Option, option, optionWith, OptionState(..)
+    , radio, radioRow, Option, option, optionWith, OptionState
     , Label, labelAbove, labelBelow, labelLeft, labelRight, labelHidden
     )
 
@@ -186,8 +186,8 @@ Alternatively, see if it's reasonable to _not_ display an input if you'd normall
 
 import Element as Vanilla
 import Element.Input as Input
-import Element.WithContext as Element exposing (Attribute, Element)
-import Element.WithContext.Internal exposing (attributes, run, wrapAttrs)
+import Element.WithContext as Element exposing (Attribute, Element, element)
+import Element.WithContext.Internal exposing (attribute, attributes, run, wrapAttrs)
 
 
 {-| -}
@@ -331,8 +331,15 @@ checkbox :
         , label : Label context msg
         }
     -> Element context msg
-checkbox attrs { label, icon, checked, onChange } =
-    Debug.todo "TODO"
+checkbox =
+    wrapAttrs Input.checkbox
+        (\context { label, icon, checked, onChange } ->
+            { label = runLabel context label
+            , icon = icon >> run context
+            , checked = checked
+            , onChange = onChange
+            }
+        )
 
 
 {-| -}
@@ -344,6 +351,11 @@ type Thumb context
 thumb : List (Attribute context Never) -> Thumb context
 thumb attrs =
     Thumb <| \context -> Input.thumb <| attributes context attrs
+
+
+runThumb : a -> Thumb a -> Input.Thumb
+runThumb context (Thumb f) =
+    f context
 
 
 {-| -}
@@ -408,8 +420,18 @@ slider :
         , step : Maybe Float
         }
     -> Element context msg
-slider attributes input =
-    Debug.todo "TODO"
+slider =
+    wrapAttrs Input.slider
+        (\context config ->
+            { onChange = config.onChange
+            , label = runLabel context config.label
+            , min = config.min
+            , max = config.max
+            , value = config.value
+            , thumb = runThumb context config.thumb
+            , step = config.step
+            }
+        )
 
 
 type alias TextInput =
@@ -622,35 +644,33 @@ multiline =
         )
 
 
-applyLabel : List (Attribute context msg) -> Label context msg -> Element context msg -> Element context msg
-applyLabel attrs label input =
-    Debug.todo "TODO"
-
-
 {-| -}
 type Option context value msg
-    = Option value (OptionState -> Element context msg)
+    = Option (context -> Input.Option value msg)
+
+
+runOption : a -> Option a value msg -> Input.Option value msg
+runOption context (Option f) =
+    f context
 
 
 {-| -}
-type OptionState
-    = Idle
-    | Focused
-    | Selected
+type alias OptionState =
+    Input.OptionState
 
 
 {-| Add a choice to your radio element. This will be rendered with the default radio icon.
 -}
 option : value -> Element context msg -> Option context value msg
 option val txt =
-    Option val (defaultRadioOption txt)
+    Option <| \context -> Input.option val (run context txt)
 
 
 {-| Customize exactly what your radio option should look like in different states.
 -}
 optionWith : value -> (OptionState -> Element context msg) -> Option context value msg
 optionWith val view =
-    Option val view
+    Option <| \context -> Input.optionWith val (run context << view)
 
 
 {-| -}
@@ -664,7 +684,7 @@ radio :
         }
     -> Element context msg
 radio =
-    radioHelper Column
+    wrapAttrs Input.radio radioHelper
 
 
 {-| Same as radio, but displayed as a row
@@ -679,26 +699,29 @@ radioRow :
         }
     -> Element context msg
 radioRow =
-    radioHelper Row
-
-
-defaultRadioOption : Element context msg -> OptionState -> Element context msg
-defaultRadioOption optionLabel status =
-    Debug.todo "TODO"
+    wrapAttrs Input.radioRow radioHelper
 
 
 radioHelper :
-    Orientation
-    -> List (Attribute context msg)
+    context
     ->
         { onChange : option -> msg
         , options : List (Option context option msg)
         , selected : Maybe option
         , label : Label context msg
         }
-    -> Element context msg
-radioHelper orientation attrs input =
-    Debug.todo "TODO"
+    ->
+        { onChange : option -> msg
+        , options : List (Input.Option option msg)
+        , selected : Maybe option
+        , label : Input.Label msg
+        }
+radioHelper context config =
+    { onchange = config.onChange
+    , options = List.map (runOption context) config.options
+    , selected = config.selected
+    , label = runLabel context config.label
+    }
 
 
 type Found
@@ -712,155 +735,6 @@ type Orientation
     | Column
 
 
-
-{- Event Handlers -}
-
-
-{-| -}
-onEnter : msg -> Attribute context msg
-onEnter msg =
-    onKey enter msg
-
-
-{-| -}
-onSpace : msg -> Attribute context msg
-onSpace msg =
-    onKey space msg
-
-
-{-| -}
-onUpArrow : msg -> Attribute context msg
-onUpArrow msg =
-    onKey upArrow msg
-
-
-{-| -}
-onRightArrow : msg -> Attribute context msg
-onRightArrow msg =
-    onKey rightArrow msg
-
-
-{-| -}
-onLeftArrow : msg -> Attribute context msg
-onLeftArrow msg =
-    onKey leftArrow msg
-
-
-{-| -}
-onDownArrow : msg -> Attribute context msg
-onDownArrow msg =
-    onKey downArrow msg
-
-
-enter : String
-enter =
-    "Enter"
-
-
-tab : String
-tab =
-    "Tab"
-
-
-delete : String
-delete =
-    "Delete"
-
-
-backspace : String
-backspace =
-    "Backspace"
-
-
-upArrow : String
-upArrow =
-    "ArrowUp"
-
-
-leftArrow : String
-leftArrow =
-    "ArrowLeft"
-
-
-rightArrow : String
-rightArrow =
-    "ArrowRight"
-
-
-downArrow : String
-downArrow =
-    "ArrowDown"
-
-
-space : String
-space =
-    " "
-
-
-{-| -}
-onKey : String -> msg -> Attribute context msg
-onKey desiredCode msg =
-    Debug.todo "TODO"
-
-
-{-| -}
-onKeyLookup : (String -> Maybe msg) -> Attribute context msg
-onKeyLookup lookup =
-    Debug.todo "TODO"
-
-
-{-| -}
-onFocusOut : msg -> Attribute context msg
-onFocusOut msg =
-    Debug.todo "TODO"
-
-
-{-| -}
-onFocusIn : msg -> Attribute context msg
-onFocusIn msg =
-    Debug.todo "TODO"
-
-
-selected : Bool -> Attribute context msg
-selected =
-    Debug.todo "TODO"
-
-
-name : String -> Attribute context msg
-name =
-    Debug.todo "TODO"
-
-
-value : String -> Attribute context msg
-value =
-    Debug.todo "TODO"
-
-
-tabindex : Int -> Attribute context msg
-tabindex =
-    Debug.todo "TODO"
-
-
-disabled : Bool -> Attribute context msg
-disabled =
-    Debug.todo "TODO"
-
-
-spellcheck : Bool -> Attribute context msg
-spellcheck =
-    Debug.todo "TODO"
-
-
-readonly : Bool -> Attribute context msg
-readonly =
-    Debug.todo "TODO"
-
-
-autofill : String -> Attribute context msg
-autofill =
-    Debug.todo "TODO"
-
-
 {-| Attach this attribute to any `Input` that you would like to be automatically focused when the page loads.
 
 You should only have a maximum of one per page.
@@ -868,21 +742,7 @@ You should only have a maximum of one per page.
 -}
 focusedOnLoad : Attribute context msg
 focusedOnLoad =
-    Debug.todo "TODO"
-
-
-
-{- Style Defaults -}
-
-
-defaultTextBoxStyle : List (Attribute context msg)
-defaultTextBoxStyle =
-    Debug.todo "TODO"
-
-
-defaultTextPadding : Attribute context msg
-defaultTextPadding =
-    Debug.todo "TODO"
+    attribute Input.focusedOnLoad
 
 
 {-| The blue default checked box icon.
@@ -892,4 +752,4 @@ You'll likely want to make your own checkbox at some point that fits your design
 -}
 defaultCheckbox : Bool -> Element context msg
 defaultCheckbox checked =
-    Debug.todo "TODO"
+    element <| Input.defaultCheckbox checked

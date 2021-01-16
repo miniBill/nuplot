@@ -78,7 +78,7 @@ type alias Font =
 {-| -}
 color : Color -> Attr context decorative msg
 color fontColor =
-    Debug.todo "attr"
+    attr <| Font.color fontColor
 
 
 {-|
@@ -98,7 +98,7 @@ color fontColor =
 -}
 family : List Font -> Attribute context msg
 family families =
-    Debug.todo "attribute"
+    attribute <| Font.family families
 
 
 {-| -}
