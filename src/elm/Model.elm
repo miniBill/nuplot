@@ -1,4 +1,4 @@
-module Model exposing (CellMsg(..), Document, Flags, Modal(..), Model, Msg(..), Output(..), Row, RowData(..), Size, documentFromFile, documentsCodec, emptyRow)
+module Model exposing (CellMsg(..), Context, Document, Flags, Language(..), Modal(..), Model, Msg(..), Output(..), Row, RowData(..), Size, documentFromFile, documentToFile, documentsCodec, emptyRow)
 
 import Codec exposing (Codec)
 import Expression exposing (Expression)
@@ -11,6 +11,7 @@ import Zipper exposing (Zipper)
 type alias Flags =
     { saved : JD.Value
     , hasClipboard : Bool
+    , languages : List String
     }
 
 
@@ -18,9 +19,20 @@ type alias Model =
     { documents : Maybe (Zipper Document)
     , modal : Maybe Modal
     , size : Size
-    , hasClipboard : Bool
     , openMenu : Bool
+    , context : Context
     }
+
+
+type alias Context =
+    { language : Language
+    , hasClipboard : Bool
+    }
+
+
+type Language
+    = En
+    | It
 
 
 type Modal
@@ -58,67 +70,78 @@ documentCodec =
         |> Codec.buildObject
 
 
+documentToFile : Document -> String
+documentToFile { rows } =
+    let
+        rowToString { input, data } =
+            case data of
+                MarkdownRow ->
+                    input
+
+                CodeRow _ ->
+                    input
+                        |> String.split "\n"
+                        |> List.map (\l -> "> " ++ l)
+                        |> String.join "\n"
+    in
+    String.join "\n\n" <| List.map rowToString rows
+
+
 documentFromFile : String -> String -> Document
 documentFromFile name file =
-    Parser.run
-        (Parser.succeed (\rows -> { name = name, changed = False, rows = rows })
-            |= rowsParser
-        )
-        file
-        |> Result.withDefault
-            { name = "Untitled"
-            , changed = False
-            , rows = []
-            }
+    file
+        |> String.split "\n\n"
+        |> List.concatMap parseRow
+        |> (\rows -> { name = name, changed = False, rows = rows })
 
 
-rowsParser : Parser (List Row)
-rowsParser =
-    Parser.sequence
-        { start = ""
-        , end = ""
-        , item = rowParser
-        , separator = "\n"
-        , spaces = Parser.succeed ()
-        , trailing = Parser.Optional
-        }
-
-
-unescape : String -> String
-unescape =
-    String.trim
-        >> String.replace "\\n" "\n"
-        >> String.replace "\\\\" "\\"
-
-
-escape : String -> String
-escape =
-    String.replace "\\" "\\\\"
-        >> String.replace "\n" "\\n"
-
-
-rowParser : Parser Row
-rowParser =
+parseRow : String -> List Row
+parseRow row =
     let
-        codeRow =
-            Parser.succeed (CodeRow Empty)
-                |. Parser.symbol ">"
+        parseFragment f =
+            if String.startsWith ">" f then
+                { input = String.trim (String.dropLeft 1 f)
+                , editing = False
+                , data = CodeRow Empty
+                }
 
-        markdownRow =
-            Parser.succeed MarkdownRow
+            else
+                { input = f
+                , editing = False
+                , data = MarkdownRow
+                }
+
+        combine e ( l, a ) =
+            case l of
+                Nothing ->
+                    ( Just e, a )
+
+                Just last ->
+                    case ( e.data, last.data ) of
+                        ( MarkdownRow, MarkdownRow ) ->
+                            ( Just
+                                { input = e.input ++ "\n" ++ last.input
+                                , editing = False
+                                , data = MarkdownRow
+                                }
+                            , a
+                            )
+
+                        _ ->
+                            ( Just e, last :: a )
     in
-    Parser.succeed
-        (\data input ->
-            { input = input
-            , editing = False
-            , data = data
-            }
-        )
-        |= Parser.oneOf
-            [ codeRow
-            , markdownRow
-            ]
-        |= Parser.getChompedString (Parser.chompWhile (\c -> c /= '\n'))
+    row
+        |> String.split "\n"
+        |> List.map parseFragment
+        |> List.foldr combine ( Nothing, [] )
+        |> (\( l, a ) ->
+                case l of
+                    Nothing ->
+                        a
+
+                    Just e ->
+                        e :: a
+           )
 
 
 type alias Size =
@@ -189,10 +212,12 @@ type Msg
     | DismissModal
     | SetModal Modal
     | ToggleMenu Bool
-    | Open
+    | OpenFile
+    | SaveFile
     | SelectedFileForOpen File
     | ReadFile String String
     | CellMsg Int CellMsg
+    | Language Language
 
 
 type CellMsg

@@ -2,9 +2,18 @@ module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, dark
 
 import Ant.Icon
 import Color
-import Element exposing (Attribute, Color, Element, none, rgb, shrink)
+import Element.WithContext as Element exposing (Attribute, Color, Element, none, rgb, shrink)
 import Html.Events
 import Json.Decode as Decode
+import Model exposing (Context)
+
+
+type alias Element msg =
+    Element.Element Context msg
+
+
+type alias Attribute msg =
+    Element.Attribute Context msg
 
 
 darkIconAttrs : List (Ant.Icon.Attribute msg)

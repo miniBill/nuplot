@@ -5,24 +5,29 @@ import Browser
 import Browser.Dom
 import Browser.Events
 import Codec exposing (Value)
-import Element exposing (Element, alignRight, centerX, centerY, el, fill, height, htmlAttribute, padding, text, width)
-import Element.Background as Background
-import Element.Border as Border
-import Element.Font as Font
-import Element.Input as Input
-import Element.Lazy
+import Element.WithContext as Element exposing (alignRight, centerX, centerY, el, fill, height, htmlAttribute, padding, width)
+import Element.WithContext.Background as Background
+import Element.WithContext.Border as Border
+import Element.WithContext.Font as Font
+import Element.WithContext.Input as Input
+import Element.WithContext.Lazy as Lazy
 import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Parser
 import File
+import File.Download
 import File.Select
 import Html
-import Html.Attributes
 import List.Extra as List
-import Model exposing (CellMsg(..), Document, Flags, Modal(..), Model, Msg(..), Output(..), RowData(..))
+import Model exposing (CellMsg(..), Context, Document, Flags, Language(..), Modal(..), Model, Msg(..), Output(..), RowData(..))
 import Task
+import UI.L10N as L10N exposing (L10N, text, title)
 import UI.RowView
 import UI.Theme as Theme exposing (onEnter)
 import Zipper exposing (Zipper)
+
+
+type alias Element msg =
+    Element.Element Context msg
 
 
 port persist : Value -> Cmd msg
@@ -39,19 +44,20 @@ main =
     Browser.element
         { init = init
         , view =
-            Element.layout
-                [ width fill
-                , Font.size Theme.fontSize
-                , Background.color Theme.colors.background
-                ]
-                << view
+            \model ->
+                Element.layout model.context
+                    [ width fill
+                    , Font.size Theme.fontSize
+                    , Background.color Theme.colors.background
+                    ]
+                    (view model)
         , update = update
         , subscriptions = subscriptions
         }
 
 
 init : Flags -> ( Model, Cmd Msg )
-init { saved, hasClipboard } =
+init { saved, hasClipboard, languages } =
     let
         documents =
             case Codec.decodeValue Model.documentsCodec saved of
@@ -88,12 +94,31 @@ init { saved, hasClipboard } =
                         , height = floor viewport.height
                         }
                     )
+
+        parseLanguage lang =
+            case String.split "-" lang of
+                "it" :: _ ->
+                    Just It
+
+                "en" :: _ ->
+                    Just En
+
+                _ ->
+                    Nothing
     in
     ( { documents = documents
       , size = { width = 1024, height = 768 }
       , modal = Nothing
-      , hasClipboard = hasClipboard
       , openMenu = False
+      , context =
+            { hasClipboard = hasClipboard
+            , language =
+                languages
+                    |> List.map parseLanguage
+                    |> List.filterMap identity
+                    |> List.head
+                    |> Maybe.withDefault En
+            }
       }
     , Task.perform Resized measure
     )
@@ -104,8 +129,8 @@ view model =
     let
         documentView =
             model.documents
-                |> Maybe.map (Zipper.selected >> viewDocument model.hasClipboard model.size)
-                |> Maybe.withDefault (Element.text "Select a document")
+                |> Maybe.map (Zipper.selected >> viewDocument model.size)
+                |> Maybe.withDefault (text { en = "Select a document", it = "Seleziona un documento" })
     in
     Theme.column
         [ width fill
@@ -133,18 +158,27 @@ toolbar { openMenu } =
                 , Border.rounded 999
                 ]
                 { onPress = Just <| ToggleMenu <| not openMenu
-                , label = Icons.moreOutlined Theme.darkIconAttrs
+                , label = Element.element <| Icons.moreOutlined Theme.darkIconAttrs
                 }
 
+        topBorder =
+            Border.widthEach { top = 1, left = 0, right = 0, bottom = 0 }
+
         dropdown () =
+            let
+                btn msg lbl =
+                    Input.button [ padding Theme.spacing ]
+                        { onPress = Just msg
+                        , label = text lbl
+                        }
+            in
             Element.column [ alignRight, Background.color Theme.colors.background, Border.width 1 ]
-                [ Input.button
-                    [ Border.widthEach { top = 0, left = 0, right = 0, bottom = 0 }
-                    , padding Theme.spacing
+                [ btn OpenFile { en = "Open", it = "Apri" }
+                , btn SaveFile { en = "Save", it = "Salva" }
+                , Element.row [ topBorder ]
+                    [ btn (Language En) <| L10N.invariant "🇬🇧"
+                    , btn (Language It) <| L10N.invariant "🇮🇹"
                     ]
-                    { onPress = Just Open
-                    , label = text "Open"
-                    }
                 ]
     in
     el
@@ -154,7 +188,7 @@ toolbar { openMenu } =
             Element.below <| dropdown ()
 
           else
-            Element.htmlAttribute <| Html.Attributes.title "Menu"
+            title { en = "Menu", it = "Menù" }
         ]
         moreButton
 
@@ -172,9 +206,9 @@ documentPicker ({ documents } as model) =
                     else
                         SelectDocument index
                 , closeMsg = Just <| CloseDocument { ask = True, index = index }
-                , label = text <| ellipsize doc.name
+                , label = text <| L10N.invariant <| ellipsize doc.name
                 , index = index
-                , title = doc.name
+                , title = L10N.invariant doc.name
                 }
 
         buttons =
@@ -183,9 +217,9 @@ documentPicker ({ documents } as model) =
                         { selected = False
                         , onPress = NewDocument
                         , closeMsg = Nothing
-                        , label = Icons.fileAddOutlined Theme.darkIconAttrs
+                        , label = Element.element <| Icons.fileAddOutlined Theme.darkIconAttrs
                         , index = -1
-                        , title = "New document"
+                        , title = { en = "New document", it = "Nuovo documento" }
                         }
                    ]
     in
@@ -208,7 +242,7 @@ ellipsize s =
         String.left 10 s ++ "..."
 
 
-documentTabButton : { a | selected : Bool, onPress : msg, closeMsg : Maybe msg, label : Element msg, index : number, title : String } -> Element msg
+documentTabButton : { a | selected : Bool, onPress : msg, closeMsg : Maybe msg, label : Element msg, index : number, title : L10N String } -> Element msg
 documentTabButton { selected, onPress, closeMsg, label, title, index } =
     let
         focusStyle s =
@@ -257,7 +291,7 @@ documentTabButton { selected, onPress, closeMsg, label, title, index } =
             else
                 Theme.colors.unselectedDocument
         , focusStyle selected
-        , htmlAttribute <| Html.Attributes.title title
+        , L10N.title title
         ]
         { onPress = Just onPress
         , label =
@@ -281,7 +315,7 @@ documentTabButton { selected, onPress, closeMsg, label, title, index } =
                                     Theme.colors.unselectedDocument
                             ]
                             { onPress = closeMsg
-                            , label = Icons.closeOutlined Theme.darkIconAttrs
+                            , label = Element.element <| Icons.closeOutlined Theme.darkIconAttrs
                             }
                 ]
         }
@@ -305,9 +339,12 @@ viewModal model =
                                 ++ [ Theme.row [ alignRight ]
                                         [ Input.button []
                                             { onPress = Just onOk
-                                            , label = text "Ok"
+                                            , label = text { en = "Ok", it = "Ok" }
                                             }
-                                        , Input.button [] { onPress = Just DismissModal, label = text "Cancel" }
+                                        , Input.button []
+                                            { onPress = Just DismissModal
+                                            , label = text { en = "Cancel", it = "Annulla" }
+                                            }
                                         ]
                                    ]
                             )
@@ -329,7 +366,10 @@ viewModal model =
 
                 Just { name } ->
                     wrap (CloseDocument { ask = False, index = i })
-                        [ text <| "Close document " ++ name ++ "?"
+                        [ text
+                            { en = "Close document \"" ++ name ++ "\"?"
+                            , it = "Chiudi il documento \"" ++ name ++ "\"?"
+                            }
                         ]
 
         ( Just (ModalRename name), Just docs ) ->
@@ -338,16 +378,21 @@ viewModal model =
                     { onChange = SetModal << ModalRename
                     , text = name
                     , placeholder = Nothing
-                    , label = Input.labelAbove [] <| text <| "Rename document \"" ++ (Zipper.selected docs).name ++ "\" to"
+                    , label =
+                        Input.labelAbove [] <|
+                            text
+                                { en = "Rename document \"" ++ (Zipper.selected docs).name ++ "\" to"
+                                , it = "Rinomina il documento \"" ++ (Zipper.selected docs).name ++ "\" a"
+                                }
                     }
                 ]
 
 
-viewDocument : Bool -> { width : Int, height : Int } -> Document -> Element Msg
-viewDocument hasClipboard size { rows } =
+viewDocument : { width : Int, height : Int } -> Document -> Element Msg
+viewDocument size { rows } =
     let
         rowsViews =
-            List.indexedMap (\index row -> Element.Lazy.lazy4 UI.RowView.view hasClipboard size index row) rows
+            List.indexedMap (\index row -> Lazy.lazy3 UI.RowView.view size index row) rows
     in
     Element.column
         [ Element.spacing <| 2 * Theme.spacing
@@ -497,8 +542,23 @@ update msg =
                 ToggleMenu openMenu ->
                     ( { model | openMenu = openMenu }, Cmd.none )
 
-                Open ->
+                OpenFile ->
                     ( model, File.Select.file [ "text/plain", ".txt" ] SelectedFileForOpen )
+
+                SaveFile ->
+                    case model.documents of
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                        Just docs ->
+                            let
+                                doc =
+                                    Zipper.selected docs
+
+                                documents =
+                                    Just <| Zipper.setSelected doc docs
+                            in
+                            ( model, File.Download.string "export.txt" "text/plain" <| Model.documentToFile doc )
 
                 SelectedFileForOpen file ->
                     ( model, Task.perform (ReadFile (File.name file)) (File.toString file) )
@@ -517,6 +577,13 @@ update msg =
                       }
                     , Cmd.none
                     )
+
+                Language language ->
+                    let
+                        context =
+                            model.context
+                    in
+                    ( { model | context = { context | language = language } }, Cmd.none )
     in
     \model -> inner { model | openMenu = False }
 

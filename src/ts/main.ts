@@ -45,6 +45,7 @@ function innerInit(Elm: ElmType, saved: any) {
     flags: {
       saved: saved,
       hasClipboard: typeof ClipboardItem !== "undefined",
+      languages: "languages" in navigator ? navigator.languages : [],
     },
   });
   app.ports.persist.subscribe((value) => {

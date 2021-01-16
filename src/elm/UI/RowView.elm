@@ -3,11 +3,11 @@ module UI.RowView exposing (view)
 import Ant.Icons as Icons
 import Complex
 import Dict
-import Element exposing (Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, rgb, row, shrink, spacing, text, width)
-import Element.Border as Border
-import Element.Font as Font
-import Element.Input as Input
-import Element.Lazy
+import Element.WithContext as Element exposing (Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, rgb, row, shrink, spacing, text, width)
+import Element.WithContext.Border as Border
+import Element.WithContext.Font as Font
+import Element.WithContext.Input as Input
+import Element.WithContext.Lazy as Lazy
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..), genericAsMatrix)
 import Expression.Graph exposing (Graph(..))
 import Expression.NumericRange
@@ -18,13 +18,17 @@ import Json.Encode
 import List.Extra as List
 import Markdown.Parser
 import Markdown.Renderer
-import Model exposing (CellMsg(..), Msg(..), Output(..), Row, RowData(..))
+import Model exposing (CellMsg(..), Context, Msg(..), Output(..), Row, RowData(..))
 import UI.Glsl exposing (getGlsl)
 import UI.Theme as Theme
 
 
-draw : Bool -> { width : Int, height : Int } -> String -> { wdiv : Int, hdiv : Int } -> Graph -> Element CellMsg
-draw hasClipboard { width, height } id { wdiv, hdiv } graph =
+type alias Element msg =
+    Element.Element Context msg
+
+
+draw : { width : Int, height : Int } -> String -> { wdiv : Int, hdiv : Int } -> Graph -> Element CellMsg
+draw { width, height } id { wdiv, hdiv } graph =
     let
         isCompletelyReal g =
             case g of
@@ -73,19 +77,21 @@ draw hasClipboard { width, height } id { wdiv, hdiv } graph =
 
         saveButton =
             Input.button []
-                { label = Icons.saveOutlined Theme.lightIconAttrs
+                { label = Element.element <| Icons.saveOutlined Theme.lightIconAttrs
                 , onPress = Just <| Save id
                 }
 
         copyButton =
-            if hasClipboard then
-                Input.button []
-                    { label = Icons.copyOutlined Theme.lightIconAttrs
-                    , onPress = Just <| Copy id
-                    }
+            Element.with .hasClipboard <|
+                \hasClipboard ->
+                    if hasClipboard then
+                        Input.button []
+                            { label = Element.element <| Icons.copyOutlined Theme.lightIconAttrs
+                            , onPress = Just <| Copy id
+                            }
 
-            else
-                none
+                    else
+                        none
 
         buttonsRow =
             Theme.row [ alignRight, alignTop, padding Theme.spacing ] [ copyButton, saveButton ]
@@ -108,8 +114,8 @@ draw hasClipboard { width, height } id { wdiv, hdiv } graph =
                 []
 
 
-view : Bool -> { width : Int, height : Int } -> Int -> Row -> Element Msg
-view hasClipboard size index { input, editing, data } =
+view : { width : Int, height : Int } -> Int -> Row -> Element Msg
+view size index { input, editing, data } =
     Element.map (CellMsg index) <|
         case data of
             CodeRow output ->
@@ -118,7 +124,7 @@ view hasClipboard size index { input, editing, data } =
                     , alignTop
                     ]
                     [ codeInputLine index input
-                    , Element.Lazy.lazy4 outputBlock ("canvas" ++ String.fromInt index) hasClipboard size output
+                    , Lazy.lazy3 outputBlock ("canvas" ++ String.fromInt index) size output
                     , statusLine size.width output
                     ]
 
@@ -128,10 +134,10 @@ view hasClipboard size index { input, editing, data } =
                         [ inputBox input
                         , Input.button [ htmlAttribute <| Html.Attributes.title "End editing" ]
                             { onPress = Just EndEditing
-                            , label = Icons.enterOutlined Theme.darkIconAttrs
+                            , label = Element.element <| Icons.enterOutlined Theme.darkIconAttrs
                             }
                         , Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Convert to Code cell" ]
-                            { label = Icons.swapOutlined Theme.darkIconAttrs
+                            { label = Element.element <| Icons.swapOutlined Theme.darkIconAttrs
                             , onPress = Just ToCode
                             }
                         ]
@@ -149,10 +155,10 @@ view hasClipboard size index { input, editing, data } =
                                     [ e
                                     , Input.button [ htmlAttribute <| Html.Attributes.title "Edit" ]
                                         { onPress = Just StartEditing
-                                        , label = Icons.editOutlined Theme.darkIconAttrs
+                                        , label = Element.element <| Icons.editOutlined Theme.darkIconAttrs
                                         }
                                     , Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Convert to Code cell" ]
-                                        { label = Icons.swapOutlined Theme.darkIconAttrs
+                                        { label = Element.element <| Icons.swapOutlined Theme.darkIconAttrs
                                         , onPress = Just ToCode
                                         }
                                     ]
@@ -183,10 +189,10 @@ codeInputLine index input =
         , inputBox input
         , Input.button [ htmlAttribute <| Html.Attributes.title "Press Enter to calculate" ]
             { onPress = Just Calculate
-            , label = Icons.enterOutlined Theme.darkIconAttrs
+            , label = Element.element <| Icons.enterOutlined Theme.darkIconAttrs
             }
         , Input.button [ htmlAttribute <| Html.Attributes.title "Convert to Markdown cell" ]
-            { label = Icons.swapOutlined Theme.darkIconAttrs
+            { label = Element.element <| Icons.swapOutlined Theme.darkIconAttrs
             , onPress = Just ToMarkdown
             }
         ]
@@ -315,8 +321,8 @@ bracketed l r blocks =
     row [ spacing 1, paddingXY 2 0 ] [ l, grid, r ]
 
 
-outputBlock : String -> Bool -> { height : Int, width : Int } -> Output -> Element CellMsg
-outputBlock blockId hasClipboard ({ height, width } as size) output =
+outputBlock : String -> { height : Int, width : Int } -> Output -> Element CellMsg
+outputBlock blockId ({ height, width } as size) output =
     let
         showExpr : Expression -> ( Element CellMsg, Bool )
         showExpr e =
@@ -362,7 +368,7 @@ outputBlock blockId hasClipboard ({ height, width } as size) output =
                             ( Element.column [ spacing Theme.spacing ] <| viewSolutionTree (width - 2 * Theme.spacing) t, False )
 
                         GraphValue g ->
-                            ( draw hasClipboard size id coeffs g, True )
+                            ( draw size id coeffs g, True )
 
                         ComplexValue c ->
                             ( text <| Complex.toString c, False )

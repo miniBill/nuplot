@@ -1,4 +1,5 @@
 * save/load
+* i18n/l10n
 * undo/redo
 * solve (x-pi)(x-e)
 * fix 3d navigation
