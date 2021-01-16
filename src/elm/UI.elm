@@ -586,7 +586,7 @@ update msg =
                                 doc =
                                     Zipper.selected docs
                             in
-                            ( model, File.Download.string "export.txt" "text/plain" <| Model.documentToFile doc )
+                            ( model, File.Download.string (doc.name ++ ".txt") "text/plain" <| Model.documentToFile doc )
 
                 SelectedFileForOpen file ->
                     ( model, Task.perform (ReadFile (File.name file)) (File.toString file) )
