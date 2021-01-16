@@ -1,8 +1,8 @@
-module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, lightIconAttrs, onCtrlEnter, onEnter, roundness, row, spacing, whiteLines, wrappedRow)
+module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, iconSize, lightIconAttrs, onCtrlEnter, onEnter, onKey, roundness, row, smallDarkIconAttrs, spacing, whiteLines, wrappedRow)
 
 import Ant.Icon
 import Color
-import Element.WithContext as Element exposing (Attribute, Color, Element, none, rgb, shrink)
+import Element.WithContext as Element exposing (Attribute, Color, Element, none, rgb, rgb255, rgba, shrink)
 import Html.Events
 import Json.Decode as Decode
 import Model exposing (Context)
@@ -16,18 +16,33 @@ type alias Attribute msg =
     Element.Attribute Context msg
 
 
+iconSize :
+    { documentPicker : Int
+    , standard : number
+    }
+iconSize =
+    { documentPicker = 20 * 3 // 4
+    , standard = 20
+    }
+
+
+smallDarkIconAttrs : List (Ant.Icon.Attribute msg)
+smallDarkIconAttrs =
+    [ Ant.Icon.width iconSize.documentPicker
+    , Ant.Icon.fill colors.iconDarkColor
+    ]
+
+
 darkIconAttrs : List (Ant.Icon.Attribute msg)
 darkIconAttrs =
-    [ Ant.Icon.width 24
-    , Ant.Icon.height 24
+    [ Ant.Icon.width iconSize.standard
     , Ant.Icon.fill colors.iconDarkColor
     ]
 
 
 lightIconAttrs : List (Ant.Icon.Attribute msg)
 lightIconAttrs =
-    [ Ant.Icon.width 24
-    , Ant.Icon.height 24
+    [ Ant.Icon.width iconSize.standard
     , Ant.Icon.fill colors.iconLightColor
     ]
 
@@ -63,12 +78,13 @@ bracketBorderWidth =
     2
 
 
-colors : { background : Color, iconDarkColor : Color, iconLightColor : Color, selectedDocument : Color, unselectedDocument : Color }
 colors =
     { background = rgb 0.9 0.9 0.9
+    , errorMessage = rgb 0.9 0 0
     , iconDarkColor = rgb 0.1 0.1 0.1
     , iconLightColor = rgb 0.9 0.9 0.9
-    , selectedDocument = rgb 0.8 0.8 0.9
+    , modalTransparentBackground = rgba 0.5 0.5 0.5 0.5
+    , selectedDocument = rgb255 0xFF 0xD7 0
     , unselectedDocument = rgb 0.8 0.8 0.8
     }
 
@@ -169,6 +185,22 @@ onCtrlEnter msg =
 
                 else
                     Decode.fail "ignored"
+            )
+        |> Html.Events.on "keyup"
+        |> Element.htmlAttribute
+
+
+onKey : (String -> Maybe msg) -> Attribute msg
+onKey msg =
+    Decode.field "key" Decode.string
+        |> Decode.andThen
+            (\s ->
+                case msg s of
+                    Just m ->
+                        Decode.succeed m
+
+                    Nothing ->
+                        Decode.fail "ignored"
             )
         |> Html.Events.on "keyup"
         |> Element.htmlAttribute

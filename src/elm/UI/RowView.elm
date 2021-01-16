@@ -3,7 +3,7 @@ module UI.RowView exposing (view)
 import Ant.Icons as Icons
 import Complex
 import Dict
-import Element.WithContext as Element exposing (Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, rgb, row, shrink, spacing, text, width)
+import Element.WithContext as Element exposing (Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, row, shrink, spacing, text, width)
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
 import Element.WithContext.Input as Input
@@ -230,7 +230,7 @@ viewError e =
         |> Element.textColumn
             [ alignTop
             , Font.family [ Font.monospace ]
-            , Font.color <| rgb 1 0 0
+            , Font.color Theme.colors.errorMessage
             ]
 
 

@@ -717,7 +717,7 @@ radioHelper :
         , label : Input.Label msg
         }
 radioHelper context config =
-    { onchange = config.onChange
+    { onChange = config.onChange
     , options = List.map (runOption context) config.options
     , selected = config.selected
     , label = runLabel context config.label

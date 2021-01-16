@@ -1,5 +1,6 @@
 port module UI exposing (main)
 
+import Ant.Icon
 import Ant.Icons as Icons
 import Browser
 import Browser.Dom
@@ -17,12 +18,13 @@ import File
 import File.Download
 import File.Select
 import Html
+import Html.Attributes
 import List.Extra as List
 import Model exposing (CellMsg(..), Context, Document, Flags, Language(..), Modal(..), Model, Msg(..), Output(..), RowData(..))
 import Task
 import UI.L10N as L10N exposing (L10N, text, title)
 import UI.RowView
-import UI.Theme as Theme exposing (onEnter)
+import UI.Theme as Theme exposing (onEnter, onKey)
 import Zipper exposing (Zipper)
 
 
@@ -158,7 +160,8 @@ toolbar { openMenu } =
                 , Border.rounded 999
                 ]
                 { onPress = Just <| ToggleMenu <| not openMenu
-                , label = Element.element <| Icons.moreOutlined Theme.darkIconAttrs
+                , label =
+                    Element.element <| Icons.moreOutlined Theme.smallDarkIconAttrs
                 }
 
         topBorder =
@@ -217,7 +220,12 @@ documentPicker ({ documents } as model) =
                         { selected = False
                         , onPress = NewDocument
                         , closeMsg = Nothing
-                        , label = Element.element <| Icons.fileAddOutlined Theme.darkIconAttrs
+                        , label =
+                            Element.row []
+                                [ -- This text element forces the button height
+                                  text <| L10N.invariant "\u{200B}"
+                                , Element.element <| Icons.fileAddTwoTone Theme.smallDarkIconAttrs
+                                ]
                         , index = -1
                         , title = { en = "New document", it = "Nuovo documento" }
                         }
@@ -235,11 +243,15 @@ documentPicker ({ documents } as model) =
 
 ellipsize : String -> String
 ellipsize s =
-    if String.length s < 10 then
+    let
+        maxLen =
+            15
+    in
+    if String.length s < maxLen then
         s
 
     else
-        String.left 10 s ++ "..."
+        String.left maxLen s ++ "..."
 
 
 documentTabButton : { a | selected : Bool, onPress : msg, closeMsg : Maybe msg, label : Element msg, index : number, title : L10N String } -> Element msg
@@ -315,7 +327,7 @@ documentTabButton { selected, onPress, closeMsg, label, title, index } =
                                     Theme.colors.unselectedDocument
                             ]
                             { onPress = closeMsg
-                            , label = Element.element <| Icons.closeOutlined Theme.darkIconAttrs
+                            , label = Element.element <| Icons.closeOutlined Theme.smallDarkIconAttrs
                             }
                 ]
         }
@@ -329,19 +341,26 @@ viewModal model =
                 [ width fill
                 , height fill
                 , padding <| Theme.spacing * 8
-                , Background.color <| Element.rgba 0.5 0.5 0.5 0.5
+                , Background.color Theme.colors.modalTransparentBackground
+                , Element.htmlAttribute <| Html.Attributes.style "backdrop-filter" "blur(2px)"
                 ]
             <|
-                el [ centerX, centerY, Background.color Theme.colors.background ] <|
+                el
+                    [ centerX
+                    , centerY
+                    , Background.color Theme.colors.background
+                    , Border.rounded Theme.roundness
+                    ]
+                <|
                     el [ padding Theme.spacing ] <|
                         Theme.column []
                             (e
                                 ++ [ Theme.row [ alignRight ]
-                                        [ Input.button []
+                                        [ Input.button [ padding Theme.spacing ]
                                             { onPress = Just onOk
                                             , label = text { en = "Ok", it = "Ok" }
                                             }
-                                        , Input.button []
+                                        , Input.button [ padding Theme.spacing ]
                                             { onPress = Just DismissModal
                                             , label = text { en = "Cancel", it = "Annulla" }
                                             }
@@ -374,7 +393,20 @@ viewModal model =
 
         ( Just (ModalRename name), Just docs ) ->
             wrap (RenameDocument <| Just name)
-                [ Input.text [ onEnter <| RenameDocument <| Just name ]
+                [ Input.text
+                    [ Input.focusedOnLoad
+                    , onKey <|
+                        \key ->
+                            case key of
+                                "Enter" ->
+                                    Just <| RenameDocument <| Just name
+
+                                "Escape" ->
+                                    Just DismissModal
+
+                                _ ->
+                                    Nothing
+                    ]
                     { onChange = SetModal << ModalRename
                     , text = name
                     , placeholder = Nothing
