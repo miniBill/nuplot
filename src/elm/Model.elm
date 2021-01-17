@@ -12,6 +12,7 @@ type alias Flags =
     { saved : JD.Value
     , hasClipboard : Bool
     , languages : List String
+    , rootUrl : String
     }
 
 
@@ -21,6 +22,7 @@ type alias Model =
     , size : Size
     , openMenu : Bool
     , context : Context
+    , rootUrl : String
     }
 
 
@@ -232,6 +234,7 @@ type Msg
     | ReadFile String String
     | CellMsg Int CellMsg
     | Language Language
+    | GoogleAuth
 
 
 type CellMsg

@@ -4,6 +4,7 @@ import Ant.Icons as Icons
 import Browser
 import Browser.Dom
 import Browser.Events
+import Browser.Navigation
 import Codec exposing (Value)
 import Element.WithContext as Element exposing (alignRight, centerX, centerY, el, fill, height, padding, spacing, width)
 import Element.WithContext.Background as Background
@@ -21,6 +22,7 @@ import Html.Attributes
 import List.Extra as List
 import Model exposing (CellMsg(..), Context, Document, Flags, Language(..), Modal(..), Model, Msg(..), Output(..), RowData(..))
 import Task
+import UI.Google
 import UI.L10N as L10N exposing (L10N, text, title)
 import UI.RowView
 import UI.Theme as Theme exposing (onKey)
@@ -58,7 +60,7 @@ main =
 
 
 init : Flags -> ( Model, Cmd Msg )
-init { saved, hasClipboard, languages } =
+init { saved, hasClipboard, rootUrl, languages } =
     let
         documents =
             case Codec.decodeValue Model.documentsCodec saved of
@@ -111,6 +113,7 @@ init { saved, hasClipboard, languages } =
       , size = { width = 1024, height = 768 }
       , modal = Nothing
       , openMenu = False
+      , rootUrl = rootUrl
       , context =
             { hasClipboard = hasClipboard
             , language =
@@ -169,8 +172,7 @@ toolbar { openMenu } =
             let
                 btn border msg lbl =
                     Input.button
-                        [ Border.widthEach { top = 1, left = 0, right = 0, bottom = 0 }
-                        , padding Theme.spacing
+                        [ padding Theme.spacing
                         , width fill
                         ]
                         { onPress = Just msg
@@ -181,16 +183,26 @@ toolbar { openMenu } =
                 [ Element.moveDown 1
                 , alignRight
                 , Background.color Theme.colors.background
-                , Border.widthEach { top = 0, left = 1, right = 1, bottom = 1 }
+                , Border.width 1
                 ]
-                [ btn False OpenFile { en = "Open", it = "Apri" }
-                , btn True SaveFile { en = "Save", it = "Salva" }
-                , Element.row []
-                    [ btn True (Language En) <| L10N.invariant "🇬🇧"
-                    , el [ height fill, Border.widthEach { top = 0, bottom = 0, right = 1, left = 0 } ] Element.none
-                    , btn True (Language It) <| L10N.invariant "🇮🇹"
+            <|
+                List.intersperse
+                    (el
+                        [ width fill
+                        , Border.widthEach { top = 1, left = 0, right = 0, bottom = 0 }
+                        ]
+                        Element.none
+                    )
+                <|
+                    [ btn False OpenFile { en = "Open", it = "Apri" }
+                    , btn True SaveFile { en = "Save", it = "Salva" }
+                    , btn True GoogleAuth { en = "Connect to Google Drive", it = "Collega a Google Drive" }
+                    , Element.row [ width fill ]
+                        [ el [ width fill ] <| el [ centerX ] <| btn True (Language En) <| L10N.invariant "🇬🇧"
+                        , el [ height fill, Border.widthEach { top = 0, bottom = 0, right = 1, left = 0 } ] Element.none
+                        , el [ width fill ] <| el [ centerX ] <| btn True (Language It) <| L10N.invariant "🇮🇹"
+                        ]
                     ]
-                ]
     in
     el
         [ width fill
@@ -407,7 +419,7 @@ viewModal model =
                         Input.labelAbove [] <|
                             text
                                 { en = "Rename document \"" ++ (Zipper.selected docs).name ++ "\" to"
-                                , it = "Rinomina il documento \"" ++ (Zipper.selected docs).name ++ "\" a"
+                                , it = "Rinomina il documento \"" ++ (Zipper.selected docs).name ++ "\" in"
                                 }
                     }
                 ]
@@ -607,6 +619,9 @@ update msg =
                             model.context
                     in
                     ( { model | context = { context | language = language } }, Cmd.none )
+
+                GoogleAuth ->
+                    ( model, Browser.Navigation.load <| UI.Google.buildUrl model.rootUrl )
     in
     \model -> inner { model | openMenu = False }
 

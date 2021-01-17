@@ -46,6 +46,7 @@ function innerInit(Elm: ElmType, saved: any) {
       saved: saved,
       hasClipboard: typeof ClipboardItem !== "undefined",
       languages: "languages" in navigator ? navigator.languages : [],
+      rootUrl: window.location.toString(),
     },
   });
   app.ports.persist.subscribe((value) => {

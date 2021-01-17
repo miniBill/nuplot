@@ -8,6 +8,7 @@ export type ElmType = {
         saved: { [key: string]: string };
         hasClipboard: boolean;
         languages: readonly string[];
+        rootUrl: string;
       };
     }) => UIInstance;
   };
