@@ -119,14 +119,21 @@ view size index { input, editing, data } =
     Element.map (CellMsg index) <|
         case data of
             CodeRow output ->
+                let
+                    outputRows =
+                        List.concatMap
+                            (\o ->
+                                [ Lazy.lazy3 outputBlock ("canvas" ++ String.fromInt index) size o
+                                , statusLine size.width o
+                                ]
+                            )
+                            output
+                in
                 Theme.column
                     [ Element.width fill
                     , alignTop
                     ]
-                    [ codeInputLine index input
-                    , Lazy.lazy3 outputBlock ("canvas" ++ String.fromInt index) size output
-                    , statusLine size.width output
-                    ]
+                    (codeInputLine index input :: outputRows)
 
             MarkdownRow ->
                 if editing then
@@ -201,9 +208,6 @@ codeInputLine index input =
 statusLine : Int -> Output -> Element msg
 statusLine pageWidth output =
     case output of
-        Empty ->
-            none
-
         ParseError e ->
             viewError e
 
@@ -420,9 +424,6 @@ outputBlock blockId ({ height, width } as size) output =
                                         |> Tuple.mapFirst (\e -> roundBracketed [ e ])
     in
     case output of
-        Empty ->
-            none
-
         ParseError _ ->
             none
 

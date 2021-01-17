@@ -71,11 +71,26 @@ documentCodec : Codec Document
 documentCodec =
     Codec.object (\n rs -> { name = n, changed = False, rows = rs })
         |> Codec.field "name" .name Codec.string
-        |> Codec.field "rows" .rows (Codec.list rowCodec)
+        |> Codec.field "rows" .rows rowsCodec
         |> Codec.buildObject
 
 
-documentToFile : Document -> String
+rowsCodec : Codec (List Row)
+rowsCodec =
+    let
+        v0Codec =
+            Codec.list rowCodec
+
+        v1Codec =
+            Codec.map
+                (documentFromFile "" >> .rows)
+                (\r -> documentToFile { rows = r })
+                Codec.string
+    in
+    Codec.oneOf v1Codec [ v0Codec ]
+
+
+documentToFile : { a | rows : List Row } -> String
 documentToFile { rows } =
     let
         rowToString { input, data } =
@@ -100,16 +115,11 @@ documentFromFile name file =
     file
         |> String.split "\n\n"
         |> List.concatMap parseRow
+        |> List.filterNot (.input >> String.isEmpty)
         |> (\rows ->
                 { name = name
                 , changed = False
-                , rows =
-                    rows
-                        ++ [ { input = ""
-                             , data = CodeRow Empty
-                             , editing = True
-                             }
-                           ]
+                , rows = rows ++ [ emptyRow ]
                 }
            )
 
@@ -121,7 +131,7 @@ parseRow row =
             if String.startsWith ">" f then
                 { input = String.trim (String.dropLeft 1 f)
                 , editing = False
-                , data = CodeRow Empty
+                , data = CodeRow []
                 }
 
             else
@@ -142,6 +152,15 @@ parseRow row =
                                 { input = e.input ++ "\n" ++ last.input
                                 , editing = False
                                 , data = MarkdownRow
+                                }
+                            , a
+                            )
+
+                        ( CodeRow _, CodeRow _ ) ->
+                            ( Just
+                                { input = e.input ++ "\n" ++ last.input
+                                , editing = False
+                                , data = CodeRow []
                                 }
                             , a
                             )
@@ -177,7 +196,7 @@ type alias Row =
 
 
 type RowData
-    = CodeRow Output
+    = CodeRow (List Output)
     | MarkdownRow
 
 
@@ -188,7 +207,7 @@ rowCodec =
             if String.startsWith ">" i then
                 { input = String.trim <| String.dropLeft 1 i
                 , editing = False
-                , data = CodeRow Empty
+                , data = CodeRow []
                 }
 
             else
@@ -212,13 +231,12 @@ emptyRow : Row
 emptyRow =
     { input = ""
     , editing = True
-    , data = CodeRow Empty
+    , data = CodeRow []
     }
 
 
 type Output
-    = Empty
-    | ParseError String
+    = ParseError String
     | Parsed Expression
 
 

@@ -86,7 +86,7 @@ init { saved, hasClipboard, languages } url key =
         emptyRow x =
             { input = x
             , editing = False
-            , data = CodeRow Empty
+            , data = CodeRow []
             }
 
         default =
@@ -532,7 +532,7 @@ update msg =
                                 (\r ->
                                     case r.data of
                                         CodeRow _ ->
-                                            { r | editing = False, data = CodeRow <| parseOrError r.input }
+                                            { r | editing = False, data = CodeRow <| List.filterMap parseOrError <| String.split "\n" r.input }
 
                                         MarkdownRow ->
                                             { r | editing = False }
@@ -545,7 +545,7 @@ update msg =
                             updateRow False (\r -> { r | editing = False })
 
                         ToCode ->
-                            updateRow True (\r -> { r | data = CodeRow Empty })
+                            updateRow True (\r -> { r | data = CodeRow [] })
 
                         ToMarkdown ->
                             updateRow True (\r -> { r | data = MarkdownRow })
@@ -675,6 +675,9 @@ update msg =
                 GoogleAuth ->
                     ( model, Browser.Navigation.load <| UI.Google.buildUrl model.rootUrl )
 
+                GoogleSave ->
+                    ( model, Cmd.none )
+
                 Nop _ ->
                     ( model, Cmd.none )
     in
@@ -700,18 +703,19 @@ updateCurrent f model =
             )
 
 
-parseOrError : String -> Output
+parseOrError : String -> Maybe Output
 parseOrError input =
     if String.isEmpty input then
-        Empty
+        Nothing
 
     else
-        case Expression.Parser.parse input of
-            Ok e ->
-                Parsed e
+        Just <|
+            case Expression.Parser.parse input of
+                Ok e ->
+                    Parsed e
 
-            Err e ->
-                ParseError <| Expression.Parser.errorsToString input e
+                Err e ->
+                    ParseError <| Expression.Parser.errorsToString input e
 
 
 subscriptions : Model -> Sub Msg
