@@ -1572,18 +1572,6 @@ main3D suffixes =
     deindent 12 <|
         head
             ++ """
-            vec3 color(float y) {
-                float logRadius = log2(abs(y));
-                float powerRemainder = fract(logRadius);
-                float squished = 0.7 - powerRemainder * 0.4;
-
-                float haf = fract(logRadius) / 6.0;
-                if(y > 0.0)
-                    return hl2rgb(haf + 0.3, squished);
-                else
-                    return hl2rgb(haf - 0.1, 1.0 - squished);
-            }
-
             vec4 pixel3 () {
                 float eye_dist = 2.0 * u_viewportWidth;
                 float t = u_theta - 1.0;
