@@ -1,5 +1,6 @@
 module Model exposing (CellMsg(..), Context, Document, Flags, Language(..), Modal(..), Model, Msg(..), Output(..), Row, RowData(..), Size, documentFromFile, documentToFile, documentsCodec, emptyRow)
 
+import Browser.Navigation exposing (Key)
 import Codec exposing (Codec)
 import Expression exposing (Expression)
 import File exposing (File)
@@ -23,6 +24,8 @@ type alias Model =
     , openMenu : Bool
     , context : Context
     , rootUrl : String
+    , accessToken : Maybe String
+    , key : Key
     }
 
 
@@ -235,6 +238,8 @@ type Msg
     | CellMsg Int CellMsg
     | Language Language
     | GoogleAuth
+    | GoogleSave
+    | Nop String
 
 
 type CellMsg

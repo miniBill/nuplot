@@ -4,7 +4,7 @@ import Ant.Icons as Icons
 import Browser
 import Browser.Dom
 import Browser.Events
-import Browser.Navigation
+import Browser.Navigation exposing (Key)
 import Codec exposing (Value)
 import Element.WithContext as Element exposing (alignRight, centerX, centerY, el, fill, height, padding, spacing, width)
 import Element.WithContext.Background as Background
@@ -26,6 +26,8 @@ import UI.Google
 import UI.L10N as L10N exposing (L10N, text, title)
 import UI.RowView
 import UI.Theme as Theme exposing (onKey)
+import Url exposing (Url)
+import Url.Parser
 import Zipper
 
 
@@ -44,23 +46,29 @@ port save : String -> Cmd msg
 
 main : Program Flags Model Msg
 main =
-    Browser.element
+    Browser.application
         { init = init
         , view =
             \model ->
-                Element.layout model.context
-                    [ width fill
-                    , Font.size Theme.fontSize
-                    , Background.color Theme.colors.background
+                { title = "nuPlot"
+                , body =
+                    [ Element.layout model.context
+                        [ width fill
+                        , Font.size Theme.fontSize
+                        , Background.color Theme.colors.background
+                        ]
+                        (view model)
                     ]
-                    (view model)
+                }
         , update = update
         , subscriptions = subscriptions
+        , onUrlChange = always <| Nop "onUrlChange"
+        , onUrlRequest = always <| Nop "onUrlRequest"
         }
 
 
-init : Flags -> ( Model, Cmd Msg )
-init { saved, hasClipboard, rootUrl, languages } =
+init : Flags -> Url -> Key -> ( Model, Cmd Msg )
+init { saved, hasClipboard, languages } url key =
     let
         documents =
             case Codec.decodeValue Model.documentsCodec saved of
@@ -108,12 +116,51 @@ init { saved, hasClipboard, rootUrl, languages } =
 
                 _ ->
                     Nothing
+
+        rootUrl =
+            String.concat
+                [ case url.protocol of
+                    Url.Http ->
+                        "http"
+
+                    Url.Https ->
+                        "https"
+                , "://"
+                , url.host
+                , case url.port_ of
+                    Nothing ->
+                        ""
+
+                    Just p ->
+                        ":" ++ String.fromInt p
+                ]
+
+        accessToken =
+            Url.Parser.parse accessTokenParser url |> Maybe.andThen identity
+
+        accessTokenParser =
+            Url.Parser.fragment <|
+                Maybe.andThen
+                    (String.split "&"
+                        >> List.filterMap
+                            (\p ->
+                                case String.split "=" p of
+                                    [ "access_token", v ] ->
+                                        Just v
+
+                                    _ ->
+                                        Nothing
+                            )
+                        >> List.head
+                    )
     in
     ( { documents = documents
       , size = { width = 1024, height = 768 }
       , modal = Nothing
       , openMenu = False
       , rootUrl = rootUrl
+      , key = key
+      , accessToken = accessToken
       , context =
             { hasClipboard = hasClipboard
             , language =
@@ -153,7 +200,7 @@ view model =
 
 
 toolbar : Model -> Element Msg
-toolbar { openMenu } =
+toolbar { openMenu, accessToken } =
     let
         moreButton =
             Input.button
@@ -170,7 +217,7 @@ toolbar { openMenu } =
 
         dropdown () =
             let
-                btn border msg lbl =
+                btn msg lbl =
                     Input.button
                         [ padding Theme.spacing
                         , width fill
@@ -194,13 +241,18 @@ toolbar { openMenu } =
                         Element.none
                     )
                 <|
-                    [ btn False OpenFile { en = "Open", it = "Apri" }
-                    , btn True SaveFile { en = "Save", it = "Salva" }
-                    , btn True GoogleAuth { en = "Connect to Google Drive", it = "Collega a Google Drive" }
+                    [ btn OpenFile { en = "Open", it = "Apri" }
+                    , btn SaveFile { en = "Save", it = "Salva" }
+                    , case accessToken of
+                        Nothing ->
+                            btn GoogleAuth { en = "Connect to Google Drive", it = "Collega a Google Drive" }
+
+                        Just _ ->
+                            btn GoogleSave { en = "Save on Google Drive", it = "Salva su Google Drive" }
                     , Element.row [ width fill ]
-                        [ el [ width fill ] <| el [ centerX ] <| btn True (Language En) <| L10N.invariant "🇬🇧"
+                        [ el [ width fill ] <| el [ centerX ] <| btn (Language En) <| L10N.invariant "🇬🇧"
                         , el [ height fill, Border.widthEach { top = 0, bottom = 0, right = 1, left = 0 } ] Element.none
-                        , el [ width fill ] <| el [ centerX ] <| btn True (Language It) <| L10N.invariant "🇮🇹"
+                        , el [ width fill ] <| el [ centerX ] <| btn (Language It) <| L10N.invariant "🇮🇹"
                         ]
                     ]
     in
@@ -622,6 +674,9 @@ update msg =
 
                 GoogleAuth ->
                     ( model, Browser.Navigation.load <| UI.Google.buildUrl model.rootUrl )
+
+                Nop _ ->
+                    ( model, Cmd.none )
     in
     \model -> inner { model | openMenu = False }
 
