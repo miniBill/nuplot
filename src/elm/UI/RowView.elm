@@ -212,7 +212,7 @@ statusLine pageWidth output =
         ParseError e ->
             viewError e
 
-        Parsed e ->
+        Parsed _ ->
             {- Theme.column [ alignTop, width <| Element.maximum 200 fill ]
                [ text "Interpreted as: "
                , viewExpression pageWidth e
@@ -322,7 +322,7 @@ bracketed l r blocks =
 
 
 outputBlock : String -> { height : Int, width : Int } -> Output -> Element CellMsg
-outputBlock blockId ({ height, width } as size) output =
+outputBlock blockId ({ width } as size) output =
     let
         showExpr : Expression -> ( Element CellMsg, Bool )
         showExpr e =

@@ -183,7 +183,7 @@ view model =
                 |> Maybe.map (Zipper.selected >> viewDocument model.size)
                 |> Maybe.withDefault (text { en = "Select a document", it = "Seleziona un documento" })
     in
-    Theme.column
+    Element.column
         [ width fill
         , height fill
         , Element.inFront <| viewModal model
@@ -327,8 +327,8 @@ ellipsize s =
         String.left maxLen s ++ "..."
 
 
-documentTabButton : { a | selected : Bool, onPress : msg, closeMsg : Maybe msg, label : Element msg, index : number, title : L10N String } -> Element msg
-documentTabButton { selected, onPress, closeMsg, label, title, index } =
+documentTabButton : { a | selected : Bool, onPress : msg, closeMsg : Maybe msg, label : Element msg, title : L10N String } -> Element msg
+documentTabButton { selected, onPress, closeMsg, label, title } =
     let
         focusStyle =
             Element.focused
@@ -496,7 +496,7 @@ viewDocument size { rows } =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg =
     let
-        filterEmpty row =
+        filterEmpty =
             List.filterNot (.input >> String.isEmpty)
                 >> (\rs -> rs ++ [ Model.emptyRow ])
 
@@ -511,7 +511,7 @@ update msg =
                                         | rows =
                                             curr.rows
                                                 |> List.updateAt row rowF
-                                                |> filterEmpty row
+                                                |> filterEmpty
                                         , changed = curr.changed || changed
                                     }
                                 )

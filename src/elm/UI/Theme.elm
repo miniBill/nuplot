@@ -78,6 +78,15 @@ bracketBorderWidth =
     2
 
 
+colors :
+    { background : Color
+    , errorMessage : Color
+    , iconDarkColor : Color
+    , iconLightColor : Color
+    , modalTransparentBackground : Color
+    , selectedDocument : Color
+    , unselectedDocument : Color
+    }
 colors =
     { background = rgb 0.9 0.9 0.9
     , errorMessage = rgb 0.9 0 0
