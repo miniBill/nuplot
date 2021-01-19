@@ -629,33 +629,6 @@ complexMap2 ({ symbolic, complex, list, lambda, context } as fs) v w =
 
 toSymbolic : Value -> Expression
 toSymbolic v =
-    let
-        graphToExpression g =
-            case g of
-                Explicit2D e ->
-                    e
-
-                Relation2D e ->
-                    e
-
-                Implicit2D l r ->
-                    RelationOperation Equals l r
-
-                Implicit3D e ->
-                    e
-
-                Contour e ->
-                    e
-
-                Polar2D e ->
-                    e
-
-                Parametric2D x y ->
-                    List [ x, y ]
-
-                GraphList gs ->
-                    List <| List.map graphToExpression gs
-    in
     case v of
         LambdaValue x f ->
             Lambda x <| toSymbolic f
@@ -670,7 +643,7 @@ toSymbolic v =
             List <| List.map toSymbolic l
 
         GraphValue g ->
-            Apply (KnownFunction Plot) [ graphToExpression g ]
+            Apply (KnownFunction Plot) [ Expression.Graph.toExpression g ]
 
         ErrorValue _ ->
             Integer 0

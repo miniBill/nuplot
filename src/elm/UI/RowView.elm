@@ -110,6 +110,7 @@ draw { width, height } id { wdiv, hdiv } graph =
                 , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
                 , Html.Attributes.attribute "completely-real" <| boolToIntString <| isCompletelyReal graph
                 , Html.Attributes.attribute "is-3d" <| boolToIntString <| is3D graph
+                , Html.Attributes.title <| Expression.toString <| Expression.Graph.toExpression graph
                 ]
                 []
 

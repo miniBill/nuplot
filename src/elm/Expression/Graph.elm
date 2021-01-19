@@ -1,4 +1,4 @@
-module Expression.Graph exposing (Graph(..), fromExpression, toString)
+module Expression.Graph exposing (Graph(..), fromExpression, toExpression, toString)
 
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), getFreeVariables)
 import Expression.Simplify
@@ -110,3 +110,34 @@ toString g =
 
         GraphList gs ->
             "GraphList [" ++ String.join ", " (List.map toString gs) ++ "]"
+
+
+toExpression : Graph -> Expression
+toExpression g =
+    case g of
+        Explicit2D e ->
+            e
+
+        Relation2D e ->
+            e
+
+        Implicit2D l r ->
+            RelationOperation Equals l r
+
+        Implicit3D e ->
+            e
+
+        Contour e ->
+            e
+
+        Polar2D e ->
+            e
+
+        Parametric2D x y ->
+            List [ x, y ]
+
+        GraphList [ c ] ->
+            toExpression c
+
+        GraphList gs ->
+            List <| List.map toExpression gs
