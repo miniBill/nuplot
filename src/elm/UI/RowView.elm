@@ -212,13 +212,15 @@ statusLine pageWidth output =
         ParseError e ->
             viewError e
 
-        Parsed _ ->
-            {- Theme.column [ alignTop, width <| Element.maximum 200 fill ]
-               [ text "Interpreted as: "
-               , viewExpression pageWidth e
-               ]
-            -}
-            none
+        Parsed e ->
+            if False then
+                Theme.column [ alignTop, width <| Element.maximum 200 fill ]
+                    [ text "Interpreted as: "
+                    , viewExpression pageWidth e
+                    ]
+
+            else
+                none
 
 
 viewError : String -> Element msg
