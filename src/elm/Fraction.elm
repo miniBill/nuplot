@@ -1,6 +1,4 @@
-module Fraction exposing (Fraction, build, by, div, divisor, fromInt, isZero, negate, plus, pow, toPair)
-
-import Expression.Simplify exposing (igcd)
+module Fraction exposing (Fraction, build, by, div, divisor, fromInt, gcd, isZero, negate, plus, pow, toPair)
 
 
 type Fraction
@@ -50,7 +48,7 @@ build n d =
     else
         let
             g =
-                abs <| igcd n d
+                abs <| gcd n d
         in
         Fraction (n // g) (d // g)
 
@@ -63,3 +61,18 @@ toPair (Fraction n d) =
 isZero : Fraction -> Bool
 isZero (Fraction n _) =
     n == 0
+
+
+gcd : Int -> Int -> Int
+gcd ll rr =
+    if ll < 0 then
+        -(gcd -ll rr)
+
+    else if ll < rr then
+        gcd rr ll
+
+    else if rr == 0 then
+        ll
+
+    else
+        gcd rr (modBy rr ll)

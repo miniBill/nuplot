@@ -1,4 +1,4 @@
-module Expression.Simplify exposing (hoistLambda, igcd, simplify, sortByDegree, stepSimplify)
+module Expression.Simplify exposing (hoistLambda, simplify, sortByDegree, stepSimplify)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute, visit)
@@ -611,21 +611,6 @@ findSpecificVariable j expr =
             Nothing
 
 
-findAddition : Expression -> Maybe ( Expression, Expression, List Expression )
-findAddition expr =
-    case expr of
-        AssociativeOperation Addition l r o ->
-            Just ( l, r, o )
-
-        _ ->
-            Nothing
-
-
-findAdditionList : Expression -> Maybe (List Expression)
-findAdditionList =
-    findAddition >> Maybe.map (\( l, r, o ) -> l :: r :: o)
-
-
 findNegate : Expression -> Maybe Expression
 findNegate expr =
     case expr of
@@ -853,92 +838,6 @@ multiplyMatrices =
         }
 
 
-transformAssociativeToDivision : Dict String Expression -> AssociativeOperation -> Expression -> List Expression -> Expression
-transformAssociativeToDivision context aop divLcm extracted =
-    case aop of
-        Addition ->
-            let
-                multiplied =
-                    List.map (\e -> by [ divLcm, e ]) extracted
-            in
-            div (plus multiplied) divLcm
-
-        Multiplication ->
-            List.foldl
-                (\e ( n, d ) ->
-                    case e of
-                        BinaryOperation Division en ed ->
-                            ( en :: n, ed :: d )
-
-                        _ ->
-                            ( e :: n, d )
-                )
-                ( [], [] )
-                extracted
-                |> (\( ns, ds ) ->
-                        div
-                            (by ns)
-                            (by ds)
-                   )
-
-
-lcm : Expression -> Expression -> Expression
-lcm l r =
-    if Expression.equals l r then
-        l
-
-    else
-        case ( l, r ) of
-            ( Integer 1, _ ) ->
-                r
-
-            ( _, Integer 1 ) ->
-                l
-
-            ( Integer li, Integer ri ) ->
-                Integer <| li * ri // igcd li ri
-
-            ( Variable lv, Variable rv ) ->
-                if lv == rv then
-                    l
-
-                else
-                    by [ l, r ]
-
-            _ ->
-                by [ l, r ]
-
-
-igcd : Int -> Int -> Int
-igcd ll rr =
-    if ll < 0 then
-        -(igcd -ll rr)
-
-    else if ll < rr then
-        igcd rr ll
-
-    else if rr == 0 then
-        ll
-
-    else
-        igcd rr (modBy rr ll)
-
-
-denominatorLcm : List Expression -> Expression
-denominatorLcm le =
-    List.foldl
-        (\e a ->
-            case e of
-                BinaryOperation Division _ d ->
-                    lcm a d
-
-                _ ->
-                    a
-        )
-        (Integer 1)
-        le
-
-
 polyDegree : String -> Expression -> Maybe Int
 polyDegree var expr =
     let
@@ -1007,8 +906,8 @@ polyDegree var expr =
 
 hoistLambda : Expression -> Expression
 hoistLambda =
-    visit <|
-        \expr ->
+    visit
+        (\expr ->
             case expr of
                 Lambda x f ->
                     Just <| Lambda x <| hoistLambda f
@@ -1058,3 +957,4 @@ hoistLambda =
 
                 _ ->
                     Nothing
+        )

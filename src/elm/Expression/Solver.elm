@@ -2,9 +2,9 @@ module Expression.Solver exposing (solve)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
-import Expression.Simplify exposing (igcd, simplify, stepSimplify)
+import Expression.Simplify exposing (simplify, stepSimplify)
 import Expression.Utils exposing (asPoly, by, byShort, div, divShort, factor, i, ipow, isZero, minus, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
-import Fraction
+import Fraction exposing (gcd)
 import List.Extra as List
 import Result
 import Result.Extra as Result
@@ -187,7 +187,7 @@ findRationalRoot v coeffs =
                 commonMultiple =
                     rats
                         |> List.map Tuple.second
-                        |> List.foldl (\f a -> abs <| Fraction.divisor f * a // igcd (Fraction.divisor f) a) 1
+                        |> List.foldl (\f a -> abs <| Fraction.divisor f * a // gcd (Fraction.divisor f) a) 1
 
                 reduced =
                     rats
