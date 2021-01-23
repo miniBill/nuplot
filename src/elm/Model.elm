@@ -255,7 +255,6 @@ type Msg
     | ReadFile String String
     | CellMsg Int CellMsg
     | Language Language
-    | GoogleAuth
     | GoogleSave
     | Nop String
 

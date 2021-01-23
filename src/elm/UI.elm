@@ -243,12 +243,13 @@ toolbar { openMenu, accessToken } =
                 <|
                     [ btn OpenFile { en = "Open", it = "Apri" }
                     , btn SaveFile { en = "Save", it = "Salva" }
-                    , case accessToken of
-                        Nothing ->
-                            btn GoogleAuth { en = "Connect to Google Drive", it = "Collega a Google Drive" }
 
-                        Just _ ->
-                            btn GoogleSave { en = "Save on Google Drive", it = "Salva su Google Drive" }
+                    --, case accessToken of
+                    --    Nothing ->
+                    --        btn GoogleAuth { en = "Connect to Google Drive", it = "Collega a Google Drive" }
+                    --
+                    --    Just _ ->
+                    --        btn GoogleSave { en = "Save on Google Drive", it = "Salva su Google Drive" }
                     , Element.row [ width fill ]
                         [ el [ width fill ] <| el [ centerX ] <| btn (Language En) <| L10N.invariant "🇬🇧"
                         , el [ height fill, Border.widthEach { top = 0, bottom = 0, right = 1, left = 0 } ] Element.none
@@ -672,9 +673,8 @@ update msg =
                     in
                     ( { model | context = { context | language = language } }, Cmd.none )
 
-                GoogleAuth ->
-                    ( model, Browser.Navigation.load <| UI.Google.buildUrl model.rootUrl )
-
+                --GoogleAuth ->
+                --    ( model, Browser.Navigation.load <| UI.Google.buildUrl model.rootUrl )
                 GoogleSave ->
                     ( model, Cmd.none )
 
