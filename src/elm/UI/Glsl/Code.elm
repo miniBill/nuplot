@@ -1094,9 +1094,6 @@ expressionToGlslPrec p expr =
         PPower (PVariable v) (PInteger 2) ->
             "vec2(" ++ v ++ "*" ++ v ++ ",0)"
 
-        PPower (PVariable v) (PInteger i) ->
-            "vec2(pow(" ++ v ++ "," ++ String.fromInt i ++ ".0))"
-
         PPower l r ->
             apply "cpow" [ l, r ]
 
