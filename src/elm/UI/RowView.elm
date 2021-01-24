@@ -197,7 +197,7 @@ codeInputLine index input =
         , inputBox input
         , Input.button [ htmlAttribute <| Html.Attributes.title "Press Ctrl+Enter to calculate" ]
             { onPress = Just Calculate
-            , label = Element.element <| Icons.enterOutlined Theme.darkIconAttrs
+            , label = Element.element <| Icons.playSquareOutlined Theme.darkIconAttrs
             }
         , Input.button [ htmlAttribute <| Html.Attributes.title "Convert to Markdown cell" ]
             { label = Element.element <| Icons.swapOutlined Theme.darkIconAttrs

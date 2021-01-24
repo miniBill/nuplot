@@ -209,10 +209,24 @@ toolbar { openMenu, accessToken } =
                 , padding Theme.spacing
                 , Border.rounded 999
                 , Element.mouseOver [ Background.color <| Theme.darken Theme.colors.background ]
+                , title { en = "Menu", it = "Menù" }
                 ]
                 { onPress = Just <| ToggleMenu <| not openMenu
                 , label =
                     Element.element <| Icons.moreOutlined Theme.smallDarkIconAttrs
+                }
+
+        runButton =
+            Input.button
+                [ alignRight
+                , centerY
+                , padding Theme.spacing
+                , Border.rounded 999
+                , Element.mouseOver [ Background.color <| Theme.darken Theme.colors.background ]
+                , title { en = "Run document", it = "Esegui documento" }
+                ]
+                { onPress = Just CalculateAll
+                , label = Element.element <| Icons.playSquareOutlined Theme.darkIconAttrs
                 }
 
         dropdown () =
@@ -257,16 +271,16 @@ toolbar { openMenu, accessToken } =
                         ]
                     ]
     in
-    el
+    Element.row
         [ width fill
         , padding <| Theme.spacing // 4
         , if openMenu then
             Element.below <| dropdown ()
 
           else
-            title { en = "Menu", it = "Menù" }
+            width fill
         ]
-        moreButton
+        [ runButton, moreButton ]
 
 
 documentPicker : Model -> Element Msg
@@ -497,6 +511,14 @@ viewDocument size { rows } =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg =
     let
+        calculateRow r =
+            case r.data of
+                CodeRow _ ->
+                    { r | editing = False, data = CodeRow <| List.filterMap parseOrError <| String.split "\n" r.input }
+
+                MarkdownRow ->
+                    { r | editing = False }
+
         filterEmpty =
             List.filterNot (.input >> String.isEmpty)
                 >> (\rs -> rs ++ [ Model.emptyRow ])
@@ -529,15 +551,7 @@ update msg =
                             updateRow True (\r -> { r | input = input })
 
                         Calculate ->
-                            updateRow False
-                                (\r ->
-                                    case r.data of
-                                        CodeRow _ ->
-                                            { r | editing = False, data = CodeRow <| List.filterMap parseOrError <| String.split "\n" r.input }
-
-                                        MarkdownRow ->
-                                            { r | editing = False }
-                                )
+                            updateRow False calculateRow
 
                         StartEditing ->
                             updateRow False (\r -> { r | editing = True })
@@ -600,6 +614,9 @@ update msg =
                         ( { model | documents = documents, modal = Nothing }
                         , persist <| Codec.encodeToValue Model.documentsCodec documents
                         )
+
+                CalculateAll ->
+                    updateCurrent (\doc -> { doc | rows = List.map calculateRow doc.rows }) model
 
                 RenameDocument n ->
                     case n of

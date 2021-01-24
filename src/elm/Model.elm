@@ -257,6 +257,7 @@ type Msg
     | Language Language
     | GoogleSave
     | Nop String
+    | CalculateAll
 
 
 type CellMsg
