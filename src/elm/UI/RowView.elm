@@ -195,7 +195,7 @@ codeInputLine index input =
     Theme.row [ width fill ]
         [ text <| "In [" ++ String.fromInt index ++ "]"
         , inputBox input
-        , Input.button [ htmlAttribute <| Html.Attributes.title "Press Enter to calculate" ]
+        , Input.button [ htmlAttribute <| Html.Attributes.title "Press Ctrl+Enter to calculate" ]
             { onPress = Just Calculate
             , label = Element.element <| Icons.enterOutlined Theme.darkIconAttrs
             }
