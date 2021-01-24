@@ -64,13 +64,13 @@ draw { width, height } id { wdiv, hdiv } graph =
                 "0"
 
         rawImageWidth =
-            min 1920 <| width - (6 + wdiv) * 3 * Theme.spacing
+            min 1920 <| width - (8 + wdiv) * 3 * Theme.spacing
+
+        rawImageHeight =
+            min 1080 <| height - (8 + hdiv) * 3 * Theme.spacing
 
         imageWidth =
             rawImageWidth
-
-        rawImageHeight =
-            min 1080 <| height - (6 + hdiv) * 3 * Theme.spacing
 
         imageHeight =
             rawImageHeight
