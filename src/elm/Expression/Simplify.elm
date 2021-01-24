@@ -906,6 +906,7 @@ polyDegree var expr =
 
 hoistLambda : Expression -> Expression
 hoistLambda q =
+    -- TODO: remove `q` when Elm LS is fixed
     q
         |> visit
             (\expr ->
