@@ -1,5 +1,5 @@
-* Fix parse of `(x-α)(x-β)(x-γ)`
 * Save on Google
+* Fix parse of `(x-α)(x-β)(x-γ)`
 * Save to folder
 * User functions
 * undo/redo
