@@ -21,7 +21,7 @@ This means if a key is changed between renders, then the diffing step will be sk
 -}
 
 import Element.Keyed as Keyed
-import Element.WithContext exposing (Attribute, Element, fill, height, shrink, width)
+import Element.WithContext exposing (Attribute, Element)
 import Element.WithContext.Internal exposing (run, wrapAttrs)
 
 
