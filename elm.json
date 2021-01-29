@@ -1,8 +1,7 @@
 {
     "type": "application",
     "source-directories": [
-        "src/elm",
-        "src/elm-ui-with-context"
+        "src/elm"
     ],
     "elm-version": "0.19.1",
     "dependencies": {
@@ -22,7 +21,8 @@
             "elm-explorations/test": "1.2.2",
             "lemol/ant-design-icons-elm-ui": "1.0.0",
             "mdgriffith/elm-ui": "1.1.8",
-            "miniBill/elm-codec": "2.0.0"
+            "miniBill/elm-codec": "2.0.0",
+            "miniBill/elm-ui-with-context": "1.0.0"
         },
         "indirect": {
             "elm/bytes": "1.0.8",
