@@ -7,7 +7,7 @@ import Browser.Dom
 import Browser.Events
 import Browser.Navigation exposing (Key)
 import Codec exposing (Value)
-import Element.WithContext as Element exposing (alignBottom, alignRight, centerX, centerY, el, fill, height, inFront, padding, spacing, width)
+import Element.WithContext as Element exposing (alignBottom, alignRight, centerX, centerY, el, fill, height, inFront, padding, scrollbarX, shrink, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -267,6 +267,11 @@ toolbar { openMenu } =
                                 ]
                         }
 
+                simpleBtn msg icon lbl =
+                    btn msg
+                        [ Element.element <| icon Theme.darkIconAttrs ]
+                        lbl
+
                 hr =
                     el
                         [ width fill
@@ -279,6 +284,31 @@ toolbar { openMenu } =
                         ]
                         Element.none
 
+                vr =
+                    el
+                        [ height fill
+                        , Border.widthEach
+                            { top = 0
+                            , bottom = 0
+                            , right = 1
+                            , left = 0
+                            }
+                        ]
+                        Element.none
+
+                languageButton lang flag =
+                    el [ width fill ] <|
+                        el [ centerX ] <|
+                            btn (Language lang) [] <|
+                                L10N.invariant flag
+
+                languagesRow =
+                    Element.row [ width fill ]
+                        [ languageButton En "🇬🇧"
+                        , vr
+                        , languageButton It "🇮🇹"
+                        ]
+
                 expandIntervalsButton expandIntervals =
                     if expandIntervals then
                         btn (ExpandIntervals False)
@@ -288,7 +318,7 @@ toolbar { openMenu } =
                             { en = "Do not apply noise reduction", it = "Non applicare riduzione rumore" }
 
                     else
-                        btn (ExpandIntervals True) [ Element.element <| Icons.funnelPlotOutlined Theme.darkIconAttrs ] { en = "Apply noise reduction", it = "Applica riduzione rumore" }
+                        simpleBtn (ExpandIntervals True) Icons.funnelPlotOutlined { en = "Apply noise reduction", it = "Applica riduzione rumore" }
             in
             Element.column
                 [ alignRight
@@ -298,31 +328,21 @@ toolbar { openMenu } =
             <|
                 List.intersperse
                     hr
-                    [ btn OpenFile [ Element.element <| Icons.folderOpenOutlined Theme.darkIconAttrs ] { en = "Open", it = "Apri" }
-                    , btn SaveFile [ Element.element <| Icons.saveOutlined Theme.darkIconAttrs ] { en = "Save", it = "Salva" }
+                    [ simpleBtn OpenFile Icons.folderOpenOutlined { en = "Open", it = "Apri" }
+                    , simpleBtn SaveFile Icons.saveOutlined { en = "Save", it = "Salva" }
                     , Element.with .expandIntervals expandIntervalsButton
 
-                    --, case accessToken of
-                    --    Nothing ->
-                    --        btn GoogleAuth { en = "Connect to Google Drive", it = "Collega a Google Drive" }
-                    --
-                    --    Just _ ->
-                    --        btn GoogleSave { en = "Save on Google Drive", it = "Salva su Google Drive" }
-                    , Element.row [ width fill ]
-                        [ el [ width fill ] <| el [ centerX ] <| btn (Language En) [] <| L10N.invariant "🇬🇧"
-                        , el [ height fill, Border.widthEach { top = 0, bottom = 0, right = 1, left = 0 } ] Element.none
-                        , el [ width fill ] <| el [ centerX ] <| btn (Language It) [] <| L10N.invariant "🇮🇹"
-                        ]
+                    --, simpleBtn GoogleSave Icons.uploadOutlined { en = "Save on Google Drive", it = "Salva su Google Drive" }
+                    , languagesRow
                     ]
     in
     Element.row
-        [ width fill
-        , padding <| Theme.spacing // 4
+        [ padding <| Theme.spacing // 4
         , if openMenu then
             Element.below <| dropdown ()
 
           else
-            width fill
+            width shrink
         ]
         [ runButton, moreButton ]
 
@@ -368,9 +388,15 @@ documentPicker ({ documents } as model) =
         , width fill
         , spacing <| Theme.spacing // 2
         ]
-    <|
-        buttons
-            ++ [ toolbar model ]
+        [ Element.row
+            [ alignBottom
+            , spacing <| Theme.spacing // 2
+            , scrollbarX
+            , width fill
+            ]
+            buttons
+        , toolbar model
+        ]
 
 
 ellipsize : String -> String

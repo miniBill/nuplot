@@ -11,36 +11,30 @@ type alias L10N a =
     }
 
 
-invariant : a -> { en : a, it : a }
+invariant : a -> L10N a
 invariant content =
     { en = content
     , it = content
     }
 
 
-text : L10N String -> Element { a | language : Language } msg
-text { en, it } =
-    Element.with
-        (\{ language } ->
-            case language of
-                En ->
-                    en
+localize : L10N a -> { b | language : Language } -> a
+localize { en, it } { language } =
+    case language of
+        En ->
+            en
 
-                It ->
-                    it
-        )
+        It ->
+            it
+
+
+text : L10N String -> Element { a | language : Language } msg
+text l10n =
+    Element.with (localize l10n)
         Element.text
 
 
 title : L10N String -> Element.Attribute { a | language : Language } msg
-title { en, it } =
-    Element.withAttribute
-        (\{ language } ->
-            case language of
-                En ->
-                    en
-
-                It ->
-                    it
-        )
+title l10n =
+    Element.withAttribute (localize l10n)
         (Element.htmlAttribute << Html.Attributes.title)
