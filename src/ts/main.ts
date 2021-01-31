@@ -10,6 +10,17 @@ window.MathJax = {
   },
 };
 
+function loadMathJax() {
+  var script = document.createElement("script");
+  script.async = true;
+  script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js";
+
+  document.head.appendChild(script);
+}
+
+// Delay loading MathJax
+setTimeout(loadMathJax, 500);
+
 declare class ClipboardItem {
   constructor(data: { [mimeType: string]: Blob });
 }
