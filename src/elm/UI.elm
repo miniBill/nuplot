@@ -7,7 +7,7 @@ import Browser.Dom
 import Browser.Events
 import Browser.Navigation exposing (Key)
 import Codec exposing (Value)
-import Element.WithContext as Element exposing (alignRight, centerX, centerY, el, fill, height, inFront, padding, spacing, width)
+import Element.WithContext as Element exposing (alignBottom, alignRight, centerX, centerY, el, fill, height, inFront, padding, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -202,7 +202,7 @@ view model =
 
 
 toolbar : Model -> Element Msg
-toolbar { openMenu, accessToken } =
+toolbar { openMenu } =
     let
         toolbarButton msg icon label =
             Input.button
@@ -267,6 +267,18 @@ toolbar { openMenu, accessToken } =
                                 ]
                         }
 
+                hr =
+                    el
+                        [ width fill
+                        , Border.widthEach
+                            { top = 1
+                            , left = 0
+                            , right = 0
+                            , bottom = 0
+                            }
+                        ]
+                        Element.none
+
                 expandIntervalsButton expandIntervals =
                     if expandIntervals then
                         btn (ExpandIntervals False)
@@ -279,20 +291,13 @@ toolbar { openMenu, accessToken } =
                         btn (ExpandIntervals True) [ Element.element <| Icons.funnelPlotOutlined Theme.darkIconAttrs ] { en = "Apply noise reduction", it = "Applica riduzione rumore" }
             in
             Element.column
-                [ Element.moveDown 1
-                , alignRight
+                [ alignRight
                 , Background.color Theme.colors.background
                 , Border.width 1
                 ]
             <|
                 List.intersperse
-                    (el
-                        [ width fill
-                        , Border.widthEach { top = 1, left = 0, right = 0, bottom = 0 }
-                        ]
-                        Element.none
-                    )
-                <|
+                    hr
                     [ btn OpenFile [ Element.element <| Icons.folderOpenOutlined Theme.darkIconAttrs ] { en = "Open", it = "Apri" }
                     , btn SaveFile [ Element.element <| Icons.saveOutlined Theme.darkIconAttrs ] { en = "Save", it = "Salva" }
                     , Element.with .expandIntervals expandIntervalsButton
@@ -416,6 +421,7 @@ documentTabButton { selected, onPress, closeMsg, label, title } =
                 Theme.colors.unselectedDocument
         , focusStyle
         , L10N.title title
+        , alignBottom
         ]
         { onPress = Just onPress
         , label =
