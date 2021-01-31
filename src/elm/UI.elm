@@ -1,12 +1,13 @@
 port module UI exposing (main)
 
+import Ant.Icon as Icon
 import Ant.Icons as Icons
 import Browser
 import Browser.Dom
 import Browser.Events
 import Browser.Navigation exposing (Key)
 import Codec exposing (Value)
-import Element.WithContext as Element exposing (alignRight, centerX, centerY, el, fill, height, padding, spacing, width)
+import Element.WithContext as Element exposing (alignRight, centerX, centerY, el, fill, height, inFront, padding, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -169,6 +170,7 @@ init { saved, hasClipboard, languages } url key =
                     |> List.filterMap identity
                     |> List.head
                     |> Maybe.withDefault En
+            , expandIntervals = True
             }
       }
     , Task.perform Resized measure
@@ -202,43 +204,79 @@ view model =
 toolbar : Model -> Element Msg
 toolbar { openMenu, accessToken } =
     let
-        moreButton =
+        toolbarButton msg icon label =
             Input.button
                 [ alignRight
                 , centerY
                 , padding Theme.spacing
                 , Border.rounded 999
                 , Element.mouseOver [ Background.color <| Theme.darken Theme.colors.background ]
-                , title { en = "Menu", it = "Menù" }
+                , title label
                 ]
-                { onPress = Just <| ToggleMenu <| not openMenu
-                , label =
-                    Element.element <| Icons.moreOutlined Theme.smallDarkIconAttrs
+                { onPress = Just msg
+                , label = Element.element <| icon Theme.darkIconAttrs
                 }
 
+        moreButton =
+            toolbarButton
+                (ToggleMenu <| not openMenu)
+                Icons.moreOutlined
+                { en = "Menu", it = "Menù" }
+
         runButton =
-            Input.button
-                [ alignRight
-                , centerY
-                , padding Theme.spacing
-                , Border.rounded 999
-                , Element.mouseOver [ Background.color <| Theme.darken Theme.colors.background ]
-                , title { en = "Run document", it = "Esegui documento" }
+            toolbarButton
+                CalculateAll
+                Icons.playSquareOutlined
+                { en = "Run document", it = "Esegui documento" }
+
+        bigStop =
+            let
+                bigWidth =
+                    Theme.iconSize.standard * 4 // 3
+
+                delta =
+                    Theme.iconSize.standard / 6
+            in
+            el
+                [ Element.moveUp delta
+                , Element.moveLeft delta
                 ]
-                { onPress = Just CalculateAll
-                , label = Element.element <| Icons.playSquareOutlined Theme.darkIconAttrs
-                }
+            <|
+                Element.element <|
+                    Icons.stopOutlined <|
+                        Theme.darkIconAttrs
+                            ++ [ Icon.width bigWidth ]
 
         dropdown () =
             let
-                btn msg lbl =
+                btn msg icon lbl =
                     Input.button
                         [ padding Theme.spacing
                         , width fill
                         ]
                         { onPress = Just msg
-                        , label = text lbl
+                        , label =
+                            Theme.row []
+                                [ case icon of
+                                    [] ->
+                                        Element.none
+
+                                    mainIcon :: layers ->
+                                        List.foldl (\e a -> el [ inFront <| e ] a) mainIcon layers
+                                , text lbl
+                                ]
                         }
+
+                expandIntervalsButton expandIntervals =
+                    if expandIntervals then
+                        btn (ExpandIntervals False)
+                            [ Element.element <| Icons.funnelPlotOutlined Theme.darkIconAttrs
+                            , bigStop
+                            ]
+                            { en = "Do not apply noise reduction", it = "Non applicare riduzione rumore" }
+
+                    else
+                        btn (ExpandIntervals True) [ Element.element <| Icons.funnelPlotOutlined Theme.darkIconAttrs ] { en = "Apply noise reduction", it = "Applica riduzione rumore" }
             in
             Element.column
                 [ Element.moveDown 1
@@ -255,8 +293,9 @@ toolbar { openMenu, accessToken } =
                         Element.none
                     )
                 <|
-                    [ btn OpenFile { en = "Open", it = "Apri" }
-                    , btn SaveFile { en = "Save", it = "Salva" }
+                    [ btn OpenFile [ Element.element <| Icons.folderOpenOutlined Theme.darkIconAttrs ] { en = "Open", it = "Apri" }
+                    , btn SaveFile [ Element.element <| Icons.saveOutlined Theme.darkIconAttrs ] { en = "Save", it = "Salva" }
+                    , Element.with .expandIntervals expandIntervalsButton
 
                     --, case accessToken of
                     --    Nothing ->
@@ -265,9 +304,9 @@ toolbar { openMenu, accessToken } =
                     --    Just _ ->
                     --        btn GoogleSave { en = "Save on Google Drive", it = "Salva su Google Drive" }
                     , Element.row [ width fill ]
-                        [ el [ width fill ] <| el [ centerX ] <| btn (Language En) <| L10N.invariant "🇬🇧"
+                        [ el [ width fill ] <| el [ centerX ] <| btn (Language En) [] <| L10N.invariant "🇬🇧"
                         , el [ height fill, Border.widthEach { top = 0, bottom = 0, right = 1, left = 0 } ] Element.none
-                        , el [ width fill ] <| el [ centerX ] <| btn (Language It) <| L10N.invariant "🇮🇹"
+                        , el [ width fill ] <| el [ centerX ] <| btn (Language It) [] <| L10N.invariant "🇮🇹"
                         ]
                     ]
     in
@@ -689,6 +728,13 @@ update msg =
                             model.context
                     in
                     ( { model | context = { context | language = language } }, Cmd.none )
+
+                ExpandIntervals expandIntervals ->
+                    let
+                        context =
+                            model.context
+                    in
+                    ( { model | context = { context | expandIntervals = expandIntervals } }, Cmd.none )
 
                 --GoogleAuth ->
                 --    ( model, Browser.Navigation.load <| UI.Google.buildUrl model.rootUrl )

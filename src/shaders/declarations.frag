@@ -10,6 +10,7 @@ uniform float u_canvasWidth;
 uniform float u_canvasHeight;
 uniform float u_phi;
 uniform float u_theta;
+uniform float u_denoise;
 
 vec3 hl2rgb(float h, float l)
 {
@@ -27,4 +28,8 @@ vec4 gnum(float f) {
 
 float atanPlus(float y, float x) {
     return mod(radians(360.0) + atan(y, x), radians(360.0));
+}
+
+vec2 iexpand(vec2 v) {
+    return v * (vec2(1.0, 1.0) + sign(v) * vec2(-u_denoise, u_denoise));
 }

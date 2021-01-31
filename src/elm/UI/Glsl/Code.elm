@@ -840,14 +840,14 @@ toSrcPolar suffix e =
     """
 
 
-toSrcParametric : String -> Expression -> String
-toSrcParametric suffix e =
+toSrcParametric : Bool -> String -> Expression -> String
+toSrcParametric expandIntervals suffix e =
     """
     vec2 interval""" ++ suffix ++ """(vec2 p, float from, float to) {
         vec2 x = vec2(p.x,p.x);
         vec2 y = vec2(p.y,p.y);
         vec2 t = from < to ? vec2(from, to) : vec2(to, from);
-        return """ ++ expressionToIntervalGlsl e ++ """;
+        return """ ++ expressionToIntervalGlsl expandIntervals e ++ """;
     }
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
@@ -1011,10 +1011,10 @@ expressionToGlsl =
         >> wordWrap
 
 
-expressionToIntervalGlsl : Expression -> String
-expressionToIntervalGlsl =
+expressionToIntervalGlsl : Bool -> Expression -> String
+expressionToIntervalGlsl expandIntervals =
     Expression.toPrintExpression
-        >> expressionToIntervalGlslPrec 0
+        >> expressionToIntervalGlslPrec expandIntervals 0
         >> wordWrap
 
 
@@ -1123,8 +1123,8 @@ expressionToGlslPrec p expr =
             "vec2(0)"
 
 
-expressionToIntervalGlslPrec : Int -> PrintExpression -> String
-expressionToIntervalGlslPrec p expr =
+expressionToIntervalGlslPrec : Bool -> Int -> PrintExpression -> String
+expressionToIntervalGlslPrec expandIntervals p expr =
     let
         paren b c =
             if b then
@@ -1134,10 +1134,17 @@ expressionToIntervalGlslPrec p expr =
                 c
 
         infixl_ n op l r =
-            paren (p > n) <| expressionToIntervalGlslPrec n l ++ op ++ expressionToIntervalGlslPrec (n + 1) r
+            paren (p > n) <| expressionToIntervalGlslPrec expandIntervals n l ++ op ++ expressionToIntervalGlslPrec expandIntervals (n + 1) r
 
         apply name ex =
-            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (expressionToIntervalGlslPrec 0) ex) ++ ")"
+            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (expressionToIntervalGlslPrec expandIntervals 0) ex) ++ ")"
+
+        expand e =
+            if expandIntervals then
+                "iexpand(" ++ e ++ ")"
+
+            else
+                e
     in
     case expr of
         PVariable "pi" ->
@@ -1156,10 +1163,10 @@ expressionToIntervalGlslPrec p expr =
             "dup(" ++ floatToGlsl f ++ ")"
 
         PNegate expression ->
-            "ineg(" ++ expressionToIntervalGlslPrec 10 expression ++ ")"
+            "ineg(" ++ expressionToIntervalGlslPrec expandIntervals 10 expression ++ ")"
 
         PAdd l r ->
-            infixl_ 6 " + " l r
+            expand <| infixl_ 6 " + " l r
 
         PRel op l r ->
             let
@@ -1183,47 +1190,50 @@ expressionToIntervalGlslPrec p expr =
                         _ ->
                             "iuknownrelop"
             in
-            name ++ "(" ++ expressionToIntervalGlslPrec 10 l ++ ", " ++ expressionToIntervalGlslPrec 10 r ++ ")"
+            expand <| name ++ "(" ++ expressionToIntervalGlslPrec expandIntervals 10 l ++ ", " ++ expressionToIntervalGlslPrec expandIntervals 10 r ++ ")"
 
         PBy l r ->
-            apply "iby" [ l, r ]
+            expand <| apply "iby" [ l, r ]
 
         PDiv l r ->
-            apply "idiv" [ l, r ]
+            expand <| apply "idiv" [ l, r ]
 
         PPower (PVariable "i") (PInteger 2) ->
             "dup(-1.0)"
 
         PPower l (PInteger 2) ->
-            "isquare(" ++ expressionToIntervalGlslPrec 0 l ++ ")"
+            expand <| "isquare(" ++ expressionToIntervalGlslPrec expandIntervals 0 l ++ ")"
 
         PPower l (PInteger ri) ->
             let
                 ris =
                     String.fromInt ri
             in
-            "ipow(" ++ expressionToIntervalGlslPrec 0 l ++ ", " ++ ris ++ ")"
+            expand <| "ipow(" ++ expressionToIntervalGlslPrec expandIntervals 0 l ++ ", " ++ ris ++ ")"
 
         PPower l r ->
-            apply "ipow" [ l, r ]
+            expand <| apply "ipow" [ l, r ]
 
         PApply name ex ->
             if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
-                case List.map (expressionToIntervalGlslPrec 0) ex of
+                case List.map (expressionToIntervalGlslPrec expandIntervals 0) ex of
                     [] ->
                         "vec2(0)"
 
                     head :: tail ->
-                        List.foldl (\e a -> "i" ++ Expression.functionNameToString name ++ "(" ++ a ++ "," ++ e ++ ")") head tail
+                        expand <| List.foldl (\e a -> "i" ++ Expression.functionNameToString name ++ "(" ++ a ++ "," ++ e ++ ")") head tail
 
-            else
+            else if name == KnownFunction Sin || name == KnownFunction Cos then
                 apply ("i" ++ Expression.functionNameToString name) ex
 
+            else
+                expand <| apply ("i" ++ Expression.functionNameToString name) ex
+
         PList es ->
-            "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (expressionToIntervalGlslPrec 0) es) ++ ")"
+            "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (expressionToIntervalGlslPrec expandIntervals 0) es) ++ ")"
 
         PReplace var e ->
-            expressionToIntervalGlslPrec p (Expression.pfullSubstitute var e)
+            expressionToIntervalGlslPrec expandIntervals p (Expression.pfullSubstitute var e)
 
         -- If this happens, it's too late
         PLambda _ _ ->
@@ -1417,8 +1427,8 @@ main2D pixels =
         """
 
 
-toSrc3D : String -> Expression -> String
-toSrc3D suffix e =
+toSrc3D : Bool -> String -> Expression -> String
+toSrc3D expandIntervals suffix e =
     """
     vec3 normal""" ++ suffix ++ """(vec3 p) {
         float x = p.x;
@@ -1434,7 +1444,7 @@ toSrc3D suffix e =
         vec2 x = vec2(mn.x, mx.x);
         vec2 z = vec2(mn.y, mx.y);
         vec2 y = vec2(mn.z, mx.z);
-        return """ ++ expressionToIntervalGlsl e ++ """;
+        return """ ++ expressionToIntervalGlsl expandIntervals e ++ """;
     }
     """
 

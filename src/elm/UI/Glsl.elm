@@ -12,8 +12,8 @@ import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, 
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
-getGlsl : Graph -> String
-getGlsl graph =
+getGlsl : Bool -> Graph -> String
+getGlsl expandIntervals graph =
     let
         { expr, srcExpr, interval, thetaDelta, pixel2D, pixel3D } =
             extract "" graph
@@ -49,7 +49,7 @@ getGlsl graph =
                                 ]
                     in
                     { expr = e
-                    , srcExpr = toSrcParametric prefix e
+                    , srcExpr = toSrcParametric expandIntervals prefix e
                     , interval = IntervalOnly
                     , thetaDelta = False
                     , pixel2D = [ { name = "pixel" ++ prefix, color = True } ]
@@ -70,7 +70,7 @@ getGlsl graph =
 
                 Implicit3D e ->
                     { expr = e
-                    , srcExpr = "BORK" ++ toSrc3D prefix e
+                    , srcExpr = "BORK" ++ toSrc3D expandIntervals prefix e
                     , interval = IntervalAndStraight
                     , thetaDelta = True
                     , pixel2D = []

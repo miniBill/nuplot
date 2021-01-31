@@ -27,6 +27,7 @@ export class NuPlot extends HTMLElement {
 
   whiteLines = 6;
   completelyReal = 0;
+  denoise = 0.000001;
   is3D = 0;
   minIterations = 25;
   currIterations = 400;
@@ -468,6 +469,7 @@ export class NuPlot extends HTMLElement {
     this.uniform2f("u_zoomCenter", this.center.x, this.center.y);
     this.uniform1f("u_phi", this.phi);
     this.uniform1f("u_theta", this.theta);
+    this.uniform1f("u_denoise", this.denoise);
 
     this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
@@ -508,6 +510,10 @@ export class NuPlot extends HTMLElement {
       case "completely-real":
         if (!newValue) return;
         this.completelyReal = +newValue;
+        break;
+
+      case "de-noise":
+        this.denoise = +newValue;
         break;
 
       case "is-3d":
@@ -602,6 +608,7 @@ ${NuPlot.withLines(built)}`;
       "canvas-height",
       "white-lines",
       "completely-real",
+      "de-noise",
       "is-3d",
     ];
   }

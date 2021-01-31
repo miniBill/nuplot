@@ -32,6 +32,7 @@ type alias Model =
 type alias Context =
     { language : Language
     , hasClipboard : Bool
+    , expandIntervals : Bool
     }
 
 
@@ -250,6 +251,7 @@ type Msg
     | SetModal Modal
     | ToggleMenu Bool
     | OpenFile
+    | ExpandIntervals Bool
     | SaveFile
     | SelectedFileForOpen File
     | ReadFile String String
