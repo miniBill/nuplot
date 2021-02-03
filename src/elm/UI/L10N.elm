@@ -1,8 +1,12 @@
-module UI.L10N exposing (L10N, invariant, text, title)
+module UI.L10N exposing (L10N, Language(..), invariant, text, title)
 
 import Element.WithContext as Element exposing (Element)
 import Html.Attributes
-import Model exposing (Language(..))
+
+
+type Language
+    = En
+    | It
 
 
 type alias L10N a =

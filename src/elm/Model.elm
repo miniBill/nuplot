@@ -1,4 +1,4 @@
-module Model exposing (CellMsg(..), Context, Document, Flags, Language(..), Modal(..), Model, Msg(..), Output(..), Row, RowData(..), Size, documentFromFile, documentToFile, documentsCodec, emptyRow)
+module Model exposing (CellMsg(..), Context, Document, Flags, Metadata, Modal(..), Model, Msg(..), Output(..), Row, RowData(..), Size, documentFromFile, documentToFile, documentsCodec, emptyMetadata, emptyRow)
 
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec)
@@ -6,6 +6,9 @@ import Expression exposing (Expression)
 import File exposing (File)
 import Json.Decode as JD
 import List.Extra as List
+import List.MyExtra as List exposing (LeftOrRight(..))
+import String
+import UI.L10N as L10N exposing (L10N, Language)
 import Zipper exposing (Zipper)
 
 
@@ -36,11 +39,6 @@ type alias Context =
     }
 
 
-type Language
-    = En
-    | It
-
-
 type Modal
     = ModalClose Int
     | ModalRename String
@@ -62,17 +60,31 @@ documentsCodec =
 
 
 type alias Document =
-    { name : String
-    , changed : Bool
-    , rows : List Row
+    { rows : List Row
+    , metadata : Metadata
+    }
+
+
+type alias Metadata =
+    { name : Maybe String
+    , googleId : Maybe String
     }
 
 
 documentCodec : Codec Document
 documentCodec =
-    Codec.object (\n rs -> { name = n, changed = False, rows = rs })
-        |> Codec.field "name" .name Codec.string
+    Codec.object
+        (\r n gid ->
+            { rows = r
+            , metadata =
+                { name = n
+                , googleId = gid
+                }
+            }
+        )
         |> Codec.field "rows" .rows rowsCodec
+        |> Codec.maybeField "name" (.metadata >> .name) Codec.string
+        |> Codec.maybeField "googleId" (.metadata >> .googleId) Codec.string
         |> Codec.buildObject
 
 
@@ -84,7 +96,7 @@ rowsCodec =
 
         v1Codec =
             Codec.map
-                (documentFromFile "" >> .rows)
+                (documentFromFile Nothing >> .document >> .rows)
                 (\r -> documentToFile { rows = r })
                 Codec.string
     in
@@ -111,76 +123,142 @@ documentToFile { rows } =
         |> String.join "\n\n"
 
 
-documentFromFile : String -> String -> Document
+documentFromFile :
+    Maybe String
+    -> String
+    ->
+        { errors : List (L10N String)
+        , document : Document
+        }
 documentFromFile name file =
     file
         |> String.split "\n\n"
-        |> List.concatMap parseRow
-        |> List.filterNot (.input >> String.isEmpty)
-        |> (\rows ->
-                { name = name
-                , changed = False
-                , rows = rows ++ [ emptyRow ]
+        |> List.map parseRow
+        |> List.foldr (\( m, r ) ( ma, ra ) -> ( m ++ ma, r ++ ra )) ( [], [] )
+        |> Tuple.mapSecond (List.filterNot (.input >> String.isEmpty))
+        |> (\( metadataWithErrorsList, rows ) ->
+                let
+                    { errors, metadata } =
+                        List.foldr combineMetadataWithErrors { errors = [], metadata = emptyMetadata } metadataWithErrorsList
+                in
+                { errors = errors
+                , document =
+                    { rows = rows ++ [ emptyRow ]
+                    , metadata =
+                        { name =
+                            metadata.name
+                                |> withDefaultMaybe name
+                        , googleId = metadata.googleId
+                        }
+                    }
                 }
            )
 
 
-parseRow : String -> List Row
+withDefaultMaybe : Maybe a -> Maybe a -> Maybe a
+withDefaultMaybe r l =
+    case l of
+        Just _ ->
+            l
+
+        Nothing ->
+            r
+
+
+combineMetadataWithErrors : MetadataWithErrors -> MetadataWithErrors -> MetadataWithErrors
+combineMetadataWithErrors l r =
+    { errors = l.errors ++ r.errors
+    , metadata =
+        { name = l.metadata.name |> withDefaultMaybe r.metadata.name
+        , googleId = l.metadata.googleId |> withDefaultMaybe r.metadata.googleId
+        }
+    }
+
+
+emptyMetadata : Metadata
+emptyMetadata =
+    { name = Nothing
+    , googleId = Nothing
+    }
+
+
+type ParsedRow
+    = NormalRow Row
+    | MetadataRow MetadataWithErrors
+
+
+type alias MetadataWithErrors =
+    { errors : List (L10N String)
+    , metadata : Metadata
+    }
+
+
+parseRow : String -> ( List MetadataWithErrors, List Row )
 parseRow row =
     let
+        metadataMarker =
+            "[//]: # (NUPLOT INTERNAL DATA -- "
+
         parseFragment f =
             if String.startsWith ">" f then
-                { input = String.trim (String.dropLeft 1 f)
-                , editing = False
-                , data = CodeRow []
-                }
+                NormalRow
+                    { input = String.trim (String.dropLeft 1 f)
+                    , editing = False
+                    , data = CodeRow []
+                    }
+
+            else if String.startsWith metadataMarker f then
+                let
+                    extracted =
+                        String.dropRight 1 <| String.dropLeft (String.length metadataMarker) f
+                in
+                MetadataRow
+                    { errors = [ L10N.invariant <| "TODO:" ++ extracted ]
+                    , metadata =
+                        { name = Nothing
+                        , googleId = Nothing
+                        }
+                    }
 
             else
-                { input = f
-                , editing = False
-                , data = MarkdownRow
-                }
+                NormalRow
+                    { input = f
+                    , editing = False
+                    , data = MarkdownRow
+                    }
 
-        combine e ( l, a ) =
-            case l of
-                Nothing ->
-                    ( Just e, a )
+        combine e last =
+            case ( e.data, last.data ) of
+                ( MarkdownRow, MarkdownRow ) ->
+                    Just
+                        { input = e.input ++ "\n" ++ last.input
+                        , editing = False
+                        , data = MarkdownRow
+                        }
 
-                Just last ->
-                    case ( e.data, last.data ) of
-                        ( MarkdownRow, MarkdownRow ) ->
-                            ( Just
-                                { input = e.input ++ "\n" ++ last.input
-                                , editing = False
-                                , data = MarkdownRow
-                                }
-                            , a
-                            )
+                ( CodeRow _, CodeRow _ ) ->
+                    Just
+                        { input = e.input ++ "\n" ++ last.input
+                        , editing = False
+                        , data = CodeRow []
+                        }
 
-                        ( CodeRow _, CodeRow _ ) ->
-                            ( Just
-                                { input = e.input ++ "\n" ++ last.input
-                                , editing = False
-                                , data = CodeRow []
-                                }
-                            , a
-                            )
-
-                        _ ->
-                            ( Just e, last :: a )
+                _ ->
+                    Nothing
     in
     row
         |> String.split "\n"
         |> List.map parseFragment
-        |> List.foldr combine ( Nothing, [] )
-        |> (\( l, a ) ->
-                case l of
-                    Nothing ->
-                        a
+        |> List.categorize
+            (\f ->
+                case f of
+                    MetadataRow m ->
+                        Left m
 
-                    Just e ->
-                        e :: a
-           )
+                    NormalRow n ->
+                        Right n
+            )
+        |> Tuple.mapSecond (List.groupOneWith combine)
 
 
 type alias Size =

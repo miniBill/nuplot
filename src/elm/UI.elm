@@ -21,10 +21,9 @@ import File.Select
 import Html
 import Html.Attributes
 import List.Extra as List
-import Model exposing (CellMsg(..), Context, Document, Flags, Language(..), Modal(..), Model, Msg(..), Output(..), RowData(..))
+import Model exposing (CellMsg(..), Context, Document, Flags, Modal(..), Model, Msg(..), Output(..), RowData(..))
 import Task
-import UI.Google
-import UI.L10N as L10N exposing (L10N, text, title)
+import UI.L10N as L10N exposing (L10N, Language(..), text, title)
 import UI.RowView
 import UI.Theme as Theme exposing (onKey)
 import Url exposing (Url)
@@ -79,9 +78,8 @@ init { saved, hasClipboard, languages } url key =
                 Err _ ->
                     Just <|
                         Zipper.singleton
-                            { name = "Untitled"
-                            , rows = List.map emptyRow <| default ++ [ "" ]
-                            , changed = False
+                            { rows = List.map emptyRow <| default ++ [ "" ]
+                            , metadata = Model.emptyMetadata
                             }
 
         emptyRow x =
@@ -350,7 +348,12 @@ toolbar { openMenu } =
 documentPicker : Model -> Element Msg
 documentPicker ({ documents } as model) =
     let
+        toDocumentTabButton : Bool -> Int -> Document -> Element Msg
         toDocumentTabButton selected index doc =
+            let
+                name =
+                    Maybe.withDefault "Untitled" <| doc.metadata.name
+            in
             documentTabButton
                 { selected = selected
                 , onPress =
@@ -360,9 +363,9 @@ documentPicker ({ documents } as model) =
                     else
                         SelectDocument index
                 , closeMsg = Just <| CloseDocument { ask = True, index = index }
-                , label = text <| L10N.invariant <| ellipsize doc.name
+                , label = text <| L10N.invariant <| ellipsize name
                 , index = index
-                , title = L10N.invariant doc.name
+                , title = L10N.invariant name
                 }
 
         buttons =
@@ -526,12 +529,19 @@ viewModal model =
                 Nothing ->
                     Element.none
 
-                Just { name } ->
+                Just { metadata } ->
                     wrap (CloseDocument { ask = False, index = i })
-                        [ text
-                            { en = "Close document \"" ++ name ++ "\"?"
-                            , it = "Chiudi il documento \"" ++ name ++ "\"?"
-                            }
+                        [ text <|
+                            case metadata.name of
+                                Just name ->
+                                    { en = "Close document \"" ++ name ++ "\"?"
+                                    , it = "Chiudi il documento \"" ++ name ++ "\"?"
+                                    }
+
+                                Nothing ->
+                                    { en = "Close the document?"
+                                    , it = "Chiudere il documento?"
+                                    }
                         ]
 
         ( Just (ModalRename name), Just docs ) ->
@@ -554,11 +564,22 @@ viewModal model =
                     , text = name
                     , placeholder = Nothing
                     , label =
+                        let
+                            metadata =
+                                (Zipper.selected docs).metadata
+                        in
                         Input.labelAbove [] <|
-                            text
-                                { en = "Rename document \"" ++ (Zipper.selected docs).name ++ "\" to"
-                                , it = "Rinomina il documento \"" ++ (Zipper.selected docs).name ++ "\" in"
-                                }
+                            text <|
+                                case metadata.name of
+                                    Just n ->
+                                        { en = "Rename document \"" ++ n ++ "\" to"
+                                        , it = "Rinomina il documento \"" ++ n ++ "\" in"
+                                        }
+
+                                    Nothing ->
+                                        { en = "Rename the document to"
+                                        , it = "Rinomina il documento in"
+                                        }
                     }
                 ]
 
@@ -598,7 +619,7 @@ update msg =
             case msg of
                 CellMsg row cmsg ->
                     let
-                        updateRow changed rowF =
+                        updateRow rowF =
                             updateCurrent
                                 (\curr ->
                                     { curr
@@ -606,7 +627,6 @@ update msg =
                                             curr.rows
                                                 |> List.updateAt row rowF
                                                 |> filterEmpty
-                                        , changed = curr.changed || changed
                                     }
                                 )
                                 model
@@ -619,29 +639,28 @@ update msg =
                             ( model, save id )
 
                         Input input ->
-                            updateRow True (\r -> { r | input = input })
+                            updateRow (\r -> { r | input = input })
 
                         Calculate ->
-                            updateRow False calculateRow
+                            updateRow calculateRow
 
                         StartEditing ->
-                            updateRow False (\r -> { r | editing = True })
+                            updateRow (\r -> { r | editing = True })
 
                         EndEditing ->
-                            updateRow False (\r -> { r | editing = False })
+                            updateRow (\r -> { r | editing = False })
 
                         ToCode ->
-                            updateRow True (\r -> { r | data = CodeRow [] })
+                            updateRow (\r -> { r | data = CodeRow [] })
 
                         ToMarkdown ->
-                            updateRow True (\r -> { r | data = MarkdownRow })
+                            updateRow (\r -> { r | data = MarkdownRow })
 
                 NewDocument ->
                     let
                         newDocument =
-                            { name = "Untitled"
-                            , rows = [ Model.emptyRow ]
-                            , changed = False
+                            { rows = [ Model.emptyRow ]
+                            , metadata = Model.emptyMetadata
                             }
 
                         documents =
@@ -701,12 +720,26 @@ update msg =
                                         ( model, Cmd.none )
 
                                     Just docs ->
-                                        ( { model | modal = Just <| ModalRename (Zipper.selected docs).name }
+                                        ( { model
+                                            | modal =
+                                                Just <|
+                                                    ModalRename <|
+                                                        Maybe.withDefault ""
+                                                            (Zipper.selected docs).metadata.name
+                                          }
                                         , Cmd.none
                                         )
 
                         Just name ->
-                            updateCurrent (\doc -> { doc | name = name }) { model | modal = Nothing }
+                            updateCurrent
+                                (\doc ->
+                                    let
+                                        meta =
+                                            doc.metadata
+                                    in
+                                    { doc | metadata = { meta | name = Just name } }
+                                )
+                                { model | modal = Nothing }
 
                 Resized size ->
                     ( { model | size = size }, Cmd.none )
@@ -733,15 +766,23 @@ update msg =
                                 doc =
                                     Zipper.selected docs
                             in
-                            ( model, File.Download.string (doc.name ++ ".txt") "text/plain" <| Model.documentToFile doc )
+                            ( model, File.Download.string (Maybe.withDefault "Untitled" doc.metadata.name ++ ".txt") "text/plain" <| Model.documentToFile doc )
 
                 SelectedFileForOpen file ->
                     ( model, Task.perform (ReadFile (File.name file)) (File.toString file) )
 
                 ReadFile name file ->
                     let
-                        document =
-                            Model.documentFromFile name file
+                        { errors, document } =
+                            Model.documentFromFile
+                                (Just <|
+                                    if String.endsWith ".txt" name then
+                                        String.dropRight 4 name
+
+                                    else
+                                        name
+                                )
+                                file
                     in
                     ( { model
                         | documents =

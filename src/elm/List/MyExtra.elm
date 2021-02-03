@@ -1,4 +1,4 @@
-module List.MyExtra exposing (groupOneWith, unzip3)
+module List.MyExtra exposing (LeftOrRight(..), categorize, groupOneWith, unzip3)
 
 
 unzip3 : List ( a, b, c ) -> ( List a, List b, List c )
@@ -32,3 +32,22 @@ groupOneWith step list =
                     Nothing ->
                         acc
            )
+
+
+type LeftOrRight a b
+    = Left a
+    | Right b
+
+
+categorize : (x -> LeftOrRight a b) -> List x -> ( List a, List b )
+categorize f =
+    List.foldr
+        (\e ( la, ra ) ->
+            case f e of
+                Left l ->
+                    ( l :: la, ra )
+
+                Right r ->
+                    ( la, r :: ra )
+        )
+        ( [], [] )
