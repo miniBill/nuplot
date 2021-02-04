@@ -109,8 +109,20 @@ struct vec4 {
         return vec4(-r.x, -r.y, -r.z, -r.w);
     }
 
+    friend vec4 operator - (vec4 l, vec4 r) {
+        return vec4(l.x - r.x, l.y - r.y, l.z - r.z, l.w - r.w);
+    }
+
     friend vec4 operator / (vec4 l, double r) {
         return vec4(l.x / r, l.y / r, l.z / r, l.w / r);
+    }
+
+    friend vec4 operator * (double l, vec4 r) {
+        return vec4(l * r.x, l * r.y, l * r.z, l * r.w);
+    }
+
+    friend vec4 operator * (vec4 l, double r) {
+        return vec4(l.x * r, l.y * r, l.z * r, l.w * r);
     }
 
     vec3 ywz() {
@@ -129,7 +141,6 @@ struct FragCoord {
 };
 
 FragCoord gl_FragCoord;
-vec4 gl_FragColor;
 
 FILE* debugFile;
 
@@ -143,6 +154,10 @@ vec2 abs_(vec2 x) {
 
 vec3 abs_(vec3 x) {
     return vec3(fabs(x.x), fabs(x.y), fabs(x.z));
+}
+
+vec4 abs_(vec4 x) {
+    return vec4(fabs(x.x), fabs(x.y), fabs(x.z), fabs(x.w));
 }
 
 double mod(double x, double y) {
@@ -177,6 +192,10 @@ double max(double l, double r) {
     return l >= r ? l : r;
 }
 
+vec3 min(vec3 l, vec3 r) {
+    return vec3(min(l.x, r.x), min(l.y, r.y), min(l.z, r.z));
+}
+
 vec3 max(vec3 l, vec3 r) {
     return vec3(max(l.x, r.x), max(l.y, r.y), max(l.z, r.z));
 }
@@ -204,6 +223,11 @@ double radians(double deg) {
 template<class T>
 T mix(T x, T y, double a) {
     return x * (1 - a) + y * a;
+}
+
+template<class T>
+T _(T x) {
+    return x;
 }
 
 vec2 normalize_(vec2 x) {
@@ -244,6 +268,14 @@ vec2 sin_(vec2 input) {
     return vec2(sin(input.x), sin(input.y));
 }
 
+double sign_(double x) {
+    return x > 0 ? 1 : x < 0 ? -1 : 0;
+}
+
+vec2 sign_(vec2 input) {
+    return vec2(sign_(input.x), sign_(input.y));
+}
+
 vec2 ceil(vec2 input) {
     return vec2(ceil(input.x), ceil(input.y));
 }
@@ -279,6 +311,20 @@ vec2 ceil(vec2 input) {
 #define notrace3(f) \
             vec3 f ## _(vec3 z); \
             vec3 f (vec3 z) { \
+                return f ## _(z); \
+            }
+
+#define trace4(f) \
+            vec4 f ## _(vec4 z); \
+            vec4 f (vec4 z) { \
+                vec4 res = f ## _(z); \
+                if(trace) fprintf(debugFile, "  " #f "(%lf, %lf, %lf, %lf) = (%lf, %lf, %lf, %lf) [%lf]\n", z.x, z.y, z.z, z.w, res.x, res.y, res.z, res.w, length(res)); \
+                return res; \
+            }
+
+#define notrace4(f) \
+            vec4 f ## _(vec4 z); \
+            vec4 f (vec4 z) { \
                 return f ## _(z); \
             }
 
@@ -348,8 +394,7 @@ vec2 ceil(vec2 input) {
 bool trace;
 
 notrace1(abs)
-trace2(abs)
-notrace3(abs)
+notrace1(sign)
 notrace2(cexp)
 notrace2(cln)
 notrace2(iabs)
@@ -357,6 +402,7 @@ notrace2(iceiling)
 notrace2(icos)
 notrace2(icosh)
 notrace2(iexp)
+notrace2(iexpand)
 notrace2(iinverse)
 notrace2(iln)
 notrace2(ineg)
@@ -364,6 +410,7 @@ notrace2(isin)
 notrace2(isqrt)
 notrace2(isquare)
 notrace2(sin)
+notrace2(sign)
 notrace22(by)
 notrace22(iby)
 notrace22(idiv)
@@ -374,15 +421,18 @@ notrace22(ilt)
 notrace22(ipow)
 notrace22(merge)
 notrace222(ipw)
+notrace3(abs)
 notrace3(normal_0)
 notrace3(normal_1)
 notrace3(normal)
 notrace3(normalize)
 notrace33(cross)
+notrace4(abs)
+trace2(abs)
+trace211_2(interval)
 trace33_2(interval_0)
 trace33_2(interval_1)
 trace33_2(interval)
-trace211_2(interval)
 
 bool bisect_(vec3 o, vec3 d, float max_distance, vec3& found, vec3& n);
 bool bisect(vec3 l, vec3 r, float max_distance, vec3& found, vec3& n) {

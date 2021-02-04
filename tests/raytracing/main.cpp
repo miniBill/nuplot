@@ -46,17 +46,17 @@ int main () {
                 ||
                 ((y == traceYFrom - 1 || y == traceYTo) && x >= traceXFrom - 1 && x <= traceXTo)
             )
-                gl_FragColor = vec4(1,1,1,1);
+                fragColor = vec4(1,1,1,1);
             else
                 main_();
             if(trace)
                 fprintf(debugFile, "{%d,%d,%d}\n",
-                    int(255 * gl_FragColor.x),
-                    int(255 * gl_FragColor.y),
-                    int(255 * gl_FragColor.z));
-            dput(gl_FragColor.x);
-            dput(gl_FragColor.y);
-            dput(gl_FragColor.z);
+                    int(255 * fragColor.x),
+                    int(255 * fragColor.y),
+                    int(255 * fragColor.z));
+            dput(fragColor.x);
+            dput(fragColor.y);
+            dput(fragColor.z);
         }
 
     fclose(debugFile);
