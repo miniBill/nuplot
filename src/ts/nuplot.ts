@@ -432,8 +432,7 @@ export class NuPlot extends HTMLElement {
     } else if (this.currIterations < this.maxIterations) {
       this.render();
       if (!this.hadPointersDown) {
-        this.currIterations *= 4;
-        this.currIterations = Math.min(this.currIterations, this.maxIterations);
+        this.currIterations = this.maxIterations;
         this.reloadFragmentShader(this.buildFragmentShader(this.src));
       }
       this.renderWithDelay(
