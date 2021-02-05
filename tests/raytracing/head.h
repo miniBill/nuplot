@@ -6,6 +6,20 @@
 #define main() main_()
 #define float double // Yes, really
 
+struct ivec2 {
+    int x;
+    int y;
+    ivec2(int x, int y) : x(x), y(y) {}
+
+    friend ivec2 operator * (int d, ivec2 r) {
+        return ivec2(d * r.x, d * r.y);
+    }
+
+    friend ivec2 operator / (ivec2 l, int r) {
+        return ivec2(l.x / r, l.y / r);
+    }
+};
+
 struct vec2 {
     double x;
     double y;
