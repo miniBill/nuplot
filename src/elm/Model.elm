@@ -338,12 +338,14 @@ type Msg
     | GoogleSave
     | Nop String
     | CalculateAll
+    | ClearAll
 
 
 type CellMsg
     = EndEditing
     | ToCode
     | ToMarkdown
+    | Clear
     | StartEditing
     | Calculate
     | Input String

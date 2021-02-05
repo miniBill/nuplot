@@ -227,6 +227,12 @@ toolbar { openMenu } =
                 Icons.playSquareOutlined
                 { en = "Run document", it = "Esegui documento" }
 
+        clearButton =
+            toolbarButton
+                ClearAll
+                Icons.stopOutlined
+                { en = "Clear document", it = "Pulisci documento" }
+
         bigStop =
             let
                 bigWidth =
@@ -342,7 +348,7 @@ toolbar { openMenu } =
           else
             width shrink
         ]
-        [ runButton, moreButton ]
+        [ runButton, clearButton, moreButton ]
 
 
 documentPicker : Model -> Element Msg
@@ -656,6 +662,9 @@ update msg =
                         ToMarkdown ->
                             updateRow (\r -> { r | data = MarkdownRow })
 
+                        Clear ->
+                            updateRow (\r -> { r | data = CodeRow [] })
+
                 NewDocument ->
                     let
                         newDocument =
@@ -707,6 +716,25 @@ update msg =
 
                 CalculateAll ->
                     updateCurrent (\doc -> { doc | rows = List.map calculateRow doc.rows }) model
+
+                ClearAll ->
+                    updateCurrent
+                        (\doc ->
+                            { doc
+                                | rows =
+                                    List.map
+                                        (\row ->
+                                            case row.data of
+                                                CodeRow _ ->
+                                                    { row | data = CodeRow [] }
+
+                                                MarkdownRow ->
+                                                    row
+                                        )
+                                        doc.rows
+                            }
+                        )
+                        model
 
                 RenameDocument n ->
                     case n of

@@ -206,6 +206,10 @@ codeInputLine index input =
             { label = Element.element <| Icons.swapOutlined Theme.darkIconAttrs
             , onPress = Just ToMarkdown
             }
+        , Input.button [ htmlAttribute <| Html.Attributes.title "Clear result" ]
+            { label = Element.element <| Icons.stopOutlined Theme.darkIconAttrs
+            , onPress = Just Clear
+            }
         ]
 
 
