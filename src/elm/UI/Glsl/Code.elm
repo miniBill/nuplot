@@ -691,10 +691,11 @@ intervalFunctionToGlsl name =
         Square22 ->
             """
             vec2 isquare(vec2 z) {
-                float mx = max(z.x*z.x, z.y*z.y);
+                vec2 s = z * z;
+                float mx = max(s.x, s.y);
                 if(z.x <= 0.0 && z.y >= 0.0)
                     return vec2(0.0, mx);
-                float mn = min(z.x*z.x, z.y*z.y);
+                float mn = min(s.x, s.y);
                 return vec2(mn, mx);
             }
 
