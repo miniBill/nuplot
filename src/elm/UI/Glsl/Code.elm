@@ -643,15 +643,6 @@ intervalFunctionToGlsl name =
                 return low <= x && x <= high;
             }
 
-            vec2 merge(vec2 l, vec2 r) {
-                return vec2(min(l.x, r.x), max(l.y, r.y));
-            }
-
-            vec2 isin_piece(vec2 v) {
-                vec2 s = sin(v);
-                return merge(s, s);
-            }
-
             vec2 isin(vec2 v) {
                 if(v.y - v.x > radians(360.0)) {
                     return vec2(-1.0, 1.0);
@@ -662,7 +653,7 @@ intervalFunctionToGlsl name =
                 vec2 res = vec2(min(s.x, s.y), max(s.x, s.y));
                 if(between(radians(90.0), from, to) || between(radians(90.0 + 360.0), from, to))
                     res.y = 1.0;
-                if(between(radians(270.0), from, to))
+                if(between(radians(270.0), from, to) || between(radians(270.0 + 360.0), from, to))
                     res.x = -1.0;
                 return res;
             }
