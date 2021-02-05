@@ -1534,26 +1534,26 @@ main3D suffixes =
                     if(front.x <= 0.0 && front.y >= 0.0) {
                         to = midpoint;
                         depth++;
-                        choices *= 2;
+                        choices = left_shift(choices);
                     } else if(back.x <= 0.0 && back.y >= 0.0) {
                         from = midpoint;
                         depth++;
-                        choices = choices * 2 + 1;
+                        choices = left_shift_increment(choices);
                     } else {
                         // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
                         for(int j = MAX_DEPTH - 1; j > 0; j--) {
                             if(j > depth)
                                 continue;
                             depth--;
-                            choices /= 2;
-                            if(choices / 2 * 2 == choices) {
+                            choices = right_shift(choices);
+                            if(is_even(choices)) {
                                 midpoint = to;
                                 to = to + (to - from);
                                 vec2 back = interval""" ++ suffix ++ """(midpoint, to);
                                 if(back.x <= 0.0 && back.y >= 0.0) {
                                     from = midpoint;
                                     depth++;
-                                    choices = choices * 2 + 1;
+                                    choices = left_shift_increment(choices);
                                     break;
                                 }
                             } else {
