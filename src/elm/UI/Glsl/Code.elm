@@ -1463,9 +1463,8 @@ main3D suffixes =
                 vec3 f = vec3(0);
                 vec3 n = vec3(0);
                 """ ++ innerTrace ++ """
-                if(length(found - o) < max_distance) {
-                    float h = (float(found_index))*radians(360.0 / 1.1);
-                    float fy = found.y * 0.5;
+                if(found_index >= 0) {
+                    float hue_based_on_index = (float(found_index))*radians(360.0 / 1.1);
 
                     vec3 light_direction = normalize(vec3(-0.3, 1.0, 0.0));
                     float light_distance = max_distance;
@@ -1480,13 +1479,13 @@ main3D suffixes =
                     float l = in_light ? mix(0.4, 0.5, dt) : 0.2;
 
                     vec3 px = mix(
-                        hl2rgb(h, l),
-                        hl2rgb(fy, l),
+                        hl2rgb(hue_based_on_index, l),
+                        hl2rgb(found.y * 0.5, l),
                         max(0.2, """ ++ colorCoeff ++ """)
                     );
                     return vec4(px, 1.0);
                 } else {
-                    return vec4(vec3(0),1.0);
+                    return vec4(0.0, 0.0, 0.0, 1.0);
                 }
             }
             """
@@ -1506,9 +1505,9 @@ main3D suffixes =
 
         suffixToRayLight suffix =
             """
-                else if(bisect""" ++ suffix ++ """(offseted, light_direction, light_distance, f, n)) {
-                    in_light = false;
-                }
+                    else if(bisect""" ++ suffix ++ """(offseted, light_direction, light_distance, f, n)) {
+                        in_light = false;
+                    }
             """
 
         suffixToBisect suffix =
