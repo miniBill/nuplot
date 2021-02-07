@@ -1427,7 +1427,7 @@ toSrc3D expandIntervals suffix e =
         float y = p.z;
         float z = p.y;
         vec4 gradient = """ ++ expressionToNormalGlsl e ++ """;
-        return normalize(gradient.ywz);
+        return normalize(gradient.yzw);
     }
 
     vec2 interval""" ++ suffix ++ """(vec3 f, vec3 t) {
