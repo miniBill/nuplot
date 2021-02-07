@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, int, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, t, triple, two, vector, x, y, z, zero)
+import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, t, triple, two, vector, x, y, z, zero)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -117,7 +117,7 @@ tests =
       )
     , ( "[cov=3]covcov"
       , Replace
-            (Dict.singleton "cov" (Just <| int 3))
+            (Dict.singleton "cov" (Just <| Integer 3))
             (byself <| Variable "cov")
       , "[cov=3] cov*cov"
       )
@@ -134,8 +134,8 @@ tests =
             (Dict.singleton "g" <|
                 Just <|
                     plus
-                        [ pow (minus (byself x) (byself y)) (div (int 3) two)
-                        , div one <| int 10
+                        [ pow (minus (byself x) (byself y)) (div (Integer 3) two)
+                        , div one <| Integer 10
                         ]
             )
             (gra_ <| List [ div x gg, div y gg ])
@@ -221,35 +221,35 @@ tests =
             (square <| plus [ negate_ d, c ])
     , ( "(3/10)/a"
       , div
-            (div (int 3) (int 10))
+            (div (Integer 3) (Integer 10))
             a
       , "3/10/a"
       )
-    , ( "b²3x", by [ square b, int 3, x ], "b²*3*x" )
+    , ( "b²3x", by [ square b, Integer 3, x ], "b²*3*x" )
     , ( "1/sqrt5"
       , div one
-            (sqrt_ (int 5))
+            (sqrt_ (Integer 5))
       , "1/sqrt(5)"
       )
-    , ( "(2,3)", vector [ int 2, int 3 ], "(2, 3)" )
+    , ( "(2,3)", vector [ Integer 2, Integer 3 ], "(2, 3)" )
     , ( "atan2(2,3)"
-      , atan2_ (int 2) (int 3)
+      , atan2_ (Integer 2) (Integer 3)
       , "atan2(2, 3)"
       )
     , ( "atan22,3"
-      , atan2_ (int 2) (int 3)
+      , atan2_ (Integer 2) (Integer 3)
       , "atan2(2, 3)"
       )
     , ( "atan22,3x"
-      , by [ atan2_ (int 2) (int 3), x ]
+      , by [ atan2_ (Integer 2) (Integer 3), x ]
       , "atan2(2, 3)*x"
       )
     , ( "atan2(2,3x)"
-      , atan2_ (int 2) (by [ int 3, x ])
+      , atan2_ (Integer 2) (by [ Integer 3, x ])
       , "atan2(2, 3x)"
       )
     , ( "atan22,3²"
-      , atan2_ (int 2) (square <| int 3)
+      , atan2_ (Integer 2) (square <| Integer 3)
       , "atan2(2, 3²)"
       )
     , ( "y = sin x"
@@ -264,7 +264,7 @@ tests =
       )
     , ( "(3-2x)/(1-x)^2"
       , div
-            (minus (int 3) (double x))
+            (minus (Integer 3) (double x))
             (square <| minus one x)
       , "(3 - 2x)/(1 - x)²"
       )
