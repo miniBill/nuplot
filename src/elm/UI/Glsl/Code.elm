@@ -1424,8 +1424,8 @@ toSrc3D expandIntervals suffix e =
     """
     vec3 normal""" ++ suffix ++ """(vec3 p) {
         float x = p.x;
-        float y = p.z;
-        float z = p.y;
+        float y = p.y;
+        float z = p.z;
         vec4 gradient = """ ++ expressionToNormalGlsl e ++ """;
         return normalize(gradient.yzw);
     }
@@ -1434,8 +1434,8 @@ toSrc3D expandIntervals suffix e =
         vec3 mn = min(f, t);
         vec3 mx = max(f, t);
         vec2 x = vec2(mn.x, mx.x);
-        vec2 z = vec2(mn.y, mx.y);
-        vec2 y = vec2(mn.z, mx.z);
+        vec2 y = vec2(mn.y, mx.y);
+        vec2 z = vec2(mn.z, mx.z);
         return """ ++ expressionToIntervalGlsl expandIntervals e ++ """;
     }
     """
@@ -1466,7 +1466,7 @@ main3D suffixes =
                 if(found_index >= 0) {
                     float hue_based_on_index = (float(found_index))*radians(360.0 / 1.1);
 
-                    vec3 light_direction = normalize(vec3(-0.3, 1.0, 0.0));
+                    vec3 light_direction = normalize(vec3(-0.3, 0.0, 1.0));
                     float light_distance = max_distance;
                     bool in_light = true;
                     if(length(normal) == 0.0) {
@@ -1480,7 +1480,7 @@ main3D suffixes =
 
                     vec3 px = mix(
                         hl2rgb(hue_based_on_index, l),
-                        hl2rgb(found.y * 0.5, l),
+                        hl2rgb(found.z * 0.5, l),
                         max(0.2, """ ++ colorCoeff ++ """)
                     );
                     return vec4(px, 1.0);
@@ -1572,24 +1572,28 @@ main3D suffixes =
             ++ """
             vec4 pixel3 () {
                 float eye_dist = 2.0 * u_viewportWidth;
-                float t = u_theta - 1.0;
-                float p = u_phi;
-                vec3 eye = eye_dist * vec3(sin(t) * sin(p), cos(t), sin(t) * cos(p));
-
                 vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
                 vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
+                vec2 uv_normalized = 1.0 / u_canvasHeight * uv_centered;
 
-                vec2 uv = 1.0 / u_canvasHeight * uv_centered;
+                float t = u_theta + 0.58;
+                float p = -2.0 * u_phi;
+                vec3 eye = eye_dist * normalize(vec3(
+                    cos(t) * sin(p),
+                    cos(t) * -cos(p),
+                    sin(t)
+                ));
 
                 vec3 target = vec3(0);
-                vec3 to_center = normalize(target-eye);
-                vec3 canvas_center = eye + to_center;
-                vec3 across = normalize(-cross(vec3(0,-1,0), to_center));
-                vec3 up = normalize(-cross(across, to_center));
-                vec3 canvas_point = canvas_center + uv.x * across + uv.y * up;
+                vec3 to_target = normalize(target-eye);
+                vec3 across = normalize(cross(to_target, vec3(0,0,1)));
+                vec3 up = normalize(cross(across, to_target));
+
+                vec3 canvas_center = eye + to_target;
+                vec3 canvas_point = canvas_center + uv_normalized.x * across + uv_normalized.y * up;
 
                 vec3 ray_direction = normalize(canvas_point - eye);
-                float max_distance = 40.0 * length(eye);
+                float max_distance = 40.0 * eye_dist;
                 return raytrace(canvas_point, ray_direction, max_distance);
             }
         """
