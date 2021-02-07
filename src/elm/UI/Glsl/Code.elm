@@ -1468,7 +1468,7 @@ main3D suffixes =
                     vec3 light_direction = normalize(vec3(-0.3, 0.0, 1.0));
                     float light_distance = max_distance;
                     bool in_light = true;
-                    vec3 offseted = found + 0.00001 * max_distance * normalize(o - found);
+                    vec3 offseted = found + 0.0001 * max_distance * normalize(o - found);
                     if(0 == 1) { }
                     """ ++ innerLightTrace ++ """
                     float l = in_light ? 0.45 : 0.2;
