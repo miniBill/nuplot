@@ -1457,7 +1457,6 @@ main3D suffixes =
             """
             vec4 raytrace(vec3 o, vec3 d, float max_distance) {
                 vec3 found = o + 2.0 * max_distance * d;
-                vec3 normal = vec3(0);
                 float curr_distance = max_distance;
                 int found_index = -1;
                 vec3 f = vec3(0);
@@ -1469,14 +1468,10 @@ main3D suffixes =
                     vec3 light_direction = normalize(vec3(-0.3, 0.0, 1.0));
                     float light_distance = max_distance;
                     bool in_light = true;
-                    if(length(normal) == 0.0) {
-                        normal = normalize(o - found);
-                    }
                     vec3 offseted = found + 0.00001 * max_distance * normalize(o - found);
                     if(0 == 1) { }
                     """ ++ innerLightTrace ++ """
-                    float dt = max(0.0, dot(normal, light_direction));
-                    float l = in_light ? mix(0.4, 0.5, dt) : 0.2;
+                    float l = in_light ? 0.45 : 0.2;
 
                     vec3 px = mix(
                         hl2rgb(hue_based_on_index, l),
@@ -1495,24 +1490,23 @@ main3D suffixes =
 
         suffixToRay i suffix =
             """
-                if(bisect""" ++ suffix ++ """(o, d, max_distance, f, n) && length(f - o) < curr_distance) {
+                if(bisect""" ++ suffix ++ """(o, d, max_distance, f) && length(f - o) < curr_distance) {
                     found_index = """ ++ String.fromInt i ++ """;
                     found = f;
-                    normal = n;
                     curr_distance = length(found - o);
                 }
             """
 
         suffixToRayLight suffix =
             """
-                    else if(bisect""" ++ suffix ++ """(offseted, light_direction, light_distance, f, n)) {
+                    else if(bisect""" ++ suffix ++ """(offseted, light_direction, light_distance, f)) {
                         in_light = false;
                     }
             """
 
         suffixToBisect suffix =
             """
-            bool bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found, out vec3 n) {
+            bool bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
                 vec3 from = o;
                 vec3 to = o + max_distance * d;
                 float ithreshold = 0.000001 * max_distance;
@@ -1527,7 +1521,6 @@ main3D suffixes =
                         || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
                         ) {
                             found = midpoint;
-                            n = normal""" ++ suffix ++ """(midpoint);
                             return true;
                         }
                     if(front.x <= 0.0 && front.y >= 0.0) {
