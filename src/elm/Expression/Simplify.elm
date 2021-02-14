@@ -67,10 +67,6 @@ stepSimplify context expr =
             Lambda x <| stepSimplify context f
 
         UnaryOperation Negate e ->
-            let
-                _ =
-                    Debug.log "neg" e
-            in
             step1 context
                 { andThen = stepSimplifyNegate context
                 , ifChanged = negate_
@@ -103,10 +99,6 @@ stepSimplify context expr =
             plus <| List.map (\o -> by [ l, r, o ]) (al :: ar :: ao)
 
         AssociativeOperation aop l r o ->
-            let
-                _ =
-                    Debug.log "aop" { l = l, r = r, o = o }
-            in
             stepList context
                 { andThen = stepSimplifyAssociative context aop
                 , ifChanged =
@@ -746,14 +738,6 @@ sortByDegree aop ee =
 stepSimplifyAddition : Expression -> Expression -> Maybe Expression
 stepSimplifyAddition left right =
     let
-        _ =
-            Debug.log "stepSimplifyAddition"
-                { left = Expression.toString <| left
-                , right = Expression.toString <| right
-                , standard = Maybe.map Expression.toString <| standard ()
-                , noise = { left = left, right = right, standard = standard () }
-                }
-
         standard () =
             case ( left, right ) of
                 ( _, Integer 0 ) ->
