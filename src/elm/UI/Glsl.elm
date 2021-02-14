@@ -361,6 +361,9 @@ toGlslFunction name =
         Simplify ->
             Nothing
 
+        StepSimplify ->
+            Nothing
+
         Solve ->
             Nothing
 

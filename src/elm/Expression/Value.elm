@@ -2,7 +2,7 @@ module Expression.Value exposing (Value(..), complexToSymbolic, toString, value)
 
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree, UnaryOperation(..), filterContext, fullSubstitute, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..), filterContext, fullSubstitute, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication)
 import Expression.Graph exposing (Graph(..))
 import Expression.Simplify
 import Expression.Solver
@@ -321,6 +321,14 @@ applyValue context name args =
 
                 _ ->
                     ErrorValue "Error in simplify: wrong number of arguments"
+
+        KnownFunction StepSimplify ->
+            case args of
+                [ e ] ->
+                    SolutionTreeValue <| Expression.Solver.stepSimplify SolutionDone e
+
+                _ ->
+                    ErrorValue "Error in stepsimplify: wrong number of arguments"
 
         KnownFunction Plot ->
             case args of

@@ -1,4 +1,4 @@
-module Expression.Solver exposing (solve)
+module Expression.Solver exposing (solve, stepSimplify)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))

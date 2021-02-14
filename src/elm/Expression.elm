@@ -109,6 +109,7 @@ type KnownFunction
     | Pw
     | Plot
     | Simplify
+    | StepSimplify
     | Solve
     | Mod
 
@@ -728,6 +729,7 @@ unaryFunctions =
         other =
             [ ( "plot", Plot )
             , ( "simplify", Simplify )
+            , ( "stepsimplify", StepSimplify )
             , ( "floor", Floor )
             , ( "ceil", Ceiling )
             , ( "ceiling", Ceiling )
@@ -914,6 +916,9 @@ functionNameToString name =
 
         KnownFunction Simplify ->
             "simplify"
+
+        KnownFunction StepSimplify ->
+            "stepsimplify"
 
         KnownFunction Solve ->
             "solve"
