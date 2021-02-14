@@ -2,9 +2,14 @@ module Zipper exposing
     ( Zipper
     , allRight
     , append
+    , canGoLeft
+    , canGoRight
     , codec
     , fromList
+    , fromNonemptyList
     , get
+    , getLeft
+    , getRight
     , left
     , map
     , removeAt
@@ -32,6 +37,26 @@ singleton x =
         , curr = x
         , after = []
         }
+
+
+getLeft : Zipper a -> List a
+getLeft (Zipper { before }) =
+    List.reverse before
+
+
+getRight : Zipper a -> List a
+getRight (Zipper { after }) =
+    after
+
+
+canGoLeft : Zipper a -> Bool
+canGoLeft (Zipper { before }) =
+    not <| List.isEmpty before
+
+
+canGoRight : Zipper a -> Bool
+canGoRight (Zipper { after }) =
+    not <| List.isEmpty after
 
 
 selected : Zipper a -> a
@@ -139,7 +164,12 @@ fromList ls =
             Nothing
 
         h :: t ->
-            Just <| Zipper { before = [], curr = h, after = t }
+            Just <| fromNonemptyList h t
+
+
+fromNonemptyList : a -> List a -> Zipper a
+fromNonemptyList h t =
+    Zipper { before = [], curr = h, after = t }
 
 
 codec : Codec a -> Codec (Zipper a)
