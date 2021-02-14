@@ -24,6 +24,7 @@ module Expression exposing
     , partialSubstitute
     , pfullSubstitute
     , solutionTreeToString
+    , toDebugTree
     , toPrintExpression
     , toString
     , toTeXString
@@ -34,6 +35,9 @@ module Expression exposing
 import Char
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)
+import Element.WithContext as Element exposing (Element)
+import Element.WithContext.Border as Border
+import Element.WithContext.Font
 import List
 import Set exposing (Set)
 import Trie exposing (Trie)
@@ -968,6 +972,121 @@ toTeXString : Expression -> String
 toTeXString =
     toPrintExpression
         >> toTeXStringPrec 0
+
+
+toDebugTree : (String -> Never) -> Expression -> Element context msg
+toDebugTree todo e =
+    let
+        vr =
+            Element.el
+                [ Element.height Element.fill
+                , Border.widthEach { bottom = 0, left = 1, right = 0, top = 0 }
+                ]
+            <|
+                Element.none
+
+        go n fs =
+            Element.column
+                [ Element.WithContext.Font.center
+                , Element.spacing 2
+                , Element.alignTop
+                , Element.padding 2
+                ]
+                [ Element.el
+                    [ Element.width Element.fill
+                    , Element.WithContext.Font.center
+                    , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
+                    ]
+                  <|
+                    Element.text n
+                , Element.row [ Element.spacing 2 ] <| List.intersperse vr fs
+                ]
+
+        goRec n fs =
+            go n <| List.map (toDebugTree todo) fs
+    in
+    case e of
+        Integer i ->
+            Element.el [ Element.alignTop ] <| Element.text <| String.fromInt i
+
+        Float f ->
+            let
+                raw =
+                    String.fromFloat f
+            in
+            Element.el [ Element.alignTop ] <|
+                Element.text <|
+                    if String.contains "." raw then
+                        raw
+
+                    else
+                        raw ++ ".0"
+
+        Variable v ->
+            Element.el [ Element.alignTop ] <| Element.text v
+
+        Lambda x f ->
+            go "λ" [ Element.text x, toDebugTree todo f ]
+
+        UnaryOperation uop c ->
+            goRec
+                (case uop of
+                    Negate ->
+                        "-"
+                )
+                [ c ]
+
+        BinaryOperation bop n d ->
+            goRec
+                (case bop of
+                    Division ->
+                        "/"
+
+                    Power ->
+                        "^"
+                )
+                [ n, d ]
+
+        RelationOperation relop l r ->
+            goRec (relationToString relop) [ l, r ]
+
+        AssociativeOperation aop l m r ->
+            goRec
+                (case aop of
+                    Addition ->
+                        "+"
+
+                    Multiplication ->
+                        "*"
+                )
+                (l :: m :: r)
+
+        Apply f x ->
+            goRec (functionNameToString f) x
+
+        Replace r ex ->
+            let
+                replTree =
+                    r
+                        |> Dict.toList
+                        |> List.filterMap (\( k, v ) -> Maybe.map (Tuple.pair k) v)
+                        |> List.map
+                            (\( k, v ) ->
+                                [ Element.text <| k ++ "="
+                                , toDebugTree todo v
+                                ]
+                            )
+                        |> List.intersperse [ Element.text " " ]
+                        |> List.concat
+            in
+            go "repl"
+                [ Element.row []
+                    (Element.text "[" :: replTree ++ [ Element.text "]" ])
+                , toDebugTree todo ex
+                ]
+
+        List ls ->
+            goRec "list" ls
 
 
 asMatrixPrint : PrintExpression -> Maybe (List (List PrintExpression))
