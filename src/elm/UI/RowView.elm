@@ -64,16 +64,16 @@ draw { width, height } id { wdiv, hdiv } graph =
                 "0"
 
         rawImageWidth =
-            min 1920 <| width - (3 + wdiv) * 3 * Theme.spacing
+            min 1920 <| width - (8 + wdiv) * Theme.spacing
 
         rawImageHeight =
-            min 1080 <| height - (3 + hdiv) * 3 * Theme.spacing
+            min 1080 <| height - (8 + hdiv) * Theme.spacing
 
         imageWidth =
-            rawImageWidth
+            min rawImageWidth <| rawImageHeight * 4 // 3
 
         imageHeight =
-            rawImageHeight
+            min rawImageHeight <| rawImageWidth * 4 // 3
 
         saveButton =
             Input.button []
