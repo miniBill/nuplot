@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Simplify exposing (simplify, stepSimplify)
 import Expression.Utils exposing (asPoly, by, byShort, div, divShort, factor, i, ipow, isZero, minus, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
-import Fraction exposing (gcd)
+import Fraction exposing (Fraction, gcd)
 import List.Extra as List
 import Result
 import Result.Extra as Result
@@ -154,34 +154,6 @@ solveEquation v l r =
 findRationalRoot : String -> List ( Int, Expression ) -> Result String { root : Expression, rest : Expression }
 findRationalRoot v coeffs =
     let
-        asFraction e =
-            case e of
-                Integer i ->
-                    Ok <| Fraction.fromInt i
-
-                BinaryOperation Division n d ->
-                    Result.map2 Fraction.div
-                        (asFraction n)
-                        (asFraction d)
-
-                AssociativeOperation Addition l m r ->
-                    List.foldl (Result.map2 Fraction.plus) (asFraction l) <| List.map asFraction (m :: r)
-
-                AssociativeOperation Multiplication l m r ->
-                    List.foldl (Result.map2 Fraction.by) (asFraction l) <| List.map asFraction (m :: r)
-
-                UnaryOperation Negate inner ->
-                    asFraction inner
-                        |> Result.map Fraction.negate
-
-                _ ->
-                    Err <| Expression.toString e ++ " is not a fraction"
-
-        maybeRats =
-            coeffs
-                |> List.map (\( d, e ) -> Result.map (Tuple.pair d) (asFraction e))
-                |> Result.combine
-
         findRoot rats =
             let
                 commonMultiple =
@@ -236,14 +208,7 @@ findRationalRoot v coeffs =
                             )
                         |> List.concatMap (\f -> [ f, Fraction.negate f ])
                         |> List.uniqueBy Fraction.toPair
-                        |> List.sortBy fractionToFloat
-
-                fractionToFloat f =
-                    let
-                        ( n, d ) =
-                            Fraction.toPair f
-                    in
-                    toFloat n / toFloat d
+                        |> List.sortBy Fraction.toFloat
 
                 res =
                     potentials
@@ -253,80 +218,29 @@ findRationalRoot v coeffs =
                 reducedDict =
                     Dict.fromList reduced
 
-                degree =
+                maximumDegree =
                     Dict.keys reducedDict |> List.maximum |> Maybe.withDefault 0
 
                 getCoeff d =
                     Fraction.fromInt <| Maybe.withDefault 0 <| Dict.get d reducedDict
 
                 tryDivision potential =
-                    List.range 0 (degree - 1)
+                    List.range 0 (maximumDegree - 1)
                         |> List.foldr
-                            (\d ( r, a ) ->
+                            (\degree ( r, a ) ->
                                 let
                                     k =
-                                        getCoeff d
+                                        getCoeff degree
 
                                     r_ =
                                         Fraction.plus k (Fraction.by r potential)
                                 in
                                 ( r_, r :: a )
                             )
-                            ( getCoeff degree, [] )
+                            ( getCoeff maximumDegree, [] )
                         |> (\( r, c ) ->
                                 if Fraction.isZero r then
-                                    let
-                                        toExpr f =
-                                            let
-                                                ( n, d ) =
-                                                    Fraction.toPair f
-                                            in
-                                            if d == 1 then
-                                                Integer n
-
-                                            else if n == 0 then
-                                                Integer 0
-
-                                            else
-                                                div (Integer n) (Integer d)
-                                    in
-                                    Just
-                                        { root = toExpr potential
-                                        , rest =
-                                            c
-                                                |> List.indexedMap
-                                                    (\e k ->
-                                                        let
-                                                            ke =
-                                                                toExpr k
-                                                        in
-                                                        if Fraction.isZero k then
-                                                            Nothing
-
-                                                        else
-                                                            Just <|
-                                                                case e of
-                                                                    0 ->
-                                                                        toExpr k
-
-                                                                    1 ->
-                                                                        if ke == Integer 1 then
-                                                                            Variable v
-
-                                                                        else
-                                                                            by [ toExpr k, Variable v ]
-
-                                                                    _ ->
-                                                                        if ke == Integer 1 then
-                                                                            ipow (Variable v) e
-
-                                                                        else
-                                                                            by [ toExpr k, ipow (Variable v) e ]
-                                                    )
-                                                |> List.filterMap identity
-                                                |> List.reverse
-                                                |> plus
-                                        }
+                                    Just <| rootAndRest potential c
 
                                 else
                                     Nothing
@@ -334,8 +248,91 @@ findRationalRoot v coeffs =
             in
             res
                 |> Result.fromMaybe "no rational root found, and no simple formula is usable"
+
+        rootAndRest potential c =
+            let
+                toExpr f =
+                    let
+                        ( n, d ) =
+                            Fraction.toPair f
+                    in
+                    if d == 1 then
+                        Integer n
+
+                    else if n == 0 then
+                        Integer 0
+
+                    else
+                        div (Integer n) (Integer d)
+
+                rest =
+                    c
+                        |> List.indexedMap
+                            (\exponent k ->
+                                let
+                                    ke =
+                                        toExpr k
+                                in
+                                if Fraction.isZero k then
+                                    Nothing
+
+                                else
+                                    Just <|
+                                        case exponent of
+                                            0 ->
+                                                toExpr k
+
+                                            1 ->
+                                                if ke == Integer 1 then
+                                                    Variable v
+
+                                                else
+                                                    by [ toExpr k, Variable v ]
+
+                                            _ ->
+                                                if ke == Integer 1 then
+                                                    ipow (Variable v) exponent
+
+                                                else
+                                                    by [ toExpr k, ipow (Variable v) exponent ]
+                            )
+                        |> List.filterMap identity
+                        |> List.reverse
+                        |> plus
+            in
+            { root = toExpr potential
+            , rest = rest
+            }
     in
-    maybeRats |> Result.andThen findRoot
+    coeffs
+        |> List.map (\( d, e ) -> Result.map (Tuple.pair d) (asFraction e))
+        |> Result.combine
+        |> Result.andThen findRoot
+
+
+asFraction : Expression -> Result String Fraction
+asFraction e =
+    case e of
+        Integer i ->
+            Ok <| Fraction.fromInt i
+
+        BinaryOperation Division n d ->
+            Result.map2 Fraction.div
+                (asFraction n)
+                (asFraction d)
+
+        AssociativeOperation Addition l m r ->
+            List.foldr (Result.map2 Fraction.plus) (asFraction l) <| List.map asFraction (m :: r)
+
+        AssociativeOperation Multiplication l m r ->
+            List.foldr (Result.map2 Fraction.by) (asFraction l) <| List.map asFraction (m :: r)
+
+        UnaryOperation Negate inner ->
+            asFraction inner
+                |> Result.map Fraction.negate
+
+        _ ->
+            Err <| Expression.toString e ++ " is not a fraction"
 
 
 coeffsToEq : String -> Dict Int Expression -> Expression

@@ -1,7 +1,23 @@
 module Expression.Simplify exposing (hoistLambda, simplify, sortByDegree, stepSimplify)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation(..), filterContext, fullSubstitute, genericMatrixAddition, genericMatrixMultiplication, getFreeVariables, partialSubstitute, visit)
+import Expression
+    exposing
+        ( AssociativeOperation(..)
+        , BinaryOperation(..)
+        , Expression(..)
+        , FunctionName(..)
+        , KnownFunction(..)
+        , RelationOperation(..)
+        , UnaryOperation(..)
+        , filterContext
+        , fullSubstitute
+        , genericMatrixAddition
+        , genericMatrixMultiplication
+        , getFreeVariables
+        , partialSubstitute
+        , visit
+        )
 import Expression.Derivative
 import Expression.Utils exposing (asPoly, by, byShort, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, square, two, zero)
 import List

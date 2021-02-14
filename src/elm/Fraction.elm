@@ -1,4 +1,4 @@
-module Fraction exposing (Fraction, build, by, div, divisor, fromInt, gcd, isZero, negate, plus, pow, toPair)
+module Fraction exposing (Fraction, build, by, div, divisor, fromInt, gcd, isZero, negate, plus, pow, toFloat, toPair)
 
 
 type Fraction
@@ -56,6 +56,11 @@ build n d =
 toPair : Fraction -> ( Int, Int )
 toPair (Fraction n d) =
     ( n, d )
+
+
+toFloat : Fraction -> Float
+toFloat (Fraction n d) =
+    Basics.toFloat n / Basics.toFloat d
 
 
 isZero : Fraction -> Bool
