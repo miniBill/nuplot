@@ -504,10 +504,10 @@ asPoly var expr =
                 |> asPoly var
                 |> Result.map (Dict.map (always negateShort))
 
-        BinaryOperation Division num (Integer _) ->
+        BinaryOperation Division num ((Integer _) as den) ->
             num
                 |> asPoly var
-                |> Result.map (Dict.map (\_ coeff -> divShort coeff d))
+                |> Result.map (Dict.map (\_ coeff -> divShort coeff den))
 
         BinaryOperation Power base (Integer ex) ->
             if ex < 0 then
