@@ -905,58 +905,58 @@ polyDegree var expr =
 
 
 hoistLambda : Expression -> Expression
-hoistLambda q =
-    -- TODO: remove `q` when Elm LS is fixed
-    q
-        |> visit
-            (\expr ->
-                case expr of
-                    Lambda x f ->
-                        Just <| Lambda x <| hoistLambda f
+hoistLambda =
+    visit innerHoistLabmda
 
-                    BinaryOperation Power b e ->
-                        case ( hoistLambda b, hoistLambda e ) of
-                            ( Lambda x f, he ) ->
-                                Just <| Lambda x <| hoistLambda <| BinaryOperation Power f he
 
-                            _ ->
-                                Nothing
+innerHoistLabmda : Expression -> Maybe Expression
+innerHoistLabmda expr =
+    case expr of
+        Lambda x f ->
+            Just <| Lambda x <| hoistLambda f
 
-                    AssociativeOperation Multiplication l m r ->
-                        let
-                            step curr last =
-                                case curr of
-                                    Lambda x f ->
-                                        Just <| hoistLambda <| partialSubstitute x last f
+        BinaryOperation Power b e ->
+            case ( hoistLambda b, hoistLambda e ) of
+                ( Lambda x f, he ) ->
+                    Just <| Lambda x <| hoistLambda <| BinaryOperation Power f he
 
-                                    _ ->
-                                        Nothing
+                _ ->
+                    Nothing
 
-                            grouped =
-                                groupOneWith step <| hoistLambda l :: hoistLambda m :: List.map hoistLambda r
-                        in
-                        Just <|
-                            case grouped of
-                                [] ->
-                                    Integer 1
+        AssociativeOperation Multiplication l m r ->
+            let
+                step curr last =
+                    case curr of
+                        Lambda x f ->
+                            Just <| hoistLambda <| partialSubstitute x last f
 
-                                [ x ] ->
-                                    x
+                        _ ->
+                            Nothing
 
-                                x :: y :: zs ->
-                                    AssociativeOperation Multiplication x y zs
+                grouped =
+                    groupOneWith step <| hoistLambda l :: hoistLambda m :: List.map hoistLambda r
+            in
+            Just <|
+                case grouped of
+                    [] ->
+                        Integer 1
 
-                    Apply fn args ->
-                        case ( fn, List.map hoistLambda args ) of
-                            ( KnownFunction Plot, _ ) ->
-                                Nothing
+                    [ x ] ->
+                        x
 
-                            ( _, [ Lambda x f ] ) ->
-                                Just <| Lambda x <| hoistLambda <| Apply fn [ f ]
+                    x :: y :: zs ->
+                        AssociativeOperation Multiplication x y zs
 
-                            _ ->
-                                Nothing
+        Apply fn args ->
+            case ( fn, List.map hoistLambda args ) of
+                ( KnownFunction Plot, _ ) ->
+                    Nothing
 
-                    _ ->
-                        Nothing
-            )
+                ( _, [ Lambda x f ] ) ->
+                    Just <| Lambda x <| hoistLambda <| Apply fn [ f ]
+
+                _ ->
+                    Nothing
+
+        _ ->
+            Nothing
