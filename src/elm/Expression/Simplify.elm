@@ -19,7 +19,7 @@ import Expression
         , visit
         )
 import Expression.Derivative
-import Expression.Utils exposing (asPoly, by, byShort, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, square, two, zero)
+import Expression.Utils exposing (asPoly, by, byShort, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
 import List
 import List.Extra as List
 import List.MyExtra exposing (groupOneWith)
@@ -297,6 +297,9 @@ stepSimplifySqrt sargs =
             else
                 s
 
+        [ BinaryOperation Division n d ] ->
+            div (sqrt_ n) (sqrt_ d)
+
         _ ->
             Apply (KnownFunction Sqrt) sargs
 
@@ -500,6 +503,19 @@ stepSimplifyPower ls rs =
                 -- 3
                 _ ->
                     negate_ i
+
+        ( BinaryOperation Division nl dl, _ ) ->
+            div (pow nl rs) (pow dl rs)
+
+        ( UnaryOperation Negate nl, Integer ir ) ->
+            if ir <= 0 then
+                pow ls rs
+
+            else if modBy 2 ir == 0 then
+                pow nl rs
+
+            else
+                negate_ <| pow nl rs
 
         _ ->
             pow ls rs
@@ -710,6 +726,9 @@ groupStepAddition left right =
 
                     else
                         Nothing
+
+                ( BinaryOperation Division ln ld, UnaryOperation Negate (BinaryOperation Division rn rd) ) ->
+                    Just <| div (minus (by [ ln, rd ]) (by [ rn, ld ])) (by [ ld, rd ])
 
                 ( UnaryOperation Negate nl, _ ) ->
                     if Expression.equals nl right then
