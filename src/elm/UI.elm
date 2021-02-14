@@ -7,7 +7,7 @@ import Browser.Dom
 import Browser.Events
 import Browser.Navigation exposing (Key)
 import Codec exposing (Value)
-import Element.WithContext as Element exposing (alignBottom, alignRight, centerX, centerY, el, fill, height, inFront, padding, scrollbarX, shrink, spacing, width)
+import Element.WithContext as Element exposing (DeviceClass(..), alignBottom, alignRight, centerX, centerY, el, fill, height, inFront, padding, scrollbarX, shrink, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -152,9 +152,12 @@ init { saved, hasClipboard, languages } url key =
                             )
                         >> List.head
                     )
+
+        defaultSize =
+            { width = 1024, height = 768 }
     in
     ( { documents = documents
-      , size = { width = 1024, height = 768 }
+      , size = defaultSize
       , modal = Nothing
       , openMenu = False
       , rootUrl = rootUrl
@@ -169,6 +172,9 @@ init { saved, hasClipboard, languages } url key =
                     |> List.head
                     |> Maybe.withDefault En
             , expandIntervals = True
+
+            -- The other classes have faster processors so should update quicker
+            , deviceClass = Phone
             }
       }
     , Task.perform Resized measure
@@ -192,7 +198,15 @@ view model =
             Html.node "style"
                 []
                 [ -- preserve whitespace in errors display
-                  Html.text "div.pre > div {white-space: pre-wrap !important;}"
+                  Html.text
+                    """
+                        div.pre > div {
+                            white-space: pre-wrap !important;
+                        }
+
+                        textarea.input {
+                            word-break: break-word !important;
+                        }"""
                 ]
         , documentPicker model
         , documentView
@@ -770,7 +784,11 @@ update msg =
                                 { model | modal = Nothing }
 
                 Resized size ->
-                    ( { model | size = size }, Cmd.none )
+                    let
+                        context_ =
+                            model.context
+                    in
+                    ( { model | size = size, context = { context_ | deviceClass = (Element.classifyDevice size).class } }, Cmd.none )
 
                 DismissModal ->
                     ( { model | modal = Nothing }, Cmd.none )

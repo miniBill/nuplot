@@ -3,7 +3,7 @@ module UI.RowView exposing (view)
 import Ant.Icons as Icons
 import Complex
 import Dict
-import Element.WithContext as Element exposing (Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, row, shrink, spacing, text, width)
+import Element.WithContext as Element exposing (DeviceClass(..), Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, row, shrink, spacing, text, width)
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
 import Element.WithContext.Input as Input
@@ -67,7 +67,7 @@ draw { width, height } id { wdiv, hdiv } graph =
             min 1920 <| width - (8 + wdiv) * Theme.spacing
 
         rawImageHeight =
-            min 1080 <| height - (8 + hdiv) * Theme.spacing
+            min 1080 <| height - (14 + hdiv) * Theme.spacing
 
         imageWidth =
             min rawImageWidth <| rawImageHeight * 4 // 3
@@ -137,12 +137,12 @@ view size index { input, editing, data } =
                     [ Element.width fill
                     , alignTop
                     ]
-                    (codeInputLine index input :: outputRows)
+                    (codeInputLine size index input :: outputRows)
 
             MarkdownRow ->
                 if editing then
                     Theme.row [ Element.width fill ]
-                        [ inputBox input
+                        [ inputBox (size.width - 100) input
                         , Input.button [ htmlAttribute <| Html.Attributes.title "End editing" ]
                             { onPress = Just EndEditing
                             , label = Element.element <| Icons.enterOutlined Theme.darkIconAttrs
@@ -176,13 +176,14 @@ view size index { input, editing, data } =
                            )
 
 
-inputBox : String -> Element CellMsg
-inputBox input =
+inputBox : Int -> String -> Element CellMsg
+inputBox maxWidth input =
     Input.multiline
-        [ width fill
+        [ Element.width <| Element.maximum maxWidth fill
         , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
         , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
         , Element.htmlAttribute <| Html.Attributes.spellcheck False
+        , Element.htmlAttribute <| Html.Attributes.class "input"
         , Theme.onCtrlEnter Calculate
         ]
         { label = Input.labelHidden "Input"
@@ -193,24 +194,40 @@ inputBox input =
         }
 
 
-codeInputLine : Int -> String -> Element CellMsg
-codeInputLine index input =
-    Theme.row [ width fill ]
-        [ text <| "In [" ++ String.fromInt index ++ "]"
-        , inputBox input
-        , Input.button [ htmlAttribute <| Html.Attributes.title "Press Ctrl+Enter to calculate" ]
-            { onPress = Just Calculate
-            , label = Element.element <| Icons.playSquareOutlined Theme.darkIconAttrs
-            }
-        , Input.button [ htmlAttribute <| Html.Attributes.title "Convert to Markdown cell" ]
-            { label = Element.element <| Icons.swapOutlined Theme.darkIconAttrs
-            , onPress = Just ToMarkdown
-            }
-        , Input.button [ htmlAttribute <| Html.Attributes.title "Clear result" ]
-            { label = Element.element <| Icons.stopOutlined Theme.darkIconAttrs
-            , onPress = Just Clear
-            }
-        ]
+codeInputLine : { a | width : Int } -> Int -> String -> Element CellMsg
+codeInputLine size index input =
+    let
+        buttons =
+            [ Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Press Ctrl+Enter to calculate" ]
+                { onPress = Just Calculate
+                , label = Element.element <| Icons.playSquareOutlined Theme.darkIconAttrs
+                }
+            , Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Convert to Markdown cell" ]
+                { label = Element.element <| Icons.swapOutlined Theme.darkIconAttrs
+                , onPress = Just ToMarkdown
+                }
+            , Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Clear result" ]
+                { label = Element.element <| Icons.stopOutlined Theme.darkIconAttrs
+                , onPress = Just Clear
+                }
+            ]
+
+        label =
+            text <| "In [" ++ String.fromInt index ++ "]"
+    in
+    Element.with .deviceClass <|
+        \deviceClass ->
+            case deviceClass of
+                Phone ->
+                    Theme.column [ width fill ]
+                        [ Theme.row [ width fill ]
+                            (label :: buttons)
+                        , inputBox (size.width - 2 * Theme.spacing) input
+                        ]
+
+                _ ->
+                    Theme.row [ width fill ]
+                        (label :: inputBox (size.width - 180) input :: buttons)
 
 
 statusLine : Int -> Output -> Element msg

@@ -2,6 +2,7 @@ module Model exposing (CellMsg(..), Context, Document, Flags, Metadata, Modal(..
 
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec)
+import Element.WithContext exposing (DeviceClass)
 import Expression exposing (Expression)
 import File exposing (File)
 import Json.Decode as JD
@@ -36,6 +37,7 @@ type alias Context =
     { language : Language
     , hasClipboard : Bool
     , expandIntervals : Bool
+    , deviceClass : DeviceClass
     }
 
 
