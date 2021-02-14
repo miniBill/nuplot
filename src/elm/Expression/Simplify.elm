@@ -20,11 +20,13 @@ import Expression
         )
 import Expression.Derivative
 import Expression.Utils exposing (asPoly, by, byShort, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
+import Fraction
 import List
 import List.Extra as List
 import List.MyExtra exposing (groupOneWith)
 import Maybe.Extra as Maybe
 import Set
+import Zipper
 
 
 simplify : Expression -> Expression
@@ -61,34 +63,19 @@ stepSimplify context expr =
                 }
                 e
 
-        UnaryOperation Negate (UnaryOperation Negate e) ->
-            e
-
-        UnaryOperation Negate (Integer ni) ->
-            Integer -ni
-
-        UnaryOperation Negate (List ls) ->
-            stepList context
-                { andThen = \ss -> List <| List.map (UnaryOperation Negate) ss
-                , ifChanged = \ss -> UnaryOperation Negate <| List ss
-                }
-                ls
-
-        UnaryOperation Negate (BinaryOperation Division (UnaryOperation Negate n) d) ->
-            div n d
-
-        UnaryOperation Negate (BinaryOperation Division (Integer i) d) ->
-            if i < 0 then
-                div (Integer -i) d
-
-            else
-                UnaryOperation Negate <| div (Integer i) (stepSimplify context d)
-
-        UnaryOperation Negate e ->
-            UnaryOperation Negate <| stepSimplify context e
-
         Lambda x f ->
             Lambda x <| stepSimplify context f
+
+        UnaryOperation Negate e ->
+            let
+                _ =
+                    Debug.log "neg" e
+            in
+            step1 context
+                { andThen = stepSimplifyNegate context
+                , ifChanged = negate_
+                }
+                e
 
         BinaryOperation bop l r ->
             step2 context
@@ -116,6 +103,10 @@ stepSimplify context expr =
             plus <| List.map (\o -> by [ l, r, o ]) (al :: ar :: ao)
 
         AssociativeOperation aop l r o ->
+            let
+                _ =
+                    Debug.log "aop" { l = l, r = r, o = o }
+            in
             stepList context
                 { andThen = stepSimplifyAssociative context aop
                 , ifChanged =
@@ -146,6 +137,36 @@ stepSimplify context expr =
 
         Float _ ->
             expr
+
+
+stepSimplifyNegate : Dict String Expression -> Expression -> Expression
+stepSimplifyNegate context expr =
+    case expr of
+        UnaryOperation Negate e ->
+            e
+
+        Integer ni ->
+            Integer -ni
+
+        List ls ->
+            stepList context
+                { andThen = \ss -> List <| List.map negate_ ss
+                , ifChanged = \ss -> negate_ <| List ss
+                }
+                ls
+
+        BinaryOperation Division (UnaryOperation Negate n) d ->
+            div n d
+
+        BinaryOperation Division (Integer i) d ->
+            if i < 0 then
+                div (Integer -i) d
+
+            else
+                negate_ expr
+
+        _ ->
+            negate_ expr
 
 
 step1 : Dict String Expression -> { andThen : Expression -> Expression, ifChanged : Expression -> Expression } -> Expression -> Expression
@@ -358,12 +379,24 @@ stepSimplifyDivision ls rs =
         ( Integer 0, _ ) ->
             ls
 
-        ( Integer n, Integer d ) ->
-            if modBy d n == 0 then
-                Integer (n // d)
+        ( Integer li, Integer ri ) ->
+            case abs <| Fraction.gcd li ri of
+                1 ->
+                    if ri < 0 then
+                        div (Integer -li) (Integer -ri)
 
-            else
-                div ls rs
+                    else if li < 0 then
+                        negate_ <| div (Integer -li) rs
+
+                    else
+                        div ls rs
+
+                g ->
+                    if g == ri then
+                        Integer <| li // g
+
+                    else
+                        div (Integer <| li // g) (Integer <| ri // g)
 
         ( _, AssociativeOperation Addition l m r ) ->
             let
@@ -400,6 +433,38 @@ stepSimplifyDivision ls rs =
 
                 _ ->
                     by [ ls, inverted ]
+
+        ( AssociativeOperation Multiplication nl nm nr, AssociativeOperation Multiplication dl dm dr ) ->
+            let
+                nzip =
+                    Zipper.fromNonemptyList nl (nm :: nr)
+
+                dzip =
+                    Zipper.fromNonemptyList dl (dm :: dr)
+
+                go nz dz =
+                    case stepSimplifyDivision (Zipper.selected nz) (Zipper.selected dz) of
+                        BinaryOperation Division _ _ ->
+                            if Zipper.canGoRight dz then
+                                go nz (Zipper.right 1 dz)
+
+                            else if Zipper.canGoRight nz then
+                                go (Zipper.right 1 nz) dzip
+
+                            else
+                                div ls rs
+
+                        Integer 1 ->
+                            div
+                                (by <| Zipper.getLeft nz ++ Zipper.getRight nz)
+                                (by <| Zipper.getLeft dz ++ Zipper.getRight dz)
+
+                        reduced ->
+                            div
+                                (by <| Zipper.getLeft nz ++ reduced :: Zipper.getRight nz)
+                                (by <| Zipper.getLeft dz ++ Zipper.getRight dz)
+            in
+            go nzip dzip
 
         _ ->
             if Expression.equals ls rs then
@@ -559,10 +624,10 @@ stepSimplifyAssociative context aop args =
         groupStep =
             case aop of
                 Addition ->
-                    groupStepAddition
+                    stepSimplifyAddition
 
                 Multiplication ->
-                    groupStepMultiplication
+                    stepSimplifyMultiplication
 
         andThen : List Expression -> Expression
         andThen ls =
@@ -570,11 +635,10 @@ stepSimplifyAssociative context aop args =
                 |> groupOneWith groupStep
                 |> (case aop of
                         Addition ->
-                            tryExtract (findSpecificInteger 0) (\( _, rest ) -> rest)
+                            identity
 
                         Multiplication ->
-                            tryExtract (findSpecificInteger -1) (\( _, rest ) -> [ negate_ <| build rest ])
-                                >> tryExtract findNegate (\( negated, rest ) -> [ negate_ <| build <| negated :: rest ])
+                            tryExtract findNegate (\( negated, rest ) -> [ negate_ <| build <| negated :: rest ])
                    )
                 |> sortByDegree aop
                 |> build
@@ -613,20 +677,6 @@ extract filter ls =
                             Just ( e, List.reverse old ++ t )
     in
     go [] ls
-
-
-findSpecificInteger : Int -> Expression -> Maybe Int
-findSpecificInteger j expr =
-    case expr of
-        Integer i ->
-            if i == j then
-                Just i
-
-            else
-                Nothing
-
-        _ ->
-            Nothing
 
 
 findSpecificVariable : String -> Expression -> Maybe String
@@ -693,26 +743,18 @@ sortByDegree aop ee =
         letters
 
 
-groupStepAddition : Expression -> Expression -> Maybe Expression
-groupStepAddition left right =
-    case Set.toList <| getFreeVariables left of
-        [ var ] ->
-            case
-                Result.map2 Tuple.pair
-                    (asPoly var left |> Result.map Dict.toList)
-                    (asPoly var right |> Result.map Dict.toList)
-            of
-                Ok ( [ ( dl, cl ) ], [ ( dr, cr ) ] ) ->
-                    if dl == dr then
-                        Just <| byShort [ plusShort [ cl, cr ], ipowShort (Variable var) dl ]
+stepSimplifyAddition : Expression -> Expression -> Maybe Expression
+stepSimplifyAddition left right =
+    let
+        _ =
+            Debug.log "stepSimplifyAddition"
+                { left = Expression.toString <| left
+                , right = Expression.toString <| right
+                , standard = Maybe.map Expression.toString <| standard ()
+                , noise = { left = left, right = right, standard = standard () }
+                }
 
-                    else
-                        Nothing
-
-                _ ->
-                    Nothing
-
-        _ ->
+        standard () =
             case ( left, right ) of
                 ( _, Integer 0 ) ->
                     Just left
@@ -728,7 +770,16 @@ groupStepAddition left right =
                         Nothing
 
                 ( BinaryOperation Division ln ld, UnaryOperation Negate (BinaryOperation Division rn rd) ) ->
-                    Just <| div (minus (by [ ln, rd ]) (by [ rn, ld ])) (by [ ld, rd ])
+                    Just <|
+                        div
+                            (minus (by [ ln, rd ]) (by [ rn, ld ]))
+                            (by [ ld, rd ])
+
+                ( UnaryOperation Negate (BinaryOperation Division ln ld), BinaryOperation Division rn rd ) ->
+                    Just <|
+                        div
+                            (plus [ by [ negate_ ln, rd ], by [ rn, ld ] ])
+                            (by [ ld, rd ])
 
                 ( UnaryOperation Negate nl, _ ) ->
                     if Expression.equals nl right then
@@ -762,6 +813,26 @@ groupStepAddition left right =
 
                     else
                         Nothing
+    in
+    case Set.toList <| getFreeVariables left of
+        [ var ] ->
+            case
+                Result.map2 Tuple.pair
+                    (asPoly var left |> Result.map Dict.toList)
+                    (asPoly var right |> Result.map Dict.toList)
+            of
+                Ok ( [ ( dl, cl ) ], [ ( dr, cr ) ] ) ->
+                    if dl == dr then
+                        Just <| byShort [ plusShort [ cl, cr ], ipowShort (Variable var) dl ]
+
+                    else
+                        standard ()
+
+                _ ->
+                    standard ()
+
+        _ ->
+            standard ()
 
 
 asList : Expression -> Maybe (List Expression)
@@ -774,8 +845,8 @@ asList l =
             Nothing
 
 
-groupStepMultiplication : Expression -> Expression -> Maybe Expression
-groupStepMultiplication left right =
+stepSimplifyMultiplication : Expression -> Expression -> Maybe Expression
+stepSimplifyMultiplication left right =
     case ( left, right ) of
         ( Integer 1, l ) ->
             Just l
