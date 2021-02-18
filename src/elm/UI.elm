@@ -94,6 +94,7 @@ init { saved, hasClipboard, languages } url key =
             , "plot(sin²x+sin²y+sin²z = pw(z>1,-1,.5sinsqrt(x²+y²+z²"
             , "plot{z=sin(x²+y²),x²+y²+(z-2)² = 3}"
             , "simplifydet{{a,b,c},{0,1,0},{1,2,3"
+            , "solve(x+2(x-(x²-6)+1),x"
             ]
 
         measure =
