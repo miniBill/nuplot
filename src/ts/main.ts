@@ -42,7 +42,7 @@ function fromLS() {
   return saved;
 }
 
-function innerInit(Elm: ElmType, saved: any) {
+function innerInit(Elm: ElmType, saved: { [key: string]: string }) {
   const node = document.getElementById("main");
   if (node == null) {
     document.write(
@@ -58,7 +58,12 @@ function innerInit(Elm: ElmType, saved: any) {
       hasClipboard: typeof ClipboardItem !== "undefined",
       languages: "languages" in navigator ? navigator.languages : [],
       rootUrl: window.location.toString(),
+      googleAccessToken: localStorage.getItem("googleAccessToken") ?? "",
     },
+  });
+  window.addEventListener("storage", (e) => {
+    if (e.key == "googleAccessToken")
+      app.ports.gotGoogleAccessToken.send(e.newValue ?? "");
   });
   app.ports.persist.subscribe((value) => {
     localForage.setItem(storageKey, value);
@@ -71,11 +76,21 @@ function innerInit(Elm: ElmType, saved: any) {
     var element = document.getElementById(id) as NuPlot;
     element?.copy();
   });
+  app.ports.saveGoogleAccessTokenAndCloseWindow.subscribe((token) => {
+    localStorage.setItem("googleAccessToken", token);
+    window.close();
+  });
+  app.ports.openWindow.subscribe((url) => {
+    window.open(
+      url,
+      "popup",
+      "menubar=no,status=no,toolbar=no,width=400,height=400"
+    );
+  });
 }
 
 export function init(Elm: ElmType) {
-  localForage
-    .getItem(storageKey)
+  (localForage.getItem(storageKey) as Promise<{ [key: string]: string }>)
     .then((saved) => innerInit(Elm, saved))
     .catch(() => innerInit(Elm, fromLS()));
 }

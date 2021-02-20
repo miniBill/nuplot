@@ -1,4 +1,4 @@
-port module UI exposing (main)
+module UI exposing (main)
 
 import Ant.Icon as Icon
 import Ant.Icons as Icons
@@ -6,7 +6,7 @@ import Browser
 import Browser.Dom
 import Browser.Events
 import Browser.Navigation exposing (Key)
-import Codec exposing (Value)
+import Codec
 import Element.WithContext as Element exposing (DeviceClass(..), alignBottom, alignRight, centerX, centerY, el, fill, height, inFront, padding, scrollbarX, shrink, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
@@ -18,12 +18,14 @@ import Expression.Parser
 import File
 import File.Download
 import File.Select
+import Google
 import Html
 import Html.Attributes
 import List.Extra as List
 import Model exposing (CellMsg(..), Context, Document, Flags, Modal(..), Model, Msg(..), Output(..), RowData(..))
 import Task
 import UI.L10N as L10N exposing (L10N, Language(..), text, title)
+import UI.Ports
 import UI.RowView
 import UI.Theme as Theme exposing (onKey)
 import Url exposing (Url)
@@ -33,15 +35,6 @@ import Zipper
 
 type alias Element msg =
     Element.Element Context msg
-
-
-port persist : Value -> Cmd msg
-
-
-port copy : String -> Cmd msg
-
-
-port save : String -> Cmd msg
 
 
 main : Program Flags Model Msg
@@ -68,7 +61,7 @@ main =
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
-init { saved, hasClipboard, languages } url key =
+init ({ saved, hasClipboard, languages } as flags) url key =
     let
         documents =
             case Codec.decodeValue Model.documentsCodec saved of
@@ -135,8 +128,19 @@ init { saved, hasClipboard, languages } url key =
                         ":" ++ String.fromInt p
                 ]
 
-        accessToken =
+        googleAccessTokenFromUrl =
             Url.Parser.parse accessTokenParser url |> Maybe.andThen identity
+
+        googleAccessToken =
+            googleAccessTokenFromUrl
+                |> Maybe.withDefault flags.googleAccessToken
+                |> (\s ->
+                        if String.isEmpty s then
+                            Nothing
+
+                        else
+                            Just s
+                   )
 
         accessTokenParser =
             Url.Parser.fragment <|
@@ -163,7 +167,8 @@ init { saved, hasClipboard, languages } url key =
       , openMenu = False
       , rootUrl = rootUrl
       , key = key
-      , accessToken = accessToken
+      , googleAccessToken = googleAccessToken
+      , pendingGoogleDriveSave = Nothing
       , context =
             { hasClipboard = hasClipboard
             , language =
@@ -178,7 +183,12 @@ init { saved, hasClipboard, languages } url key =
             , deviceClass = Phone
             }
       }
-    , Task.perform Resized measure
+    , case googleAccessTokenFromUrl of
+        Nothing ->
+            Task.perform Resized measure
+
+        Just token ->
+            UI.Ports.saveGoogleAccessTokenAndCloseWindow token
     )
 
 
@@ -373,6 +383,7 @@ documentPicker ({ documents } as model) =
         toDocumentTabButton selected index doc =
             let
                 name =
+                    -- TODO: Localize
                     Maybe.withDefault "Untitled" <| doc.metadata.name
             in
             documentTabButton
@@ -604,6 +615,14 @@ viewModal model =
                     }
                 ]
 
+        ( Just ModalGoogleAuth, _ ) ->
+            wrap GoogleAuth
+                [ text
+                    { en = "Before completing this action you will need to authenticate with Google"
+                    , it = "Prima di poter effettuare questa azione è necessario effettuare l'autenticazione con Google"
+                    }
+                ]
+
 
 viewDocument : { width : Int, height : Int } -> Document -> Element Msg
 viewDocument size { rows } =
@@ -654,10 +673,10 @@ update msg =
                     in
                     case cmsg of
                         Copy id ->
-                            ( model, copy id )
+                            ( model, UI.Ports.copy id )
 
                         Save id ->
-                            ( model, save id )
+                            ( model, UI.Ports.save id )
 
                         Input input ->
                             updateRow (\r -> { r | input = input })
@@ -698,7 +717,7 @@ update msg =
                                             |> Zipper.allRight
                     in
                     ( { model | documents = documents }
-                    , persist <| Codec.encodeToValue Model.documentsCodec documents
+                    , UI.Ports.persist <| Codec.encodeToValue Model.documentsCodec documents
                     )
 
                 SelectDocument i ->
@@ -707,7 +726,7 @@ update msg =
                             Maybe.map (Zipper.right i) model.documents
                     in
                     ( { model | documents = documents }
-                    , persist <| Codec.encodeToValue Model.documentsCodec documents
+                    , UI.Ports.persist <| Codec.encodeToValue Model.documentsCodec documents
                     )
 
                 CloseDocument { ask, index } ->
@@ -726,7 +745,7 @@ update msg =
                                 Maybe.andThen (Zipper.removeAt index) model.documents
                         in
                         ( { model | documents = documents, modal = Nothing }
-                        , persist <| Codec.encodeToValue Model.documentsCodec documents
+                        , UI.Ports.persist <| Codec.encodeToValue Model.documentsCodec documents
                         )
 
                 CalculateAll ->
@@ -813,6 +832,7 @@ update msg =
                                 doc =
                                     Zipper.selected docs
                             in
+                            -- TODO: ask the user for a name if empty
                             ( model, File.Download.string (Maybe.withDefault "Untitled" doc.metadata.name ++ ".txt") "text/plain" <| Model.documentToFile doc )
 
                 SelectedFileForOpen file ->
@@ -856,15 +876,100 @@ update msg =
                     in
                     ( { model | context = { context | expandIntervals = expandIntervals } }, Cmd.none )
 
-                --GoogleAuth ->
-                --    ( model, Browser.Navigation.load <| UI.Google.buildUrl model.rootUrl )
+                GoogleAuth ->
+                    ( { model | modal = Nothing }, Google.startAuthenticationFlow model.rootUrl )
+
                 GoogleSave ->
+                    googleSave model
+
+                GoogleSaved res ->
+                    let
+                        _ =
+                            Debug.log "GoogleSaved" res
+                    in
                     ( model, Cmd.none )
+
+                GotGoogleAccessToken token ->
+                    let
+                        model_ =
+                            { model
+                                | googleAccessToken =
+                                    if token == "" then
+                                        Nothing
+
+                                    else
+                                        Just token
+                                , pendingGoogleDriveSave = Nothing
+                            }
+                    in
+                    case model.pendingGoogleDriveSave of
+                        Nothing ->
+                            ( model_, Cmd.none )
+
+                        Just data ->
+                            ( model_, doGoogleSave { googleAccessToken = token } data )
 
                 Nop _ ->
                     ( model, Cmd.none )
     in
     \model -> inner { model | openMenu = False }
+
+
+googleSave : Model -> ( Model, Cmd Msg )
+googleSave model =
+    case model.documents of
+        Nothing ->
+            ( model, Cmd.none )
+
+        Just docs ->
+            let
+                document =
+                    Zipper.selected docs
+
+                content =
+                    Model.documentToFile document
+
+                name =
+                    -- TODO warn the user and ask for a name
+                    Maybe.withDefault "Untitled" document.metadata.name
+
+                data =
+                    { name = name
+                    , content = content
+                    }
+            in
+            case model.googleAccessToken of
+                Nothing ->
+                    ( { model
+                        | modal = Just ModalGoogleAuth
+                        , pendingGoogleDriveSave = Just data
+                      }
+                    , Cmd.none
+                    )
+
+                Just googleAccessToken ->
+                    ( model
+                    , doGoogleSave { googleAccessToken = googleAccessToken } data
+                    )
+
+
+doGoogleSave : { a | googleAccessToken : String } -> { b | name : String, content : String } -> Cmd Msg
+doGoogleSave { googleAccessToken } { name, content } =
+    let
+        cmd =
+            Google.generateId { googleAccessToken = googleAccessToken }
+                |> Task.andThen
+                    (\id ->
+                        Google.uploadFile
+                            { id = id
+                            , name = name
+                            , content = content
+                            , googleAccessToken = googleAccessToken
+                            }
+                    )
+                |> Task.attempt GoogleSaved
+    in
+    cmd
 
 
 updateCurrent : (Document -> Document) -> Model -> ( Model, Cmd msg )
@@ -882,7 +987,7 @@ updateCurrent f model =
                     Just <| Zipper.setSelected doc docs
             in
             ( { model | documents = documents }
-            , persist <| Codec.encodeToValue Model.documentsCodec documents
+            , UI.Ports.persist <| Codec.encodeToValue Model.documentsCodec documents
             )
 
 
@@ -903,4 +1008,7 @@ parseOrError input =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Browser.Events.onResize (\w h -> Resized { width = w, height = h })
+    Sub.batch
+        [ Browser.Events.onResize (\w h -> Resized { width = w, height = h })
+        , UI.Ports.gotGoogleAccessToken GotGoogleAccessToken
+        ]

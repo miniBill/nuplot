@@ -5,6 +5,7 @@ import Codec exposing (Codec)
 import Element.WithContext exposing (DeviceClass)
 import Expression exposing (Expression)
 import File exposing (File)
+import Google
 import Json.Decode as JD
 import List.Extra as List
 import List.MyExtra as List exposing (LeftOrRight(..))
@@ -18,6 +19,7 @@ type alias Flags =
     , hasClipboard : Bool
     , languages : List String
     , rootUrl : String
+    , googleAccessToken : String
     }
 
 
@@ -28,7 +30,8 @@ type alias Model =
     , openMenu : Bool
     , context : Context
     , rootUrl : String
-    , accessToken : Maybe String
+    , googleAccessToken : Maybe String
+    , pendingGoogleDriveSave : Maybe { name : String, content : String }
     , key : Key
     }
 
@@ -44,6 +47,7 @@ type alias Context =
 type Modal
     = ModalClose Int
     | ModalRename String
+    | ModalGoogleAuth
 
 
 documentsCodec : Codec (Maybe (Zipper Document))
@@ -337,7 +341,10 @@ type Msg
     | ReadFile String String
     | CellMsg Int CellMsg
     | Language Language
+    | GoogleAuth
     | GoogleSave
+    | GoogleSaved (Result Google.Error ())
+    | GotGoogleAccessToken String
     | Nop String
     | CalculateAll
     | ClearAll

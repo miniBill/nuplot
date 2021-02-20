@@ -9,6 +9,7 @@ export type ElmType = {
         hasClipboard: boolean;
         languages: readonly string[];
         rootUrl: string;
+        googleAccessToken: string;
       };
     }) => UIInstance;
   };
@@ -26,6 +27,15 @@ export type UIInstance = {
     };
     copy: {
       subscribe(callback: (id: string) => void): void;
+    };
+    saveGoogleAccessTokenAndCloseWindow: {
+      subscribe(callback: (token: string) => void): void;
+    };
+    openWindow: {
+      subscribe(callback: (url: string) => void): void;
+    };
+    gotGoogleAccessToken: {
+      call(token: string): void;
     };
   };
 };
