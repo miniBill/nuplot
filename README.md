@@ -6,5 +6,4 @@ It's a rewrite in Elm of "mePlot", which was a formerly J2ME, then Android appli
 
 It's pre-1.0, and there is much to do.
 
-To test it, `pnpm start`.
-
+To test it, `pnpm install` and then `pnpm start`.
