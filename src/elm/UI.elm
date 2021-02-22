@@ -342,7 +342,7 @@ dropdown () =
                                 Element.none
 
                             mainIcon :: layers ->
-                                List.foldl (\e a -> el [ inFront <| e ] a) mainIcon layers
+                                List.foldl (\e -> el [ inFront e ]) mainIcon layers
                         , text lbl
                         ]
                 }
