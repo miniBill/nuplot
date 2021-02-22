@@ -61,6 +61,18 @@ main =
         }
 
 
+defaultDocument : List String
+defaultDocument =
+    [ "{{plotsinx, plot(x<y), plot(x²+y²=3)}, {[zx+iy]plotexp(1/z), plot(x²+y²+z²=3), plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}}"
+    , "[zx+iy]{plot(z³-1),plotabs(z³-1),plotarg(z³-1)}"
+    , "plot(sin²x+sin²y+sin²z = pw(z>1,-1,.5sinsqrt(x²+y²+z²"
+    , "plot{z=sin(x²+y²),x²+y²+(z-2)² = 3}"
+    , "simplifydet{{a,b,c},{0,1,0},{1,2,3"
+    , "solve(x+2(x-(x²-6)+1),x"
+    , ""
+    ]
+
+
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init ({ saved, hasClipboard, languages } as flags) url key =
     let
@@ -89,7 +101,7 @@ init ({ saved, hasClipboard, languages } as flags) url key =
                         Zipper.singleton
                             { id = DocumentId 0
                             , document =
-                                { rows = List.map emptyRow <| default ++ [ "" ]
+                                { rows = List.map emptyRow defaultDocument
                                 , metadata = Model.emptyMetadata
                                 }
                             }
@@ -115,15 +127,6 @@ init ({ saved, hasClipboard, languages } as flags) url key =
             , editing = False
             , data = CodeRow []
             }
-
-        default =
-            [ "{{plotsinx, plot(x<y), plot(x²+y²=3)}, {[zx+iy]plotexp(1/z), plot(x²+y²+z²=3), plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}}"
-            , "[zx+iy]{plot(z³-1),plotabs(z³-1),plotarg(z³-1)}"
-            , "plot(sin²x+sin²y+sin²z = pw(z>1,-1,.5sinsqrt(x²+y²+z²"
-            , "plot{z=sin(x²+y²),x²+y²+(z-2)² = 3}"
-            , "simplifydet{{a,b,c},{0,1,0},{1,2,3"
-            , "solve(x+2(x-(x²-6)+1),x"
-            ]
 
         measure =
             Browser.Dom.getViewport
