@@ -1,6 +1,7 @@
-module Google exposing (Error, generateId, redirectUrl, startAuthenticationFlow, uploadFile)
+module Google exposing (Error, FileId, fileIdCodec, generateId, redirectUrl, startAuthenticationFlow, uploadFile)
 
 import Bytes.Encode as BE
+import Codec exposing (Codec)
 import Http exposing (Resolver, Response(..))
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
@@ -43,6 +44,11 @@ redirectUrl =
 
 type FileId
     = FileId String
+
+
+fileIdCodec : Codec FileId
+fileIdCodec =
+    Codec.map FileId (\(FileId f) -> f) Codec.string
 
 
 uploadFile : { id : FileId, name : String, content : String, googleAccessToken : String } -> Task Error ()

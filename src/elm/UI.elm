@@ -22,7 +22,8 @@ import Google
 import Html
 import Html.Attributes
 import List.Extra as List
-import Model exposing (CellMsg(..), Context, Document, Flags, Modal(..), Model, Msg(..), Output(..), RowData(..))
+import Maybe
+import Model exposing (CellMsg(..), Context, Document, DocumentId(..), Flags, Modal(..), Model, Msg(..), Output(..), RowData(..))
 import Task
 import UI.L10N as L10N exposing (L10N, Language(..), text, title)
 import UI.Ports
@@ -30,7 +31,7 @@ import UI.RowView
 import UI.Theme as Theme exposing (onKey)
 import Url exposing (Url)
 import Url.Parser
-import Zipper
+import Zipper exposing (Zipper)
 
 
 type alias Element msg =
@@ -63,17 +64,51 @@ main =
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init ({ saved, hasClipboard, languages } as flags) url key =
     let
+        documents : Maybe (Zipper { id : DocumentId, document : Document })
         documents =
             case Codec.decodeValue Model.documentsCodec saved of
                 Ok docs ->
                     docs
+                        |> Maybe.map
+                            (Zipper.map
+                                (\i d ->
+                                    { document = d
+                                    , id =
+                                        DocumentId <|
+                                            if i < 0 then
+                                                -i * 2 - 1
+
+                                            else
+                                                i * 2
+                                    }
+                                )
+                            )
 
                 Err _ ->
                     Just <|
                         Zipper.singleton
-                            { rows = List.map emptyRow <| default ++ [ "" ]
-                            , metadata = Model.emptyMetadata
+                            { id = DocumentId 0
+                            , document =
+                                { rows = List.map emptyRow <| default ++ [ "" ]
+                                , metadata = Model.emptyMetadata
+                                }
                             }
+
+        nextId =
+            documents
+                |> Maybe.map Zipper.toList
+                |> Maybe.withDefault []
+                |> List.map
+                    (\d ->
+                        let
+                            (DocumentId i) =
+                                d.id
+                        in
+                        i
+                    )
+                |> List.maximum
+                |> Maybe.withDefault -1
+                |> (+) 1
 
         emptyRow x =
             { input = x
@@ -162,6 +197,7 @@ init ({ saved, hasClipboard, languages } as flags) url key =
             { width = 1024, height = 768 }
     in
     ( { documents = documents
+      , nextId = nextId
       , size = defaultSize
       , modal = Nothing
       , openMenu = False
@@ -197,7 +233,7 @@ view model =
     let
         documentView =
             model.documents
-                |> Maybe.map (Zipper.selected >> viewDocument model.size)
+                |> Maybe.map (Zipper.selected >> .document >> viewDocument model.size)
                 |> Maybe.withDefault (text { en = "Select a document", it = "Seleziona un documento" })
     in
     Element.column
@@ -379,12 +415,15 @@ toolbar { openMenu } =
 documentPicker : Model -> Element Msg
 documentPicker ({ documents } as model) =
     let
-        toDocumentTabButton : Bool -> Int -> Document -> Element Msg
-        toDocumentTabButton selected index doc =
+        toDocumentTabButton : Int -> { a | document : Document } -> Element Msg
+        toDocumentTabButton index { document } =
             let
+                selected =
+                    index == 0
+
                 name =
                     -- TODO: Localize
-                    Maybe.withDefault "Untitled" <| doc.metadata.name
+                    Maybe.withDefault "Untitled" <| document.metadata.name
             in
             documentTabButton
                 { selected = selected
@@ -401,7 +440,7 @@ documentPicker ({ documents } as model) =
                 }
 
         buttons =
-            Maybe.withDefault [] (Maybe.map (Zipper.map toDocumentTabButton) documents)
+            Maybe.withDefault [] (Maybe.map (Zipper.toList << Zipper.map toDocumentTabButton) documents)
                 ++ [ documentTabButton
                         { selected = False
                         , onPress = NewDocument
@@ -561,10 +600,10 @@ viewModal model =
                 Nothing ->
                     Element.none
 
-                Just { metadata } ->
+                Just { document } ->
                     wrap (CloseDocument { ask = False, index = i })
                         [ text <|
-                            case metadata.name of
+                            case document.metadata.name of
                                 Just name ->
                                     { en = "Close document \"" ++ name ++ "\"?"
                                     , it = "Chiudi il documento \"" ++ name ++ "\"?"
@@ -598,7 +637,7 @@ viewModal model =
                     , label =
                         let
                             metadata =
-                                (Zipper.selected docs).metadata
+                                (Zipper.selected docs).document.metadata
                         in
                         Input.labelAbove [] <|
                             text <|
@@ -700,25 +739,10 @@ update msg =
                             updateRow (\r -> { r | data = CodeRow [] })
 
                 NewDocument ->
-                    let
-                        newDocument =
-                            { rows = [ Model.emptyRow ]
-                            , metadata = Model.emptyMetadata
-                            }
-
-                        documents =
-                            Just <|
-                                case model.documents of
-                                    Nothing ->
-                                        Zipper.singleton newDocument
-
-                                    Just docs ->
-                                        Zipper.append newDocument docs
-                                            |> Zipper.allRight
-                    in
-                    ( { model | documents = documents }
-                    , UI.Ports.persist <| Codec.encodeToValue Model.documentsCodec documents
-                    )
+                    addDocument model
+                        { rows = [ Model.emptyRow ]
+                        , metadata = Model.emptyMetadata
+                        }
 
                 SelectDocument i ->
                     let
@@ -726,7 +750,7 @@ update msg =
                             Maybe.map (Zipper.right i) model.documents
                     in
                     ( { model | documents = documents }
-                    , UI.Ports.persist <| Codec.encodeToValue Model.documentsCodec documents
+                    , persist documents
                     )
 
                 CloseDocument { ask, index } ->
@@ -745,7 +769,7 @@ update msg =
                                 Maybe.andThen (Zipper.removeAt index) model.documents
                         in
                         ( { model | documents = documents, modal = Nothing }
-                        , UI.Ports.persist <| Codec.encodeToValue Model.documentsCodec documents
+                        , persist documents
                         )
 
                 CalculateAll ->
@@ -787,7 +811,7 @@ update msg =
                                                 Just <|
                                                     ModalRename <|
                                                         Maybe.withDefault ""
-                                                            (Zipper.selected docs).metadata.name
+                                                            (Zipper.selected docs).document.metadata.name
                                           }
                                         , Cmd.none
                                         )
@@ -829,11 +853,16 @@ update msg =
 
                         Just docs ->
                             let
-                                doc =
+                                { document } =
                                     Zipper.selected docs
                             in
                             -- TODO: ask the user for a name if empty
-                            ( model, File.Download.string (Maybe.withDefault "Untitled" doc.metadata.name ++ ".txt") "text/plain" <| Model.documentToFile doc )
+                            ( model
+                            , File.Download.string
+                                (Maybe.withDefault "Untitled" document.metadata.name ++ ".txt")
+                                "text/plain"
+                                (Model.documentToFile document)
+                            )
 
                 SelectedFileForOpen file ->
                     ( model, Task.perform (ReadFile (File.name file)) (File.toString file) )
@@ -851,16 +880,7 @@ update msg =
                                 )
                                 file
                     in
-                    ( { model
-                        | documents =
-                            model.documents
-                                |> Maybe.map (Zipper.append document)
-                                |> Maybe.withDefault (Zipper.singleton document)
-                                |> Zipper.allRight
-                                |> Just
-                      }
-                    , Cmd.none
-                    )
+                    addDocument model document
 
                 Language language ->
                     let
@@ -915,6 +935,35 @@ update msg =
     \model -> inner { model | openMenu = False }
 
 
+addDocument : Model -> Document -> ( Model, Cmd Msg )
+addDocument model newDocument =
+    let
+        documents =
+            Just <|
+                case model.documents of
+                    Nothing ->
+                        Zipper.singleton { id = DocumentId model.nextId, document = newDocument }
+
+                    Just docs ->
+                        Zipper.append { document = newDocument, id = DocumentId model.nextId } docs
+                            |> Zipper.allRight
+    in
+    ( { model
+        | documents = documents
+        , nextId = model.nextId + 1
+      }
+    , persist documents
+    )
+
+
+persist : Maybe (Zipper { a | document : Document }) -> Cmd msg
+persist documents =
+    documents
+        |> Maybe.map (Zipper.map (\_ { document } -> document))
+        |> Codec.encodeToValue Model.documentsCodec
+        |> UI.Ports.persist
+
+
 googleSave : Model -> ( Model, Cmd Msg )
 googleSave model =
     case model.documents of
@@ -923,7 +972,7 @@ googleSave model =
 
         Just docs ->
             let
-                document =
+                { document, id } =
                     Zipper.selected docs
 
                 content =
@@ -980,14 +1029,17 @@ updateCurrent f model =
 
         Just docs ->
             let
+                selected =
+                    Zipper.selected docs
+
                 doc =
-                    f <| Zipper.selected docs
+                    f selected.document
 
                 documents =
-                    Just <| Zipper.setSelected doc docs
+                    Just <| Zipper.setSelected { document = doc, id = selected.id } docs
             in
             ( { model | documents = documents }
-            , UI.Ports.persist <| Codec.encodeToValue Model.documentsCodec documents
+            , persist documents
             )
 
 

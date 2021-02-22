@@ -1,4 +1,21 @@
-module Model exposing (CellMsg(..), Context, Document, Flags, Metadata, Modal(..), Model, Msg(..), Output(..), Row, RowData(..), Size, documentFromFile, documentToFile, documentsCodec, emptyMetadata, emptyRow)
+module Model exposing
+    ( Document, Metadata, documentsCodec, documentToFile, documentFromFile, emptyMetadata
+    , Flags, Context, Output(..), Model, DocumentId(..), CellMsg(..), Msg(..), Modal(..), Row, RowData(..), Size, emptyRow
+    )
+
+{-| This module contains the most used types
+
+
+# Document
+
+@docs Document, Metadata, documentsCodec, documentToFile, documentFromFile, emptyMetadata
+
+
+# UI
+
+@docs Flags, Context, Output, Model, DocumentId, CellMsg, Msg, Modal, Row, RowData, Size, emptyRow
+
+-}
 
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec)
@@ -23,8 +40,13 @@ type alias Flags =
     }
 
 
+type DocumentId
+    = DocumentId Int
+
+
 type alias Model =
-    { documents : Maybe (Zipper Document)
+    { documents : Maybe (Zipper { id : DocumentId, document : Document })
+    , nextId : Int
     , modal : Maybe Modal
     , size : Size
     , openMenu : Bool
@@ -73,7 +95,7 @@ type alias Document =
 
 type alias Metadata =
     { name : Maybe String
-    , googleId : Maybe String
+    , googleId : Maybe Google.FileId
     }
 
 
@@ -81,16 +103,20 @@ documentCodec : Codec Document
 documentCodec =
     Codec.object
         (\r n gid ->
+            let
+                metadata : Metadata
+                metadata =
+                    { name = n
+                    , googleId = gid
+                    }
+            in
             { rows = r
-            , metadata =
-                { name = n
-                , googleId = gid
-                }
+            , metadata = metadata
             }
         )
         |> Codec.field "rows" .rows rowsCodec
         |> Codec.maybeField "name" (.metadata >> .name) Codec.string
-        |> Codec.maybeField "googleId" (.metadata >> .googleId) Codec.string
+        |> Codec.maybeField "googleId" (.metadata >> .googleId) Google.fileIdCodec
         |> Codec.buildObject
 
 

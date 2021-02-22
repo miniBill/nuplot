@@ -17,6 +17,7 @@ module Zipper exposing
     , selected
     , setSelected
     , singleton
+    , toList
     )
 
 import Codec exposing (Codec)
@@ -125,11 +126,13 @@ allRight ((Zipper { before, curr, after }) as orig) =
             Zipper { before = tail ++ curr :: before, curr = end, after = [] }
 
 
-map : (Bool -> Int -> a -> b) -> Zipper a -> List b
+map : (Int -> a -> b) -> Zipper a -> Zipper b
 map f (Zipper { before, curr, after }) =
-    List.reverse (List.indexedMap (\i -> f False (-i - 1)) before)
-        ++ f True 0 curr
-        :: List.indexedMap (\i -> f False (i + 1)) after
+    Zipper
+        { before = List.indexedMap (\i -> f (-i - 1)) before
+        , curr = f 0 curr
+        , after = List.indexedMap (\i -> f (i + 1)) after
+        }
 
 
 append : a -> Zipper a -> Zipper a
@@ -165,6 +168,11 @@ fromList ls =
 
         h :: t ->
             Just <| fromNonemptyList h t
+
+
+toList : Zipper a -> List a
+toList (Zipper { before, curr, after }) =
+    List.reverse before ++ curr :: after
 
 
 fromNonemptyList : a -> List a -> Zipper a
