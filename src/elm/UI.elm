@@ -296,7 +296,21 @@ toolbar { openMenu } =
                 ClearAll
                 Icons.stopOutlined
                 { en = "Clear document", it = "Pulisci documento" }
+    in
+    Element.row
+        [ padding <| Theme.spacing // 4
+        , if openMenu then
+            Element.below <| dropdown ()
 
+          else
+            width shrink
+        ]
+        [ runButton, clearButton, moreButton ]
+
+
+dropdown : () -> Element Msg
+dropdown () =
+    let
         bigStop =
             let
                 bigWidth =
@@ -315,104 +329,91 @@ toolbar { openMenu } =
                         Theme.darkIconAttrs
                             ++ [ Icon.width bigWidth ]
 
-        dropdown () =
-            let
-                btn msg icon lbl =
-                    Input.button
-                        [ padding Theme.spacing
-                        , width fill
-                        ]
-                        { onPress = Just msg
-                        , label =
-                            Theme.row []
-                                [ case icon of
-                                    [] ->
-                                        Element.none
-
-                                    mainIcon :: layers ->
-                                        List.foldl (\e a -> el [ inFront <| e ] a) mainIcon layers
-                                , text lbl
-                                ]
-                        }
-
-                simpleBtn msg icon lbl =
-                    btn msg
-                        [ Element.element <| icon Theme.darkIconAttrs ]
-                        lbl
-
-                hr =
-                    el
-                        [ width fill
-                        , Border.widthEach
-                            { top = 1
-                            , left = 0
-                            , right = 0
-                            , bottom = 0
-                            }
-                        ]
-                        Element.none
-
-                vr =
-                    el
-                        [ height fill
-                        , Border.widthEach
-                            { top = 0
-                            , bottom = 0
-                            , right = 1
-                            , left = 0
-                            }
-                        ]
-                        Element.none
-
-                languageButton lang flag =
-                    el [ width fill ] <|
-                        el [ centerX ] <|
-                            btn (Language lang) [] <|
-                                L10N.invariant flag
-
-                languagesRow =
-                    Element.row [ width fill ]
-                        [ languageButton En "🇬🇧"
-                        , vr
-                        , languageButton It "🇮🇹"
-                        ]
-
-                expandIntervalsButton expandIntervals =
-                    if expandIntervals then
-                        btn (ExpandIntervals False)
-                            [ Element.element <| Icons.funnelPlotOutlined Theme.darkIconAttrs
-                            , bigStop
-                            ]
-                            { en = "Do not apply noise reduction", it = "Non applicare riduzione rumore" }
-
-                    else
-                        simpleBtn (ExpandIntervals True) Icons.funnelPlotOutlined { en = "Apply noise reduction", it = "Applica riduzione rumore" }
-            in
-            Element.column
-                [ alignRight
-                , Background.color Theme.colors.background
-                , Border.width 1
+        btn msg icon lbl =
+            Input.button
+                [ padding Theme.spacing
+                , width fill
                 ]
-            <|
-                List.intersperse
-                    hr
-                    [ simpleBtn OpenFile Icons.folderOpenOutlined { en = "Open", it = "Apri" }
-                    , simpleBtn SaveFile Icons.saveOutlined { en = "Save", it = "Salva" }
-                    , Element.with .expandIntervals expandIntervalsButton
+                { onPress = Just msg
+                , label =
+                    Theme.row []
+                        [ case icon of
+                            [] ->
+                                Element.none
 
-                    --, simpleBtn GoogleSave Icons.uploadOutlined { en = "Save on Google Drive", it = "Salva su Google Drive" }
-                    , languagesRow
+                            mainIcon :: layers ->
+                                List.foldl (\e a -> el [ inFront <| e ] a) mainIcon layers
+                        , text lbl
+                        ]
+                }
+
+        simpleBtn msg icon lbl =
+            btn msg
+                [ Element.element <| icon Theme.darkIconAttrs ]
+                lbl
+
+        hr =
+            el
+                [ width fill
+                , Border.widthEach
+                    { top = 1
+                    , left = 0
+                    , right = 0
+                    , bottom = 0
+                    }
+                ]
+                Element.none
+
+        vr =
+            el
+                [ height fill
+                , Border.widthEach
+                    { top = 0
+                    , bottom = 0
+                    , right = 1
+                    , left = 0
+                    }
+                ]
+                Element.none
+
+        languageButton lang flag =
+            el [ width fill ] <|
+                el [ centerX ] <|
+                    btn (Language lang) [] <|
+                        L10N.invariant flag
+
+        languagesRow =
+            Element.row [ width fill ]
+                [ languageButton En "🇬🇧"
+                , vr
+                , languageButton It "🇮🇹"
+                ]
+
+        expandIntervalsButton expandIntervals =
+            if expandIntervals then
+                btn (ExpandIntervals False)
+                    [ Element.element <| Icons.funnelPlotOutlined Theme.darkIconAttrs
+                    , bigStop
                     ]
-    in
-    Element.row
-        [ padding <| Theme.spacing // 4
-        , if openMenu then
-            Element.below <| dropdown ()
+                    { en = "Do not apply noise reduction", it = "Non applicare riduzione rumore" }
 
-          else
-            width shrink
+            else
+                simpleBtn (ExpandIntervals True) Icons.funnelPlotOutlined { en = "Apply noise reduction", it = "Applica riduzione rumore" }
+
+        buttons =
+            [ simpleBtn OpenFile Icons.folderOpenOutlined { en = "Open", it = "Apri" }
+            , simpleBtn SaveFile Icons.saveOutlined { en = "Save", it = "Salva" }
+            , Element.with .expandIntervals expandIntervalsButton
+            , simpleBtn GoogleSave Icons.uploadOutlined { en = "Save on Google Drive", it = "Salva su Google Drive" }
+            , languagesRow
+            ]
+    in
+    Element.column
+        [ alignRight
+        , Background.color Theme.colors.background
+        , Border.width 1
         ]
-        [ runButton, clearButton, moreButton ]
+        (List.intersperse hr buttons)
 
 
 documentPicker : Model -> Element Msg
