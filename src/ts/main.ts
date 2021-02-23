@@ -76,6 +76,9 @@ function innerInit(Elm: ElmType, saved: { [key: string]: string }) {
     var element = document.getElementById(id) as NuPlot;
     element?.copy();
   });
+  app.ports.saveGoogleAccessToken.subscribe((token) => {
+    localStorage.setItem("googleAccessToken", token);
+  });
   app.ports.saveGoogleAccessTokenAndCloseWindow.subscribe((token) => {
     localStorage.setItem("googleAccessToken", token);
     window.close();

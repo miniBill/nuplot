@@ -1,4 +1,4 @@
-port module UI.Ports exposing (copy, gotGoogleAccessToken, openWindow, persist, save, saveGoogleAccessTokenAndCloseWindow)
+port module UI.Ports exposing (copy, gotGoogleAccessToken, openWindow, persist, save, saveGoogleAccessToken, saveGoogleAccessTokenAndCloseWindow)
 
 import Json.Decode exposing (Value)
 
@@ -13,6 +13,9 @@ port copy : String -> Cmd msg
 
 
 port save : String -> Cmd msg
+
+
+port saveGoogleAccessToken : String -> Cmd msg
 
 
 port saveGoogleAccessTokenAndCloseWindow : String -> Cmd msg

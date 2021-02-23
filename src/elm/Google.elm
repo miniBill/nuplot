@@ -1,4 +1,4 @@
-module Google exposing (AccessToken(..), Error(..), FileId, Model, Request(..), fileIdCodec, generateId, redirectUrl, startAuthenticationFlow, uploadFile)
+module Google exposing (AccessToken(..), Error(..), FileId, Model, Request(..), fileIdCodec, generateId, mapRequest, redirectUrl, startAuthenticationFlow, uploadFile)
 
 import Bytes.Encode as BE
 import Codec exposing (Codec)
@@ -25,6 +25,22 @@ type Request a
     | Running
     | Errored Error
     | Succeded a
+
+
+mapRequest : (a -> b) -> Request a -> Request b
+mapRequest f req =
+    case req of
+        WaitingAccessToken ->
+            WaitingAccessToken
+
+        Running ->
+            Running
+
+        Errored e ->
+            Errored e
+
+        Succeded x ->
+            Succeded (f x)
 
 
 type AccessToken
@@ -76,34 +92,72 @@ fileIdCodec =
 uploadFile : { id : FileId, name : String, content : String, accessToken : String } -> Task Error ()
 uploadFile params =
     let
-        url =
+        updateUrl =
+            B.crossOrigin "https://www.googleapis.com" [ "upload", "drive", "v3", "files", id ] [ B.string "uploadType" "multipart" ]
+
+        insertUrl =
             B.crossOrigin "https://www.googleapis.com" [ "upload", "drive", "v3", "files" ] [ B.string "uploadType" "multipart" ]
 
         (FileId id) =
             params.id
 
-        metadataEncoder =
+        updateMetadataEncoder =
+            BE.string <|
+                JE.encode 0 <|
+                    JE.object
+                        [ ( "mimeType", JE.string "text/markdown" )
+                        , ( "name", JE.string params.name )
+                        ]
+
+        insertMetadataEncoder =
             BE.string <|
                 JE.encode 0 <|
                     JE.object
                         [ ( "id", JE.string id )
                         , ( "mimeType", JE.string "text/markdown" )
                         , ( "name", JE.string params.name )
-                        , ( "parents", JE.list JE.string [ "nuPlot" ] )
+
+                        -- TODO: parents are a list of FileIDs, so it's Very Annoying and will be implemented later
+                        --, ( "parents", JE.list JE.string [ "nuPlot" ] )
                         ]
+
+        updateTask =
+            Http.task
+                { method = "PATCH"
+                , url = updateUrl
+                , headers = [ Http.header "Authorization" <| "Bearer " ++ params.accessToken ]
+                , resolver = jsonResolver <| JD.succeed ()
+                , body =
+                    Http.multipartBody
+                        [ Http.bytesPart "metadata" "application/json; charset=UTF-8" <| BE.encode updateMetadataEncoder
+                        , Http.stringPart "content" params.content
+                        ]
+                , timeout = Nothing
+                }
+
+        insertTask =
+            Http.task
+                { method = "POST"
+                , url = insertUrl
+                , headers = [ Http.header "Authorization" <| "Bearer " ++ params.accessToken ]
+                , resolver = jsonResolver <| JD.succeed ()
+                , body =
+                    Http.multipartBody
+                        [ Http.bytesPart "metadata" "application/json; charset=UTF-8" <| BE.encode insertMetadataEncoder
+                        , Http.stringPart "content" params.content
+                        ]
+                , timeout = Nothing
+                }
     in
-    Http.task
-        { method = "POST"
-        , url = url
-        , headers = [ Http.header "Authorization" <| "Bearer " ++ params.accessToken ]
-        , resolver = jsonResolver <| JD.succeed ()
-        , body =
-            Http.multipartBody
-                [ Http.bytesPart "metadata" "application/json; charset=UTF-8" <| BE.encode metadataEncoder
-                , Http.stringPart "content" params.content
-                ]
-        , timeout = Nothing
-        }
+    updateTask
+        |> Task.onError
+            (\e ->
+                if e == FileNotFound then
+                    insertTask
+
+                else
+                    Task.fail e
+            )
 
 
 type Error
@@ -111,6 +165,7 @@ type Error
     | Unauthorized
     | CodeBug
     | NetworkError
+    | FileNotFound
 
 
 generateId : { accessToken : String } -> Task Error FileId
@@ -158,11 +213,15 @@ jsonResolver decoder =
                     Err NetworkError
 
                 BadStatus_ { statusCode } _ ->
-                    if statusCode == 401 then
-                        Err Unauthorized
+                    case statusCode of
+                        401 ->
+                            Err Unauthorized
 
-                    else
-                        Err (UnexpectedResponse <| Debug.toString response)
+                        404 ->
+                            Err FileNotFound
+
+                        _ ->
+                            Err (UnexpectedResponse <| Debug.toString response)
 
                 GoodStatus_ _ body ->
                     JD.decodeString decoder body

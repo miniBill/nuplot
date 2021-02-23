@@ -216,6 +216,7 @@ init ({ saved, hasClipboard, languages } as flags) url key =
             , size = defaultSize
             , modal = Nothing
             , openMenu = False
+            , showPendingActions = False
             , rootUrl = rootUrl
             , key = key
             , google = google
@@ -277,7 +278,7 @@ view model =
 
 
 toolbar : Model -> Element Msg
-toolbar { openMenu } =
+toolbar { openMenu, showPendingActions } =
     let
         toolbarButton msg icon label =
             Input.button
@@ -304,6 +305,20 @@ toolbar { openMenu } =
                 Icons.playSquareOutlined
                 { en = "Run document", it = "Esegui documento" }
 
+        pendingActions =
+            -- TODO: Fill
+            []
+
+        pendingButton =
+            if List.isEmpty pendingActions then
+                Element.none
+
+            else
+                toolbarButton
+                    (ToggleShowPendingActions <| not showPendingActions)
+                    Icons.cloudSyncOutlined
+                    { en = "Pending actions", it = "Azioni pendenti" }
+
         clearButton =
             toolbarButton
                 ClearAll
@@ -317,8 +332,18 @@ toolbar { openMenu } =
 
           else
             width shrink
+        , if showPendingActions then
+            Element.below <| viewPendingActions pendingActions
+
+          else
+            width shrink
         ]
-        [ runButton, clearButton, moreButton ]
+        [ pendingButton, runButton, clearButton, moreButton ]
+
+
+viewPendingActions : List a -> Element Msg
+viewPendingActions arg1 =
+    Debug.todo "TODO"
 
 
 dropdown : () -> Element Msg
@@ -785,7 +810,10 @@ update msg =
                             documents =
                                 Maybe.andThen (Zipper.removeAt index) model.documents
                         in
-                        ( { model | documents = documents, modal = Nothing }
+                        ( { model
+                            | documents = documents
+                            , modal = Nothing
+                          }
                         , persist documents
                         )
 
@@ -859,6 +887,9 @@ update msg =
 
                 ToggleMenu openMenu ->
                     ( { model | openMenu = openMenu }, Cmd.none )
+
+                ToggleShowPendingActions showPendingActions ->
+                    ( { model | showPendingActions = showPendingActions }, Cmd.none )
 
                 OpenFile ->
                     ( model, File.Select.file [ "text/plain", ".txt" ] SelectedFileForOpen )
@@ -942,37 +973,75 @@ update msg =
                                             }
                                                 :: google.waitingSave
                                     }
+
+                                documents_ =
+                                    Maybe.map
+                                        (Zipper.map
+                                            (\_ ({ id } as doc) ->
+                                                if id == docId then
+                                                    let
+                                                        document =
+                                                            doc.document
+
+                                                        metadata =
+                                                            doc.document.metadata
+                                                    in
+                                                    { doc
+                                                        | document =
+                                                            { document
+                                                                | metadata =
+                                                                    { metadata
+                                                                        | googleId = Just googleId
+                                                                    }
+                                                            }
+                                                    }
+
+                                                else
+                                                    doc
+                                            )
+                                        )
+                                        model.documents
                             in
                             case maybeDoc of
                                 Nothing ->
-                                    ( model, Cmd.none )
+                                    ( model
+                                    , Cmd.none
+                                    )
 
                                 Just data ->
                                     case google.accessToken of
                                         Missing ->
                                             ( { model
                                                 | google = google_ data WaitingAccessToken
+                                                , documents = documents_
                                               }
-                                            , Cmd.none
+                                            , persist documents_
                                             )
 
                                         Expired ->
                                             ( { model
                                                 | google = google_ data WaitingAccessToken
+                                                , documents = documents_
                                               }
-                                            , Cmd.none
+                                            , persist documents_
                                             )
 
                                         Present token ->
-                                            ( { model | google = google_ data Running }
-                                            , Task.attempt (GotGoogleSaveResultFor docId)
-                                                (Google.uploadFile
-                                                    { id = googleId
-                                                    , name = data.name
-                                                    , content = data.content
-                                                    , accessToken = token
-                                                    }
-                                                )
+                                            ( { model
+                                                | google = google_ data Running
+                                                , documents = documents_
+                                              }
+                                            , Cmd.batch
+                                                [ Task.attempt (GotGoogleSaveResultFor docId)
+                                                    (Google.uploadFile
+                                                        { id = googleId
+                                                        , name = data.name
+                                                        , content = data.content
+                                                        , accessToken = token
+                                                        }
+                                                    )
+                                                , persist documents_
+                                                ]
                                             )
 
                         Err e ->
@@ -994,16 +1063,15 @@ update msg =
                                                 google.waitingId
                                     }
                             in
-                            ( { model
-                                | google =
-                                    if e == Google.Unauthorized then
-                                        { google_ | accessToken = Expired }
+                            if e == Google.Unauthorized then
+                                ( { model
+                                    | google = { google_ | accessToken = Expired }
+                                  }
+                                , UI.Ports.saveGoogleAccessToken ""
+                                )
 
-                                    else
-                                        google_
-                              }
-                            , Cmd.none
-                            )
+                            else
+                                ( { model | google = google_ }, Cmd.none )
 
                 GotGoogleSaveResultFor docId res ->
                     let
@@ -1032,16 +1100,15 @@ update msg =
                                         google.waitingSave
                             }
                     in
-                    ( { model
-                        | google =
-                            if res == Err Google.Unauthorized then
-                                { google_ | accessToken = Expired }
+                    if res == Err Google.Unauthorized then
+                        ( { model
+                            | google = { google_ | accessToken = Expired }
+                          }
+                        , UI.Ports.saveGoogleAccessToken ""
+                        )
 
-                            else
-                                google_
-                      }
-                    , Cmd.none
-                    )
+                    else
+                        ( { model | google = google_ }, Cmd.none )
 
                 GotGoogleAccessToken token ->
                     let
@@ -1095,7 +1162,8 @@ update msg =
                 Nop _ ->
                     ( model, Cmd.none )
     in
-    \model -> inner { model | openMenu = False }
+    -- TODO: Only do this for clicky actions
+    \model -> inner { model | openMenu = False, showPendingActions = False }
 
 
 addDocument : Model -> Document -> ( Model, Cmd Msg )
@@ -1156,7 +1224,24 @@ googleSave model =
                     model.google
 
                 google_ request =
-                    { google | waitingId = data request :: google.waitingId }
+                    case document.metadata.googleId of
+                        Nothing ->
+                            { google
+                                | waitingId =
+                                    data request :: google.waitingId
+                            }
+
+                        Just googleId ->
+                            { google
+                                | waitingSave =
+                                    { googleId = googleId
+                                    , id = id
+                                    , name = name
+                                    , content = content
+                                    , request = Google.mapRequest (\_ -> ()) request
+                                    }
+                                        :: google.waitingSave
+                            }
             in
             case google.accessToken of
                 Missing ->
@@ -1174,7 +1259,18 @@ googleSave model =
 
                 Present token ->
                     ( { model | google = google_ Running }
-                    , Task.attempt (GotGoogleFileIdFor id) <| Google.generateId { accessToken = token }
+                    , case document.metadata.googleId of
+                        Nothing ->
+                            Task.attempt (GotGoogleFileIdFor id) <| Google.generateId { accessToken = token }
+
+                        Just googleId ->
+                            Task.attempt (GotGoogleSaveResultFor id) <|
+                                Google.uploadFile
+                                    { id = googleId
+                                    , name = name
+                                    , content = content
+                                    , accessToken = token
+                                    }
                     )
 
 

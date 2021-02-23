@@ -18,6 +18,7 @@ type alias Model =
     , modal : Maybe Modal
     , size : Size
     , openMenu : Bool
+    , showPendingActions : Bool
     , context : Context
     , rootUrl : String
     , google : Google.Model
@@ -57,6 +58,7 @@ type Msg
     | DismissModal
     | SetModal Modal
     | ToggleMenu Bool
+    | ToggleShowPendingActions Bool
     | OpenFile
     | ExpandIntervals Bool
     | SaveFile
