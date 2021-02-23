@@ -6,7 +6,7 @@ import File exposing (File)
 import Google
 import List.Extra as List
 import List.MyExtra as List exposing (LeftOrRight(..))
-import Model exposing (CellMsg, Context, DocumentId, Row, RowData(..), Size)
+import Model exposing (CellMsg, Context, DocumentId, Row, RowData(..), Size, metadataMarker)
 import String
 import UI.L10N as L10N exposing (L10N, Language)
 import Zipper exposing (Zipper)
@@ -121,7 +121,7 @@ rowsCodec =
         v1Codec =
             Codec.map
                 (documentFromFile Nothing >> .document >> .rows)
-                (\r -> documentToFile { rows = r })
+                (\r -> documentToFile { rows = r, metadata = { name = Nothing, googleId = Nothing } })
                 Codec.string
     in
     Codec.oneOf v1Codec [ v0Codec ]
@@ -154,8 +154,8 @@ rowCodec =
         Codec.string
 
 
-documentToFile : { a | rows : List Row } -> String
-documentToFile { rows } =
+documentToFile : { a | rows : List Row, metadata : { b | googleId : Maybe Google.FileId } } -> String
+documentToFile { rows, metadata } =
     let
         rowToString { input, data } =
             case data of
@@ -171,6 +171,14 @@ documentToFile { rows } =
     rows
         |> List.filterNot (.input >> String.isEmpty)
         |> List.map rowToString
+        |> (\l ->
+                case metadata.googleId of
+                    Nothing ->
+                        l
+
+                    Just gid ->
+                        l ++ [ Google.fileIdToMetadata gid ]
+           )
         |> String.join "\n\n"
 
 
@@ -244,9 +252,6 @@ emptyMetadata =
 parseRow : String -> ( List MetadataWithErrors, List Row )
 parseRow row =
     let
-        metadataMarker =
-            "[//]: # (NUPLOT INTERNAL DATA -- "
-
         parseFragment f =
             if String.startsWith ">" f then
                 NormalRow
@@ -260,13 +265,24 @@ parseRow row =
                     extracted =
                         String.dropRight 1 <| String.dropLeft (String.length metadataMarker) f
                 in
-                MetadataRow
-                    { errors = [ L10N.invariant <| "TODO:" ++ extracted ]
-                    , metadata =
-                        { name = Nothing
-                        , googleId = Nothing
-                        }
-                    }
+                case Google.metadataToFileId extracted of
+                    Just gid ->
+                        MetadataRow
+                            { errors = []
+                            , metadata =
+                                { name = Nothing
+                                , googleId = Just gid
+                                }
+                            }
+
+                    Nothing ->
+                        MetadataRow
+                            { errors = [ L10N.invariant <| "TODO:" ++ extracted ]
+                            , metadata =
+                                { name = Nothing
+                                , googleId = Nothing
+                                }
+                            }
 
             else
                 NormalRow

@@ -1,4 +1,4 @@
-module Google exposing (AccessToken(..), Error(..), FileId, Model, Request(..), fileIdCodec, generateId, mapRequest, redirectUrl, startAuthenticationFlow, uploadFile)
+module Google exposing (AccessToken(..), Error(..), FileId, Model, Request(..), fileIdCodec, fileIdToMetadata, generateId, mapRequest, metadataToFileId, redirectUrl, startAuthenticationFlow, uploadFile)
 
 import Bytes.Encode as BE
 import Codec exposing (Codec)
@@ -87,6 +87,25 @@ type FileId
 fileIdCodec : Codec FileId
 fileIdCodec =
     Codec.map FileId (\(FileId f) -> f) Codec.string
+
+
+metadataKey : String
+metadataKey =
+    "GOOGLE_ID = "
+
+
+fileIdToMetadata : FileId -> String
+fileIdToMetadata (FileId fid) =
+    Model.metadataMarker ++ metadataKey ++ fid ++ ")"
+
+
+metadataToFileId : String -> Maybe FileId
+metadataToFileId metadata =
+    if String.startsWith metadataKey metadata then
+        Just <| FileId <| String.dropLeft (String.length metadataKey) metadata
+
+    else
+        Nothing
 
 
 uploadFile : { id : FileId, name : String, content : String, accessToken : String } -> Task Error ()

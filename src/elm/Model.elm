@@ -7,19 +7,15 @@ module Model exposing
     , Row
     , RowData(..)
     , Size
+    , metadataMarker
     )
 
-import Browser.Navigation exposing (Key)
-import Codec exposing (Codec)
 import Element.WithContext exposing (DeviceClass)
 import Expression exposing (Expression)
-import File exposing (File)
 import Json.Decode as JD
 import List.Extra as List
 import List.MyExtra as List exposing (LeftOrRight(..))
-import String
-import UI.L10N as L10N exposing (L10N, Language)
-import Zipper exposing (Zipper)
+import UI.L10N exposing (Language)
 
 
 type alias Flags =
@@ -76,3 +72,8 @@ type CellMsg
     | Input String
     | Save String
     | Copy String
+
+
+metadataMarker : String
+metadataMarker =
+    "[//]: # (NUPLOT INTERNAL DATA -- "
