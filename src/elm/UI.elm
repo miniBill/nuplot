@@ -18,14 +18,16 @@ import Expression.Parser
 import File
 import File.Download
 import File.Select
-import Google
+import Google exposing (AccessToken(..), Request(..))
 import Html
 import Html.Attributes
+import List
 import List.Extra as List
 import Maybe
-import Model exposing (CellMsg(..), Context, Document, DocumentId(..), Flags, Modal(..), Model, Msg(..), Output(..), RowData(..))
+import Model exposing (CellMsg(..), Context, DocumentId(..), Flags, Output(..), RowData(..))
 import Task
 import UI.L10N as L10N exposing (L10N, Language(..), text, title)
+import UI.Model exposing (Document, Modal(..), Model, Msg(..))
 import UI.Ports
 import UI.RowView
 import UI.Theme as Theme exposing (onKey)
@@ -78,7 +80,7 @@ init ({ saved, hasClipboard, languages } as flags) url key =
     let
         documents : Maybe (Zipper { id : DocumentId, document : Document })
         documents =
-            case Codec.decodeValue Model.documentsCodec saved of
+            case Codec.decodeValue UI.Model.documentsCodec saved of
                 Ok docs ->
                     docs
                         |> Maybe.map
@@ -102,7 +104,7 @@ init ({ saved, hasClipboard, languages } as flags) url key =
                             { id = DocumentId 0
                             , document =
                                 { rows = List.map emptyRow defaultDocument
-                                , metadata = Model.emptyMetadata
+                                , metadata = UI.Model.emptyMetadata
                                 }
                             }
 
@@ -174,10 +176,10 @@ init ({ saved, hasClipboard, languages } as flags) url key =
                 |> Maybe.withDefault flags.googleAccessToken
                 |> (\s ->
                         if String.isEmpty s then
-                            Nothing
+                            Missing
 
                         else
-                            Just s
+                            Present s
                    )
 
         accessTokenParser =
@@ -198,30 +200,41 @@ init ({ saved, hasClipboard, languages } as flags) url key =
 
         defaultSize =
             { width = 1024, height = 768 }
-    in
-    ( { documents = documents
-      , nextId = nextId
-      , size = defaultSize
-      , modal = Nothing
-      , openMenu = False
-      , rootUrl = rootUrl
-      , key = key
-      , googleAccessToken = googleAccessToken
-      , pendingGoogleDriveSave = Nothing
-      , context =
-            { hasClipboard = hasClipboard
-            , language =
-                languages
-                    |> List.map parseLanguage
-                    |> List.filterMap identity
-                    |> List.head
-                    |> Maybe.withDefault En
-            , expandIntervals = True
 
-            -- The other classes have faster processors so should update quicker
-            , deviceClass = Phone
+        google : Google.Model
+        google =
+            { accessToken = googleAccessToken
+            , waitingId = []
+            , waitingSave = []
+            , errors = []
             }
-      }
+
+        model : Model
+        model =
+            { documents = documents
+            , nextId = nextId
+            , size = defaultSize
+            , modal = Nothing
+            , openMenu = False
+            , rootUrl = rootUrl
+            , key = key
+            , google = google
+            , context =
+                { hasClipboard = hasClipboard
+                , language =
+                    languages
+                        |> List.map parseLanguage
+                        |> List.filterMap identity
+                        |> List.head
+                        |> Maybe.withDefault En
+                , expandIntervals = True
+
+                -- The other classes have faster processors so should update quicker
+                , deviceClass = Phone
+                }
+            }
+    in
+    ( model
     , case googleAccessTokenFromUrl of
         Nothing ->
             Task.perform Resized measure
@@ -696,7 +709,7 @@ update msg =
 
         filterEmpty =
             List.filterNot (.input >> String.isEmpty)
-                >> (\rs -> rs ++ [ Model.emptyRow ])
+                >> (\rs -> rs ++ [ UI.Model.emptyRow ])
 
         inner model =
             case msg of
@@ -744,8 +757,8 @@ update msg =
 
                 NewDocument ->
                     addDocument model
-                        { rows = [ Model.emptyRow ]
-                        , metadata = Model.emptyMetadata
+                        { rows = [ UI.Model.emptyRow ]
+                        , metadata = UI.Model.emptyMetadata
                         }
 
                 SelectDocument i ->
@@ -865,7 +878,7 @@ update msg =
                             , File.Download.string
                                 (Maybe.withDefault "Untitled" document.metadata.name ++ ".txt")
                                 "text/plain"
-                                (Model.documentToFile document)
+                                (UI.Model.documentToFile document)
                             )
 
                 SelectedFileForOpen file ->
@@ -874,7 +887,7 @@ update msg =
                 ReadFile name file ->
                     let
                         { errors, document } =
-                            Model.documentFromFile
+                            UI.Model.documentFromFile
                                 (Just <|
                                     if String.endsWith ".txt" name then
                                         String.dropRight 4 name
@@ -906,32 +919,178 @@ update msg =
                 GoogleSave ->
                     googleSave model
 
-                GoogleSaved res ->
+                GotGoogleFileIdFor docId res ->
+                    case res of
+                        Ok googleId ->
+                            let
+                                google =
+                                    model.google
+
+                                maybeDoc =
+                                    model.google.waitingId
+                                        |> List.find (\{ id } -> id == docId)
+
+                                google_ { name, content } request =
+                                    { google
+                                        | waitingId = List.filter (\{ id } -> id /= docId) google.waitingId
+                                        , waitingSave =
+                                            { id = docId
+                                            , name = name
+                                            , content = content
+                                            , googleId = googleId
+                                            , request = request
+                                            }
+                                                :: google.waitingSave
+                                    }
+                            in
+                            case maybeDoc of
+                                Nothing ->
+                                    ( model, Cmd.none )
+
+                                Just data ->
+                                    case google.accessToken of
+                                        Missing ->
+                                            ( { model
+                                                | google = google_ data WaitingAccessToken
+                                              }
+                                            , Cmd.none
+                                            )
+
+                                        Expired ->
+                                            ( { model
+                                                | google = google_ data WaitingAccessToken
+                                              }
+                                            , Cmd.none
+                                            )
+
+                                        Present token ->
+                                            ( { model | google = google_ data Running }
+                                            , Task.attempt (GotGoogleSaveResultFor docId)
+                                                (Google.uploadFile
+                                                    { id = googleId
+                                                    , name = data.name
+                                                    , content = data.content
+                                                    , accessToken = token
+                                                    }
+                                                )
+                                            )
+
+                        Err e ->
+                            let
+                                google =
+                                    model.google
+
+                                google_ =
+                                    { google
+                                        | waitingId =
+                                            List.map
+                                                (\({ id } as data) ->
+                                                    if id == docId then
+                                                        { data | request = Google.Errored e }
+
+                                                    else
+                                                        data
+                                                )
+                                                google.waitingId
+                                    }
+                            in
+                            ( { model
+                                | google =
+                                    if e == Google.Unauthorized then
+                                        { google_ | accessToken = Expired }
+
+                                    else
+                                        google_
+                              }
+                            , Cmd.none
+                            )
+
+                GotGoogleSaveResultFor docId res ->
                     let
-                        _ =
-                            Debug.log "GoogleSaved" res
+                        google =
+                            model.google
+
+                        google_ =
+                            { google
+                                | waitingSave =
+                                    List.map
+                                        (\({ id } as data) ->
+                                            if id == docId then
+                                                { data
+                                                    | request =
+                                                        case res of
+                                                            Ok () ->
+                                                                Google.Succeded ()
+
+                                                            Err e ->
+                                                                Google.Errored e
+                                                }
+
+                                            else
+                                                data
+                                        )
+                                        google.waitingSave
+                            }
                     in
-                    ( model, Cmd.none )
+                    ( { model
+                        | google =
+                            if res == Err Google.Unauthorized then
+                                { google_ | accessToken = Expired }
+
+                            else
+                                google_
+                      }
+                    , Cmd.none
+                    )
 
                 GotGoogleAccessToken token ->
                     let
-                        model_ =
-                            { model
-                                | googleAccessToken =
-                                    if token == "" then
-                                        Nothing
+                        google =
+                            model.google
 
-                                    else
-                                        Just token
-                                , pendingGoogleDriveSave = Nothing
+                        do ({ request } as data) =
+                            if request == Google.WaitingAccessToken then
+                                { data | request = Google.Running }
+
+                            else
+                                data
+
+                        google_ =
+                            { google
+                                | waitingId = List.map do google.waitingId
+                                , waitingSave = List.map do google.waitingSave
+                                , accessToken = Google.Present token
                             }
-                    in
-                    case model.pendingGoogleDriveSave of
-                        Nothing ->
-                            ( model_, Cmd.none )
 
-                        Just data ->
-                            ( model_, doGoogleSave { googleAccessToken = token } data )
+                        model_ =
+                            { model | google = google_ }
+
+                        idRequests =
+                            google.waitingId
+                                |> List.filter (\{ request } -> request == Google.WaitingAccessToken)
+                                |> List.map
+                                    (\{ id } ->
+                                        Task.attempt
+                                            (GotGoogleFileIdFor id)
+                                            (Google.generateId { accessToken = token })
+                                    )
+
+                        saveRequests =
+                            google.waitingSave
+                                |> List.filter (\{ request } -> request == Google.WaitingAccessToken)
+                                |> List.map
+                                    (\{ id, googleId, name, content } ->
+                                        Task.attempt (GotGoogleSaveResultFor id)
+                                            (Google.uploadFile
+                                                { id = googleId
+                                                , name = name
+                                                , content = content
+                                                , accessToken = token
+                                                }
+                                            )
+                                    )
+                    in
+                    ( model_, Cmd.batch <| idRequests ++ saveRequests )
 
                 Nop _ ->
                     ( model, Cmd.none )
@@ -964,7 +1123,7 @@ persist : Maybe (Zipper { a | document : Document }) -> Cmd msg
 persist documents =
     documents
         |> Maybe.map (Zipper.map (\_ { document } -> document))
-        |> Codec.encodeToValue Model.documentsCodec
+        |> Codec.encodeToValue UI.Model.documentsCodec
         |> UI.Ports.persist
 
 
@@ -980,49 +1139,43 @@ googleSave model =
                     Zipper.selected docs
 
                 content =
-                    Model.documentToFile document
+                    UI.Model.documentToFile document
 
                 name =
                     -- TODO warn the user and ask for a name
                     Maybe.withDefault "Untitled" document.metadata.name
 
-                data =
-                    { name = name
+                data request =
+                    { id = id
+                    , name = name
                     , content = content
+                    , request = request
                     }
+
+                google =
+                    model.google
+
+                google_ request =
+                    { google | waitingId = data request :: google.waitingId }
             in
-            case model.googleAccessToken of
-                Nothing ->
+            case google.accessToken of
+                Missing ->
                     ( { model
                         | modal = Just ModalGoogleAuth
-                        , pendingGoogleDriveSave = Just data
+                        , google = google_ WaitingAccessToken
                       }
                     , Cmd.none
                     )
 
-                Just googleAccessToken ->
-                    ( model
-                    , doGoogleSave { googleAccessToken = googleAccessToken } data
+                Expired ->
+                    ( { model | google = google_ WaitingAccessToken }
+                    , Cmd.none
                     )
 
-
-doGoogleSave : { a | googleAccessToken : String } -> { b | name : String, content : String } -> Cmd Msg
-doGoogleSave { googleAccessToken } { name, content } =
-    let
-        cmd =
-            Google.generateId { googleAccessToken = googleAccessToken }
-                |> Task.andThen
-                    (\id ->
-                        Google.uploadFile
-                            { id = id
-                            , name = name
-                            , content = content
-                            , googleAccessToken = googleAccessToken
-                            }
+                Present token ->
+                    ( { model | google = google_ Running }
+                    , Task.attempt (GotGoogleFileIdFor id) <| Google.generateId { accessToken = token }
                     )
-                |> Task.attempt GoogleSaved
-    in
-    cmd
 
 
 updateCurrent : (Document -> Document) -> Model -> ( Model, Cmd msg )

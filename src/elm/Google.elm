@@ -1,14 +1,36 @@
-module Google exposing (Error, FileId, fileIdCodec, generateId, redirectUrl, startAuthenticationFlow, uploadFile)
+module Google exposing (AccessToken(..), Error(..), FileId, Model, Request(..), fileIdCodec, generateId, redirectUrl, startAuthenticationFlow, uploadFile)
 
 import Bytes.Encode as BE
 import Codec exposing (Codec)
 import Http exposing (Resolver, Response(..))
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
+import Model exposing (DocumentId)
 import Platform exposing (Task)
 import Task
 import UI.Ports
 import Url.Builder as B
+
+
+type alias Model =
+    { accessToken : AccessToken
+    , waitingId : List { id : DocumentId, name : String, content : String, request : Request FileId }
+    , waitingSave : List { id : DocumentId, googleId : FileId, name : String, content : String, request : Request () }
+    , errors : List Error
+    }
+
+
+type Request a
+    = WaitingAccessToken
+    | Running
+    | Errored Error
+    | Succeded a
+
+
+type AccessToken
+    = Missing
+    | Present String
+    | Expired
 
 
 scope : String
@@ -51,7 +73,7 @@ fileIdCodec =
     Codec.map FileId (\(FileId f) -> f) Codec.string
 
 
-uploadFile : { id : FileId, name : String, content : String, googleAccessToken : String } -> Task Error ()
+uploadFile : { id : FileId, name : String, content : String, accessToken : String } -> Task Error ()
 uploadFile params =
     let
         url =
@@ -73,7 +95,7 @@ uploadFile params =
     Http.task
         { method = "POST"
         , url = url
-        , headers = [ Http.header "Authorization" <| "Bearer " ++ params.googleAccessToken ]
+        , headers = [ Http.header "Authorization" <| "Bearer " ++ params.accessToken ]
         , resolver = jsonResolver <| JD.succeed ()
         , body =
             Http.multipartBody
@@ -86,13 +108,14 @@ uploadFile params =
 
 type Error
     = UnexpectedResponse String
+    | Unauthorized
     | CodeBug
     | NetworkError
 
 
-generateId : { googleAccessToken : String } -> Task Error FileId
-generateId { googleAccessToken } =
-    generateIds { count = 1, googleAccessToken = googleAccessToken }
+generateId : { accessToken : String } -> Task Error FileId
+generateId { accessToken } =
+    generateIds { count = 1, accessToken = accessToken }
         |> Task.andThen
             (\l ->
                 case List.head l of
@@ -104,8 +127,8 @@ generateId { googleAccessToken } =
             )
 
 
-generateIds : { count : Int, googleAccessToken : String } -> Task Error (List FileId)
-generateIds { count, googleAccessToken } =
+generateIds : { count : Int, accessToken : String } -> Task Error (List FileId)
+generateIds { count, accessToken } =
     let
         url =
             B.crossOrigin "https://www.googleapis.com" [ "drive", "v3", "files", "generateIds" ] [ B.int "count" count ]
@@ -113,7 +136,7 @@ generateIds { count, googleAccessToken } =
     Http.task
         { method = "GET"
         , url = url
-        , headers = [ Http.header "Authorization" <| "Bearer " ++ googleAccessToken ]
+        , headers = [ Http.header "Authorization" <| "Bearer " ++ accessToken ]
         , resolver = jsonResolver (JD.field "ids" <| JD.list <| JD.map FileId JD.string)
         , body = Http.emptyBody
         , timeout = Nothing
@@ -134,8 +157,12 @@ jsonResolver decoder =
                 NetworkError_ ->
                     Err NetworkError
 
-                BadStatus_ _ _ ->
-                    Err (UnexpectedResponse <| Debug.toString response)
+                BadStatus_ { statusCode } _ ->
+                    if statusCode == 401 then
+                        Err Unauthorized
+
+                    else
+                        Err (UnexpectedResponse <| Debug.toString response)
 
                 GoodStatus_ _ body ->
                     JD.decodeString decoder body

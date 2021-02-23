@@ -18,8 +18,9 @@ import Json.Encode
 import List.Extra as List
 import Markdown.Parser
 import Markdown.Renderer
-import Model exposing (CellMsg(..), Context, Msg(..), Output(..), Row, RowData(..))
+import Model exposing (CellMsg(..), Context, Output(..), Row, RowData(..))
 import UI.Glsl exposing (getGlsl)
+import UI.Model exposing (Msg(..))
 import UI.Theme as Theme
 
 
