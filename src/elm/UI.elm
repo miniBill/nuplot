@@ -278,7 +278,7 @@ view model =
 
 
 toolbar : Model -> Element Msg
-toolbar { openMenu, showPendingActions } =
+toolbar { google, openMenu, showPendingActions } =
     let
         toolbarButton msg icon label =
             Input.button
@@ -306,14 +306,50 @@ toolbar { openMenu, showPendingActions } =
                 { en = "Run document", it = "Esegui documento" }
 
         pendingActions =
-            -- TODO: Fill
-            []
+            if
+                List.any (\{ request } -> request == WaitingAccessToken) google.waitingId
+                    || List.any (\{ request } -> request == WaitingAccessToken) google.waitingSave
+            then
+                [ ( { en = "Waiting for user to authenticate with Google"
+                    , it = "In attesa che l'utente si autentichi con Google"
+                    }
+                  , Just GoogleAuth
+                  )
+                ]
+
+            else
+                List.map
+                    (\{ name } ->
+                        ( { en = "Waiting for an id " ++ name
+                          , it = "In attesa di id " ++ name
+                          }
+                        , Nothing
+                        )
+                    )
+                    google.waitingId
+                    ++ List.map
+                        (\{ name } ->
+                            ( { en = "Waiting for save " ++ name
+                              , it = "In attesa di salvataggio " ++ name
+                              }
+                            , Nothing
+                            )
+                        )
+                        google.waitingSave
 
         pendingButton =
             if List.isEmpty pendingActions then
+                let
+                    _ =
+                        Debug.log "no pending" {}
+                in
                 Element.none
 
             else
+                let
+                    _ =
+                        Debug.log "pending" pendingActions
+                in
                 toolbarButton
                     (ToggleShowPendingActions <| not showPendingActions)
                     Icons.cloudSyncOutlined
@@ -341,9 +377,47 @@ toolbar { openMenu, showPendingActions } =
         [ pendingButton, runButton, clearButton, moreButton ]
 
 
-viewPendingActions : List a -> Element Msg
-viewPendingActions arg1 =
-    Debug.todo "TODO"
+viewPendingActions : List ( L10N String, Maybe msg ) -> Element msg
+viewPendingActions actions =
+    let
+        viewPendingAction ( txt, msg ) =
+            case msg of
+                Nothing ->
+                    text txt
+
+                Just m ->
+                    Theme.row [ width fill ]
+                        [ text txt
+                        , Input.button
+                            [ alignRight
+                            , Element.htmlAttribute <| Html.Attributes.title "Do it"
+                            ]
+                            { onPress = Just m
+                            , label = Element.element <| Icons.playSquareOutlined Theme.darkIconAttrs
+                            }
+                        ]
+    in
+    Element.column
+        [ alignRight
+        , Background.color Theme.colors.background
+        , Border.width 1
+        , padding Theme.spacing
+        ]
+        (List.intersperse hr <| List.map viewPendingAction actions)
+
+
+hr : Element msg
+hr =
+    el
+        [ width fill
+        , Border.widthEach
+            { top = 1
+            , left = 0
+            , right = 0
+            , bottom = 0
+            }
+        ]
+        Element.none
 
 
 dropdown : () -> Element Msg
@@ -389,18 +463,6 @@ dropdown () =
             btn msg
                 [ Element.element <| icon Theme.darkIconAttrs ]
                 lbl
-
-        hr =
-            el
-                [ width fill
-                , Border.widthEach
-                    { top = 1
-                    , left = 0
-                    , right = 0
-                    , bottom = 0
-                    }
-                ]
-                Element.none
 
         vr =
             el
