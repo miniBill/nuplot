@@ -30,7 +30,7 @@ import UI.L10N as L10N exposing (L10N, Language(..), text, title)
 import UI.Model exposing (Document, Modal(..), Model, Msg(..))
 import UI.Ports
 import UI.RowView
-import UI.Theme as Theme exposing (onKey)
+import UI.Theme as Theme exposing (hr, onKey)
 import Url exposing (Url)
 import Url.Parser
 import Zipper exposing (Zipper)
@@ -404,20 +404,6 @@ viewPendingActions actions =
         , padding Theme.spacing
         ]
         (List.intersperse hr <| List.map viewPendingAction actions)
-
-
-hr : Element msg
-hr =
-    el
-        [ width fill
-        , Border.widthEach
-            { top = 1
-            , left = 0
-            , right = 0
-            , bottom = 0
-            }
-        ]
-        Element.none
 
 
 dropdown : () -> Element Msg

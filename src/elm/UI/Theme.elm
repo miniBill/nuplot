@@ -1,8 +1,9 @@
-module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, iconSize, lightIconAttrs, onCtrlEnter, onEnter, onKey, roundness, row, smallDarkIconAttrs, spacing, whiteLines, wrappedRow)
+module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, hr, iconSize, lightIconAttrs, onCtrlEnter, onEnter, onKey, roundness, row, smallDarkIconAttrs, spacing, whiteLines, wrappedRow)
 
 import Ant.Icon
 import Color
-import Element.WithContext as Element exposing (Attribute, Color, Element, none, rgb, rgb255, rgba, shrink)
+import Element.WithContext as Element exposing (Attribute, Color, Element, el, fill, none, rgb, rgb255, rgba, shrink, width)
+import Element.WithContext.Border as Border
 import Html.Events
 import Json.Decode as Decode
 import Model exposing (Context)
@@ -213,3 +214,17 @@ onKey msg =
             )
         |> Html.Events.on "keyup"
         |> Element.htmlAttribute
+
+
+hr : Element msg
+hr =
+    el
+        [ width fill
+        , Border.widthEach
+            { top = 1
+            , left = 0
+            , right = 0
+            , bottom = 0
+            }
+        ]
+        Element.none
