@@ -1,85 +1,132 @@
-module UI.Model exposing (Document, Modal(..), Model, Msg(..), documentFromFile, documentToFile, documentsCodec, emptyMetadata, emptyRow)
+module UI.Model exposing (CanvasId(..), CellMsg(..), Context, DocumentMsg(..), Flags, Google, Model, Msg(..), documentsCodec)
 
+import API.Google as Google
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec)
+import Document as Document exposing (Modal, Row, RowData(..), StoredDocument, UIDocument)
+import Element.WithContext exposing (DeviceClass)
 import File exposing (File)
-import Google
+import Json.Decode as JD
 import List.Extra as List
 import List.MyExtra as List exposing (LeftOrRight(..))
-import Model exposing (CellMsg, Context, DocumentId, Row, RowData(..), Size, metadataMarker)
+import Maybe.MyExtra as Maybe
 import String
 import UI.L10N as L10N exposing (L10N, Language)
 import Zipper exposing (Zipper)
 
 
+
+-- FLAGS
+
+
+type alias Flags =
+    { saved : JD.Value
+    , hasClipboard : Bool
+    , languages : List String
+    , rootUrl : String
+    , googleAccessToken : String
+    }
+
+
+
+-- MODEL
+
+
 type alias Model =
-    { documents : Maybe (Zipper { id : DocumentId, document : Document })
+    { documents : Maybe (Zipper UIDocument)
     , nextId : Int
-    , modal : Maybe Modal
     , size : Size
     , openMenu : Bool
     , showPendingActions : Bool
     , context : Context
     , rootUrl : String
-    , google : Google.Model
+    , google : Google
     , key : Key
     }
 
 
-type alias Document =
-    { rows : List Row
-    , metadata : Metadata
+type alias Size =
+    { width : Int
+    , height : Int
     }
 
 
-type alias Metadata =
-    { name : Maybe String
-    , googleId : Maybe Google.FileId
+type alias Context =
+    { language : Language
+    , hasClipboard : Bool
+    , expandIntervals : Bool
+    , deviceClass : DeviceClass
     }
 
 
-type alias MetadataWithErrors =
-    { errors : List (L10N String)
-    , metadata : Metadata
+type alias Google =
+    { accessToken : Google.AccessToken
+    , waitingId : List { id : Document.Id, name : String, content : String, request : Google.Request Google.FileId }
+    , waitingSave : List { id : Document.Id, googleId : Google.FileId, name : String, content : String, request : Google.Request () }
+    , errors : List Google.Error
     }
 
 
-type ParsedRow
-    = NormalRow Row
-    | MetadataRow MetadataWithErrors
+
+-- MSG
 
 
 type Msg
-    = NewDocument
-    | SelectDocument Int
-    | RenameDocument (Maybe String)
-    | CloseDocument { ask : Bool, index : Int }
+    = DocumentNew
+    | DocumentOpen
+    | DocumentOpenSelected File
+    | DocumentOpenContent { name : String, content : String }
+    | DocumentMsg Document.Id DocumentMsg
     | Resized Size
-    | DismissModal
-    | SetModal Modal
     | ToggleMenu Bool
     | ToggleShowPendingActions Bool
-    | OpenFile
-    | ExpandIntervals Bool
-    | SaveFile
-    | SelectedFileForOpen File
-    | ReadFile String String
-    | CellMsg Int CellMsg
+    | ToggleExpandIntervals Bool
     | Language Language
     | GoogleAuth
-    | GoogleSave
-    | GotGoogleSaveResultFor DocumentId (Result Google.Error ())
-    | GotGoogleFileIdFor DocumentId (Result Google.Error Google.FileId)
-    | GotGoogleAccessToken String
+    | GoogleGotAccessToken String
     | Nop String
-    | CalculateAll
-    | ClearAll
 
 
-documentsCodec : Codec (Maybe (Zipper Document))
+type DocumentMsg
+    = DocumentSelect
+    | DocumentRename String
+    | DocumentClose { ask : Bool }
+    | DocumentDownload
+    | DocumentGoogleSave
+    | DocumentGoogleSaveResult (Result Google.Error ())
+    | DocumentGoogleId (Result Google.Error Google.FileId)
+    | DocumentCellMsg { index : Int, msg : CellMsg }
+    | DocumentPushModal Document.Modal
+    | DocumentReplaceModal Document.Modal
+    | DocumentPopModal
+    | DocumentCalculateAll
+    | DocumentClearAll
+
+
+type CellMsg
+    = EndEditing
+    | ToCode
+    | ToMarkdown
+    | Clear
+    | StartEditing
+    | Calculate
+    | Input String
+    | SaveCanvas CanvasId
+    | CopyCanvas CanvasId
+
+
+type CanvasId
+    = CanvasId String
+
+
+
+-- CODEC
+
+
+documentsCodec : Codec (Maybe (Zipper StoredDocument))
 documentsCodec =
     -- We convert to a list to prevent failures to be read as a valid empty value
-    Codec.list (Zipper.codec documentCodec)
+    Codec.list (Zipper.codec Document.codec)
         |> Codec.map List.head
             (\c ->
                 case c of
@@ -89,243 +136,3 @@ documentsCodec =
                     Just v ->
                         [ v ]
             )
-
-
-documentCodec : Codec Document
-documentCodec =
-    Codec.object
-        (\r n gid ->
-            let
-                metadata : Metadata
-                metadata =
-                    { name = n
-                    , googleId = gid
-                    }
-            in
-            { rows = r
-            , metadata = metadata
-            }
-        )
-        |> Codec.field "rows" .rows rowsCodec
-        |> Codec.maybeField "name" (.metadata >> .name) Codec.string
-        |> Codec.maybeField "googleId" (.metadata >> .googleId) Google.fileIdCodec
-        |> Codec.buildObject
-
-
-rowsCodec : Codec (List Row)
-rowsCodec =
-    let
-        v0Codec =
-            Codec.list rowCodec
-
-        v1Codec =
-            Codec.map
-                (documentFromFile Nothing >> .document >> .rows)
-                (\r -> documentToFile { rows = r, metadata = { name = Nothing, googleId = Nothing } })
-                Codec.string
-    in
-    Codec.oneOf v1Codec [ v0Codec ]
-
-
-rowCodec : Codec Row
-rowCodec =
-    Codec.map
-        (\i ->
-            if String.startsWith ">" i then
-                { input = String.trim <| String.dropLeft 1 i
-                , editing = False
-                , data = CodeRow []
-                }
-
-            else
-                { input = i
-                , editing = False
-                , data = MarkdownRow
-                }
-        )
-        (\r ->
-            case r.data of
-                MarkdownRow ->
-                    r.input
-
-                CodeRow _ ->
-                    "> " ++ r.input
-        )
-        Codec.string
-
-
-documentToFile : { a | rows : List Row, metadata : { b | googleId : Maybe Google.FileId } } -> String
-documentToFile { rows, metadata } =
-    let
-        rowToString { input, data } =
-            case data of
-                MarkdownRow ->
-                    input
-
-                CodeRow _ ->
-                    input
-                        |> String.split "\n"
-                        |> List.map (\l -> "> " ++ l)
-                        |> String.join "\n"
-    in
-    rows
-        |> List.filterNot (.input >> String.isEmpty)
-        |> List.map rowToString
-        |> (\l ->
-                case metadata.googleId of
-                    Nothing ->
-                        l
-
-                    Just gid ->
-                        l ++ [ Google.fileIdToMetadata gid ]
-           )
-        |> String.join "\n\n"
-
-
-documentFromFile :
-    Maybe String
-    -> String
-    ->
-        { errors : List (L10N String)
-        , document : Document
-        }
-documentFromFile name file =
-    file
-        |> String.split "\n\n"
-        |> List.map parseRow
-        |> List.foldr (\( m, r ) ( ma, ra ) -> ( m ++ ma, r ++ ra )) ( [], [] )
-        |> Tuple.mapSecond (List.filterNot (.input >> String.isEmpty))
-        |> (\( metadataWithErrorsList, rows ) ->
-                let
-                    { errors, metadata } =
-                        List.foldr combineMetadataWithErrors { errors = [], metadata = emptyMetadata } metadataWithErrorsList
-                in
-                { errors = errors
-                , document =
-                    { rows = rows ++ [ emptyRow ]
-                    , metadata =
-                        { name =
-                            metadata.name
-                                |> withDefaultMaybe name
-                        , googleId = metadata.googleId
-                        }
-                    }
-                }
-           )
-
-
-emptyRow : Row
-emptyRow =
-    { input = ""
-    , editing = True
-    , data = CodeRow []
-    }
-
-
-withDefaultMaybe : Maybe a -> Maybe a -> Maybe a
-withDefaultMaybe r l =
-    case l of
-        Just _ ->
-            l
-
-        Nothing ->
-            r
-
-
-combineMetadataWithErrors : MetadataWithErrors -> MetadataWithErrors -> MetadataWithErrors
-combineMetadataWithErrors l r =
-    { errors = l.errors ++ r.errors
-    , metadata =
-        { name = l.metadata.name |> withDefaultMaybe r.metadata.name
-        , googleId = l.metadata.googleId |> withDefaultMaybe r.metadata.googleId
-        }
-    }
-
-
-emptyMetadata : Metadata
-emptyMetadata =
-    { name = Nothing
-    , googleId = Nothing
-    }
-
-
-parseRow : String -> ( List MetadataWithErrors, List Row )
-parseRow row =
-    let
-        parseFragment f =
-            if String.startsWith ">" f then
-                NormalRow
-                    { input = String.trim (String.dropLeft 1 f)
-                    , editing = False
-                    , data = CodeRow []
-                    }
-
-            else if String.startsWith metadataMarker f then
-                let
-                    extracted =
-                        String.dropRight 1 <| String.dropLeft (String.length metadataMarker) f
-                in
-                case Google.metadataToFileId extracted of
-                    Just gid ->
-                        MetadataRow
-                            { errors = []
-                            , metadata =
-                                { name = Nothing
-                                , googleId = Just gid
-                                }
-                            }
-
-                    Nothing ->
-                        MetadataRow
-                            { errors = [ L10N.invariant <| "TODO:" ++ extracted ]
-                            , metadata =
-                                { name = Nothing
-                                , googleId = Nothing
-                                }
-                            }
-
-            else
-                NormalRow
-                    { input = f
-                    , editing = False
-                    , data = MarkdownRow
-                    }
-
-        combine e last =
-            case ( e.data, last.data ) of
-                ( MarkdownRow, MarkdownRow ) ->
-                    Just
-                        { input = e.input ++ "\n" ++ last.input
-                        , editing = False
-                        , data = MarkdownRow
-                        }
-
-                ( CodeRow _, CodeRow _ ) ->
-                    Just
-                        { input = e.input ++ "\n" ++ last.input
-                        , editing = False
-                        , data = CodeRow []
-                        }
-
-                _ ->
-                    Nothing
-    in
-    row
-        |> String.split "\n"
-        |> List.map parseFragment
-        |> List.categorize
-            (\f ->
-                case f of
-                    MetadataRow m ->
-                        Left m
-
-                    NormalRow n ->
-                        Right n
-            )
-        |> Tuple.mapSecond (List.groupOneWith combine)
-
-
-type Modal
-    = ModalClose Int
-    | ModalRename String
-    | ModalGoogleAuth

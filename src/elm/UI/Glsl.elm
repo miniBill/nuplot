@@ -4,7 +4,6 @@ import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..))
 import Expression.Graph exposing (Graph(..))
 import Expression.Utils exposing (minus, plus, square)
-import List
 import List.Extra as List
 import List.MyExtra as List
 import SortedAnySet as Set

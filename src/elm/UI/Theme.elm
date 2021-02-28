@@ -6,7 +6,7 @@ import Element.WithContext as Element exposing (Attribute, Color, Element, el, f
 import Element.WithContext.Border as Border
 import Html.Events
 import Json.Decode as Decode
-import Model exposing (Context)
+import UI.Model exposing (Context)
 
 
 type alias Element msg =

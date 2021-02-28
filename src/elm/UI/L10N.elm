@@ -1,4 +1,4 @@
-module UI.L10N exposing (L10N, Language(..), invariant, text, title)
+module UI.L10N exposing (L10N, Language(..), invariant, map, text, title)
 
 import Element.WithContext as Element exposing (Element)
 import Html.Attributes
@@ -12,6 +12,13 @@ type Language
 type alias L10N a =
     { en : a
     , it : a
+    }
+
+
+map : (a -> b) -> L10N a -> L10N b
+map f { en, it } =
+    { en = f en
+    , it = f it
     }
 
 

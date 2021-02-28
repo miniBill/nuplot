@@ -5,6 +5,9 @@ module Zipper exposing
     , canGoLeft
     , canGoRight
     , codec
+    , filter
+    , find
+    , focusFind
     , fromList
     , fromNonemptyList
     , get
@@ -21,6 +24,12 @@ module Zipper exposing
     )
 
 import Codec exposing (Codec)
+import List
+import List.Extra as List
+
+
+
+-- Types and constructors
 
 
 type Zipper a
@@ -38,6 +47,10 @@ singleton x =
         , curr = x
         , after = []
         }
+
+
+
+-- Information
 
 
 getLeft : Zipper a -> List a
@@ -65,11 +78,6 @@ selected (Zipper { curr }) =
     curr
 
 
-setSelected : a -> Zipper a -> Zipper a
-setSelected x (Zipper z) =
-    Zipper { z | curr = x }
-
-
 get : Int -> Zipper a -> Maybe a
 get i (Zipper { before, curr, after }) =
     if i == 0 then
@@ -80,6 +88,15 @@ get i (Zipper { before, curr, after }) =
 
     else
         List.head (List.drop (i - 1) after)
+
+
+find : (a -> Bool) -> Zipper a -> Maybe a
+find f zip =
+    List.find f (toList zip)
+
+
+
+-- Rotations
 
 
 left : Int -> Zipper a -> Zipper a
@@ -126,6 +143,29 @@ allRight ((Zipper { before, curr, after }) as orig) =
             Zipper { before = tail ++ curr :: before, curr = end, after = [] }
 
 
+focusFind : (a -> Bool) -> Zipper a -> Zipper a
+focusFind cond ((Zipper { before, curr, after }) as orig) =
+    case List.findIndex cond (List.reverse before) of
+        Just i ->
+            left (List.length before - i) orig
+
+        Nothing ->
+            if cond curr then
+                orig
+
+            else
+                case List.findIndex cond after of
+                    Nothing ->
+                        orig
+
+                    Just i ->
+                        right (i + 1) orig
+
+
+
+-- Map and filter
+
+
 map : (Int -> a -> b) -> Zipper a -> Zipper b
 map f (Zipper { before, curr, after }) =
     Zipper
@@ -133,6 +173,54 @@ map f (Zipper { before, curr, after }) =
         , curr = f 0 curr
         , after = List.indexedMap (\i -> f (i + 1)) after
         }
+
+
+filter : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
+filter f (Zipper { before, curr, after }) =
+    let
+        before_ =
+            List.filter f before
+
+        after_ =
+            List.filter f after
+    in
+    if f curr then
+        Just <|
+            Zipper
+                { before = before_
+                , curr = curr
+                , after = after_
+                }
+
+    else
+        case ( before_, after_ ) of
+            ( [], [] ) ->
+                Nothing
+
+            ( _, a :: atail ) ->
+                Just <|
+                    Zipper
+                        { before = before_
+                        , curr = a
+                        , after = atail
+                        }
+
+            ( b :: btail, [] ) ->
+                Just <|
+                    Zipper
+                        { before = btail
+                        , curr = b
+                        , after = []
+                        }
+
+
+
+-- Modification
+
+
+setSelected : a -> Zipper a -> Zipper a
+setSelected x (Zipper z) =
+    Zipper { z | curr = x }
 
 
 append : a -> Zipper a -> Zipper a
@@ -158,6 +246,10 @@ removeAt i (Zipper z) =
 
             ( h :: t, _ ) ->
                 Just <| Zipper { z | curr = h, before = t }
+
+
+
+-- Conversion
 
 
 fromList : List a -> Maybe (Zipper a)

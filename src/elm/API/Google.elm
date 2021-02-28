@@ -1,23 +1,45 @@
-module Google exposing (AccessToken(..), Error(..), FileId, Model, Request(..), fileIdCodec, fileIdToMetadata, generateId, mapRequest, metadataToFileId, redirectUrl, startAuthenticationFlow, uploadFile)
+module API.Google exposing (AccessToken(..), Error(..), FileId, Request(..), authenticationFlowUrl, fileIdCodec, fileIdFromMetadata, fileIdToMetadata, generateId, mapRequest, uploadFile)
 
 import Bytes.Encode as BE
 import Codec exposing (Codec)
 import Http exposing (Resolver, Response(..))
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
-import Model exposing (DocumentId)
 import Platform exposing (Task)
 import Task
-import UI.Ports
 import Url.Builder as B
 
 
-type alias Model =
-    { accessToken : AccessToken
-    , waitingId : List { id : DocumentId, name : String, content : String, request : Request FileId }
-    , waitingSave : List { id : DocumentId, googleId : FileId, name : String, content : String, request : Request () }
-    , errors : List Error
-    }
+
+-- FileId
+
+
+type FileId
+    = FileId String
+
+
+fileIdCodec : Codec FileId
+fileIdCodec =
+    Codec.map FileId (\(FileId i) -> i) Codec.string
+
+
+fileIdFromMetadata : String -> Maybe FileId
+fileIdFromMetadata metadata =
+    if String.startsWith googleMetadataKey metadata then
+        Just <| FileId <| String.dropLeft (String.length googleMetadataKey) metadata
+
+    else
+        Nothing
+
+
+googleMetadataKey : String
+googleMetadataKey =
+    "GOOGLE_ID = "
+
+
+fileIdToMetadata : FileId -> String
+fileIdToMetadata (FileId fid) =
+    googleMetadataKey ++ fid
 
 
 type Request a
@@ -54,58 +76,20 @@ scope =
     "https://www.googleapis.com/auth/drive.file"
 
 
-startAuthenticationFlow : String -> Cmd msg
-startAuthenticationFlow =
-    UI.Ports.openWindow << buildUrl
-
-
-buildUrl : String -> String
-buildUrl root =
+authenticationFlowUrl : String -> String
+authenticationFlowUrl redirectUri =
     B.crossOrigin "https://accounts.google.com"
         [ "o", "oauth2", "v2", "auth" ]
         [ B.string "scope" scope
         , B.string "response_type" "token"
         , B.string "client_id" clientId
-        , B.string "redirect_uri" root
+        , B.string "redirect_uri" redirectUri
         ]
 
 
 clientId : String
 clientId =
     "696268500736-k646rm6l6qcucv2t1qufdg31ngsfgmhu.apps.googleusercontent.com"
-
-
-redirectUrl : String
-redirectUrl =
-    "https://nuplot.netlify.app"
-
-
-type FileId
-    = FileId String
-
-
-fileIdCodec : Codec FileId
-fileIdCodec =
-    Codec.map FileId (\(FileId f) -> f) Codec.string
-
-
-metadataKey : String
-metadataKey =
-    "GOOGLE_ID = "
-
-
-fileIdToMetadata : FileId -> String
-fileIdToMetadata (FileId fid) =
-    Model.metadataMarker ++ metadataKey ++ fid ++ ")"
-
-
-metadataToFileId : String -> Maybe FileId
-metadataToFileId metadata =
-    if String.startsWith metadataKey metadata then
-        Just <| FileId <| String.dropLeft (String.length metadataKey) metadata
-
-    else
-        Nothing
 
 
 uploadFile : { id : FileId, name : String, content : String, accessToken : String } -> Task Error ()

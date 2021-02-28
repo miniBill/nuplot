@@ -3,6 +3,7 @@ module UI.RowView exposing (view)
 import Ant.Icons as Icons
 import Complex
 import Dict
+import Document exposing (Output(..), Row, RowData(..))
 import Element.WithContext as Element exposing (DeviceClass(..), Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, row, shrink, spacing, text, width)
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -18,9 +19,8 @@ import Json.Encode
 import List.Extra as List
 import Markdown.Parser
 import Markdown.Renderer
-import Model exposing (CellMsg(..), Context, Output(..), Row, RowData(..))
 import UI.Glsl exposing (getGlsl)
-import UI.Model exposing (Msg(..))
+import UI.Model exposing (CanvasId(..), CellMsg(..), Context, DocumentMsg(..), Msg(..))
 import UI.Theme as Theme
 
 
@@ -28,7 +28,7 @@ type alias Element msg =
     Element.Element Context msg
 
 
-draw : { width : Int, height : Int } -> String -> { wdiv : Int, hdiv : Int } -> Graph -> Element CellMsg
+draw : { width : Int, height : Int } -> CanvasId -> { wdiv : Int, hdiv : Int } -> Graph -> Element CellMsg
 draw { width, height } id { wdiv, hdiv } graph =
     let
         isCompletelyReal g =
@@ -79,7 +79,7 @@ draw { width, height } id { wdiv, hdiv } graph =
         saveButton =
             Input.button []
                 { label = Element.element <| Icons.saveOutlined Theme.lightIconAttrs
-                , onPress = Just <| Save id
+                , onPress = Just <| SaveCanvas id
                 }
 
         copyButton =
@@ -88,7 +88,7 @@ draw { width, height } id { wdiv, hdiv } graph =
                     if hasClipboard then
                         Input.button []
                             { label = Element.element <| Icons.copyOutlined Theme.lightIconAttrs
-                            , onPress = Just <| Copy id
+                            , onPress = Just <| CopyCanvas id
                             }
 
                     else
@@ -106,7 +106,11 @@ draw { width, height } id { wdiv, hdiv } graph =
             el attrs <|
                 Element.html <|
                     Html.node "nu-plot"
-                        [ Html.Attributes.id id
+                        [ let
+                            (CanvasId cid) =
+                                id
+                          in
+                          Html.Attributes.id cid
                         , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl expandIntervals graph
                         , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
                         , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
@@ -119,9 +123,9 @@ draw { width, height } id { wdiv, hdiv } graph =
                         []
 
 
-view : { width : Int, height : Int } -> Int -> Row -> Element Msg
+view : { width : Int, height : Int } -> Int -> Row -> Element DocumentMsg
 view size index { input, editing, data } =
-    Element.map (CellMsg index) <|
+    Element.map (\msg -> DocumentCellMsg { index = index, msg = msg }) <|
         case data of
             CodeRow output ->
                 let
@@ -404,7 +408,7 @@ outputBlock blockId ({ width } as size) output =
                             ( Element.column [ spacing Theme.spacing ] <| viewSolutionTree (width - 2 * Theme.spacing) t, False )
 
                         GraphValue g ->
-                            ( draw size id coeffs g, True )
+                            ( draw size (CanvasId id) coeffs g, True )
 
                         ComplexValue c ->
                             ( text <| Complex.toString c, False )

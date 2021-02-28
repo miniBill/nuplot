@@ -1,5 +1,6 @@
 module UI exposing (main)
 
+import API.Google as Google exposing (AccessToken(..), Request(..))
 import Ant.Icon as Icon
 import Ant.Icons as Icons
 import Browser
@@ -7,6 +8,7 @@ import Browser.Dom
 import Browser.Events
 import Browser.Navigation exposing (Key)
 import Codec
+import Document exposing (Modal(..), Output(..), Row, RowData(..), StoredDocument, UIDocument)
 import Element.WithContext as Element exposing (DeviceClass(..), alignBottom, alignRight, centerX, centerY, el, fill, height, inFront, padding, scrollbarX, shrink, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
@@ -18,16 +20,15 @@ import Expression.Parser
 import File
 import File.Download
 import File.Select
-import Google exposing (AccessToken(..), Request(..))
 import Html
 import Html.Attributes
 import List
 import List.Extra as List
 import Maybe
-import Model exposing (CellMsg(..), Context, DocumentId(..), Flags, Output(..), RowData(..))
+import Maybe.MyExtra as Maybe
 import Task
 import UI.L10N as L10N exposing (L10N, Language(..), text, title)
-import UI.Model exposing (Document, Modal(..), Model, Msg(..))
+import UI.Model as Model exposing (CellMsg(..), Context, DocumentMsg(..), Flags, Model, Msg(..))
 import UI.Ports
 import UI.RowView
 import UI.Theme as Theme exposing (hr, onKey)
@@ -78,35 +79,34 @@ defaultDocument =
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init ({ saved, hasClipboard, languages } as flags) url key =
     let
-        documents : Maybe (Zipper { id : DocumentId, document : Document })
-        documents =
-            case Codec.decodeValue UI.Model.documentsCodec saved of
-                Ok docs ->
-                    docs
-                        |> Maybe.map
-                            (Zipper.map
-                                (\i d ->
-                                    { document = d
-                                    , id =
-                                        DocumentId <|
-                                            if i < 0 then
-                                                -i * 2 - 1
+        indexToId index =
+            let
+                id =
+                    if index < 0 then
+                        -index * 2 - 1
 
-                                            else
-                                                i * 2
-                                    }
-                                )
-                            )
+                    else
+                        index * 2
+            in
+            Document.Id id
+
+        toUi index document =
+            Document.toUI (indexToId index) document
+
+        documents : Maybe (Zipper UIDocument)
+        documents =
+            case Codec.decodeValue Model.documentsCodec saved of
+                Ok docs ->
+                    Maybe.map (Zipper.map toUi) docs
 
                 Err _ ->
-                    Just <|
-                        Zipper.singleton
-                            { id = DocumentId 0
-                            , document =
-                                { rows = List.map emptyRow defaultDocument
-                                , metadata = UI.Model.emptyMetadata
-                                }
-                            }
+                    { rows = List.map emptyRow defaultDocument
+                    , name = Nothing
+                    , googleId = Nothing
+                    }
+                        |> Document.toUI (Document.Id 0)
+                        |> Zipper.singleton
+                        |> Just
 
         nextId =
             documents
@@ -115,7 +115,7 @@ init ({ saved, hasClipboard, languages } as flags) url key =
                 |> List.map
                     (\d ->
                         let
-                            (DocumentId i) =
+                            (Document.Id i) =
                                 d.id
                         in
                         i
@@ -201,7 +201,7 @@ init ({ saved, hasClipboard, languages } as flags) url key =
         defaultSize =
             { width = 1024, height = 768 }
 
-        google : Google.Model
+        google : Model.Google
         google =
             { accessToken = googleAccessToken
             , waitingId = []
@@ -214,7 +214,6 @@ init ({ saved, hasClipboard, languages } as flags) url key =
             { documents = documents
             , nextId = nextId
             , size = defaultSize
-            , modal = Nothing
             , openMenu = False
             , showPendingActions = False
             , rootUrl = rootUrl
@@ -250,13 +249,16 @@ view model =
     let
         documentView =
             model.documents
-                |> Maybe.map (Zipper.selected >> .document >> viewDocument model.size)
+                |> Maybe.map (Zipper.selected >> viewDocument model.size)
                 |> Maybe.withDefault (text { en = "Select a document", it = "Seleziona un documento" })
     in
     Element.column
         [ width fill
         , height fill
-        , Element.inFront <| viewModal model
+        , model.documents
+            |> Maybe.map (Zipper.selected >> viewDocumentModal)
+            |> Maybe.withDefault Element.none
+            |> Element.inFront
         ]
         [ Element.html <|
             Html.node "style"
@@ -277,8 +279,13 @@ view model =
         ]
 
 
+selectedDocumentId : { a | documents : Maybe (Zipper { b | id : id }) } -> Maybe id
+selectedDocumentId { documents } =
+    documents |> Maybe.map (Zipper.selected >> .id)
+
+
 toolbar : Model -> Element Msg
-toolbar { google, openMenu, showPendingActions } =
+toolbar ({ google, openMenu, showPendingActions } as model) =
     let
         toolbarButton msg icon label =
             Input.button
@@ -298,12 +305,6 @@ toolbar { google, openMenu, showPendingActions } =
                 (ToggleMenu <| not openMenu)
                 Icons.moreOutlined
                 { en = "Menu", it = "Menù" }
-
-        runButton =
-            toolbarButton
-                CalculateAll
-                Icons.playSquareOutlined
-                { en = "Run document", it = "Esegui documento" }
 
         pendingActions =
             if
@@ -355,16 +356,30 @@ toolbar { google, openMenu, showPendingActions } =
                     Icons.cloudSyncOutlined
                     { en = "Pending actions", it = "Azioni pendenti" }
 
+        runButton =
+            selectedDocumentId model
+                |> Maybe.map
+                    (\id ->
+                        toolbarButton
+                            (DocumentMsg id DocumentCalculateAll)
+                            Icons.playSquareOutlined
+                            { en = "Run document", it = "Esegui documento" }
+                    )
+
         clearButton =
-            toolbarButton
-                ClearAll
-                Icons.stopOutlined
-                { en = "Clear document", it = "Pulisci documento" }
+            selectedDocumentId model
+                |> Maybe.map
+                    (\id ->
+                        toolbarButton
+                            (DocumentMsg id DocumentClearAll)
+                            Icons.stopOutlined
+                            { en = "Clear document", it = "Pulisci documento" }
+                    )
     in
     Element.row
         [ padding <| Theme.spacing // 4
         , if openMenu then
-            Element.below <| dropdown ()
+            Element.below <| dropdown model
 
           else
             width shrink
@@ -374,7 +389,13 @@ toolbar { google, openMenu, showPendingActions } =
           else
             width shrink
         ]
-        [ pendingButton, runButton, clearButton, moreButton ]
+    <|
+        List.filterMap identity
+            [ Just pendingButton
+            , runButton
+            , clearButton
+            , Just moreButton
+            ]
 
 
 viewPendingActions : List ( L10N String, Maybe msg ) -> Element msg
@@ -406,8 +427,8 @@ viewPendingActions actions =
         (List.intersperse hr <| List.map viewPendingAction actions)
 
 
-dropdown : () -> Element Msg
-dropdown () =
+dropdown : Model -> Element Msg
+dropdown model =
     let
         bigStop =
             let
@@ -477,21 +498,37 @@ dropdown () =
 
         expandIntervalsButton expandIntervals =
             if expandIntervals then
-                btn (ExpandIntervals False)
+                btn (ToggleExpandIntervals False)
                     [ Element.element <| Icons.funnelPlotOutlined Theme.darkIconAttrs
                     , bigStop
                     ]
                     { en = "Do not apply noise reduction", it = "Non applicare riduzione rumore" }
 
             else
-                simpleBtn (ExpandIntervals True) Icons.funnelPlotOutlined { en = "Apply noise reduction", it = "Applica riduzione rumore" }
+                simpleBtn (ToggleExpandIntervals True) Icons.funnelPlotOutlined { en = "Apply noise reduction", it = "Applica riduzione rumore" }
 
         buttons =
-            [ simpleBtn OpenFile Icons.folderOpenOutlined { en = "Open", it = "Apri" }
-            , simpleBtn SaveFile Icons.saveOutlined { en = "Save", it = "Salva" }
-            , Element.with .expandIntervals expandIntervalsButton
-            , simpleBtn GoogleSave Icons.uploadOutlined { en = "Save on Google Drive", it = "Salva su Google Drive" }
-            , languagesRow
+            let
+                sid =
+                    selectedDocumentId model
+            in
+            [ Just <| simpleBtn DocumentOpen Icons.folderOpenOutlined { en = "Open", it = "Apri" }
+            , sid
+                |> Maybe.map
+                    (\id ->
+                        simpleBtn (DocumentMsg id DocumentDownload)
+                            Icons.saveOutlined
+                            { en = "Save", it = "Salva" }
+                    )
+            , Just <| Element.with .expandIntervals expandIntervalsButton
+            , sid
+                |> Maybe.map
+                    (\id ->
+                        simpleBtn (DocumentMsg id DocumentGoogleSave)
+                            Icons.uploadOutlined
+                            { en = "Save on Google Drive", it = "Salva su Google Drive" }
+                    )
+            , Just <| languagesRow
             ]
     in
     Element.column
@@ -499,41 +536,60 @@ dropdown () =
         , Background.color Theme.colors.background
         , Border.width 1
         ]
-        (List.intersperse hr buttons)
+        (List.intersperse hr <| List.filterMap identity buttons)
 
 
 documentPicker : Model -> Element Msg
 documentPicker ({ documents } as model) =
     let
-        toDocumentTabButton : Int -> { a | document : Document } -> Element Msg
-        toDocumentTabButton index { document } =
+        toDocumentTabButton : Int -> UIDocument -> Element Msg
+        toDocumentTabButton index document =
             let
                 selected =
                     index == 0
 
                 name =
-                    -- TODO: Localize
-                    Maybe.withDefault "Untitled" <| document.metadata.name
-            in
-            documentTabButton
-                { selected = selected
-                , onPress =
-                    if selected then
-                        RenameDocument Nothing
+                    document.name
+                        |> Maybe.withDefaultMaybe
+                            (document.rows
+                                |> List.head
+                                |> Maybe.map rowToTitle
+                                |> Maybe.andThen
+                                    (\s ->
+                                        if String.isEmpty s then
+                                            Nothing
 
-                    else
-                        SelectDocument index
-                , closeMsg = Just <| CloseDocument { ask = True, index = index }
-                , label = text <| L10N.invariant <| ellipsize name
-                , index = index
-                , title = L10N.invariant name
-                }
+                                        else
+                                            Just s
+                                    )
+                            )
+                        |> Maybe.map L10N.invariant
+                        |> Maybe.withDefault { en = "Untitled", it = "Senza Titolo" }
+
+                label : Element msg
+                label =
+                    text <| L10N.map ellipsize name
+            in
+            Element.map (DocumentMsg document.id) <|
+                documentTabButton
+                    { selected = selected
+                    , onPress =
+                        if selected then
+                            DocumentPushModal <| ModalRename <| Maybe.withDefault "" document.name
+
+                        else
+                            DocumentSelect
+                    , closeMsg = Just <| DocumentClose { ask = True }
+                    , label = label
+                    , index = index
+                    , title = name
+                    }
 
         buttons =
             Maybe.withDefault [] (Maybe.map (Zipper.toList << Zipper.map toDocumentTabButton) documents)
                 ++ [ documentTabButton
                         { selected = False
-                        , onPress = NewDocument
+                        , onPress = DocumentNew
                         , closeMsg = Nothing
                         , label =
                             Element.row []
@@ -563,6 +619,11 @@ documentPicker ({ documents } as model) =
         ]
 
 
+rowToTitle : Row -> String
+rowToTitle { input } =
+    ellipsize input
+
+
 ellipsize : String -> String
 ellipsize s =
     let
@@ -589,8 +650,11 @@ documentTabButton { selected, onPress, closeMsg, label, title } =
                         else
                             Theme.colors.unselectedDocument
                 ]
+
+        focusStyleChild =
+            Element.focused []
     in
-    Input.button
+    Element.row
         [ Border.roundEach
             { topLeft = Theme.roundness
             , topRight = Theme.roundness
@@ -609,129 +673,130 @@ documentTabButton { selected, onPress, closeMsg, label, title } =
 
             else
                 Theme.colors.unselectedDocument
-        , focusStyle
         , L10N.title title
         , alignBottom
+        , focusStyle
         ]
-        { onPress = Just onPress
-        , label =
-            Element.row
-                [ padding <| Theme.spacing // 2 ]
-                [ el [ padding <| Theme.spacing // 2 ] label
-                , case closeMsg of
-                    Nothing ->
-                        Element.none
+        [ Input.button
+            [ width fill
+            , height fill
+            , focusStyleChild
+            ]
+            { onPress = Just onPress
+            , label =
+                el
+                    [ case closeMsg of
+                        Nothing ->
+                            Element.padding Theme.spacing
 
-                    Just _ ->
-                        Input.button
-                            [ padding <| Theme.spacing // 2
-                            , focusStyle
-                            , Background.color <|
-                                if selected then
-                                    Theme.colors.selectedDocument
+                        Just _ ->
+                            Element.paddingEach
+                                { left = Theme.spacing
+                                , top = Theme.spacing
+                                , bottom = Theme.spacing
+                                , right = Theme.spacing // 2
+                                }
+                    ]
+                    label
+            }
+        , case closeMsg of
+            Nothing ->
+                Element.none
 
-                                else
-                                    Theme.colors.unselectedDocument
-                            ]
-                            { onPress = closeMsg
-                            , label = Element.element <| Icons.closeOutlined Theme.smallDarkIconAttrs
-                            }
-                ]
-        }
+            Just _ ->
+                Input.button
+                    [ Element.paddingEach
+                        { left = Theme.spacing // 2
+                        , top = Theme.spacing
+                        , bottom = Theme.spacing
+                        , right = Theme.spacing
+                        }
+                    , focusStyleChild
+                    ]
+                    { onPress = closeMsg
+                    , label = Element.element <| Icons.closeOutlined Theme.smallDarkIconAttrs
+                    }
+        ]
 
 
-viewModal : Model -> Element Msg
-viewModal model =
+viewDocumentModal : UIDocument -> Element Msg
+viewDocumentModal document =
     let
         wrap onOk e =
-            el
-                [ width fill
-                , height fill
-                , padding <| Theme.spacing * 8
-                , Background.color Theme.colors.modalTransparentBackground
-                , Element.htmlAttribute <| Html.Attributes.style "backdrop-filter" "blur(2px)"
-                ]
-            <|
+            Element.map (DocumentMsg document.id) <|
                 el
-                    [ centerX
-                    , centerY
-                    , Background.color Theme.colors.background
-                    , Border.rounded Theme.roundness
+                    [ width fill
+                    , height fill
+                    , padding <| Theme.spacing * 8
+                    , Background.color Theme.colors.modalTransparentBackground
+                    , Element.htmlAttribute <| Html.Attributes.style "backdrop-filter" "blur(2px)"
                     ]
                 <|
-                    el [ padding Theme.spacing ] <|
-                        Theme.column []
-                            (e
-                                ++ [ Theme.row [ alignRight ]
-                                        [ Input.button [ padding Theme.spacing ]
-                                            { onPress = Just onOk
-                                            , label = text { en = "Ok", it = "Ok" }
-                                            }
-                                        , Input.button [ padding Theme.spacing ]
-                                            { onPress = Just DismissModal
-                                            , label = text { en = "Cancel", it = "Annulla" }
-                                            }
-                                        ]
-                                   ]
-                            )
-    in
-    case ( model.modal, model.documents ) of
-        ( Nothing, _ ) ->
-            Element.none
-
-        ( Just (ModalClose _), Nothing ) ->
-            Element.none
-
-        ( Just (ModalRename _), Nothing ) ->
-            Element.none
-
-        ( Just (ModalClose i), Just docs ) ->
-            case Zipper.get i docs of
-                Nothing ->
-                    Element.none
-
-                Just { document } ->
-                    wrap (CloseDocument { ask = False, index = i })
-                        [ text <|
-                            case document.metadata.name of
-                                Just name ->
-                                    { en = "Close document \"" ++ name ++ "\"?"
-                                    , it = "Chiudi il documento \"" ++ name ++ "\"?"
-                                    }
-
-                                Nothing ->
-                                    { en = "Close the document?"
-                                    , it = "Chiudere il documento?"
-                                    }
+                    el
+                        [ centerX
+                        , centerY
+                        , Background.color Theme.colors.background
+                        , Border.rounded Theme.roundness
                         ]
+                    <|
+                        el [ padding Theme.spacing ] <|
+                            Theme.column []
+                                (e
+                                    ++ [ Theme.row [ alignRight ]
+                                            [ Input.button [ padding Theme.spacing ]
+                                                { onPress = Just onOk
+                                                , label = text { en = "Ok", it = "Ok" }
+                                                }
+                                            , Input.button [ padding Theme.spacing ]
+                                                { onPress = Just DocumentPopModal
+                                                , label = text { en = "Cancel", it = "Annulla" }
+                                                }
+                                            ]
+                                       ]
+                                )
+    in
+    case document.modals of
+        [] ->
+            Element.none
 
-        ( Just (ModalRename name), Just docs ) ->
-            wrap (RenameDocument <| Just name)
+        ModalClose :: _ ->
+            wrap (DocumentClose { ask = False })
+                [ text <|
+                    case document.name of
+                        Just name ->
+                            { en = "Close document \"" ++ name ++ "\"?"
+                            , it = "Chiudi il documento \"" ++ name ++ "\"?"
+                            }
+
+                        Nothing ->
+                            { en = "Close the document?"
+                            , it = "Chiudere il documento?"
+                            }
+                ]
+
+        (ModalRename name) :: _ ->
+            wrap (DocumentRename name)
                 [ Input.text
                     [ Input.focusedOnLoad
                     , onKey <|
                         \key ->
                             case key of
                                 "Enter" ->
-                                    Just <| RenameDocument <| Just name
+                                    Just <| DocumentRename name
 
                                 "Escape" ->
-                                    Just DismissModal
+                                    Just DocumentPopModal
 
                                 _ ->
                                     Nothing
                     ]
-                    { onChange = SetModal << ModalRename
+                    { onChange = DocumentReplaceModal << ModalRename
                     , text = name
                     , placeholder = Nothing
                     , label =
-                        let
-                            metadata =
-                                (Zipper.selected docs).document.metadata
-                        in
                         Input.labelAbove [] <|
                             text <|
-                                case metadata.name of
+                                case document.name of
                                     Just n ->
                                         { en = "Rename document \"" ++ n ++ "\" to"
                                         , it = "Rinomina il documento \"" ++ n ++ "\" in"
@@ -744,29 +809,22 @@ viewModal model =
                     }
                 ]
 
-        ( Just ModalGoogleAuth, _ ) ->
-            wrap GoogleAuth
-                [ text
-                    { en = "Before completing this action you will need to authenticate with Google"
-                    , it = "Prima di poter effettuare questa azione è necessario effettuare l'autenticazione con Google"
-                    }
-                ]
 
-
-viewDocument : { width : Int, height : Int } -> Document -> Element Msg
-viewDocument size { rows } =
+viewDocument : { width : Int, height : Int } -> UIDocument -> Element Msg
+viewDocument size { id, rows } =
     let
         rowsViews =
             List.indexedMap (\index row -> Lazy.lazy3 UI.RowView.view size index row) rows
     in
-    Element.column
-        [ Element.spacing <| 2 * Theme.spacing
-        , Element.padding Theme.spacing
-        , width fill
-        , height fill
-        , Element.scrollbarY
-        ]
-        (rowsViews ++ [ el [ height fill ] Element.none ])
+    Element.map (DocumentMsg id) <|
+        Element.column
+            [ Element.spacing <| 2 * Theme.spacing
+            , Element.padding Theme.spacing
+            , width fill
+            , height fill
+            , Element.scrollbarY
+            ]
+            (rowsViews ++ [ el [ height fill ] Element.none ])
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -782,11 +840,11 @@ update msg =
 
         filterEmpty =
             List.filterNot (.input >> String.isEmpty)
-                >> (\rs -> rs ++ [ UI.Model.emptyRow ])
+                >> (\rs -> rs ++ [ Document.emptyRow ])
 
         inner model =
             case msg of
-                CellMsg row cmsg ->
+                DocumentMsg id (DocumentCellMsg data) ->
                     let
                         updateRow rowF =
                             updateCurrent
@@ -794,18 +852,18 @@ update msg =
                                     { curr
                                         | rows =
                                             curr.rows
-                                                |> List.updateAt row rowF
+                                                |> List.updateAt data.index rowF
                                                 |> filterEmpty
                                     }
                                 )
                                 model
                     in
-                    case cmsg of
-                        Copy id ->
-                            ( model, UI.Ports.copy id )
+                    case data.msg of
+                        CopyCanvas canvasId ->
+                            ( model, UI.Ports.copyCanvas canvasId )
 
-                        Save id ->
-                            ( model, UI.Ports.save id )
+                        SaveCanvas canvasId ->
+                            ( model, UI.Ports.saveCanvas canvasId )
 
                         Input input ->
                             updateRow (\r -> { r | input = input })
@@ -828,47 +886,48 @@ update msg =
                         Clear ->
                             updateRow (\r -> { r | data = CodeRow [] })
 
-                NewDocument ->
+                DocumentNew ->
                     addDocument model
-                        { rows = [ UI.Model.emptyRow ]
-                        , metadata = UI.Model.emptyMetadata
+                        { rows = [ Document.emptyRow ]
+                        , name = Nothing
+                        , googleId = Nothing
                         }
 
-                SelectDocument i ->
+                DocumentMsg id DocumentSelect ->
                     let
                         documents =
-                            Maybe.map (Zipper.right i) model.documents
+                            Maybe.map
+                                (Zipper.focusFind (\d -> d.id == id))
+                                model.documents
                     in
                     ( { model | documents = documents }
                     , persist documents
                     )
 
-                CloseDocument { ask, index } ->
+                DocumentMsg docId (DocumentClose { ask }) ->
                     if ask then
-                        if model.modal /= Nothing then
-                            ( model, Cmd.none )
-
-                        else
-                            ( { model | modal = Just <| ModalClose index }
-                            , Cmd.none
+                        updateCurrent
+                            (\document ->
+                                { document
+                                    | modals = ModalClose :: document.modals
+                                }
                             )
+                            model
 
                     else
                         let
                             documents =
-                                Maybe.andThen (Zipper.removeAt index) model.documents
+                                model.documents
+                                    |> Maybe.andThen (Zipper.filter (\{ id } -> id /= docId))
                         in
-                        ( { model
-                            | documents = documents
-                            , modal = Nothing
-                          }
+                        ( { model | documents = documents }
                         , persist documents
                         )
 
-                CalculateAll ->
+                DocumentMsg _ DocumentCalculateAll ->
                     updateCurrent (\doc -> { doc | rows = List.map calculateRow doc.rows }) model
 
-                ClearAll ->
+                DocumentMsg _ DocumentClearAll ->
                     updateCurrent
                         (\doc ->
                             { doc
@@ -887,38 +946,20 @@ update msg =
                         )
                         model
 
-                RenameDocument n ->
-                    case n of
-                        Nothing ->
-                            if model.modal /= Nothing then
-                                ( model, Cmd.none )
+                DocumentMsg _ (DocumentRename name) ->
+                    updateCurrent
+                        (\doc ->
+                            { doc
+                                | name =
+                                    if String.isEmpty name then
+                                        Nothing
 
-                            else
-                                case model.documents of
-                                    Nothing ->
-                                        ( model, Cmd.none )
-
-                                    Just docs ->
-                                        ( { model
-                                            | modal =
-                                                Just <|
-                                                    ModalRename <|
-                                                        Maybe.withDefault ""
-                                                            (Zipper.selected docs).document.metadata.name
-                                          }
-                                        , Cmd.none
-                                        )
-
-                        Just name ->
-                            updateCurrent
-                                (\doc ->
-                                    let
-                                        meta =
-                                            doc.metadata
-                                    in
-                                    { doc | metadata = { meta | name = Just name } }
-                                )
-                                { model | modal = Nothing }
+                                    else
+                                        Just name
+                                , modals = List.drop 1 doc.modals
+                            }
+                        )
+                        model
 
                 Resized size ->
                     let
@@ -927,46 +968,58 @@ update msg =
                     in
                     ( { model | size = size, context = { context_ | deviceClass = (Element.classifyDevice size).class } }, Cmd.none )
 
-                DismissModal ->
-                    ( { model | modal = Nothing }, Cmd.none )
-
-                SetModal m ->
-                    ( { model | modal = Just m }, Cmd.none )
-
                 ToggleMenu openMenu ->
                     ( { model | openMenu = openMenu }, Cmd.none )
 
                 ToggleShowPendingActions showPendingActions ->
                     ( { model | showPendingActions = showPendingActions }, Cmd.none )
 
-                OpenFile ->
-                    ( model, File.Select.file [ "text/plain", ".txt" ] SelectedFileForOpen )
+                DocumentOpen ->
+                    ( model, File.Select.file [ "text/plain", ".txt" ] DocumentOpenSelected )
 
-                SaveFile ->
+                DocumentMsg _ (DocumentPushModal modal) ->
+                    updateCurrent (\document -> { document | modals = modal :: document.modals }) model
+
+                DocumentMsg _ DocumentPopModal ->
+                    updateCurrent (\document -> { document | modals = List.drop 1 document.modals }) model
+
+                DocumentMsg _ (DocumentReplaceModal modal) ->
+                    updateCurrent (\document -> { document | modals = modal :: List.drop 1 document.modals }) model
+
+                DocumentMsg _ DocumentDownload ->
                     case model.documents of
                         Nothing ->
                             ( model, Cmd.none )
 
                         Just docs ->
                             let
-                                { document } =
+                                document =
                                     Zipper.selected docs
                             in
                             -- TODO: ask the user for a name if empty
                             ( model
                             , File.Download.string
-                                (Maybe.withDefault "Untitled" document.metadata.name ++ ".txt")
+                                (Maybe.withDefault "Untitled" document.name ++ ".txt")
                                 "text/plain"
-                                (UI.Model.documentToFile document)
+                                (Document.toFile document)
                             )
 
-                SelectedFileForOpen file ->
-                    ( model, Task.perform (ReadFile (File.name file)) (File.toString file) )
+                DocumentOpenSelected file ->
+                    ( model
+                    , Task.perform
+                        (\content ->
+                            DocumentOpenContent
+                                { name = File.name file
+                                , content = content
+                                }
+                        )
+                        (File.toString file)
+                    )
 
-                ReadFile name file ->
+                DocumentOpenContent { name, content } ->
                     let
                         { errors, document } =
-                            UI.Model.documentFromFile
+                            Document.fromFile
                                 (Just <|
                                     if String.endsWith ".txt" name then
                                         String.dropRight 4 name
@@ -974,7 +1027,7 @@ update msg =
                                     else
                                         name
                                 )
-                                file
+                                content
                     in
                     addDocument model document
 
@@ -985,7 +1038,7 @@ update msg =
                     in
                     ( { model | context = { context | language = language } }, Cmd.none )
 
-                ExpandIntervals expandIntervals ->
+                ToggleExpandIntervals expandIntervals ->
                     let
                         context =
                             model.context
@@ -993,12 +1046,17 @@ update msg =
                     ( { model | context = { context | expandIntervals = expandIntervals } }, Cmd.none )
 
                 GoogleAuth ->
-                    ( { model | modal = Nothing }, Google.startAuthenticationFlow model.rootUrl )
+                    ( model, UI.Ports.openWindow <| Google.authenticationFlowUrl model.rootUrl )
 
-                GoogleSave ->
-                    googleSave model
+                DocumentMsg docId DocumentGoogleSave ->
+                    case Maybe.andThen (Zipper.find (\{ id } -> id == docId)) model.documents of
+                        Just document ->
+                            googleSave model document
 
-                GotGoogleFileIdFor docId res ->
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                DocumentMsg docId (DocumentGoogleId res) ->
                     case res of
                         Ok googleId ->
                             let
@@ -1025,27 +1083,14 @@ update msg =
                                 documents_ =
                                     Maybe.map
                                         (Zipper.map
-                                            (\_ ({ id } as doc) ->
+                                            (\_ ({ id } as document) ->
                                                 if id == docId then
-                                                    let
-                                                        document =
-                                                            doc.document
-
-                                                        metadata =
-                                                            doc.document.metadata
-                                                    in
-                                                    { doc
-                                                        | document =
-                                                            { document
-                                                                | metadata =
-                                                                    { metadata
-                                                                        | googleId = Just googleId
-                                                                    }
-                                                            }
+                                                    { document
+                                                        | googleId = Just googleId
                                                     }
 
                                                 else
-                                                    doc
+                                                    document
                                             )
                                         )
                                         model.documents
@@ -1080,7 +1125,7 @@ update msg =
                                                 , documents = documents_
                                               }
                                             , Cmd.batch
-                                                [ Task.attempt (GotGoogleSaveResultFor docId)
+                                                [ Task.attempt (DocumentMsg docId << DocumentGoogleSaveResult)
                                                     (Google.uploadFile
                                                         { id = googleId
                                                         , name = data.name
@@ -1121,7 +1166,7 @@ update msg =
                             else
                                 ( { model | google = google_ }, Cmd.none )
 
-                GotGoogleSaveResultFor docId res ->
+                DocumentMsg docId (DocumentGoogleSaveResult res) ->
                     let
                         google =
                             model.google
@@ -1158,7 +1203,7 @@ update msg =
                     else
                         ( { model | google = google_ }, Cmd.none )
 
-                GotGoogleAccessToken token ->
+                GoogleGotAccessToken token ->
                     let
                         google =
                             model.google
@@ -1186,7 +1231,7 @@ update msg =
                                 |> List.map
                                     (\{ id } ->
                                         Task.attempt
-                                            (GotGoogleFileIdFor id)
+                                            (DocumentMsg id << DocumentGoogleId)
                                             (Google.generateId { accessToken = token })
                                     )
 
@@ -1195,7 +1240,7 @@ update msg =
                                 |> List.filter (\{ request } -> request == Google.WaitingAccessToken)
                                 |> List.map
                                     (\{ id, googleId, name, content } ->
-                                        Task.attempt (GotGoogleSaveResultFor id)
+                                        Task.attempt (DocumentMsg id << DocumentGoogleSaveResult)
                                             (Google.uploadFile
                                                 { id = googleId
                                                 , name = name
@@ -1214,17 +1259,26 @@ update msg =
     \model -> inner { model | openMenu = False, showPendingActions = False }
 
 
-addDocument : Model -> Document -> ( Model, Cmd Msg )
-addDocument model newDocument =
+addDocument : Model -> StoredDocument -> ( Model, Cmd Msg )
+addDocument model { name, rows, googleId } =
     let
+        toAppend =
+            { id = Document.Id model.nextId
+            , name = name
+            , rows = rows
+            , googleId = googleId
+            , modals = []
+            }
+
         documents =
             Just <|
                 case model.documents of
                     Nothing ->
-                        Zipper.singleton { id = DocumentId model.nextId, document = newDocument }
+                        Zipper.singleton toAppend
 
                     Just docs ->
-                        Zipper.append { document = newDocument, id = DocumentId model.nextId } docs
+                        docs
+                            |> Zipper.append toAppend
                             |> Zipper.allRight
     in
     ( { model
@@ -1235,94 +1289,83 @@ addDocument model newDocument =
     )
 
 
-persist : Maybe (Zipper { a | document : Document }) -> Cmd msg
+persist : Maybe (Zipper UIDocument) -> Cmd msg
 persist documents =
     documents
-        |> Maybe.map (Zipper.map (\_ { document } -> document))
-        |> Codec.encodeToValue UI.Model.documentsCodec
+        |> Maybe.map (Zipper.map (\_ -> Document.toStored))
+        |> Codec.encodeToValue Model.documentsCodec
         |> UI.Ports.persist
 
 
-googleSave : Model -> ( Model, Cmd Msg )
-googleSave model =
-    case model.documents of
-        Nothing ->
-            ( model, Cmd.none )
+googleSave : Model -> UIDocument -> ( Model, Cmd Msg )
+googleSave model document =
+    let
+        content =
+            Document.toFile document
 
-        Just docs ->
-            let
-                { document, id } =
-                    Zipper.selected docs
+        name =
+            -- TODO warn the user and ask for a name
+            Maybe.withDefault "Untitled" document.name
 
-                content =
-                    UI.Model.documentToFile document
+        data request =
+            { id = document.id
+            , name = name
+            , content = content
+            , request = request
+            }
 
-                name =
-                    -- TODO warn the user and ask for a name
-                    Maybe.withDefault "Untitled" document.metadata.name
+        google =
+            model.google
 
-                data request =
-                    { id = id
-                    , name = name
-                    , content = content
-                    , request = request
+        google_ request =
+            case document.googleId of
+                Nothing ->
+                    { google
+                        | waitingId =
+                            data request :: google.waitingId
                     }
 
-                google =
-                    model.google
-
-                google_ request =
-                    case document.metadata.googleId of
-                        Nothing ->
-                            { google
-                                | waitingId =
-                                    data request :: google.waitingId
+                Just googleId ->
+                    { google
+                        | waitingSave =
+                            { googleId = googleId
+                            , id = document.id
+                            , name = name
+                            , content = content
+                            , request = Google.mapRequest (\_ -> ()) request
                             }
+                                :: google.waitingSave
+                    }
+    in
+    case google.accessToken of
+        Missing ->
+            ( { model | google = google_ WaitingAccessToken }
+            , Cmd.none
+            )
 
-                        Just googleId ->
-                            { google
-                                | waitingSave =
-                                    { googleId = googleId
-                                    , id = id
-                                    , name = name
-                                    , content = content
-                                    , request = Google.mapRequest (\_ -> ()) request
-                                    }
-                                        :: google.waitingSave
+        Expired ->
+            ( { model | google = google_ WaitingAccessToken }
+            , Cmd.none
+            )
+
+        Present token ->
+            ( { model | google = google_ Running }
+            , case document.googleId of
+                Nothing ->
+                    Task.attempt (DocumentMsg document.id << DocumentGoogleId) <| Google.generateId { accessToken = token }
+
+                Just googleId ->
+                    Task.attempt (DocumentMsg document.id << DocumentGoogleSaveResult) <|
+                        Google.uploadFile
+                            { id = googleId
+                            , name = name
+                            , content = content
+                            , accessToken = token
                             }
-            in
-            case google.accessToken of
-                Missing ->
-                    ( { model
-                        | modal = Just ModalGoogleAuth
-                        , google = google_ WaitingAccessToken
-                      }
-                    , Cmd.none
-                    )
-
-                Expired ->
-                    ( { model | google = google_ WaitingAccessToken }
-                    , Cmd.none
-                    )
-
-                Present token ->
-                    ( { model | google = google_ Running }
-                    , case document.metadata.googleId of
-                        Nothing ->
-                            Task.attempt (GotGoogleFileIdFor id) <| Google.generateId { accessToken = token }
-
-                        Just googleId ->
-                            Task.attempt (GotGoogleSaveResultFor id) <|
-                                Google.uploadFile
-                                    { id = googleId
-                                    , name = name
-                                    , content = content
-                                    , accessToken = token
-                                    }
-                    )
+            )
 
 
-updateCurrent : (Document -> Document) -> Model -> ( Model, Cmd msg )
+updateCurrent : (UIDocument -> UIDocument) -> Model -> ( Model, Cmd msg )
 updateCurrent f model =
     case model.documents of
         Nothing ->
@@ -1333,11 +1376,8 @@ updateCurrent f model =
                 selected =
                     Zipper.selected docs
 
-                doc =
-                    f selected.document
-
                 documents =
-                    Just <| Zipper.setSelected { document = doc, id = selected.id } docs
+                    Just <| Zipper.setSelected (f selected) docs
             in
             ( { model | documents = documents }
             , persist documents
@@ -1363,5 +1403,5 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ Browser.Events.onResize (\w h -> Resized { width = w, height = h })
-        , UI.Ports.gotGoogleAccessToken GotGoogleAccessToken
+        , UI.Ports.gotGoogleAccessToken GoogleGotAccessToken
         ]

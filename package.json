@@ -31,7 +31,7 @@
     "scripts": {
         "build": "rm -rf .cache dist elm-stuff; elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js && parcel build src/index.html --public-url .",
         "buildForBenchmark": "rm -rf .cache elm-stuff dist; elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js && parcel build --no-minify src/index.html --public-url .",
-        "start": "rm -rf .cache dist elm-stuff; parcel src/dev.html",
+        "start": "parcel src/dev.html",
         "test": "elm-test"
     },
     "name": "nuplot",
@@ -49,6 +49,9 @@
                 512
             ],
             "genFavicons": true
+        },
+        "development": {
+            "disabled": true
         }
     },
     "dependencies": {
