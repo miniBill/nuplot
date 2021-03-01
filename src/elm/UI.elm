@@ -287,81 +287,114 @@ selectedDocumentId { documents } =
 toolbar : Model -> Element Msg
 toolbar ({ google, openMenu, showPendingActions } as model) =
     let
-        toolbarButton msg icon label =
+        simpleToolbarButton =
+            toolbarButton []
+
+        toolbarButton buttonAttrs msg icon label =
             Input.button
-                [ alignRight
-                , centerY
-                , padding Theme.spacing
-                , Border.rounded 999
-                , Element.mouseOver [ Background.color <| Theme.darken Theme.colors.background ]
-                , title label
-                ]
+                ([ alignRight
+                 , centerY
+                 , padding Theme.spacing
+                 , Border.rounded 999
+                 , Element.mouseOver [ Background.color <| Theme.darken Theme.colors.background ]
+                 , title label
+                 ]
+                    ++ buttonAttrs
+                )
                 { onPress = Just msg
                 , label = Element.element <| icon Theme.darkIconAttrs
                 }
 
         moreButton =
-            toolbarButton
-                (ToggleMenu <| not openMenu)
+            simpleToolbarButton (ToggleMenu <| not openMenu)
                 Icons.moreOutlined
                 { en = "Menu", it = "Menù" }
 
         pendingActions =
-            if
-                List.any (\{ request } -> request == WaitingAccessToken) google.waitingId
-                    || List.any (\{ request } -> request == WaitingAccessToken) google.waitingSave
-            then
-                [ ( { en = "Waiting for user to authenticate with Google"
+            let
+                waitingAccessTokenLabel =
+                    { en = "Waiting for user to authenticate with Google"
                     , it = "In attesa che l'utente si autentichi con Google"
                     }
-                  , Just GoogleAuth
-                  )
-                ]
-
-            else
-                List.map
-                    (\{ name } ->
-                        ( { en = "Waiting for an id " ++ name
-                          , it = "In attesa di id " ++ name
-                          }
-                        , Nothing
-                        )
-                    )
-                    google.waitingId
-                    ++ List.map
-                        (\{ name } ->
-                            ( { en = "Waiting for save " ++ name
-                              , it = "In attesa di salvataggio " ++ name
-                              }
+            in
+            let
+                viewGoogleAction { en, it } { name, request } =
+                    case request of
+                        Google.WaitingAccessToken ->
+                            ( text
+                                { en = name ++ ": " ++ waitingAccessTokenLabel.en
+                                , it = name ++ ": " ++ waitingAccessTokenLabel.it
+                                }
                             , Nothing
                             )
-                        )
-                        google.waitingSave
+
+                        Running ->
+                            ( text
+                                { en = name ++ ": " ++ en
+                                , it = name ++ ": " ++ it
+                                }
+                            , Nothing
+                            )
+
+                        Errored error ->
+                            ( Element.paragraph []
+                                [ text
+                                    { en =
+                                        name
+                                            ++ ": "
+                                            ++ (case error of
+                                                    Google.UnexpectedResponse r ->
+                                                        "unexpected response " ++ r
+
+                                                    _ ->
+                                                        Debug.toString error
+                                               )
+                                    , it =
+                                        name
+                                            ++ ": "
+                                            ++ (case error of
+                                                    Google.UnexpectedResponse r ->
+                                                        "risposta inattesa " ++ r
+
+                                                    _ ->
+                                                        Debug.toString error
+                                               )
+                                    }
+                                ]
+                            , Nothing
+                            )
+
+                        Succeded _ ->
+                            ( text
+                                { en = name ++ ": done"
+                                , it = name ++ ": fatto"
+                                }
+                            , Nothing
+                            )
+            in
+            List.map (viewGoogleAction { en = "Waiting for an id", it = "In attesa di id" }) google.waitingId
+                ++ List.map (viewGoogleAction { en = "Waiting for save", it = "In attesa di salvataggio" }) google.waitingSave
 
         pendingButton =
             if List.isEmpty pendingActions then
-                let
-                    _ =
-                        Debug.log "no pending" {}
-                in
                 Element.none
 
-            else
-                let
-                    _ =
-                        Debug.log "pending" pendingActions
-                in
-                toolbarButton
+            else if List.any (\( _, msg ) -> msg /= Nothing) pendingActions then
+                toolbarButton [ Background.color Theme.colors.warning, Border.width 1 ]
                     (ToggleShowPendingActions <| not showPendingActions)
                     Icons.cloudSyncOutlined
-                    { en = "Pending actions", it = "Azioni pendenti" }
+                    { en = "Pending actions", it = "Azioni in coda" }
+
+            else
+                simpleToolbarButton (ToggleShowPendingActions <| not showPendingActions)
+                    Icons.cloudSyncOutlined
+                    { en = "Pending actions", it = "Azioni in coda" }
 
         runButton =
             selectedDocumentId model
                 |> Maybe.map
                     (\id ->
-                        toolbarButton
-                            (DocumentMsg id DocumentCalculateAll)
+                        simpleToolbarButton (DocumentMsg id DocumentCalculateAll)
                             Icons.playSquareOutlined
                             { en = "Run document", it = "Esegui documento" }
                     )
@@ -370,8 +403,7 @@ toolbar ({ google, openMenu, showPendingActions } as model) =
             selectedDocumentId model
                 |> Maybe.map
                     (\id ->
-                        toolbarButton
-                            (DocumentMsg id DocumentClearAll)
+                        simpleToolbarButton (DocumentMsg id DocumentClearAll)
                             Icons.stopOutlined
                             { en = "Clear document", it = "Pulisci documento" }
                     )
@@ -398,17 +430,17 @@ toolbar ({ google, openMenu, showPendingActions } as model) =
             ]
 
 
-viewPendingActions : List ( L10N String, Maybe msg ) -> Element msg
+viewPendingActions : List ( Element msg, Maybe msg ) -> Element msg
 viewPendingActions actions =
     let
-        viewPendingAction ( txt, msg ) =
+        viewPendingAction ( label, msg ) =
             case msg of
                 Nothing ->
-                    text txt
+                    label
 
                 Just m ->
                     Theme.row [ width fill ]
-                        [ text txt
+                        [ label
                         , Input.button
                             [ alignRight
                             , Element.htmlAttribute <| Html.Attributes.title "Do it"

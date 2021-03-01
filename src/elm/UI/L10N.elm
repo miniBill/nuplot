@@ -1,4 +1,4 @@
-module UI.L10N exposing (L10N, Language(..), invariant, map, text, title)
+module UI.L10N exposing (L10N, Language(..), invariant, localize, map, text, title)
 
 import Element.WithContext as Element exposing (Element)
 import Html.Attributes

@@ -87,6 +87,7 @@ colors :
     , modalTransparentBackground : Color
     , selectedDocument : Color
     , unselectedDocument : Color
+    , warning : Color
     }
 colors =
     { background = rgb 0.9 0.9 0.9
@@ -96,6 +97,7 @@ colors =
     , modalTransparentBackground = rgba 0.5 0.5 0.5 0.5
     , selectedDocument = rgb255 0xFF 0xD7 0
     , unselectedDocument = rgb 0.8 0.8 0.8
+    , warning = rgb 0.8 0.8 0
     }
 
 
