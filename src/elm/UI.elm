@@ -347,7 +347,8 @@ toolbar ({ google, openMenu, showPendingActions } as model) =
                                                         "unexpected response " ++ r
 
                                                     _ ->
-                                                        Debug.toString error
+                                                        -- Debug.toString error
+                                                        "Unexpected error"
                                                )
                                     , it =
                                         name
@@ -357,7 +358,8 @@ toolbar ({ google, openMenu, showPendingActions } as model) =
                                                         "risposta inattesa " ++ r
 
                                                     _ ->
-                                                        Debug.toString error
+                                                        -- Debug.toString error
+                                                        "Unexpected error"
                                                )
                                     }
                                 ]

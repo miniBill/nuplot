@@ -14,7 +14,6 @@ type Plane
 asPlane : Expression -> Maybe Plane
 asPlane e =
     Poly.asPoly e
-        |> Debug.log "asPoly"
         |> Maybe.andThen
             (\poly ->
                 if
@@ -45,7 +44,6 @@ asPlane e =
                             , known = get []
                             }
             )
-        |> Debug.log "asPlane"
 
 
 toGlsl : String -> Plane -> String

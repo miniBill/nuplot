@@ -215,7 +215,7 @@ jsonResolver decoder =
                 NetworkError_ ->
                     Err NetworkError
 
-                BadStatus_ { statusCode } _ ->
+                BadStatus_ { statusCode } body ->
                     case statusCode of
                         401 ->
                             Err Unauthorized
@@ -224,9 +224,9 @@ jsonResolver decoder =
                             Err FileNotFound
 
                         _ ->
-                            Err (UnexpectedResponse <| Debug.toString response)
+                            Err (UnexpectedResponse <| "BadStatus " ++ String.fromInt statusCode ++ ", body: " ++ body)
 
                 GoodStatus_ _ body ->
                     JD.decodeString decoder body
-                        |> Result.mapError (\e -> UnexpectedResponse <| Debug.toString e)
+                        |> Result.mapError (\e -> UnexpectedResponse <| JD.errorToString e)
         )
