@@ -3,7 +3,7 @@ module UI.Glsl.Plane exposing (Plane, asPlane, toGlsl)
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
 import Maybe
-import UI.Glsl.Code exposing (floatToGlsl)
+import UI.Glsl.Code exposing (floatToGlsl, threshold)
 import UI.Glsl.Poly as Poly
 
 
@@ -60,6 +60,6 @@ toGlsl suffix (Plane { x, y, z, known }) =
         vec3 coeffs = vec3(""" ++ floatToGlsl x ++ "," ++ floatToGlsl y ++ "," ++ floatToGlsl z ++ """);
         float t = -(""" ++ floatToGlsl known ++ """ + dot(coeffs, o)) / dot(coeffs, d);
         found = o + t * d;
-        return t > 0.000001 * max_distance;
+        return t > """ ++ threshold ++ """;
     }
     """

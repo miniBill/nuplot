@@ -1,4 +1,4 @@
-module UI.Glsl.Code exposing (constantToGlsl, deindent, floatToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
+module UI.Glsl.Code exposing (constantToGlsl, deindent, floatToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
 
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
@@ -1535,13 +1535,18 @@ raytrace suffixes =
     """
 
 
+threshold : String
+threshold =
+    "0.000001 * max_distance"
+
+
 suffixToBisect : String -> String
 suffixToBisect suffix =
     """
             bool bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
                 vec3 from = o;
                 vec3 to = o + max_distance * d;
-                float ithreshold = 0.000001 * max_distance;
+                float ithreshold = """ ++ threshold ++ """;
                 int depth = 0;
                 int choices = 0;
                 for(int it = 0; it < MAX_ITERATIONS; it++) {

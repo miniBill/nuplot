@@ -3,7 +3,7 @@ module UI.Glsl.Sphere exposing (Sphere, asSphere, toGlsl)
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
 import List
-import UI.Glsl.Code exposing (floatToGlsl)
+import UI.Glsl.Code exposing (floatToGlsl, threshold)
 import UI.Glsl.Poly as Poly exposing (Poly)
 
 
@@ -100,7 +100,7 @@ toGlsl suffix (Sphere { center, radius }) =
         if(delta < 0.0)
             return false;
         float x = -b - sqrt(delta);
-        if(x < 0.000001 * max_distance)
+        if(x < """ ++ threshold ++ """)
             return false;
         found = o + x * d;
         return true;
