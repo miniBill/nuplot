@@ -1,4 +1,4 @@
-module UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, thetaDelta, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
+module UI.Glsl.Code exposing (constantToGlsl, deindent, floatToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
 
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
@@ -1443,18 +1443,67 @@ toSrc3D expandIntervals suffix e =
 
 main3D : List String -> String
 main3D suffixes =
-    let
-        head =
-            String.join "\n" <| List.map suffixToBisect suffixes ++ [ raytrace ]
+    deindent 12 <|
+        raytrace suffixes
+            ++ """
+            vec4 pixel3 () {
+                float eye_dist = 2.0 * u_viewportWidth;
+                vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
+                vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
+                vec2 uv_normalized = 1.0 / u_canvasHeight * uv_centered;
 
+                float t = u_theta + 0.58;
+                float p = -2.0 * u_phi;
+                vec3 eye = eye_dist * normalize(vec3(
+                    cos(t) * sin(p),
+                    cos(t) * -cos(p),
+                    sin(t)
+                ));
+
+                vec3 target = vec3(0);
+                vec3 to_target = normalize(target-eye);
+                vec3 across = normalize(cross(to_target, vec3(0,0,1)));
+                vec3 up = normalize(cross(across, to_target));
+
+                vec3 canvas_center = eye + to_target;
+                vec3 canvas_point = canvas_center + uv_normalized.x * across + uv_normalized.y * up;
+
+                vec3 ray_direction = normalize(canvas_point - eye);
+                float max_distance = 40.0 * eye_dist;
+                return raytrace(canvas_point, ray_direction, max_distance);
+            }
+        """
+
+
+raytrace : List String -> String
+raytrace suffixes =
+    let
         colorCoeff =
             floatToGlsl (1.19 - 0.2 * toFloat (List.length suffixes))
 
         innerTrace =
             String.join "\n" (List.indexedMap suffixToRay suffixes)
 
-        raytrace =
+        innerLightTrace =
+            String.join "\n" (List.map suffixToRayLight suffixes)
+
+        suffixToRay i suffix =
             """
+                if(bisect""" ++ suffix ++ """(o, d, max_distance, f) && length(f - o) < curr_distance) {
+                    found_index = """ ++ String.fromInt i ++ """;
+                    found = f;
+                    curr_distance = length(found - o);
+                }
+            """
+
+        suffixToRayLight suffix =
+            """
+                    else if(bisect""" ++ suffix ++ """(offseted, light_direction, light_distance, f)) {
+                        in_light = false;
+                    }
+            """
+    in
+    """
             vec4 raytrace(vec3 o, vec3 d, float max_distance) {
                 vec3 found = o + 2.0 * max_distance * d;
                 float curr_distance = max_distance;
@@ -1483,29 +1532,12 @@ main3D suffixes =
                     return vec4(0.0, 0.0, 0.0, 1.0);
                 }
             }
-            """
+    """
 
-        innerLightTrace =
-            String.join "\n" (List.map suffixToRayLight suffixes)
 
-        suffixToRay i suffix =
-            """
-                if(bisect""" ++ suffix ++ """(o, d, max_distance, f) && length(f - o) < curr_distance) {
-                    found_index = """ ++ String.fromInt i ++ """;
-                    found = f;
-                    curr_distance = length(found - o);
-                }
-            """
-
-        suffixToRayLight suffix =
-            """
-                    else if(bisect""" ++ suffix ++ """(offseted, light_direction, light_distance, f)) {
-                        in_light = false;
-                    }
-            """
-
-        suffixToBisect suffix =
-            """
+suffixToBisect : String -> String
+suffixToBisect suffix =
+    """
             bool bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
                 vec3 from = o;
                 vec3 to = o + max_distance * d;
@@ -1558,38 +1590,7 @@ main3D suffixes =
                 }
                 return false;
             }
-            """
-    in
-    deindent 12 <|
-        head
-            ++ """
-            vec4 pixel3 () {
-                float eye_dist = 2.0 * u_viewportWidth;
-                vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
-                vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
-                vec2 uv_normalized = 1.0 / u_canvasHeight * uv_centered;
-
-                float t = u_theta + 0.58;
-                float p = -2.0 * u_phi;
-                vec3 eye = eye_dist * normalize(vec3(
-                    cos(t) * sin(p),
-                    cos(t) * -cos(p),
-                    sin(t)
-                ));
-
-                vec3 target = vec3(0);
-                vec3 to_target = normalize(target-eye);
-                vec3 across = normalize(cross(to_target, vec3(0,0,1)));
-                vec3 up = normalize(cross(across, to_target));
-
-                vec3 canvas_center = eye + to_target;
-                vec3 canvas_point = canvas_center + uv_normalized.x * across + uv_normalized.y * up;
-
-                vec3 ray_direction = normalize(canvas_point - eye);
-                float max_distance = 40.0 * eye_dist;
-                return raytrace(canvas_point, ray_direction, max_distance);
-            }
-        """
+    """
 
 
 deindent : Int -> String -> String

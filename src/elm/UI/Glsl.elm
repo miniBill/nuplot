@@ -1,14 +1,16 @@
 module UI.Glsl exposing (getGlsl)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..))
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..))
 import Expression.Graph exposing (Graph(..))
 import Expression.Utils exposing (minus, plus, square)
+import List
 import List.Extra as List
 import List.MyExtra as List
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
+import UI.Glsl.Sphere exposing (isSphereEquation)
 
 
 getGlsl : Bool -> Graph -> String
@@ -69,7 +71,13 @@ getGlsl expandIntervals graph =
 
                 Implicit3D e ->
                     { expr = e
-                    , srcExpr = "BORK" ++ toSrc3D expandIntervals prefix e
+                    , srcExpr =
+                        case isSphereEquation e of
+                            Just { center, radius } ->
+                                UI.Glsl.Sphere.toGlsl prefix center radius
+
+                            Nothing ->
+                                toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
                     , interval = IntervalAndStraight
                     , thetaDelta = True
                     , pixel2D = []
@@ -113,7 +121,11 @@ getGlsl expandIntervals graph =
                 |> List.map (requirementToGlsl interval)
                 |> String.join "\n"
     in
-    thetaDeltaCode ++ reqs ++ "\n/* Expression */" ++ deindent 4 srcExpr ++ mainGlsl pixel2D pixel3D
+    thetaDeltaCode
+        ++ reqs
+        ++ "\n/* Expression */\n"
+        ++ deindent 4 srcExpr
+        ++ mainGlsl pixel2D pixel3D
 
 
 transitiveClosure : List Requirement -> List Requirement
