@@ -10,7 +10,8 @@ import List.MyExtra as List
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
-import UI.Glsl.Sphere exposing (isSphereEquation)
+import UI.Glsl.Plane as Plane
+import UI.Glsl.Sphere as Sphere
 
 
 getGlsl : Bool -> Graph -> String
@@ -72,12 +73,17 @@ getGlsl expandIntervals graph =
                 Implicit3D e ->
                     { expr = e
                     , srcExpr =
-                        case isSphereEquation e of
-                            Just { center, radius } ->
-                                UI.Glsl.Sphere.toGlsl prefix center radius
+                        case Sphere.asSphere e of
+                            Just sphere ->
+                                Sphere.toGlsl prefix sphere
 
                             Nothing ->
-                                toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
+                                case Plane.asPlane e of
+                                    Just plane ->
+                                        Plane.toGlsl prefix plane
+
+                                    Nothing ->
+                                        toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
                     , interval = IntervalAndStraight
                     , thetaDelta = True
                     , pixel2D = []

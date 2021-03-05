@@ -1,3 +1,5 @@
+* Add all the graph types to the default example
+* Better onboarding
 * Save on Google
 * Fix parse of `(x-α)(x-β)(x-γ)`
 * Save to folder

@@ -1,158 +1,94 @@
-module UI.Glsl.Sphere exposing (isSphereEquation, toGlsl)
+module UI.Glsl.Sphere exposing (Sphere, asSphere, toGlsl)
 
+import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
+import List
 import UI.Glsl.Code exposing (floatToGlsl)
+import UI.Glsl.Poly as Poly exposing (Poly)
 
 
-type Addend
-    = Known Float
-    | Center String Float
-    | Unknown
+type Sphere
+    = Sphere
+        { center : { x : Float, y : Float, z : Float }
+        , radius : Float
+        }
 
 
-isSphereEquation : Expression -> Maybe { center : { x : Float, y : Float, z : Float }, radius : Float }
-isSphereEquation e =
-    let
-        toCenter v c =
-            if v == "x" || v == "y" || v == "z" then
-                Just <| Center v c
-
-            else
-                Nothing
-
-        asKnown c =
-            case c of
-                UnaryOperation Negate (Integer i) ->
-                    Just (toFloat -i)
-
-                UnaryOperation Negate (Float f) ->
-                    Just -f
-
-                Integer i ->
-                    Just (toFloat i)
-
-                Float f ->
-                    Just f
-
-                _ ->
+asSphere : Expression -> Maybe Sphere
+asSphere e =
+    e
+        |> Poly.asPoly
+        |> Maybe.andThen reduce
+        |> Maybe.andThen
+            (\poly ->
+                if
+                    List.any
+                        (\p ->
+                            not <|
+                                List.member p
+                                    [ []
+                                    , [ "x" ]
+                                    , [ "y" ]
+                                    , [ "z" ]
+                                    , [ "x", "x" ]
+                                    , [ "y", "y" ]
+                                    , [ "z", "z" ]
+                                    ]
+                        )
+                        (Dict.keys poly)
+                then
                     Nothing
 
-        findVariable =
-            List.filterMap
-                (\t ->
-                    case t of
-                        Variable v ->
-                            Just v
-
-                        _ ->
-                            Nothing
-                )
-
-        extractAddends c =
-            case c of
-                AssociativeOperation Addition l m r ->
-                    List.concatMap extractAddends <| l :: m :: r
-
-                UnaryOperation Negate (Float f) ->
-                    [ Known f ]
-
-                BinaryOperation Power (Variable v) (Integer 2) ->
-                    [ Maybe.withDefault Unknown <| toCenter v 0 ]
-
-                BinaryOperation Power (AssociativeOperation Addition l m r) (Integer 2) ->
+                else
+                    -- (x-a)²+(y-b)²+(z-c)²=r²
+                    -- x²-2ax+a² + y²-2by+b² + z²-2cz+c² - r² = 0
+                    -- k = a² + b² + c² - r²
+                    -- r² = a²+b²+c²-k
                     let
-                        list =
-                            l :: m :: r
+                        getCenter v =
+                            case ( Dict.get [ v, v ] poly, Maybe.withDefault 0 <| Dict.get [ v ] poly ) of
+                                ( Just s, l ) ->
+                                    if s /= 1 then
+                                        Nothing
 
-                        knowns =
-                            List.filterMap asKnown list
-                    in
-                    if List.length knowns /= List.length r + 1 then
-                        [ Unknown ]
+                                    else
+                                        Just <| -l / 2
 
-                    else
-                        case findVariable list of
-                            [ v ] ->
-                                [ Center v -(List.sum knowns) ]
-
-                            _ ->
-                                [ Unknown ]
-
-                Integer i ->
-                    [ Known <| toFloat i ]
-
-                Float f ->
-                    [ Known f ]
-
-                _ ->
-                    case asKnown c of
-                        Just f ->
-                            [ Known f ]
-
-                        Nothing ->
-                            [ Unknown ]
-
-        addends =
-            extractAddends e
-
-        radius =
-            addends
-                |> List.filterMap
-                    (\s ->
-                        case s of
-                            Known f ->
-                                Just -f
-
-                            _ ->
-                                Nothing
-                    )
-                |> List.sum
-
-        getCenter v =
-            addends
-                |> List.filterMap
-                    (\s ->
-                        case s of
-                            Center w k ->
-                                if v == w then
-                                    Just k
-
-                                else
+                                _ ->
                                     Nothing
-
-                            _ ->
-                                Nothing
-                    )
-                |> (\l ->
-                        case l of
-                            [ k ] ->
-                                Just k
-
-                            _ ->
-                                Nothing
-                   )
-
-        centerX =
-            getCenter "x"
-
-        centerY =
-            getCenter "y"
-
-        centerZ =
-            getCenter "z"
-    in
-    if List.any ((==) Unknown) addends then
-        Nothing
-
-    else
-        Maybe.map3 (\cx cy cz -> { center = { x = cx, y = cy, z = cz }, radius = sqrt <| max 0 radius })
-            centerX
-            centerY
-            centerZ
+                    in
+                    Maybe.map3
+                        (\x y z ->
+                            Sphere
+                                { center =
+                                    { x = x
+                                    , y = y
+                                    , z = z
+                                    }
+                                , radius = sqrt <| max 0 <| x * x + y * y + z * z - Maybe.withDefault 0 (Dict.get [] poly)
+                                }
+                        )
+                        (getCenter "x")
+                        (getCenter "y")
+                        (getCenter "z")
+            )
 
 
-toGlsl : String -> { x : Float, y : Float, z : Float } -> Float -> String
-toGlsl suffix center radius =
+reduce : Poly -> Maybe Poly
+reduce poly =
+    Dict.get [ "x", "x" ] poly
+        |> Maybe.andThen
+            (\c ->
+                if c == 0 then
+                    Nothing
+
+                else
+                    Just <| Dict.map (\_ v -> v / c) poly
+            )
+
+
+toGlsl : String -> Sphere -> String
+toGlsl suffix (Sphere { center, radius }) =
     """
     bool bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
         vec3 center = vec3(""" ++ floatToGlsl center.x ++ """,""" ++ floatToGlsl center.y ++ """,""" ++ floatToGlsl center.z ++ """);
