@@ -553,13 +553,15 @@ dropdown model =
                             { en = "Save", it = "Salva" }
                     )
             , Just <| Element.with .expandIntervals expandIntervalsButton
-            , sid
-                |> Maybe.map
-                    (\id ->
-                        simpleBtn (DocumentMsg id DocumentGoogleSave)
-                            Icons.uploadOutlined
-                            { en = "Save on Google Drive", it = "Salva su Google Drive" }
-                    )
+
+            {- , sid
+               |> Maybe.map
+                   (\id ->
+                       simpleBtn (DocumentMsg id DocumentGoogleSave)
+                           Icons.uploadOutlined
+                           { en = "Save on Google Drive", it = "Salva su Google Drive" }
+                   )
+            -}
             , Just <| languagesRow
             ]
     in
