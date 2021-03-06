@@ -1499,7 +1499,7 @@ raytrace suffixes =
         suffixToRayLight suffix =
             """
                     else if(bisect""" ++ suffix ++ """(offseted, light_direction, light_distance, f)) {
-                        in_light = false;
+                        light_coeff = 0.2;
                     }
             """
     in
@@ -1516,15 +1516,14 @@ raytrace suffixes =
 
                     vec3 light_direction = normalize(vec3(-0.3, 0.0, 1.0));
                     float light_distance = max_distance;
-                    bool in_light = true;
+                    float light_coeff = 0.45;
                     vec3 offseted = found + 0.0001 * max_distance * normalize(o - found);
                     if(0 == 1) { }
                     """ ++ innerLightTrace ++ """
-                    float l = in_light ? 0.45 : 0.2;
 
                     vec3 px = mix(
-                        hl2rgb(hue_based_on_index, l),
-                        hl2rgb(found.z * 0.5, l),
+                        hl2rgb(hue_based_on_index, light_coeff),
+                        hl2rgb(found.z * 0.5, light_coeff),
                         max(0.2, """ ++ colorCoeff ++ """)
                     );
                     return vec4(px, 1.0);

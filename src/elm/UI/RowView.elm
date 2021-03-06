@@ -279,10 +279,10 @@ viewSolutionTree : Int -> SolutionTree -> List (Element msg)
 viewSolutionTree pageWidth tree =
     case tree of
         SolutionStep e c ->
-            Theme.row []
-                [ viewLaTeX pageWidth (Expression.toTeXString e)
-                , Expression.toDebugTree Debug.todo e
-                ]
+            --Theme.row [] [
+            viewLaTeX pageWidth (Expression.toTeXString e)
+                --, Expression.toDebugTree Debug.todo e
+                --]
                 :: viewSolutionTree pageWidth c
 
         SolutionForall v ->
@@ -375,10 +375,10 @@ outputBlock blockId ({ width } as size) output =
                 |> viewValue blockId { wdiv = 1, hdiv = 1 }
                 |> Tuple.mapFirst
                     (\vv ->
-                        Theme.row []
-                            [ vv
-                            , Expression.toDebugTree Debug.todo e
-                            ]
+                        --Theme.row [] [
+                        vv
+                     --, Expression.toDebugTree Debug.todo e
+                     --]
                     )
 
         asExpression v =
