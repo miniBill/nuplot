@@ -36,10 +36,14 @@ export class KaTeXElement extends HTMLElement {
       "sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X";
     link.crossOrigin = "anonymous";
 
+    var style = document.createElement("style");
+    style.innerHTML = ".katex { padding: 0.5em }";
+
     // attach the created elements to the shadow DOM
     shadowRoow.append(this.wrapper);
 
     shadowRoow.append(link);
+    shadowRoow.append(style);
   }
 
   attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
