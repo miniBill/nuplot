@@ -1,8 +1,9 @@
 module UI.Glsl.Polynomial exposing (asPolynomial, getDegree)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), UnaryOperation(..))
 import Expression.Polynomial exposing (Exponents)
+import Expression.Utils exposing (minus)
 import List
 import Maybe.Extra as Maybe
 
@@ -18,11 +19,16 @@ getDegree poly =
 
 asPolynomial : List String -> Expression -> Maybe (Dict Exponents Float)
 asPolynomial vars e =
-    e
-        |> Expression.Polynomial.asPolynomial vars
-        |> Maybe.map Dict.toList
-        |> Maybe.andThen (Maybe.traverse (\( k, v ) -> Maybe.map (Tuple.pair k) (toFloat v)))
-        |> Maybe.map Dict.fromList
+    case e of
+        RelationOperation Equals l r ->
+            asPolynomial vars (minus l r)
+
+        _ ->
+            e
+                |> Expression.Polynomial.asPolynomial vars
+                |> Maybe.map Dict.toList
+                |> Maybe.andThen (Maybe.traverse (\( k, v ) -> Maybe.map (Tuple.pair k) (toFloat v)))
+                |> Maybe.map Dict.fromList
 
 
 toFloat : Expression -> Maybe Float
