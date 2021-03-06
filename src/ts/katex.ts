@@ -17,7 +17,6 @@ export class KaTeXElement extends HTMLElement {
   wrapper: HTMLElement;
 
   src = "";
-  containerWidth = 1024;
 
   constructor() {
     super();
@@ -55,8 +54,7 @@ export class KaTeXElement extends HTMLElement {
         break;
       case "container-width":
         if (!newValue) return;
-        this.containerWidth = +newValue;
-        this.render();
+        this.wrapper.style.maxWidth = newValue + "px";
         break;
     }
   }
@@ -69,7 +67,6 @@ export class KaTeXElement extends HTMLElement {
       requestAnimationFrame(this.render.bind(this));
       return;
     }
-    this.wrapper.style.maxWidth = this.containerWidth + "px";
     requestAnimationFrame(() => {
       try {
         window.katex.render(this.src, this.wrapper);
