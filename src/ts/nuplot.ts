@@ -353,7 +353,8 @@ export class NuPlot extends HTMLElement {
           !(otherId in this.originalPointers) ||
           !(otherId in this.pointers)
         ) {
-          console.info("Not found???");
+          delete this.pointers[otherId];
+          // Something gone wrong. It's ok.
           return;
         }
         const otherOriginal = this.originalPointers[otherId];
