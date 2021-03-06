@@ -1,10 +1,10 @@
 module UI.Glsl.Sphere exposing (Sphere, asSphere, toGlsl)
 
-import Dict
+import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
-import List
+import Expression.Polynomial exposing (Exponents)
 import UI.Glsl.Code exposing (floatToGlsl, threshold)
-import UI.Glsl.Poly as Poly exposing (Poly)
+import UI.Glsl.Polynomial as Polynomial
 
 
 type Sphere
@@ -17,26 +17,11 @@ type Sphere
 asSphere : Expression -> Maybe Sphere
 asSphere e =
     e
-        |> Poly.asPoly
+        |> Polynomial.asPolynomial [ "x", "y", "z" ]
         |> Maybe.andThen reduce
         |> Maybe.andThen
             (\poly ->
-                if
-                    List.any
-                        (\p ->
-                            not <|
-                                List.member p
-                                    [ []
-                                    , [ "x" ]
-                                    , [ "y" ]
-                                    , [ "z" ]
-                                    , [ "x", "x" ]
-                                    , [ "y", "y" ]
-                                    , [ "z", "z" ]
-                                    ]
-                        )
-                        (Dict.keys poly)
-                then
+                if Polynomial.getDegree poly /= 2 then
                     Nothing
 
                 else
@@ -46,7 +31,7 @@ asSphere e =
                     -- r² = a²+b²+c²-k
                     let
                         getCenter v =
-                            case ( Dict.get [ v, v ] poly, Maybe.withDefault 0 <| Dict.get [ v ] poly ) of
+                            case ( Dict.get [ ( v, 2 ) ] poly, Maybe.withDefault 0 <| Dict.get [ ( v, 1 ) ] poly ) of
                                 ( Just s, l ) ->
                                     if s /= 1 then
                                         Nothing
@@ -74,9 +59,9 @@ asSphere e =
             )
 
 
-reduce : Poly -> Maybe Poly
+reduce : Dict Exponents Float -> Maybe (Dict Exponents Float)
 reduce poly =
-    Dict.get [ "x", "x" ] poly
+    Dict.get [ ( "x", 2 ) ] poly
         |> Maybe.andThen
             (\c ->
                 if c == 0 then

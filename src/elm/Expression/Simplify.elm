@@ -19,7 +19,8 @@ import Expression
         , visit
         )
 import Expression.Derivative
-import Expression.Utils exposing (asPoly, by, byShort, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
+import Expression.Polynomial exposing (asPolynomial)
+import Expression.Utils exposing (by, byShort, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
 import Fraction
 import List
 import List.Extra as List
@@ -157,6 +158,12 @@ stepSimplifyNegate context expr =
             else
                 negate_ expr
 
+        AssociativeOperation Multiplication (Integer i) m r ->
+            by <| [ Integer -i, m ] ++ r
+
+        AssociativeOperation Addition l m r ->
+            plus <| List.map negate_ (l :: m :: r)
+
         _ ->
             negate_ expr
 
@@ -270,51 +277,55 @@ stepSimplifySqrt : List Expression -> Expression
 stepSimplifySqrt sargs =
     case sargs of
         [ Integer j ] ->
-            let
-                a =
-                    abs j
-
-                r =
-                    truncate (sqrt <| toFloat a)
-
-                s =
-                    if r * r == a then
-                        Integer r
-
-                    else
-                        let
-                            ( outer, inner ) =
-                                abs a
-                                    |> factor
-                                    |> List.foldl
-                                        (\( f, e ) ( o, i ) ->
-                                            ( o * f ^ (e // 2)
-                                            , i * f ^ modBy 2 e
-                                            )
-                                        )
-                                        ( 1, 1 )
-                        in
-                        case ( outer, inner ) of
-                            ( _, 1 ) ->
-                                Integer outer
-
-                            ( 1, _ ) ->
-                                Apply (KnownFunction Sqrt) [ Integer inner ]
-
-                            _ ->
-                                by [ Integer outer, Apply (KnownFunction Sqrt) [ Integer inner ] ]
-            in
-            if j < 0 then
-                by [ Variable "i", s ]
-
-            else
-                s
+            sqrtInteger j
 
         [ BinaryOperation Division n d ] ->
             div (sqrt_ n) (sqrt_ d)
 
         _ ->
             Apply (KnownFunction Sqrt) sargs
+
+
+sqrtInteger : Int -> Expression
+sqrtInteger j =
+    let
+        a =
+            abs j
+
+        r =
+            truncate (sqrt <| toFloat a)
+
+        s =
+            if r * r == a then
+                Integer r
+
+            else
+                let
+                    ( outer, inner ) =
+                        factor a
+                            |> List.foldl
+                                (\( f, e ) ( o, i ) ->
+                                    ( o * f ^ (e // 2)
+                                    , i * f ^ modBy 2 e
+                                    )
+                                )
+                                ( 1, 1 )
+                in
+                case ( outer, inner ) of
+                    ( _, 1 ) ->
+                        Integer outer
+
+                    ( 1, _ ) ->
+                        Apply (KnownFunction Sqrt) [ Integer inner ]
+
+                    _ ->
+                        by [ Integer outer, Apply (KnownFunction Sqrt) [ Integer inner ] ]
+    in
+    if j < 0 then
+        by [ Variable "i", s ]
+
+    else
+        s
 
 
 stepSimplifyRe : List Expression -> Expression
@@ -769,12 +780,18 @@ stepSimplifyAddition left right =
                     if Expression.equals nl right then
                         Just zero
 
+                    else if Expression.equals left right then
+                        Just <| by [ two, right ]
+
                     else
                         Nothing
 
                 ( _, UnaryOperation Negate nr ) ->
                     if Expression.equals nr left then
                         Just zero
+
+                    else if Expression.equals left right then
+                        Just <| by [ two, right ]
 
                     else
                         Nothing
@@ -797,23 +814,25 @@ stepSimplifyAddition left right =
 
                     else
                         Nothing
+
+        leftVars =
+            Set.toList (getFreeVariables left)
     in
-    case Set.toList <| getFreeVariables left of
-        [ var ] ->
-            case
-                Result.map2 Tuple.pair
-                    (asPoly var left |> Result.map Dict.toList)
-                    (asPoly var right |> Result.map Dict.toList)
-            of
-                Ok ( [ ( dl, cl ) ], [ ( dr, cr ) ] ) ->
-                    if dl == dr then
-                        Just <| byShort [ plusShort [ cl, cr ], ipowShort (Variable var) dl ]
+    case
+        ( asPolynomial leftVars left |> Maybe.map Dict.toList
+        , asPolynomial leftVars right |> Maybe.map Dict.toList
+        )
+    of
+        ( Just [ ( dl, cl ) ], Just [ ( dr, cr ) ] ) ->
+            if dl == dr && not (List.isEmpty dl) then
+                let
+                    pows =
+                        List.map (\( v, e ) -> ipowShort (Variable v) e) dl
+                in
+                Just <| byShort <| plusShort [ cl, cr ] :: pows
 
-                    else
-                        standard ()
-
-                _ ->
-                    standard ()
+            else
+                standard ()
 
         _ ->
             standard ()
@@ -831,82 +850,118 @@ asList l =
 
 stepSimplifyMultiplication : Expression -> Expression -> Maybe Expression
 stepSimplifyMultiplication left right =
-    case ( left, right ) of
-        ( Integer 1, l ) ->
-            Just l
+    let
+        go =
+            case ( left, right ) of
+                ( Integer 1, l ) ->
+                    Just l
 
-        ( c, Integer 1 ) ->
-            Just c
+                ( c, Integer 1 ) ->
+                    Just c
 
-        ( _, Integer 0 ) ->
-            Just <| Integer 0
+                ( _, Integer 0 ) ->
+                    Just <| Integer 0
 
-        ( Integer 0, _ ) ->
-            Just <| Integer 0
+                ( Integer 0, _ ) ->
+                    Just <| Integer 0
 
-        ( Integer il, Integer ir ) ->
-            Just <| Integer <| il * ir
+                ( Integer il, Integer ir ) ->
+                    Just <| Integer <| il * ir
 
-        ( AssociativeOperation Addition l m r, _ ) ->
-            Just <| plus <| by [ l, right ] :: by [ m, right ] :: List.map (\o -> by [ o, right ]) r
+                ( Integer j, _ ) ->
+                    if j == -1 then
+                        Just <| negate_ right
 
-        ( _, AssociativeOperation Addition l m r ) ->
-            Just <| plus <| by [ left, l ] :: by [ left, m ] :: List.map (\o -> by [ left, o ]) r
+                    else
+                        go1 ()
 
-        ( BinaryOperation Power lb le, BinaryOperation Power rb re ) ->
-            if Expression.equals lb rb then
-                case ( le, re ) of
-                    ( Integer lei, Integer rei ) ->
-                        Just (ipow lb <| lei + rei)
+                ( _, Integer k ) ->
+                    if k == -1 then
+                        Just <| negate_ left
 
-                    _ ->
-                        Just (pow lb <| plus [ le, re ])
+                    else
+                        go1 ()
 
-            else
-                Nothing
+                _ ->
+                    go1 ()
 
-        ( BinaryOperation Power pb pe, l ) ->
-            if Expression.equals l pb then
-                case pe of
-                    Integer pei ->
-                        Just (ipow pb <| pei + 1)
+        go1 () =
+            case ( left, right ) of
+                ( AssociativeOperation Addition l m r, _ ) ->
+                    Just <| plus <| by [ l, right ] :: by [ m, right ] :: List.map (\o -> by [ o, right ]) r
 
-                    _ ->
-                        Just (BinaryOperation Power pb <| plus [ one, pe ])
+                ( _, AssociativeOperation Addition l m r ) ->
+                    Just <| plus <| by [ left, l ] :: by [ left, m ] :: List.map (\o -> by [ left, o ]) r
 
-            else
-                Nothing
+                ( BinaryOperation Power lb le, BinaryOperation Power rb re ) ->
+                    if Expression.equals lb rb then
+                        case ( le, re ) of
+                            ( Integer lei, Integer rei ) ->
+                                Just (ipow lb <| lei + rei)
 
-        ( _, BinaryOperation Power pb pe ) ->
-            if Expression.equals left pb then
-                case pe of
-                    Integer pei ->
-                        Just (ipow pb <| pei + 1)
+                            _ ->
+                                Just (pow lb <| plus [ le, re ])
 
-                    _ ->
-                        Just (BinaryOperation Power pb <| plus [ one, pe ])
+                    else
+                        go2 ()
 
-            else
-                Nothing
+                ( BinaryOperation Power pb pe, l ) ->
+                    if Expression.equals l pb then
+                        case pe of
+                            Integer pei ->
+                                Just (ipow pb <| pei + 1)
 
-        ( BinaryOperation Division ln ld, r ) ->
-            Just <| div (by [ ln, r ]) ld
+                            _ ->
+                                Just (BinaryOperation Power pb <| plus [ one, pe ])
 
-        ( l, BinaryOperation Division rn rd ) ->
-            Just <| div (by [ l, rn ]) rd
+                    else
+                        go2 ()
 
-        ( List _, List _ ) ->
-            multiplyMatrices left right
+                ( _, BinaryOperation Power pb pe ) ->
+                    if Expression.equals left pb then
+                        case pe of
+                            Integer pei ->
+                                Just (ipow pb <| pei + 1)
 
-        ( Lambda x f, c ) ->
-            Just <| partialSubstitute x c f
+                            _ ->
+                                Just (BinaryOperation Power pb <| plus [ one, pe ])
 
-        _ ->
+                    else
+                        go2 ()
+
+                _ ->
+                    go2 ()
+
+        go2 () =
+            case ( left, right ) of
+                ( BinaryOperation Division ln ld, r ) ->
+                    Just <| div (by [ ln, r ]) ld
+
+                ( l, BinaryOperation Division rn rd ) ->
+                    Just <| div (by [ l, rn ]) rd
+
+                ( List _, List _ ) ->
+                    case multiplyMatrices left right of
+                        Just r ->
+                            Just r
+
+                        Nothing ->
+                            go3 ()
+
+                ( Lambda x f, c ) ->
+                    Just <| partialSubstitute x c f
+
+                _ ->
+                    go3 ()
+
+        go3 () =
             if Expression.equals left right then
                 Just <| ipow right 2
 
             else
                 Nothing
+    in
+    go
 
 
 addMatrices : Expression -> Expression -> Maybe Expression

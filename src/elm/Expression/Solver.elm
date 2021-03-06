@@ -2,8 +2,9 @@ module Expression.Solver exposing (solve, stepSimplify)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
+import Expression.Polynomial exposing (Exponents, Polynomial, asPolynomial)
 import Expression.Simplify exposing (simplify, stepSimplify)
-import Expression.Utils exposing (asPoly, by, byShort, div, divShort, factor, i, ipow, isZero, minus, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
+import Expression.Utils exposing (by, byShort, div, divShort, factor, i, ipow, ipowShort, isZero, minus, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
 import Fraction exposing (Fraction, gcd)
 import List.Extra as List
 import Result
@@ -85,52 +86,59 @@ solveEquation : String -> Expression -> Expression -> SolutionTree
 solveEquation v l r =
     let
         go expr =
-            case asPoly v expr |> Result.map (Dict.map (always simplify)) of
-                Err err ->
-                    SolutionError <| "Cannot solve " ++ Expression.toString expr ++ ", " ++ err
+            case asPolynomial [ v ] expr |> Maybe.map (Dict.map (always simplify)) of
+                Nothing ->
+                    SolutionError <| "Cannot solve " ++ Expression.toString expr
 
-                Ok coeffs ->
-                    SolutionStep (RelationOperation Equals expr zero) <|
-                        SolutionStep (coeffsToEq v coeffs) <|
-                            case Dict.toList coeffs |> List.reverse |> List.filterNot (Tuple.second >> isZero) of
+                Just coeffs ->
+                    let
+                        rebuilt =
+                            coeffsToEq coeffs
+
+                        last =
+                            case
+                                Dict.toList coeffs
+                                    |> List.reverse
+                                    |> List.filterNot (Tuple.second >> isZero)
+                            of
                                 [] ->
                                     solve0 v zero
 
-                                [ ( 0, k ) ] ->
+                                [ ( [], k ) ] ->
                                     solve0 v k
 
-                                [ ( 1, a ) ] ->
+                                [ ( [ ( _, 1 ) ], a ) ] ->
                                     solve1 v a zero
 
-                                [ ( 1, a ), ( 0, b ) ] ->
+                                [ ( [ ( _, 1 ) ], a ), ( [], b ) ] ->
                                     solve1 v a b
 
-                                [ ( 2, a ) ] ->
+                                [ ( [ ( _, 2 ) ], a ) ] ->
                                     solve2 v a zero zero
 
-                                [ ( 2, a ), ( 1, b ) ] ->
+                                [ ( [ ( _, 2 ) ], a ), ( [ ( _, 1 ) ], b ) ] ->
                                     solve2 v a b zero
 
-                                [ ( 2, a ), ( 0, c ) ] ->
+                                [ ( [ ( _, 2 ) ], a ), ( [], c ) ] ->
                                     solve2 v a zero c
 
-                                [ ( 2, a ), ( 1, b ), ( 0, c ) ] ->
+                                [ ( [ ( _, 2 ) ], a ), ( [ ( _, 1 ) ], b ), ( [], c ) ] ->
                                     solve2 v a b c
 
-                                [ ( 4, a ) ] ->
+                                [ ( [ ( _, 4 ) ], a ) ] ->
                                     solve4Biquad v a zero zero
 
-                                [ ( 4, a ), ( 0, e ) ] ->
+                                [ ( [ ( _, 4 ) ], a ), ( [], e ) ] ->
                                     solve4Biquad v a zero e
 
-                                [ ( 4, a ), ( 2, c ), ( 0, e ) ] ->
+                                [ ( [ ( _, 4 ) ], a ), ( [ ( _, 2 ) ], c ), ( [], e ) ] ->
                                     solve4Biquad v a c e
 
-                                [ ( 4, a ), ( 2, c ) ] ->
+                                [ ( [ ( _, 4 ) ], a ), ( [ ( _, 2 ) ], c ) ] ->
                                     solve4Biquad v a c zero
 
                                 cleanCoeffs ->
-                                    case findRationalRoot v cleanCoeffs of
+                                    case findRationalRoot v (Dict.fromList cleanCoeffs) of
                                         Ok { root, rest } ->
                                             SolutionBranch
                                                 [ innerSolve v <| RelationOperation Equals (Variable v) root
@@ -138,7 +146,11 @@ solveEquation v l r =
                                                 ]
 
                                         Err e ->
-                                            SolutionError <| "Cannot solve " ++ Expression.toString (coeffsToEq v coeffs) ++ ", " ++ e
+                                            SolutionError <| "Cannot solve " ++ Expression.toString rebuilt ++ ", " ++ e
+                    in
+                    SolutionStep (RelationOperation Equals expr zero) <|
+                        SolutionStep rebuilt <|
+                            last
     in
     case ( l, r ) of
         ( Integer 0, _ ) ->
@@ -151,9 +163,10 @@ solveEquation v l r =
             go (minus l r)
 
 
-findRationalRoot : String -> List ( Int, Expression ) -> Result String { root : Expression, rest : Expression }
+findRationalRoot : String -> Polynomial -> Result String { root : Expression, rest : Expression }
 findRationalRoot v coeffs =
     let
+        findRoot : List ( Exponents, Fraction ) -> Result String { root : Expression, rest : Expression }
         findRoot rats =
             let
                 commonMultiple =
@@ -174,7 +187,7 @@ findRationalRoot v coeffs =
 
                 known =
                     reduced
-                        |> List.find (\( d, _ ) -> d == 0)
+                        |> List.find (\( d, _ ) -> List.isEmpty d)
                         |> Maybe.map Tuple.second
                         |> Maybe.withDefault 0
 
@@ -183,7 +196,13 @@ findRationalRoot v coeffs =
 
                 head =
                     reduced
-                        |> List.sortBy (\( d, _ ) -> -d)
+                        |> List.sortBy
+                            (\( d, _ ) ->
+                                d
+                                    |> List.map Tuple.second
+                                    |> List.sum
+                                    |> negate
+                            )
                         |> List.head
                         |> Maybe.map Tuple.second
                         |> Maybe.withDefault 1
@@ -196,7 +215,7 @@ findRationalRoot v coeffs =
                         |> abs
                         |> factor
                         |> (::) ( 1, 0 )
-                        |> List.map (\( f, m ) -> List.initialize (m + 1) (\e -> f ^ e))
+                        |> List.map (\( f, m ) -> List.initialize (m + 1) (\exp -> f ^ exp))
                         |> List.cartesianProduct
                         |> List.map List.product
 
@@ -219,10 +238,13 @@ findRationalRoot v coeffs =
                     Dict.fromList reduced
 
                 maximumDegree =
-                    Dict.keys reducedDict |> List.maximum |> Maybe.withDefault 0
+                    Dict.keys reducedDict
+                        |> List.map (List.map Tuple.second >> List.sum)
+                        |> List.maximum
+                        |> Maybe.withDefault 0
 
                 getCoeff d =
-                    Fraction.fromInt <| Maybe.withDefault 0 <| Dict.get d reducedDict
+                    Fraction.fromInt <| Maybe.withDefault 0 <| Dict.get [ ( v, d ) ] reducedDict
 
                 tryDivision potential =
                     List.range 0 (maximumDegree - 1)
@@ -305,6 +327,7 @@ findRationalRoot v coeffs =
             }
     in
     coeffs
+        |> Dict.toList
         |> List.map (\( d, e ) -> Result.map (Tuple.pair d) (asFraction e))
         |> Result.combine
         |> Result.andThen findRoot
@@ -335,14 +358,14 @@ asFraction e =
             Err <| Expression.toString e ++ " is not a fraction"
 
 
-coeffsToEq : String -> Dict Int Expression -> Expression
-coeffsToEq v coeffs =
+coeffsToEq : Polynomial -> Expression
+coeffsToEq coeffs =
     coeffs
         |> Dict.toList
         |> List.reverse
         |> List.filterMap
-            (\( e, c ) ->
-                if e == 0 then
+            (\( exps, c ) ->
+                if List.isEmpty exps then
                     if isZero c then
                         Nothing
 
@@ -351,12 +374,8 @@ coeffsToEq v coeffs =
 
                 else
                     let
-                        p =
-                            if e == 1 then
-                                Variable v
-
-                            else
-                                ipow (Variable v) e
+                        pows =
+                            byShort <| List.map (\( v, e ) -> ipowShort (Variable v) e) exps
                     in
                     if isZero c then
                         Nothing
@@ -365,26 +384,26 @@ coeffsToEq v coeffs =
                         case c of
                             Integer i ->
                                 if i == 1 then
-                                    Just p
+                                    Just pows
 
                                 else if i == -1 then
-                                    Just <| negate_ p
+                                    Just <| negate_ pows
 
                                 else
-                                    Just <| by [ c, p ]
+                                    Just <| by [ c, pows ]
 
                             Float f ->
                                 if f == 1 then
-                                    Just p
+                                    Just pows
 
                                 else if f == -1 then
-                                    Just <| negate_ p
+                                    Just <| negate_ pows
 
                                 else
-                                    Just <| by [ c, p ]
+                                    Just <| by [ c, pows ]
 
                             _ ->
-                                Just <| by [ c, p ]
+                                Just <| by [ c, pows ]
             )
         |> plus
         |> (\l -> RelationOperation Equals l zero)

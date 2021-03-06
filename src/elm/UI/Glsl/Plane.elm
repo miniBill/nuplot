@@ -4,7 +4,7 @@ import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
 import Maybe
 import UI.Glsl.Code exposing (floatToGlsl, threshold)
-import UI.Glsl.Poly as Poly
+import UI.Glsl.Polynomial as Polynomial
 
 
 type Plane
@@ -13,22 +13,10 @@ type Plane
 
 asPlane : Expression -> Maybe Plane
 asPlane e =
-    Poly.asPoly e
+    Polynomial.asPolynomial [ "x", "y", "z" ] e
         |> Maybe.andThen
             (\poly ->
-                if
-                    List.any
-                        (\p ->
-                            not <|
-                                List.member p
-                                    [ []
-                                    , [ "x" ]
-                                    , [ "y" ]
-                                    , [ "z" ]
-                                    ]
-                        )
-                        (Dict.keys poly)
-                then
+                if Polynomial.getDegree poly /= 1 then
                     Nothing
 
                 else
@@ -38,9 +26,9 @@ asPlane e =
                     in
                     Just <|
                         Plane
-                            { x = get [ "x" ]
-                            , y = get [ "y" ]
-                            , z = get [ "z" ]
+                            { x = get [ ( "x", 1 ) ]
+                            , y = get [ ( "y", 1 ) ]
+                            , z = get [ ( "z", 1 ) ]
                             , known = get []
                             }
             )

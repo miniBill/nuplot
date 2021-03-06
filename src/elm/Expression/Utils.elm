@@ -1,8 +1,9 @@
-module Expression.Utils exposing (a, abs_, asPoly, asin_, atan2_, b, by, byShort, c, complex, cos_, cosh_, d, dd, det, determinant, div, divShort, double, e, exp_, f, factor, g, gra_, h, i, icomplex, ii, im, ipow, ipowShort, isOne, isZero, j, k, l, ln_, m, minus, n, negateShort, negate_, o, one, p, plus, plusShort, pow, q, r, re, s, sin_, sinh_, sqrt_, square, squash, t, triple, two, u, v, vector, w, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, byShort, c, complex, cos_, cosh_, d, dd, det, determinant, div, divShort, double, e, exp_, f, factor, g, gra_, h, i, icomplex, ii, im, ipow, ipowShort, isOne, isZero, j, k, l, ln_, m, minus, n, negateShort, negate_, o, one, p, plus, plusShort, pow, q, r, re, s, sin_, sinh_, sqrt_, square, squash, t, triple, two, u, v, vector, w, x, y, z, zero)
 
-import Dict exposing (Dict)
+import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), genericAsSquareMatrix, genericDeterminant, visit)
 import List.Extra as List
+import Result.Extra as Result
 
 
 
@@ -446,81 +447,6 @@ factor =
 smallPrimes : List number
 smallPrimes =
     [ 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997 ]
-
-
-asPoly : String -> Expression -> Result String (Dict Int Expression)
-asPoly var expr =
-    case expr of
-        AssociativeOperation Addition ll mm rr ->
-            List.foldl
-                (Result.map2 <|
-                    \el acc ->
-                        Dict.merge
-                            Dict.insert
-                            (\kk aa bb -> Dict.insert kk <| plusShort [ aa, bb ])
-                            Dict.insert
-                            el
-                            acc
-                            Dict.empty
-                )
-                (Ok <| Dict.empty)
-                (List.map (asPoly var) (ll :: mm :: rr))
-
-        AssociativeOperation Multiplication ll mm rr ->
-            (ll :: mm :: rr)
-                |> List.map (asPoly var >> Result.map Dict.toList)
-                |> List.foldl
-                    (Result.map2 <|
-                        \el acc ->
-                            acc
-                                |> List.concatMap (\acc_e -> el |> List.map (Tuple.pair acc_e))
-                                |> List.map (\( ( dl, cl ), ( dr, cr ) ) -> ( dl + dr, byShort [ cl, cr ] ))
-                    )
-                    (Ok [ ( 0, one ) ])
-                |> Result.map
-                    (\ls ->
-                        ls
-                            |> List.gatherEqualsBy Tuple.first
-                            |> List.map (\( ( deg, ff ), ts ) -> ( deg, plusShort <| ff :: List.map Tuple.second ts ))
-                            |> Dict.fromList
-                    )
-
-        Integer _ ->
-            Ok <| Dict.singleton 0 expr
-
-        Float _ ->
-            Ok <| Dict.singleton 0 expr
-
-        Variable evar ->
-            Ok <|
-                if var == evar then
-                    Dict.singleton 1 one
-
-                else
-                    Dict.singleton 0 expr
-
-        UnaryOperation Negate inner ->
-            inner
-                |> asPoly var
-                |> Result.map (Dict.map (always negateShort))
-
-        BinaryOperation Division num ((Integer _) as den) ->
-            num
-                |> asPoly var
-                |> Result.map (Dict.map (\_ coeff -> divShort coeff den))
-
-        BinaryOperation Power base (Integer ex) ->
-            if ex < 0 then
-                Err ("Cannot extract coefficients from " ++ Expression.toString expr)
-
-            else if ex == 0 then
-                Ok <| Dict.singleton 0 one
-
-            else
-                asPoly var <| byShort [ base, ipowShort base (ex - 1) ]
-
-        _ ->
-            Err ("Cannot extract coefficients from " ++ Expression.toString expr)
 
 
 ipowShort : Expression -> Int -> Expression

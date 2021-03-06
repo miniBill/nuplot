@@ -157,18 +157,18 @@ emptyRow =
 parseRow : String -> ( List MetadataWithErrors, List Row )
 parseRow row =
     let
-        combine e last =
-            case ( e.data, last.data ) of
+        combine curr last =
+            case ( curr.data, last.data ) of
                 ( MarkdownRow, MarkdownRow ) ->
                     Just
-                        { input = e.input ++ "\n" ++ last.input
+                        { input = curr.input ++ "\n" ++ last.input
                         , editing = False
                         , data = MarkdownRow
                         }
 
                 ( CodeRow _, CodeRow _ ) ->
                     Just
-                        { input = e.input ++ "\n" ++ last.input
+                        { input = curr.input ++ "\n" ++ last.input
                         , editing = False
                         , data = CodeRow []
                         }

@@ -166,8 +166,8 @@ visit f expr =
                 Integer i ->
                     Integer i
 
-                UnaryOperation uop e ->
-                    UnaryOperation uop <| visit f e
+                UnaryOperation uop c ->
+                    UnaryOperation uop <| visit f c
 
                 BinaryOperation bop l r ->
                     BinaryOperation bop (visit f l) (visit f r)
@@ -178,20 +178,20 @@ visit f expr =
                 AssociativeOperation aop l r o ->
                     AssociativeOperation aop (visit f l) (visit f r) (List.map (visit f) o)
 
-                Apply func e ->
-                    Apply func <| List.map (visit f) e
+                Apply func args ->
+                    Apply func <| List.map (visit f) args
 
                 Variable v ->
                     Variable v
 
-                Lambda x e ->
-                    Lambda x <| visit f e
+                Lambda x c ->
+                    Lambda x <| visit f c
 
                 Float fl ->
                     Float fl
 
-                Replace vars e ->
-                    Replace (Dict.map (\_ -> Maybe.map (visit f)) vars) (visit f e)
+                Replace vars c ->
+                    Replace (Dict.map (\_ -> Maybe.map (visit f)) vars) (visit f c)
 
                 List es ->
                     List <| List.map (visit f) es
@@ -1335,6 +1335,13 @@ toTeXStringPrec p e =
 
             PAdd l (PNegate r) ->
                 infixl_ 6 " - " l r
+
+            PAdd l (PBy (PInteger m) r) ->
+                if m < 0 then
+                    infixl_ 6 " - " l (PBy (PInteger -m) r)
+
+                else
+                    infixl_ 6 " + " l (PBy (PInteger m) r)
 
             PAdd l (PFloat pf) ->
                 if pf < 0 then
