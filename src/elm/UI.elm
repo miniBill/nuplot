@@ -748,6 +748,10 @@ documentTabButton { selected, onPress, closeMsg, label, title } =
                         , right = Theme.spacing
                         }
                     , focusStyleChild
+                    , L10N.title
+                        { en = "Close"
+                        , it = "Chiudi"
+                        }
                     ]
                     { onPress = closeMsg
                     , label = Element.element <| Icons.closeOutlined Theme.smallDarkIconAttrs

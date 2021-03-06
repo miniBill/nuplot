@@ -23,6 +23,7 @@
         "glslify-deps": "^1.3.2",
         "node-elm-compiler": "^5.0.5",
         "parcel-bundler": "^1.12.4",
+        "parcel-plugin-inject-manifest-service-worker": "^1.1.2",
         "parcel-plugin-ogimage": "^1.2.0",
         "parcel-plugin-pwa-manifest": "^3.0.10",
         "parcel-plugin-static-files-copy": "^2.5.0",
@@ -39,7 +40,7 @@
     "pwaManifest": {
         "name": "NuPlot",
         "shortName": "NuPlot",
-        "startURL": ".",
+        "startURL": "./index.html",
         "theme": "#dcd0ff",
         "generateIconOptions": {
             "baseIcon": "./public/icon.svg",
@@ -48,8 +49,13 @@
                 384,
                 512
             ],
-            "genFavicons": true
+            "genFavicons": true,
+            "purpose": [
+                "any",
+                "maskable"
+            ]
         },
+        "display": "standalone",
         "development": {
             "disabled": true
         }

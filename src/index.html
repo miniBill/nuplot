@@ -29,6 +29,14 @@
     <div id="main"></div>
 
     <script src="./ts/index.ts"></script>
+
+    <noscript>Unfortunately this application relies on Javascript for working, because it runs its computations in your
+        browser. Enable Javascript to let it run.</noscript>
+
+    <script>
+        if ('serviceWorker' in navigator)
+            navigator.serviceWorker.register('/service-worker.js')
+    </script>
 </body>
 
 </html>
