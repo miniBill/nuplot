@@ -27,6 +27,7 @@ export class KaTeXElement extends HTMLElement {
 
     this.wrapper = document.createElement("div");
     this.wrapper.style.overflowX = "auto";
+    this.wrapper.style.overflowY = "hidden";
 
     var link = document.createElement("link");
     link.rel = "stylesheet";

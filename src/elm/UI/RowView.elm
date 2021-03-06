@@ -301,7 +301,16 @@ viewSolutionTree pageWidth tree =
                 br =
                     el [ width <| px 1, height fill, Border.width 1 ] none
             in
-            [ Element.row [ spacing Theme.spacing ] <| List.intersperse br <| List.map (\c -> Element.column [ spacing Theme.spacing, alignTop ] <| viewSolutionTree pageWidth c) children ]
+            [ Element.row [ spacing Theme.spacing ] <|
+                List.intersperse br <|
+                    List.map
+                        (\c ->
+                            Element.column
+                                [ spacing Theme.spacing, alignTop ]
+                                (viewSolutionTree pageWidth c)
+                        )
+                        children
+            ]
 
 
 viewLaTeX : Int -> String -> Element msg
@@ -310,7 +319,7 @@ viewLaTeX pageWidth tex =
         Element.html <|
             Html.node "ka-tex"
                 [ Html.Attributes.attribute "tex-src" tex
-                , Html.Attributes.attribute "container-width" <| String.fromInt <| pageWidth - 4 * Theme.spacing
+                , Html.Attributes.attribute "container-width" <| String.fromInt <| pageWidth - 2 * Theme.spacing
                 ]
                 []
 
@@ -405,7 +414,15 @@ outputBlock blockId ({ width } as size) output =
                             ( viewExpression width s, False )
 
                         SolutionTreeValue t ->
-                            ( Element.column [ spacing Theme.spacing ] <| viewSolutionTree (width - 2 * Theme.spacing) t, False )
+                            ( Element.column
+                                [ spacing Theme.spacing
+                                , Element.scrollbarX
+                                , Element.width <| Element.maximum (width - 2 * Theme.spacing) fill
+                                ]
+                              <|
+                                viewSolutionTree (width - 2 * Theme.spacing) t
+                            , False
+                            )
 
                         GraphValue g ->
                             ( draw size (CanvasId id) coeffs g, True )
