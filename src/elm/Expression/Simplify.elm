@@ -20,7 +20,7 @@ import Expression
         )
 import Expression.Derivative
 import Expression.Polynomial exposing (asPolynomial)
-import Expression.Utils exposing (by, byShort, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
+import Expression.Utils exposing (abs_, by, byShort, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
 import Fraction
 import List
 import List.Extra as List
@@ -218,8 +218,9 @@ stepSimplifyApply fname sargs =
 
         KnownFunction name ->
             case ( name, sargs ) of
-                ( Sqrt, _ ) ->
-                    stepSimplifySqrt sargs
+                ( Sqrt, [ arg ] ) ->
+                    stepSimplifySqrt arg
+                        |> Maybe.withDefault (sqrt_ arg)
 
                 ( Sinh, [ AssociativeOperation Multiplication l r o ] ) ->
                     case extract (findSpecificVariable "i") (l :: r :: o) of
@@ -273,20 +274,46 @@ stepSimplifyApply fname sargs =
                     Apply fname sargs
 
 
-stepSimplifySqrt : List Expression -> Expression
-stepSimplifySqrt sargs =
-    case sargs of
-        [ Integer j ] ->
+stepSimplifySqrt : Expression -> Maybe Expression
+stepSimplifySqrt sarg =
+    case sarg of
+        Integer j ->
             sqrtInteger j
 
-        [ BinaryOperation Division n d ] ->
-            div (sqrt_ n) (sqrt_ d)
+        BinaryOperation Division n d ->
+            Just <| div (sqrt_ n) (sqrt_ d)
+
+        AssociativeOperation Multiplication l m r ->
+            let
+                sqrts =
+                    (l :: m :: r) |> List.map stepSimplifySqrt
+            in
+            if List.any ((/=) Nothing) sqrts then
+                Just <| by <| List.map2 (Maybe.withDefault << sqrt_) (l :: m :: r) sqrts
+
+            else
+                Nothing
+
+        BinaryOperation Power b (Integer e) ->
+            if e < 0 then
+                Nothing
+
+            else
+                let
+                    outer =
+                        abs_ <| ipowShort b (e // 2)
+                in
+                if modBy 2 e == 0 then
+                    Just outer
+
+                else
+                    Just <| byShort [ outer, sqrt_ b ]
 
         _ ->
-            Apply (KnownFunction Sqrt) sargs
+            Nothing
 
 
-sqrtInteger : Int -> Expression
+sqrtInteger : Int -> Maybe Expression
 sqrtInteger j =
     let
         a =
@@ -297,7 +324,7 @@ sqrtInteger j =
 
         s =
             if r * r == a then
-                Integer r
+                Just <| Integer r
 
             else
                 let
@@ -313,16 +340,16 @@ sqrtInteger j =
                 in
                 case ( outer, inner ) of
                     ( _, 1 ) ->
-                        Integer outer
+                        Just <| Integer outer
 
                     ( 1, _ ) ->
-                        Apply (KnownFunction Sqrt) [ Integer inner ]
+                        Nothing
 
                     _ ->
-                        by [ Integer outer, Apply (KnownFunction Sqrt) [ Integer inner ] ]
+                        Just <| by [ Integer outer, sqrt_ <| Integer inner ]
     in
     if j < 0 then
-        by [ Variable "i", s ]
+        Just <| by [ Variable "i", Maybe.withDefault (sqrt_ (Integer a)) s ]
 
     else
         s
