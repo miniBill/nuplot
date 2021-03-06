@@ -4,7 +4,7 @@ import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Graph exposing (Graph(..))
 import Expression.Solver
-import Expression.Utils exposing (by, minus, plus, square)
+import Expression.Utils exposing (by, div, minus, one, plus, sqrt_, square)
 import List
 import List.Extra as List
 import List.MyExtra as List
@@ -191,18 +191,17 @@ get3DSource expandIntervals prefix e =
                         Just ((_ :: _) as vals) ->
                             let
                                 check val =
-                                    let
-                                        _ =
-                                            Debug.log "check" <| Expression.toString val
-                                    in
-                                    "t = min(t, " ++ UI.Glsl.Code.expressionToGlslReal val ++ ");"
+                                    [ "f = " ++ UI.Glsl.Code.expressionToGlsl val ++ ";"
+                                    , "t = f.x < 0.0 || f.y != 0.0 ? t : min(f.x, t);"
+                                    ]
                             in
-                            { expr = e
+                            { expr = div one <| sqrt_ e
                             , srcExpr =
                                 """
                                 bool bisect""" ++ prefix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
                                     float t = 2.0 * max_distance;
-                                    """ ++ String.join "\n                                    " (List.map check vals) ++ """
+                                    vec2 f;
+                                    """ ++ String.join "\n                                    " (List.concatMap check vals) ++ """
                                     found = o + t * d;
                                     return t < max_distance && t > 0.0;
                                 }

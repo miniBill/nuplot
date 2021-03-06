@@ -1,4 +1,4 @@
-module UI.Glsl.Code exposing (constantToGlsl, deindent, expressionToGlslReal, floatToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
+module UI.Glsl.Code exposing (constantToGlsl, deindent, expressionToGlsl, floatToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
 
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
@@ -1003,13 +1003,6 @@ expressionToGlsl =
         >> wordWrap
 
 
-expressionToGlslReal : Expression -> String
-expressionToGlslReal =
-    Expression.toPrintExpression
-        >> expressionToRealGlslPrec 0
-        >> wordWrap
-
-
 expressionToIntervalGlsl : Bool -> Expression -> String
 expressionToIntervalGlsl expandIntervals =
     Expression.toPrintExpression
@@ -1112,91 +1105,6 @@ expressionToGlslPrec p expr =
 
         -- If this happens, it's too late
         PLambda _ _ ->
-            "vec2(0)"
-
-
-expressionToRealGlslPrec : Int -> PrintExpression -> String
-expressionToRealGlslPrec p expr =
-    let
-        noninfix op c =
-            paren True <| op ++ expressionToRealGlslPrec 11 c
-
-        infixl_ n op l r =
-            paren True <| expressionToRealGlslPrec n l ++ op ++ expressionToRealGlslPrec (n + 1) r
-
-        apply name ex =
-            paren True <| name ++ "(" ++ String.join ", " (List.map (expressionToRealGlslPrec 0) ex) ++ ")"
-    in
-    case expr of
-        PVariable "i" ->
-            "(1.0/0.0)"
-
-        PVariable "pi" ->
-            "radians(180.0)"
-
-        PVariable "e" ->
-            "exp(1.0)"
-
-        PVariable v ->
-            v
-
-        PInteger v ->
-            floatToGlsl <| toFloat v
-
-        PFloat f ->
-            floatToGlsl f
-
-        PNegate expression ->
-            "(" ++ noninfix "-" expression ++ ")"
-
-        PAdd l (PNegate r) ->
-            infixl_ 6 " - " l r
-
-        PAdd l r ->
-            infixl_ 6 " + " l r
-
-        PRel op l r ->
-            if op == "<=" || op == "<" then
-                infixl_ 6 " - " r l
-
-            else if op == "=" then
-                "(abs(" ++ infixl_ 6 " - " r l ++ "))"
-
-            else
-                infixl_ 6 " - " l r
-
-        PBy l r ->
-            infixl_ 7 " * " l r
-
-        PDiv l r ->
-            infixl_ 7 " / " l r
-
-        PPower ((PVariable _) as var) (PInteger 2) ->
-            expressionToRealGlslPrec p <| PBy var var
-
-        PPower l r ->
-            apply "pow" [ l, r ]
-
-        PApply (KnownFunction Simplify) [ e ] ->
-            expressionToRealGlslPrec p e
-
-        PApply name ex ->
-            if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
-                case List.map (expressionToRealGlslPrec 0) ex of
-                    [] ->
-                        "0"
-
-                    head :: tail ->
-                        List.foldl (\e a -> Expression.functionNameToString name ++ "(" ++ a ++ "," ++ e ++ ")") head tail
-
-            else
-                apply (Expression.functionNameToString name) ex
-
-        PReplace var e ->
-            expressionToRealGlslPrec p (Expression.pfullSubstitute var e)
-
-        -- If this happens, it's too late
-        _ ->
             "vec2(0)"
 
 
