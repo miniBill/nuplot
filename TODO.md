@@ -1,3 +1,4 @@
+* Use solver for fast graphs
 * Add all the graph types to the default example
 * Better onboarding
 * Save on Google

@@ -308,7 +308,7 @@ viewLaTeX : Int -> String -> Element msg
 viewLaTeX pageWidth tex =
     el [ height shrink, width shrink ] <|
         Element.html <|
-            Html.node "math-jax"
+            Html.node "ka-tex"
                 [ Html.Attributes.attribute "tex-src" tex
                 , Html.Attributes.attribute "container-width" <| String.fromInt <| pageWidth - 4 * Theme.spacing
                 ]
