@@ -267,6 +267,7 @@ viewError e =
             [ alignTop
             , Font.family [ Font.monospace ]
             , Font.color Theme.colors.errorMessage
+            , width fill
             ]
 
 

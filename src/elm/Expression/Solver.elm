@@ -16,7 +16,18 @@ solve e x =
     case x of
         Variable v ->
             e
-                |> stepSimplify (innerSolve v)
+                |> stepSimplify
+                    (\s ->
+                        case s of
+                            RelationOperation Equals l (BinaryOperation Division n d) ->
+                                stepSimplify (innerSolve v) <| RelationOperation Equals (by [ l, d ]) n
+
+                            RelationOperation Equals (BinaryOperation Division n d) r ->
+                                stepSimplify (innerSolve v) <| RelationOperation Equals n (by [ r, d ])
+
+                            _ ->
+                                innerSolve v s
+                    )
                 |> cut
 
         _ ->

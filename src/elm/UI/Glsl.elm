@@ -1,12 +1,14 @@
 module UI.Glsl exposing (getGlsl)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..))
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Graph exposing (Graph(..))
-import Expression.Utils exposing (minus, plus, square)
+import Expression.Solver
+import Expression.Utils exposing (by, minus, plus, square)
 import List
 import List.Extra as List
 import List.MyExtra as List
+import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
@@ -71,19 +73,12 @@ getGlsl expandIntervals graph =
                     }
 
                 Implicit3D e ->
-                    { expr = e
-                    , srcExpr =
-                        case Sphere.asSphere e of
-                            Just sphere ->
-                                Sphere.toGlsl prefix sphere
-
-                            Nothing ->
-                                case Plane.asPlane e of
-                                    Just plane ->
-                                        Plane.toGlsl prefix plane
-
-                                    Nothing ->
-                                        toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
+                    let
+                        f =
+                            get3DSource expandIntervals prefix e
+                    in
+                    { expr = f.expr
+                    , srcExpr = f.srcExpr
                     , interval = IntervalAndStraight
                     , thetaDelta = True
                     , pixel2D = []
@@ -132,6 +127,92 @@ getGlsl expandIntervals graph =
         ++ "\n/* Expression */\n"
         ++ deindent 4 srcExpr
         ++ mainGlsl pixel2D pixel3D
+
+
+get3DSource : Bool -> String -> Expression -> { expr : Expression, srcExpr : String }
+get3DSource expandIntervals prefix e =
+    case Sphere.asSphere e of
+        Just sphere ->
+            { expr = e
+            , srcExpr = Sphere.toGlsl prefix sphere
+            }
+
+        Nothing ->
+            case Plane.asPlane e of
+                Just plane ->
+                    { expr = e
+                    , srcExpr = Plane.toGlsl prefix plane
+                    }
+
+                Nothing ->
+                    let
+                        t =
+                            Variable "t"
+
+                        var v =
+                            plus [ Variable <| "o." ++ v, by [ t, Variable <| "d." ++ v ] ]
+
+                        repls =
+                            [ "x", "y", "z" ]
+                                |> List.map (\c -> ( c, Just <| var c ))
+                                |> Dict.fromList
+
+                        tree =
+                            Expression.Solver.solve (Replace repls e) t
+
+                        getSols n =
+                            case n of
+                                SolutionStep _ c ->
+                                    getSols c
+
+                                SolutionBranch cs ->
+                                    Maybe.traverse getSols cs
+                                        |> Maybe.map List.concat
+
+                                SolutionDone (RelationOperation Equals (Variable "t") sol) ->
+                                    Just [ sol ]
+
+                                SolutionDone _ ->
+                                    Nothing
+
+                                SolutionForall _ ->
+                                    Nothing
+
+                                SolutionError _ ->
+                                    Nothing
+
+                                SolutionNone _ ->
+                                    Nothing
+
+                        sols =
+                            getSols tree
+                    in
+                    case sols of
+                        Just ((_ :: _) as vals) ->
+                            let
+                                check val =
+                                    let
+                                        _ =
+                                            Debug.log "check" <| Expression.toString val
+                                    in
+                                    "t = min(t, " ++ UI.Glsl.Code.expressionToGlslReal val ++ ");"
+                            in
+                            { expr = e
+                            , srcExpr =
+                                """
+                                bool bisect""" ++ prefix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
+                                    float t = 2.0 * max_distance;
+                                    """ ++ String.join "\n                                    " (List.map check vals) ++ """
+                                    found = o + t * d;
+                                    return t < max_distance && t > 0.0;
+                                }
+                                """
+                            }
+
+                        _ ->
+                            { expr = e
+                            , srcExpr = toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
+                            }
 
 
 transitiveClosure : List Requirement -> List Requirement

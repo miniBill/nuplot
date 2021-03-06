@@ -328,6 +328,7 @@ tests =
     , straight "e^x" <| pow (Variable "e") x
     , ( "ln(ex)", ln_ <| by [ Variable "e", x ], "ln(e*x)" )
     , straight "exp(x)" <| exp_ x
+    , ( "[!ox;!oy;!oz;!dx;!dy;!dz][x=ox+tdx;y=oy+tdy;z=oz+tdz]solve(z=1/(x²+y²))", x, "?" )
 
     -- Check values for those
     , straight "1/x" <| div one x
