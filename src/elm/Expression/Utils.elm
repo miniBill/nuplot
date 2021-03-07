@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, byShort, c, complex, cos_, cosh_, d, dd, det, determinant, div, divShort, double, e, exp_, f, factor, g, gra_, h, i, icomplex, ii, im, ipow, ipowShort, isOne, isZero, j, k, l, ln_, m, minus, n, negateShort, negate_, o, one, p, plus, plusShort, pow, q, r, re, s, sin_, sinh_, sqrt_, square, squash, t, triple, two, u, v, vector, w, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, byShort, c, cbrt, complex, cos_, cosh_, d, dd, det, determinant, div, divShort, double, e, exp_, f, factor, g, gra_, h, i, icomplex, ii, im, ipow, ipowShort, isOne, isZero, j, k, l, ln_, m, minus, n, negateShort, negate_, o, one, p, plus, plusShort, pow, q, r, re, s, sin_, sinh_, sqrt_, square, squash, t, triple, two, u, v, vector, w, x, y, z, zero)
 
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), genericAsSquareMatrix, genericDeterminant, visit)
@@ -218,9 +218,14 @@ ipow base exponent =
     pow base <| Integer exponent
 
 
+cbrt : Expression -> Expression
+cbrt =
+    unaryFunc (Root 3)
+
+
 sqrt_ : Expression -> Expression
 sqrt_ =
-    unaryFunc Sqrt
+    unaryFunc (Root 2)
 
 
 re : Expression -> Expression

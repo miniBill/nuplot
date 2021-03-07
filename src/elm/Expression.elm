@@ -85,7 +85,7 @@ type KnownFunction
     | Tanh
       -- Power
     | Abs
-    | Sqrt
+    | Root Int
     | Ln
     | Log10
     | Exp

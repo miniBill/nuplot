@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Polynomial exposing (Exponents, Polynomial, asPolynomial)
 import Expression.Simplify exposing (simplify, stepSimplify)
-import Expression.Utils exposing (by, byShort, div, divShort, factor, i, ipow, ipowShort, isZero, minus, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
+import Expression.Utils exposing (by, byShort, cbrt, div, divShort, double, factor, i, ipow, ipowShort, isZero, minus, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
 import Fraction exposing (Fraction, gcd)
 import List.Extra as List
 import Result
@@ -106,58 +106,54 @@ solveEquation v l r =
                         rebuilt =
                             coeffsToEq coeffs
 
+                        cleanCoeffs =
+                            Dict.toList coeffs
+                                |> List.reverse
+                                |> List.filterNot (Tuple.second >> isZero)
+
+                        get k =
+                            cleanCoeffs
+                                |> List.find (\( d, _ ) -> d == [ ( v, k ) ])
+                                |> Maybe.map Tuple.second
+                                |> Maybe.withDefault zero
+
+                        default () =
+                            case findRationalRoot v (Dict.fromList cleanCoeffs) of
+                                Ok { root, rest } ->
+                                    SolutionBranch
+                                        [ innerSolve v <| RelationOperation Equals (Variable v) root
+                                        , innerSolve v <| RelationOperation Equals rest zero
+                                        ]
+
+                                Err e ->
+                                    SolutionError <| "Cannot solve " ++ Expression.toString rebuilt ++ ", " ++ e
+
                         last =
-                            case
-                                Dict.toList coeffs
-                                    |> List.reverse
-                                    |> List.filterNot (Tuple.second >> isZero)
-                            of
-                                [] ->
+                            case List.head cleanCoeffs of
+                                Nothing ->
                                     solve0 v zero
 
-                                [ ( [], k ) ] ->
+                                Just ( [], k ) ->
                                     solve0 v k
 
-                                [ ( [ ( _, 1 ) ], a ) ] ->
-                                    solve1 v a zero
+                                Just ( [ ( _, 1 ) ], a ) ->
+                                    solve1 v a (get 0)
 
-                                [ ( [ ( _, 1 ) ], a ), ( [], b ) ] ->
-                                    solve1 v a b
+                                Just ( [ ( _, 2 ) ], a ) ->
+                                    solve2 v a (get 1) (get 0)
 
-                                [ ( [ ( _, 2 ) ], a ) ] ->
-                                    solve2 v a zero zero
+                                Just ( [ ( _, 3 ) ], a ) ->
+                                    solve3 v a (get 2) (get 1) (get 0)
 
-                                [ ( [ ( _, 2 ) ], a ), ( [ ( _, 1 ) ], b ) ] ->
-                                    solve2 v a b zero
+                                Just ( [ ( _, 4 ) ], a ) ->
+                                    if isZero (get 1) && isZero (get 3) then
+                                        solve4Biquad v a (get 2) (get 0)
 
-                                [ ( [ ( _, 2 ) ], a ), ( [], c ) ] ->
-                                    solve2 v a zero c
+                                    else
+                                        default ()
 
-                                [ ( [ ( _, 2 ) ], a ), ( [ ( _, 1 ) ], b ), ( [], c ) ] ->
-                                    solve2 v a b c
-
-                                [ ( [ ( _, 4 ) ], a ) ] ->
-                                    solve4Biquad v a zero zero
-
-                                [ ( [ ( _, 4 ) ], a ), ( [], e ) ] ->
-                                    solve4Biquad v a zero e
-
-                                [ ( [ ( _, 4 ) ], a ), ( [ ( _, 2 ) ], c ), ( [], e ) ] ->
-                                    solve4Biquad v a c e
-
-                                [ ( [ ( _, 4 ) ], a ), ( [ ( _, 2 ) ], c ) ] ->
-                                    solve4Biquad v a c zero
-
-                                cleanCoeffs ->
-                                    case findRationalRoot v (Dict.fromList cleanCoeffs) of
-                                        Ok { root, rest } ->
-                                            SolutionBranch
-                                                [ innerSolve v <| RelationOperation Equals (Variable v) root
-                                                , innerSolve v <| RelationOperation Equals rest zero
-                                                ]
-
-                                        Err e ->
-                                            SolutionError <| "Cannot solve " ++ Expression.toString rebuilt ++ ", " ++ e
+                                _ ->
+                                    default ()
                     in
                     SolutionStep (RelationOperation Equals expr zero) <|
                         SolutionStep rebuilt <|
@@ -420,31 +416,9 @@ coeffsToEq coeffs =
         |> (\l -> RelationOperation Equals l zero)
 
 
-solIs : String -> Expression -> Expression
-solIs =
-    RelationOperation Equals << Variable
-
-
-solve0 : String -> Expression -> SolutionTree
-solve0 v k =
-    if isZero k then
-        SolutionForall v
-
-    else
-        SolutionNone v
-
-
-solve1 : String -> Expression -> Expression -> SolutionTree
-solve1 v a b =
-    if isZero a then
-        solve0 v b
-
-    else
-        let
-            sol =
-                solIs v <| divShort (negateShort b) a
-        in
-        stepSimplify SolutionDone sol
+solutionBranch : String -> Expression -> SolutionTree
+solutionBranch v sol =
+    stepSimplify SolutionDone (solIs v sol)
 
 
 stepSimplify : (Expression -> SolutionTree) -> Expression -> SolutionTree
@@ -468,6 +442,29 @@ stepSimplify final =
     go 100
 
 
+solIs : String -> Expression -> Expression
+solIs =
+    RelationOperation Equals << Variable
+
+
+solve0 : String -> Expression -> SolutionTree
+solve0 v k =
+    if isZero k then
+        SolutionForall v
+
+    else
+        SolutionNone v
+
+
+solve1 : String -> Expression -> Expression -> SolutionTree
+solve1 v a b =
+    if isZero a then
+        solve0 v b
+
+    else
+        solutionBranch v <| divShort (negateShort b) a
+
+
 solve2 : String -> Expression -> Expression -> Expression -> SolutionTree
 solve2 v a b c =
     if isZero a then
@@ -477,13 +474,10 @@ solve2 v a b c =
         let
             solPlus =
                 sqrt_ (divShort (negateShort c) a)
-
-            branch sol =
-                stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
-            [ branch <| negateShort solPlus
-            , branch solPlus
+            [ solutionBranch v <| negateShort solPlus
+            , solutionBranch v solPlus
             ]
 
     else
@@ -496,13 +490,75 @@ solve2 v a b c =
 
             solMinus =
                 divShort (minus (negateShort b) (sqrt_ delta)) (byShort [ Integer 2, a ])
-
-            branch sol =
-                stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
-            [ branch solMinus
-            , branch solPlus
+            [ solutionBranch v solMinus
+            , solutionBranch v solPlus
+            ]
+
+
+solve3 : String -> Expression -> Expression -> Expression -> Expression -> SolutionTree
+solve3 v a b c d =
+    if isZero a then
+        solve2 v b c d
+
+    else if isZero b && isZero c then
+        let
+            solPlus =
+                cbrt (negate_ d)
+
+            xi =
+                div (plus [ Integer -1, sqrt_ (Integer -3) ]) (Integer 2)
+
+            xiTwo =
+                div (minus (Integer -1) (sqrt_ (Integer -3))) (Integer 2)
+        in
+        SolutionBranch
+            [ solutionBranch v solPlus
+            , solutionBranch v <| byShort [ xi, solPlus ]
+            , solutionBranch v <| byShort [ xiTwo, solPlus ]
+            ]
+
+    else
+        let
+            deltaZero =
+                minus (square b) (by [ Integer 3, a, c ])
+
+            deltaOne =
+                plus [ double <| ipow b 3, negate_ <| by [ Integer 9, a, b, c ], by [ Integer 27, square a, d ] ]
+
+            bigC =
+                cbrt <|
+                    div
+                        (plus [ deltaOne, sqrt_ <| minus (square deltaOne) (by [ Integer 4, ipow deltaZero 3 ]) ])
+                        (Integer 2)
+
+            xi =
+                div (plus [ Integer -1, sqrt_ (Integer -3) ]) (Integer 2)
+
+            xiTwo =
+                div (minus (Integer -1) (sqrt_ (Integer -3))) (Integer 2)
+
+            sol k =
+                let
+                    xiC =
+                        byShort [ k, bigC ]
+                in
+                by
+                    [ div
+                        (Integer -1)
+                        (by [ Integer 3, a ])
+                    , plus
+                        [ b
+                        , xiC
+                        , div deltaZero xiC
+                        ]
+                    ]
+        in
+        SolutionBranch
+            [ solutionBranch v <| sol one
+            , solutionBranch v <| sol xi
+            , solutionBranch v <| sol xiTwo
             ]
 
 
@@ -516,8 +572,8 @@ solve4Biquad v a c e =
             solPlus =
                 pow (divShort (negateShort e) a) (div one (Integer 4))
 
-            branch sol =
-                stepSimplify SolutionDone (solIs v sol)
+            branch =
+                solutionBranch v
         in
         SolutionBranch
             [ branch solPlus
