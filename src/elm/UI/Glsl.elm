@@ -3,14 +3,15 @@ module UI.Glsl exposing (getGlsl)
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Graph exposing (Graph(..))
+import Expression.Polynomial exposing (Polynomial, asPolynomial)
 import Expression.Solver
-import Expression.Utils exposing (by, div, minus, one, plus, sqrt_, square)
+import Expression.Utils exposing (by, cbrt, div, double, ipow, ln_, minus, negate_, one, plus, sqrt_, square, zero)
 import List
 import List.Extra as List
 import List.MyExtra as List
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
-import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
+import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Sphere as Sphere
@@ -154,64 +155,151 @@ get3DSource expandIntervals prefix e =
 
                         repls =
                             [ "x", "y", "z" ]
-                                |> List.map (\c -> ( c, Just <| var c ))
+                                |> List.map (\c -> ( c, var c ))
                                 |> Dict.fromList
 
-                        tree =
-                            Expression.Solver.solve (Replace repls e) t
+                        replaced =
+                            Expression.fullSubstitute repls e
 
-                        getSols n =
-                            case n of
-                                SolutionStep _ c ->
-                                    getSols c
+                        poly =
+                            (case replaced of
+                                RelationOperation Equals l r ->
+                                    minus l r
 
-                                SolutionBranch cs ->
-                                    Maybe.traverse getSols cs
-                                        |> Maybe.map List.concat
+                                _ ->
+                                    replaced
+                            )
+                                |> asPolynomial [ "t" ]
+                                |> Maybe.map Dict.toList
+                                |> Maybe.andThen
+                                    (Maybe.traverse
+                                        (\p ->
+                                            case p of
+                                                ( [], k ) ->
+                                                    Just ( 0, k )
 
-                                SolutionDone (RelationOperation Equals (Variable "t") sol) ->
-                                    Just [ sol ]
+                                                ( [ ( v, d ) ], k ) ->
+                                                    if v == "t" then
+                                                        Just ( d, k )
 
-                                SolutionDone _ ->
-                                    Nothing
+                                                    else
+                                                        Nothing
 
-                                SolutionForall _ ->
-                                    Nothing
+                                                _ ->
+                                                    Nothing
+                                        )
+                                    )
+                                |> Maybe.map Dict.fromList
+                                |> Maybe.withDefault Dict.empty
 
-                                SolutionError _ ->
-                                    Nothing
+                        deg =
+                            poly
+                                |> Dict.keys
+                                |> List.maximum
+                                |> Maybe.withDefault 0
 
-                                SolutionNone _ ->
-                                    Nothing
+                        get d =
+                            Dict.get d poly
+                                |> Maybe.withDefault zero
+                                |> UI.Glsl.Code.expressionToGlsl
+
+                        tFrom v =
+                            ( "t", v ++ ".x < 0.0 || abs(" ++ v ++ ".y) > " ++ threshold ++ " ? t : min(" ++ v ++ ".x, t)" )
 
                         sols =
-                            getSols tree
-                    in
-                    case sols of
-                        Just ((_ :: _) as vals) ->
-                            let
-                                check val =
-                                    [ "f = " ++ UI.Glsl.Code.expressionToGlsl val ++ ";"
-                                    , "t = f.x < 0.0 || f.y != 0.0 ? t : min(f.x, t);"
+                            case deg of
+                                1 ->
+                                    -- ax + b = 0
+                                    -- x = -b / a
+                                    [ ( "a", get 1 )
+                                    , ( "b", get 0 )
+                                    , ( "x", "div(-b, a)" )
+                                    , tFrom "x"
                                     ]
-                            in
-                            { expr = div one <| sqrt_ e
-                            , srcExpr =
+
+                                2 ->
+                                    -- ax² + bx + c = 0
+                                    [ ( "a", get 2 )
+                                    , ( "b", get 1 )
+                                    , ( "c", get 0 )
+                                    , ( "delta", "by(b,b) - 4.0 * by(a,c)" )
+                                    , ( "sqdelta", "csqrt(delta)" )
+                                    , ( "den", "2.0 * a" )
+                                    , ( "pos", "div(- b + sqdelta, den)" )
+                                    , tFrom "pos"
+                                    , ( "neg", "div(- b - sqdelta, den)" )
+                                    , tFrom "neg"
+                                    ]
+
+                                {- 3 ->
+                                   [ ( "a", get 3 )
+                                   , ( "b", get 2 )
+                                   , ( "c", get 1 )
+                                   , ( "dd", get 0 )
+                                   , ( "deltaZero", "by(b,b) - 3.0 * by(a,c)" )
+                                   , ( "deltaOne", "2.0 * by(b,b,b) - 9.0 * by(a,b,c) + 27.0 * by(a,a, dd)" )
+                                   , ( "inner", "csqrt(by(deltaOne,deltaOne) - 4.0 * by(deltaZero,deltaZero,deltaZero))" )
+                                   , ( "CargPlus", "deltaOne + inner" )
+                                   , ( "CargMinus", "deltaOne - inner" )
+                                   , ( "Carg", "length(CargMinus) > length(CargPlus) ? CargMinus : CargPlus" )
+                                   , ( "C", "ccbrt(0.5 * Carg)" )
+                                   , ( "coeff", "-div(vec2(1,0), 3.0 * a)" )
+                                   , ( "xi", "0.5 * vec2(-1,sqrt(3.0))" )
+                                   , ( "x", "by(coeff, b + C + div(deltaZero, C))" )
+                                   , tFrom "x"
+                                   , ( "C", "by(xi,C)" )
+                                   , ( "x", "by(coeff, b + C + div(deltaZero, C))" )
+                                   , tFrom "x"
+                                   , ( "C", "by(xi,C)" )
+                                   , ( "x", "by(coeff, b + C + div(deltaZero, C))" )
+                                   , tFrom "x"
+                                   ]
+                                -}
+                                _ ->
+                                    []
+                    in
+                    if not <| List.isEmpty sols then
+                        let
+                            checks =
+                                sols
+                                    |> List.foldl
+                                        (\( k, v ) ( known, lines ) ->
+                                            let
+                                                decl =
+                                                    if List.member k known then
+                                                        ""
+
+                                                    else
+                                                        "vec2 "
+
+                                                newLine =
+                                                    decl ++ k ++ " = " ++ v ++ ";"
+                                            in
+                                            ( k :: known, newLine :: lines )
+                                        )
+                                        ( [ "t" ], [] )
+                                    |> Tuple.second
+                                    |> List.reverse
+                                    |> String.join "\n                                    "
+
+                            srcExpr =
                                 """
                                 bool bisect""" ++ prefix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
-                                    float t = 2.0 * max_distance;
-                                    vec2 f;
-                                    """ ++ String.join "\n                                    " (List.concatMap check vals) ++ """
+                                    float t = max_distance * 2.0;
+                                    """ ++ checks ++ """
                                     found = o + t * d;
                                     return t < max_distance && t > 0.0;
                                 }
                                 """
-                            }
+                        in
+                        { expr = div one <| sqrt_ <| cbrt <| ipow e 3
+                        , srcExpr = deindent 28 srcExpr
+                        }
 
-                        _ ->
-                            { expr = e
-                            , srcExpr = toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
-                            }
+                    else
+                        { expr = e
+                        , srcExpr = toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
+                        }
 
 
 transitiveClosure : List Requirement -> List Requirement
@@ -398,8 +486,14 @@ toGlslFunction name =
         Sign ->
             Just Sign22
 
-        Sqrt ->
+        Root 2 ->
             Just Sqrt22
+
+        Root 3 ->
+            Just Cbrt22
+
+        Root _ ->
+            Nothing
 
         Ln ->
             Just Ln22
@@ -506,6 +600,9 @@ dependenciesOf req =
 
         RequireFunction Sqrt22 ->
             []
+
+        RequireFunction Cbrt22 ->
+            [ RequireOperation GlslPower ]
 
         RequireFunction Square22 ->
             []

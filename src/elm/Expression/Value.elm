@@ -246,8 +246,11 @@ applyValue context name args =
         KnownFunction Atan2 ->
             binaryFunctionValue context args Atan2 Complex.atan2
 
-        KnownFunction Sqrt ->
-            unaryFunctionValue context args Sqrt Complex.sqrt
+        KnownFunction (Root 2) ->
+            unaryFunctionValue context args (Root 2) Complex.sqrt
+
+        KnownFunction (Root n) ->
+            unaryFunctionValue context args (Root n) (\v -> Complex.power v (Complex.fromReal <| 1.0 / toFloat n))
 
         KnownFunction Ln ->
             unaryFunctionValue context args Ln Complex.ln

@@ -87,8 +87,11 @@ getRange ctx e =
                         o ->
                             o
 
-                Apply (KnownFunction Sqrt) [ c ] ->
+                Apply (KnownFunction (Root 2)) [ c ] ->
                     sqrtRange <| getRange ctx c
+
+                Apply (KnownFunction (Root 3)) [ c ] ->
+                    getRange ctx c
 
                 Apply (KnownFunction Re) [ _ ] ->
                     Real

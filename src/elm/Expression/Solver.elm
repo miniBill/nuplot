@@ -90,7 +90,13 @@ innerSolve v expr =
             SolutionError "Cannot solve disequations [yet!]"
 
         _ ->
-            innerSolve v <| RelationOperation Equals expr zero
+            case expr of
+                BinaryOperation Division n _ ->
+                    stepSimplify (innerSolve v) <| RelationOperation Equals n zero
+
+                _ ->
+                    SolutionStep (RelationOperation Equals expr zero) <|
+                        solveEquation v expr zero
 
 
 solveEquation : String -> Expression -> Expression -> SolutionTree
@@ -113,7 +119,14 @@ solveEquation v l r =
 
                         get k =
                             cleanCoeffs
-                                |> List.find (\( d, _ ) -> d == [ ( v, k ) ])
+                                |> List.find
+                                    (\( d, _ ) ->
+                                        if k == 0 then
+                                            d == []
+
+                                        else
+                                            d == [ ( v, k ) ]
+                                    )
                                 |> Maybe.map Tuple.second
                                 |> Maybe.withDefault zero
 
@@ -142,8 +155,9 @@ solveEquation v l r =
                                 Just ( [ ( _, 2 ) ], a ) ->
                                     solve2 v a (get 1) (get 0)
 
-                                Just ( [ ( _, 3 ) ], a ) ->
-                                    solve3 v a (get 2) (get 1) (get 0)
+                                Just ( [ ( _, 3 ) ], _ {- a -} ) ->
+                                    -- solve3 v a (get 2) (get 1) (get 0)
+                                    default ()
 
                                 Just ( [ ( _, 4 ) ], a ) ->
                                     if isZero (get 1) && isZero (get 3) then
@@ -437,9 +451,13 @@ stepSimplify final =
                     final e
 
                 else
+                    let
+                        _ =
+                            Debug.log "step" <| Expression.toString next
+                    in
                     SolutionStep e <| go (i - 1) next
     in
-    go 100
+    go 50
 
 
 solIs : String -> Expression -> Expression

@@ -40,6 +40,10 @@ straightOperationToGlsl op =
             vec2 by(vec2 a, vec2 b) {
                 return vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x);
             }
+
+            vec2 by(vec2 a, vec2 b, vec2 c) {
+                return by(by(a, b), c);
+            }
             """
 
         GlslNegation ->
@@ -339,6 +343,13 @@ straightFunctionToGlsl name =
                 float r = pow(dot(z, z), 0.25);
                 float t = atan(z.y, z.x) * 0.5;
                 return vec2(r * cos(t), r * sin(t));
+            }
+            """
+
+        Cbrt22 ->
+            """
+            vec2 ccbrt(vec2 z) {
+                return cpow(z, vec2(1.0 / 3.0, 0.0));
             }
             """
 
@@ -685,6 +696,21 @@ intervalFunctionToGlsl name =
 
             vec4 gsqrt(vec4 v) {
                 return vec4(sqrt(v.x), 0.5 * pow(v.x, -0.5) * v.yzw);
+            }
+            """
+
+        Cbrt22 ->
+            """
+            float cbrt(float v) {
+                return sign(v) * pow(abs(v), 1.0 / 3.0);
+            }
+
+            vec2 icbrt(vec2 v) {
+                return vec2(cbrt(v.x), cbrt(v.y));
+            }
+
+            vec4 gcbrt(vec4 v) {
+                return vec4(cbrt(v.x), pow(v.x, -2.0 / 3.0) / 3.0 * v.yzw);
             }
             """
 
@@ -1587,6 +1613,17 @@ suffixToBisect suffix =
 
 deindent : Int -> String -> String
 deindent i =
+    let
+        s =
+            String.repeat i " "
+    in
     String.split "\n"
-        >> List.map (String.dropLeft i)
+        >> List.map
+            (\l ->
+                if String.startsWith s l then
+                    String.dropLeft i l
+
+                else
+                    l
+            )
         >> String.join "\n"

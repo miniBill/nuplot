@@ -709,7 +709,8 @@ unaryFunctions =
         power =
             [ ( "abs", Abs )
             , ( "sign", Sign )
-            , ( "sqrt", Sqrt )
+            , ( "sqrt", Root 2 )
+            , ( "cbrt", Root 3 )
             , ( "ln", Ln )
             , ( "log10", Log10 )
             , ( "exp", Exp )
@@ -875,8 +876,14 @@ functionNameToString name =
         KnownFunction Sign ->
             "sign"
 
-        KnownFunction Sqrt ->
+        KnownFunction (Root 2) ->
             "sqrt"
+
+        KnownFunction (Root 3) ->
+            "cbrt"
+
+        KnownFunction (Root n) ->
+            "root" ++ String.fromInt n
 
         KnownFunction Ln ->
             "ln"
@@ -1428,8 +1435,11 @@ toTeXStringPrec p e =
             PApply (KnownFunction Abs) [ ex ] ->
                 paren (p > 10) <| "\\left|" ++ toTeXStringPrec 0 ex ++ "\\right|"
 
-            PApply (KnownFunction Sqrt) [ ex ] ->
+            PApply (KnownFunction (Root 2)) [ ex ] ->
                 paren (p > 10) <| "\\sqrt{" ++ toTeXStringPrec 0 ex ++ "}"
+
+            PApply (KnownFunction (Root n)) [ ex ] ->
+                paren (p > 10) <| "\\sqrt[" ++ String.fromInt n ++ "]{" ++ toTeXStringPrec 0 ex ++ "}"
 
             PApply name [ (PList _) as ex ] ->
                 paren (p > 10) <| "\\mathrm{" ++ functionNameToString name ++ "}" ++ toTeXStringPrec 0 ex

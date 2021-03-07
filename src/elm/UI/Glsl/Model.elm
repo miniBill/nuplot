@@ -28,6 +28,7 @@ type GlslFunction
     | Sinh11
     | Sinh22
     | Sqrt22
+    | Cbrt22
     | Square22
     | Tan22
     | Tanh11

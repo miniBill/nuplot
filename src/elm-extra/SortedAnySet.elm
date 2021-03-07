@@ -1,4 +1,4 @@
-module SortedAnySet exposing (SortedAnySet, empty, insert, isEmpty, member, singleton, toList)
+module SortedAnySet exposing (SortedAnySet, empty, fromList, insert, isEmpty, member, singleton, toList)
 
 
 type SortedAnySet a
@@ -17,6 +17,11 @@ insert x ((SortedAnySet list) as o) =
 
     else
         SortedAnySet <| x :: list
+
+
+fromList : List a -> SortedAnySet a
+fromList =
+    List.foldr insert empty
 
 
 toList : SortedAnySet a -> List a

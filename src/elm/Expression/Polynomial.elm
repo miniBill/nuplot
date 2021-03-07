@@ -2,7 +2,7 @@ module Expression.Polynomial exposing (Exponents, Polynomial, asPolynomial)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
-import Expression.Utils exposing (byShort, negateShort, one, plusShort)
+import Expression.Utils exposing (byShort, div, negateShort, one, plusShort)
 import List
 import List.Extra as List
 import List.MyExtra as List
@@ -51,6 +51,24 @@ asPolynomial vars e =
 
                 BinaryOperation Power b (Integer i) ->
                     Maybe.andThen (pow i) (asPolynomial vars b)
+
+                BinaryOperation Division n d ->
+                    let
+                        polyD =
+                            Maybe.map Dict.toList <| asPolynomial vars d
+                    in
+                    case polyD of
+                        Just [ ( [], z ) ] ->
+                            asPolynomial vars n
+                                |> Maybe.map
+                                    (Dict.map
+                                        (\_ k ->
+                                            div k z
+                                        )
+                                    )
+
+                        _ ->
+                            Nothing
 
                 _ ->
                     Nothing

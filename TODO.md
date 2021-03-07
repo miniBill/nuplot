@@ -1,4 +1,10 @@
+# Doing
 * Use solver for fast graphs
+
+# Todo
+* Wrap equations
+* Prefilter associative
+* Fuzzy solver
 * Add all the graph types to the default example
 * Better onboarding
 * Save on Google

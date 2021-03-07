@@ -20,7 +20,7 @@ import Expression
         )
 import Expression.Derivative
 import Expression.Polynomial exposing (asPolynomial)
-import Expression.Utils exposing (abs_, by, byShort, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
+import Expression.Utils exposing (abs_, by, byShort, cbrt, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
 import Fraction
 import List
 import List.Extra as List
@@ -218,9 +218,13 @@ stepSimplifyApply fname sargs =
 
         KnownFunction name ->
             case ( name, sargs ) of
-                ( Sqrt, [ arg ] ) ->
+                ( Root 2, [ arg ] ) ->
                     stepSimplifySqrt arg
                         |> Maybe.withDefault (sqrt_ arg)
+
+                ( Root 3, [ arg ] ) ->
+                    stepSimplifyCbrt arg
+                        |> Maybe.withDefault (cbrt arg)
 
                 ( Sinh, [ AssociativeOperation Multiplication l r o ] ) ->
                     case extract (findSpecificVariable "i") (l :: r :: o) of
@@ -313,6 +317,49 @@ stepSimplifySqrt sarg =
             Nothing
 
 
+stepSimplifyCbrt : Expression -> Maybe Expression
+stepSimplifyCbrt sarg =
+    case sarg of
+        Integer j ->
+            cbrtInteger j
+
+        BinaryOperation Division n d ->
+            Just <| div (cbrt n) (cbrt d)
+
+        AssociativeOperation Multiplication l m r ->
+            let
+                cbrts =
+                    (l :: m :: r) |> List.map stepSimplifyCbrt
+            in
+            if List.any ((/=) Nothing) cbrts then
+                Just <| by <| List.map2 (Maybe.withDefault << cbrt) (l :: m :: r) cbrts
+
+            else
+                Nothing
+
+        BinaryOperation Power b (Integer e) ->
+            if e < 0 then
+                Nothing
+
+            else
+                let
+                    outer =
+                        ipowShort b (e // 3)
+                in
+                case modBy 3 e of
+                    0 ->
+                        Just outer
+
+                    1 ->
+                        Just <| byShort [ outer, cbrt b ]
+
+                    _ ->
+                        Just <| byShort [ outer, cbrt <| square b ]
+
+        _ ->
+            Nothing
+
+
 sqrtInteger : Int -> Maybe Expression
 sqrtInteger j =
     let
@@ -350,6 +397,47 @@ sqrtInteger j =
     in
     if j < 0 then
         Just <| by [ Variable "i", Maybe.withDefault (sqrt_ (Integer a)) s ]
+
+    else
+        s
+
+
+cbrtInteger : Int -> Maybe Expression
+cbrtInteger j =
+    let
+        a =
+            abs j
+
+        r =
+            truncate (toFloat a ^ (1.0 / 3.0))
+
+        s =
+            let
+                ( outer, inner ) =
+                    factor a
+                        |> List.foldl
+                            (\( f, e ) ( o, i ) ->
+                                ( o * f ^ (e // 3)
+                                , i * f ^ modBy 3 e
+                                )
+                            )
+                            ( 1, 1 )
+            in
+            case ( outer, inner ) of
+                ( _, 1 ) ->
+                    Just <| Integer outer
+
+                ( 1, _ ) ->
+                    Nothing
+
+                _ ->
+                    Just <| by [ Integer outer, cbrt <| Integer inner ]
+    in
+    if r * r * r == j then
+        Just <| Integer r
+
+    else if j < 0 then
+        Just <| negate_ <| Maybe.withDefault (cbrt (Integer a)) s
 
     else
         s
