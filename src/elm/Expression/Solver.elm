@@ -451,10 +451,6 @@ stepSimplify final =
                     final e
 
                 else
-                    let
-                        _ =
-                            Debug.log "step" <| Expression.toString next
-                    in
                     SolutionStep e <| go (i - 1) next
     in
     go 50
