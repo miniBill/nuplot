@@ -210,7 +210,10 @@ get3DSource expandIntervals prefix e =
                                 1 ->
                                     -- ax + b = 0
                                     -- x = -b / a
-                                    [ ( "a", get 1 )
+                                    [ ( "!dx", "mix(d[0].x, d[1].x, 0.5)" )
+                                    , ( "!dy", "mix(d[0].y, d[1].y, 0.5)" )
+                                    , ( "!dz", "mix(d[0].z, d[1].z, 0.5)" )
+                                    , ( "a", get 1 )
                                     , ( "b", get 0 )
                                     , ( "x", "div(-b, a)" )
                                     , tFrom "x"
@@ -218,7 +221,10 @@ get3DSource expandIntervals prefix e =
 
                                 2 ->
                                     -- ax² + bx + c = 0
-                                    [ ( "a", get 2 )
+                                    [ ( "!dx", "mix(d[0].x, d[1].x, 0.5)" )
+                                    , ( "!dy", "mix(d[0].y, d[1].y, 0.5)" )
+                                    , ( "!dz", "mix(d[0].z, d[1].z, 0.5)" )
+                                    , ( "a", get 2 )
                                     , ( "b", get 1 )
                                     , ( "c", get 0 )
                                     , ( "delta", "by(b,b) - 4.0 * by(a,c)" )
@@ -264,15 +270,18 @@ get3DSource expandIntervals prefix e =
                                     |> List.foldl
                                         (\( k, v ) ( known, lines ) ->
                                             let
-                                                decl =
+                                                ( decl, drop ) =
                                                     if List.member k known then
-                                                        ""
+                                                        ( "", 0 )
+
+                                                    else if String.startsWith "!" k then
+                                                        ( "float ", 1 )
 
                                                     else
-                                                        "vec2 "
+                                                        ( "vec2 ", 0 )
 
                                                 newLine =
-                                                    decl ++ k ++ " = " ++ v ++ ";"
+                                                    decl ++ String.dropLeft drop k ++ " = " ++ v ++ ";"
                                             in
                                             ( k :: known, newLine :: lines )
                                         )
@@ -286,7 +295,7 @@ get3DSource expandIntervals prefix e =
                                 bool bisect""" ++ prefix ++ """(vec3 o, mat2x3 d, float max_distance, out vec3 found) {
                                     float t = max_distance * 2.0;
                                     """ ++ checks ++ """
-                                    found = mix(o + t * d[0], o + t * d[1], 0.5);
+                                    found = o + t * mix(d[0], d[1], 0.5);
                                     return t < max_distance && t > 0.0;
                                 }
                                 """

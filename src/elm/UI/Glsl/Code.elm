@@ -1538,8 +1538,7 @@ raytrace suffixes =
     in
     """
             vec4 raytrace(vec3 o, mat2x3 d, float max_distance) {
-                vec3 diffs = d[1] - d[0];
-                vec3 found = o + max_distance * (d[0] + d[1]);
+                vec3 found = vec3(0);
                 float curr_distance = max_distance;
                 int found_index = -1;
                 vec3 f = vec3(0);
@@ -1549,6 +1548,7 @@ raytrace suffixes =
                     float hue_based_on_index = (float(found_index))*radians(360.0 / 1.1);
 
                     vec3 ld = normalize(vec3(-0.3, 0.0, 1.0));
+                    vec3 diffs = d[1] - d[0];
                     mat2x3 light_direction = mat2x3(ld - 0.5 * diffs, ld + 0.5 * diffs);
                     float light_distance = max_distance;
                     float light_coeff = 0.45;
