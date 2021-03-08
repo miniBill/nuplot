@@ -3,9 +3,8 @@ module UI.Glsl exposing (getGlsl)
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Graph exposing (Graph(..))
-import Expression.Polynomial exposing (Polynomial, asPolynomial)
-import Expression.Solver
-import Expression.Utils exposing (by, cbrt, div, double, ipow, ln_, minus, negate_, one, plus, sqrt_, square, zero)
+import Expression.Polynomial exposing (asPolynomial)
+import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, square, zero)
 import List
 import List.Extra as List
 import List.MyExtra as List
