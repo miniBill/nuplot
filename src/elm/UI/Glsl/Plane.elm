@@ -44,10 +44,10 @@ toGlsl suffix (Plane { x, y, z, known }) =
     -- t (a dx + b dy + c dy) = - k - (a ox + b oy + c oz)
     -- t = - (k + dot abc o) / (dot abc d)
     """
-    bool bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
+    bool bisect""" ++ suffix ++ """(vec3 o, mat2x3 d, float max_distance, out vec3 found) {
         vec3 coeffs = vec3(""" ++ floatToGlsl x ++ "," ++ floatToGlsl y ++ "," ++ floatToGlsl z ++ """);
-        float t = -(""" ++ floatToGlsl known ++ """ + dot(coeffs, o)) / dot(coeffs, d);
-        found = o + t * d;
+        float t = -(""" ++ floatToGlsl known ++ """ + dot(coeffs, o)) / dot(coeffs, 0.5 * (d[0] + d[1]));
+        found = o + t * 0.5 * (d[0] + d[1]);
         return t > """ ++ threshold ++ """;
     }
     """

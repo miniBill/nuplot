@@ -228,6 +228,7 @@ init ({ saved, hasClipboard, languages } as flags) url key =
                         |> List.head
                         |> Maybe.withDefault En
                 , expandIntervals = True
+                , rayDifferentials = True
 
                 -- The other classes have faster processors so should update quicker
                 , deviceClass = Phone
@@ -536,10 +537,33 @@ dropdown model =
                     [ Element.element <| Icons.funnelPlotOutlined Theme.darkIconAttrs
                     , bigStop
                     ]
-                    { en = "Do not apply noise reduction", it = "Non applicare riduzione rumore" }
+                    { en = "Do not apply noise reduction"
+                    , it = "Non applicare riduzione rumore"
+                    }
 
             else
-                simpleBtn (ToggleExpandIntervals True) Icons.funnelPlotOutlined { en = "Apply noise reduction", it = "Applica riduzione rumore" }
+                simpleBtn (ToggleExpandIntervals True)
+                    Icons.funnelPlotOutlined
+                    { en = "Apply noise reduction"
+                    , it = "Applica riduzione rumore"
+                    }
+
+        rayDifferentialsButton rayDifferentials =
+            if rayDifferentials then
+                btn (ToggleRayDifferentials False)
+                    [ Element.element <| Icons.funnelPlotOutlined Theme.darkIconAttrs
+                    , bigStop
+                    ]
+                    { en = "Do not apply ray differentials"
+                    , it = "Non applicare differenziali raggi"
+                    }
+
+            else
+                simpleBtn (ToggleRayDifferentials True)
+                    Icons.funnelPlotOutlined
+                    { en = "Apply ray differentials"
+                    , it = "Applica differenziali raggi"
+                    }
 
         buttons =
             let
@@ -555,6 +579,7 @@ dropdown model =
                             { en = "Save", it = "Salva" }
                     )
             , Just <| Element.with .expandIntervals expandIntervalsButton
+            , Just <| Element.with .rayDifferentials rayDifferentialsButton
 
             {- , sid
                |> Maybe.map
@@ -1084,6 +1109,13 @@ update msg =
                             model.context
                     in
                     ( { model | context = { context | expandIntervals = expandIntervals } }, Cmd.none )
+
+                ToggleRayDifferentials rayDifferentials ->
+                    let
+                        context =
+                            model.context
+                    in
+                    ( { model | context = { context | rayDifferentials = rayDifferentials } }, Cmd.none )
 
                 GoogleAuth ->
                     ( model, UI.Ports.openWindow <| Google.authenticationFlowUrl model.rootUrl )

@@ -101,8 +101,8 @@ draw { width, height } id { wdiv, hdiv } graph =
             [ inFront buttonsRow
             ]
     in
-    Element.with .expandIntervals <|
-        \expandIntervals ->
+    Element.with identity <|
+        \{ rayDifferentials, expandIntervals } ->
             el attrs <|
                 Element.html <|
                     Html.node "nu-plot"
@@ -111,7 +111,7 @@ draw { width, height } id { wdiv, hdiv } graph =
                                 id
                           in
                           Html.Attributes.id cid
-                        , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl expandIntervals graph
+                        , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl expandIntervals rayDifferentials graph
                         , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
                         , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
                         , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines

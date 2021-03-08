@@ -29,7 +29,7 @@ export class NuPlot extends HTMLElement {
   completelyReal = 0;
   denoise = 0.000001;
   is3D = 0;
-  minIterations = 25;
+  minIterations = 50;
   currIterations = 400;
   maxIterations = 400;
 

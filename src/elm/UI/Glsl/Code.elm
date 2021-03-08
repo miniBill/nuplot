@@ -1359,17 +1359,17 @@ floatToGlsl f =
         s ++ ".0"
 
 
-mainGlsl : List { name : String, color : Bool } -> List String -> String
-mainGlsl pixel2 pixel3 =
+mainGlsl : Bool -> List { name : String, color : Bool } -> List String -> String
+mainGlsl rayDifferentials pixel2 pixel3 =
     case ( pixel2, pixel3 ) of
         ( _, [] ) ->
             main2D pixel2 ++ "\n\nvoid main () { gl_FragColor = pixel2(); }"
 
         ( [], _ ) ->
-            main3D pixel3 ++ "\n\nvoid main () { gl_FragColor = pixel3(); }"
+            main3D rayDifferentials pixel3 ++ "\n\nvoid main () { gl_FragColor = pixel3(); }"
 
         _ ->
-            main2D pixel2 ++ "\n\n" ++ main3D pixel3 ++ "\n\nvoid main () { gl_FragColor = max(pixel2(), pixel3()); }"
+            main2D pixel2 ++ "\n\n" ++ main3D rayDifferentials pixel3 ++ "\n\nvoid main () { gl_FragColor = max(pixel2(), pixel3()); }"
 
 
 main2D : List { name : String, color : Bool } -> String
@@ -1449,9 +1449,9 @@ toSrc3D expandIntervals suffix e =
         return normalize(gradient.yzw);
     }
 
-    vec2 interval""" ++ suffix ++ """(vec3 f, vec3 t) {
-        vec3 mn = min(f, t);
-        vec3 mx = max(f, t);
+    vec2 interval""" ++ suffix ++ """(mat2x3 f, mat2x3 t) {
+        vec3 mn = min(f[0], t[0]);
+        vec3 mx = max(f[1], t[1]);
         vec2 x = vec2(mn.x, mx.x);
         vec2 y = vec2(mn.y, mx.y);
         vec2 z = vec2(mn.z, mx.z);
@@ -1460,11 +1460,18 @@ toSrc3D expandIntervals suffix e =
     """
 
 
-main3D : List String -> String
-main3D suffixes =
-    deindent 12 <|
-        raytrace suffixes
-            ++ """
+main3D : Bool -> List String -> String
+main3D rayDifferentials suffixes =
+    let
+        iif b t f =
+            if b then
+                t
+
+            else
+                f
+
+        block =
+            """
             vec4 pixel3 () {
                 float eye_dist = 2.0 * u_viewportWidth;
                 vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
@@ -1488,10 +1495,17 @@ main3D suffixes =
                 vec3 canvas_point = canvas_center + uv_normalized.x * across + uv_normalized.y * up;
 
                 vec3 ray_direction = normalize(canvas_point - eye);
+
+                vec3 diffs = fwidth(ray_direction);
+                float k = """ ++ iif rayDifferentials "0.5" "0.0" ++ """;
+                mat2x3 d = mat2x3(ray_direction - k * diffs, ray_direction + k * diffs);
+
                 float max_distance = 40.0 * eye_dist;
-                return raytrace(canvas_point, ray_direction, max_distance);
+                return raytrace(canvas_point, d, max_distance);
             }
         """
+    in
+    deindent 12 <| raytrace suffixes ++ block
 
 
 raytrace : List String -> String
@@ -1523,8 +1537,9 @@ raytrace suffixes =
             """
     in
     """
-            vec4 raytrace(vec3 o, vec3 d, float max_distance) {
-                vec3 found = o + 2.0 * max_distance * d;
+            vec4 raytrace(vec3 o, mat2x3 d, float max_distance) {
+                vec3 diffs = d[1] - d[0];
+                vec3 found = o + max_distance * (d[0] + d[1]);
                 float curr_distance = max_distance;
                 int found_index = -1;
                 vec3 f = vec3(0);
@@ -1533,7 +1548,8 @@ raytrace suffixes =
                 if(found_index >= 0) {
                     float hue_based_on_index = (float(found_index))*radians(360.0 / 1.1);
 
-                    vec3 light_direction = normalize(vec3(-0.3, 0.0, 1.0));
+                    vec3 ld = normalize(vec3(-0.3, 0.0, 1.0));
+                    mat2x3 light_direction = mat2x3(ld - 0.5 * diffs, ld + 0.5 * diffs);
                     float light_distance = max_distance;
                     float light_coeff = 0.45;
                     vec3 offseted = found + 0.0001 * max_distance * normalize(o - found);
@@ -1561,21 +1577,21 @@ threshold =
 suffixToBisect : String -> String
 suffixToBisect suffix =
     """
-            bool bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
-                vec3 from = o;
-                vec3 to = o + max_distance * d;
+            bool bisect""" ++ suffix ++ """(vec3 o, mat2x3 d, float max_distance, out vec3 found) {
+                mat2x3 from = mat2x3(o, o);
+                mat2x3 to = from + max_distance * d;
                 float ithreshold = """ ++ threshold ++ """;
                 int depth = 0;
                 int choices = 0;
                 for(int it = 0; it < MAX_ITERATIONS; it++) {
-                    vec3 midpoint = mix(from, to, 0.5);
+                    mat2x3 midpoint = 0.5 * (from + to);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
                     if(depth >= MAX_DEPTH
                         || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
                         || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
                         ) {
-                            found = midpoint;
+                            found = 0.5 * (midpoint[0] + midpoint[1]);
                             return true;
                         }
                     if(front.x <= 0.0 && front.y >= 0.0) {

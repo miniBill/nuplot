@@ -54,6 +54,7 @@ type alias Context =
     { language : Language
     , hasClipboard : Bool
     , expandIntervals : Bool
+    , rayDifferentials : Bool
     , deviceClass : DeviceClass
     }
 
@@ -80,6 +81,7 @@ type Msg
     | ToggleMenu Bool
     | ToggleShowPendingActions Bool
     | ToggleExpandIntervals Bool
+    | ToggleRayDifferentials Bool
     | Language Language
     | GoogleAuth
     | GoogleGotAccessToken String

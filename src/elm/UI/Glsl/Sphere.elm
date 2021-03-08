@@ -75,11 +75,11 @@ reduce poly =
 toGlsl : String -> Sphere -> String
 toGlsl suffix (Sphere { center, radius }) =
     """
-    bool bisect""" ++ suffix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
+    bool bisect""" ++ suffix ++ """(vec3 o, mat2x3 d, float max_distance, out vec3 found) {
         vec3 center = vec3(""" ++ floatToGlsl center.x ++ """,""" ++ floatToGlsl center.y ++ """,""" ++ floatToGlsl center.z ++ """);
 
         vec3 to_center = o - center;
-        float b = dot(to_center, d);
+        float b = dot(to_center, 0.5 * (d[0] + d[1]));
         float c = dot(to_center, to_center) - """ ++ floatToGlsl (radius * radius) ++ """;
         float delta = b*b - c;
         if(delta < 0.0)
@@ -87,7 +87,7 @@ toGlsl suffix (Sphere { center, radius }) =
         float x = -b - sqrt(delta);
         if(x < """ ++ threshold ++ """)
             return false;
-        found = o + x * d;
+        found = o + x * 0.5 * (d[0] + d[1]);
         return true;
     }
     """

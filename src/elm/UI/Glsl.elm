@@ -16,8 +16,8 @@ import UI.Glsl.Plane as Plane
 import UI.Glsl.Sphere as Sphere
 
 
-getGlsl : Bool -> Graph -> String
-getGlsl expandIntervals graph =
+getGlsl : Bool -> Bool -> Graph -> String
+getGlsl expandIntervals rayDifferentials graph =
     let
         { expr, srcExpr, interval, thetaDelta, pixel2D, pixel3D } =
             extract "" graph
@@ -126,7 +126,7 @@ getGlsl expandIntervals graph =
         ++ reqs
         ++ "\n/* Expression */\n"
         ++ deindent 4 srcExpr
-        ++ mainGlsl pixel2D pixel3D
+        ++ mainGlsl rayDifferentials pixel2D pixel3D
 
 
 get3DSource : Bool -> String -> Expression -> { expr : Expression, srcExpr : String }
@@ -150,7 +150,7 @@ get3DSource expandIntervals prefix e =
                             Variable "t"
 
                         var v =
-                            plus [ Variable <| "o." ++ v, by [ t, Variable <| "d." ++ v ] ]
+                            plus [ Variable <| "o." ++ v, by [ t, Variable <| "d" ++ v ] ]
 
                         repls =
                             [ "x", "y", "z" ]
@@ -283,10 +283,10 @@ get3DSource expandIntervals prefix e =
 
                             srcExpr =
                                 """
-                                bool bisect""" ++ prefix ++ """(vec3 o, vec3 d, float max_distance, out vec3 found) {
+                                bool bisect""" ++ prefix ++ """(vec3 o, mat2x3 d, float max_distance, out vec3 found) {
                                     float t = max_distance * 2.0;
                                     """ ++ checks ++ """
-                                    found = o + t * d;
+                                    found = mix(o + t * d[0], o + t * d[1], 0.5);
                                     return t < max_distance && t > 0.0;
                                 }
                                 """
