@@ -1496,7 +1496,7 @@ main3D rayDifferentials suffixes =
 
                 vec3 ray_direction = normalize(canvas_point - eye);
 
-                vec3 diffs = fwidth(ray_direction);
+                vec3 diffs = abs(fwidth(ray_direction));
                 float k = """ ++ iif rayDifferentials "0.5" "0.0" ++ """;
                 mat2x3 d = mat2x3(ray_direction - k * diffs, ray_direction + k * diffs);
 
@@ -1591,7 +1591,7 @@ suffixToBisect suffix =
                         || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
                         || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
                         ) {
-                            found = 0.5 * (midpoint[0] + midpoint[1]);
+                            found = mix(midpoint[0], midpoint[1], 0.5);
                             return true;
                         }
                     if(front.x <= 0.0 && front.y >= 0.0) {
