@@ -227,7 +227,7 @@ init ({ saved, hasClipboard, languages } as flags) url key =
                         |> List.filterMap identity
                         |> List.head
                         |> Maybe.withDefault En
-                , expandIntervals = True
+                , expandIntervals = False
                 , rayDifferentials = True
 
                 -- The other classes have faster processors so should update quicker

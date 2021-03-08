@@ -1497,10 +1497,10 @@ main3D rayDifferentials suffixes =
                 vec3 ray_direction = normalize(canvas_point - eye);
 
                 vec3 diffs = abs(fwidth(ray_direction));
-                float k = """ ++ iif rayDifferentials "0.5" "0.0" ++ """;
+                float k = """ ++ iif rayDifferentials "0.001" "0.0" ++ """;
                 mat2x3 d = mat2x3(ray_direction - k * diffs, ray_direction + k * diffs);
 
-                float max_distance = 40.0 * eye_dist;
+                float max_distance = 100.0 * eye_dist;
                 return raytrace(canvas_point, d, max_distance);
             }
         """
