@@ -342,14 +342,19 @@ straightFunctionToGlsl name =
                 }
                 float r = pow(dot(z, z), 0.25);
                 float t = atan(z.y, z.x) * 0.5;
-                return vec2(r * cos(t), r * sin(t));
+                return r * vec2(cos(t), sin(t));
             }
             """
 
         Cbrt22 ->
             """
             vec2 ccbrt(vec2 z) {
-                return cpow(z, vec2(1.0 / 3.0, 0.0));
+                if(z.y == 0.0) {
+                    return vec2(sign(z.x) * pow(z.x, 1.0 / 3.0), 0);
+                }
+                float r = pow(dot(z, z), 1.0 / 6.0);
+                float t = atan(z.y, z.x) / 3.0;
+                return r * vec2(cos(t), sin(t));
             }
             """
 
@@ -1347,7 +1352,7 @@ floatToGlsl f =
         s =
             String.fromFloat f
     in
-    if String.contains "." s then
+    if String.contains "." s || String.contains "e" s then
         s
 
     else
