@@ -226,6 +226,14 @@ stepSimplifyApply fname sargs =
                     stepSimplifyCbrt arg
                         |> Maybe.withDefault (cbrt arg)
 
+                ( Sin, [ arg ] ) ->
+                    stepSimplifySin arg
+                        |> Maybe.withDefault (sin_ arg)
+
+                ( Cos, [ arg ] ) ->
+                    stepSimplifyCos arg
+                        |> Maybe.withDefault (cos_ arg)
+
                 ( Sinh, [ AssociativeOperation Multiplication l r o ] ) ->
                     case extract (findSpecificVariable "i") (l :: r :: o) of
                         Just ( _, rest ) ->
@@ -312,6 +320,47 @@ stepSimplifySqrt sarg =
 
                 else
                     Just <| byShort [ outer, sqrt_ b ]
+
+        _ ->
+            Nothing
+
+
+stepSimplifySin : Expression -> Maybe Expression
+stepSimplifySin sarg =
+    case sarg of
+        Float j ->
+            Just <| Float <| sin j
+
+        AssociativeOperation Addition l m r ->
+            let
+                rr =
+                    plus <| m :: r
+            in
+            Just <|
+                plus
+                    [ by [ sin_ l, cos_ rr ]
+                    , by [ cos_ l, sin_ rr ]
+                    ]
+
+        _ ->
+            Nothing
+
+
+stepSimplifyCos : Expression -> Maybe Expression
+stepSimplifyCos sarg =
+    case sarg of
+        Float j ->
+            Just <| Float <| cos j
+
+        AssociativeOperation Addition l m r ->
+            let
+                rr =
+                    plus <| m :: r
+            in
+            Just <|
+                minus
+                    (by [ cos_ l, cos_ rr ])
+                    (by [ sin_ l, sin_ rr ])
 
         _ ->
             Nothing
