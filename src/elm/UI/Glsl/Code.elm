@@ -353,7 +353,7 @@ straightFunctionToGlsl name =
                     return vec2(sign(z.x) * pow(z.x, 1.0 / 3.0), 0);
                 }
                 float r = pow(dot(z, z), 1.0 / 6.0);
-                float t = atan(z.y, z.x) / 3.0;
+                float t = atan(z.y, z.x) / 3.0 + (z.x > 0.0 ? 0.0 : radians(120.0));
                 return r * vec2(cos(t), sin(t));
             }
             """

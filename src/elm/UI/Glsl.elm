@@ -237,7 +237,10 @@ get3DSource expandIntervals prefix e =
                                     ]
 
                                 {- 3 ->
-                                   [ ( "a", get 3 )
+                                   [ ( "!dx", "mix(d[0].x, d[1].x, 0.5)" )
+                                   , ( "!dy", "mix(d[0].y, d[1].y, 0.5)" )
+                                   , ( "!dz", "mix(d[0].z, d[1].z, 0.5)" )
+                                   , ( "a", get 3 )
                                    , ( "b", get 2 )
                                    , ( "c", get 1 )
                                    , ( "dd", get 0 )
