@@ -115,7 +115,7 @@ export class NuPlot extends HTMLElement {
     const oldIterations = this.currIterations;
     this.currIterations = this.maxIterations;
 
-    this.reloadFragmentShader(this.buildFragmentShader(this.src));
+    this.reloadFragmentShader();
     this.render();
     callback();
 
@@ -127,7 +127,7 @@ export class NuPlot extends HTMLElement {
     }
 
     this.currIterations = oldIterations;
-    this.reloadFragmentShader(this.buildFragmentShader(this.src));
+    this.reloadFragmentShader();
   }
 
   resetZoom() {
@@ -426,7 +426,7 @@ export class NuPlot extends HTMLElement {
         this.render();
       } else {
         this.currIterations = this.minIterations;
-        this.reloadFragmentShader(this.buildFragmentShader(this.src));
+        this.reloadFragmentShader();
       }
       this.renderOnAnimationFrame();
       this.hadPointersDown = true;
@@ -434,7 +434,7 @@ export class NuPlot extends HTMLElement {
       this.render();
       if (!this.hadPointersDown) {
         this.currIterations = this.maxIterations;
-        this.reloadFragmentShader(this.buildFragmentShader(this.src));
+        this.reloadFragmentShader();
       }
       this.renderWithDelay(
         this.currIterations == this.minIterations ? 300 : 100
@@ -443,7 +443,7 @@ export class NuPlot extends HTMLElement {
     } else if (this.currIterations >= this.maxIterations) {
       this.render();
       this.currIterations = this.minIterations;
-      this.reloadFragmentShader(this.buildFragmentShader(this.src));
+      this.reloadFragmentShader();
       this.hadPointersDown = false;
     } else {
       this.render();
@@ -528,12 +528,14 @@ export class NuPlot extends HTMLElement {
     if (newValue == this.src) return;
     this.currIterations = this.maxIterations;
     this.src = newValue;
-    this.reloadFragmentShader(this.buildFragmentShader(this.src));
+    this.reloadFragmentShader();
     this.renderOnAnimationFrame();
   }
 
-  reloadFragmentShader(src: string) {
-    if (!src || !this.gl || !this.program || !this.fragment_shader) return;
+  reloadFragmentShader() {
+    if (!this.gl || !this.program || !this.fragment_shader || !this.src) return;
+
+    var src = this.buildFragmentShader(this.src);
 
     this.sourceAndCompile(this.fragment_shader, src);
 
