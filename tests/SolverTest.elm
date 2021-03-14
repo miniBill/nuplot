@@ -1,4 +1,4 @@
-module SolverTest exposing (..)
+module SolverTest exposing (suite)
 
 import Dict
 import Expect

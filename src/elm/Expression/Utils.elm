@@ -3,7 +3,6 @@ module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, byShort, c, cbr
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), genericAsSquareMatrix, genericDeterminant, visit)
 import List.Extra as List
-import Result.Extra as Result
 
 
 

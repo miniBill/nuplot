@@ -1,15 +1,14 @@
-module UI.Model exposing (CanvasId(..), CellMsg(..), Context, DocumentMsg(..), Flags, Google, Model, Msg(..), documentsCodec)
+module UI.Model exposing (CanvasId(..), CellMsg(..), Context, DocumentMsg(..), Flags, Google, Model, Msg(..), Size, documentsCodec)
 
 import API.Google as Google
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec)
-import Document as Document exposing (RowData(..), StoredDocument, UIDocument)
+import Document exposing (RowData(..), StoredDocument, UIDocument)
 import Element.WithContext exposing (DeviceClass)
 import File exposing (File)
 import Json.Decode as JD
 import List.Extra as List
 import List.MyExtra as List exposing (LeftOrRight(..))
-import Maybe.MyExtra as Maybe
 import UI.L10N exposing (Language)
 import Zipper exposing (Zipper)
 
