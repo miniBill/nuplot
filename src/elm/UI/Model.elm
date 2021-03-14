@@ -21,6 +21,7 @@ import Zipper exposing (Zipper)
 type alias Flags =
     { saved : JD.Value
     , hasClipboard : Bool
+    , hasFullscreen : Bool
     , languages : List String
     , rootUrl : String
     , googleAccessToken : String
@@ -53,6 +54,7 @@ type alias Size =
 type alias Context =
     { language : Language
     , hasClipboard : Bool
+    , hasFullscreen : Bool
     , expandIntervals : Bool
     , rayDifferentials : Bool
     , deviceClass : DeviceClass

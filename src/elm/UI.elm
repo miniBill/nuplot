@@ -75,7 +75,7 @@ defaultDocument =
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
-init ({ saved, hasClipboard, languages } as flags) url key =
+init ({ saved, hasClipboard, hasFullscreen, languages } as flags) url key =
     let
         indexToId index =
             let
@@ -219,6 +219,7 @@ init ({ saved, hasClipboard, languages } as flags) url key =
             , google = google
             , context =
                 { hasClipboard = hasClipboard
+                , hasFullscreen = hasFullscreen
                 , language =
                     languages
                         |> List.map parseLanguage

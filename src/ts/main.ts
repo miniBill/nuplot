@@ -38,6 +38,7 @@ function innerInit(Elm: ElmType, saved: { [key: string]: string }) {
     flags: {
       saved: saved,
       hasClipboard: typeof ClipboardItem !== "undefined",
+      hasFullscreen: "onfullscreenchange" in node,
       languages: "languages" in navigator ? navigator.languages : [],
       rootUrl: window.location.toString(),
       googleAccessToken: localStorage.getItem("googleAccessToken") ?? "",

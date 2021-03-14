@@ -7,6 +7,7 @@ export type ElmType = {
       flags: {
         saved: { [key: string]: string };
         hasClipboard: boolean;
+        hasFullscreen: boolean;
         languages: readonly string[];
         rootUrl: string;
         googleAccessToken: string;

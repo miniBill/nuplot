@@ -96,8 +96,16 @@ draw { width, height } id { wdiv, hdiv } graph =
         noRound =
             { topLeft = 0, topRight = 0, bottomLeft = 0, bottomRight = 0 }
 
-        fullscreenButton =
-            iconButton FullscreenCanvas { noRound | topLeft = Theme.spacing } Icons.fullscreenOutlined
+        brButtonsRow =
+            Element.with .hasFullscreen <|
+                \hasFullscreen ->
+                    Element.row [ alignRight, alignBottom ] <|
+                        if hasFullscreen then
+                            [ iconButton FullscreenCanvas { noRound | topLeft = Theme.spacing } Icons.fullscreenOutlined
+                            ]
+
+                        else
+                            []
 
         urButtonsRow =
             Element.with .hasClipboard <|
@@ -111,9 +119,6 @@ draw { width, height } id { wdiv, hdiv } graph =
                         else
                             [ iconButton SaveCanvas { noRound | bottomLeft = Theme.spacing } Icons.saveOutlined
                             ]
-
-        brButtonsRow =
-            Element.row [ alignRight, alignBottom ] [ fullscreenButton ]
 
         attrs =
             [ inFront urButtonsRow
