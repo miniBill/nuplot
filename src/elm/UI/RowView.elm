@@ -77,13 +77,14 @@ draw { width, height } id { wdiv, hdiv } graph =
         imageHeight =
             min rawImageHeight <| rawImageWidth * 4 // 3
 
-        iconButton msg icon =
+        iconButton msg rounds icon =
             Input.button
                 [ Element.behindContent <|
                     el
                         [ Element.width fill
                         , Element.height fill
                         , Background.color <| Element.rgba 0 0 0 0.1
+                        , Border.roundEach rounds
                         ]
                         none
                 , padding Theme.spacing
@@ -92,23 +93,24 @@ draw { width, height } id { wdiv, hdiv } graph =
                 , onPress = Just <| msg id
                 }
 
-        saveButton =
-            iconButton SaveCanvas Icons.saveOutlined
+        noRound =
+            { topLeft = 0, topRight = 0, bottomLeft = 0, bottomRight = 0 }
 
         fullscreenButton =
-            iconButton FullscreenCanvas Icons.fullscreenOutlined
-
-        copyButton =
-            Element.with .hasClipboard <|
-                \hasClipboard ->
-                    if hasClipboard then
-                        iconButton CopyCanvas Icons.copyOutlined
-
-                    else
-                        none
+            iconButton FullscreenCanvas { noRound | topLeft = Theme.spacing } Icons.fullscreenOutlined
 
         urButtonsRow =
-            Element.row [ alignRight, alignTop ] [ copyButton, saveButton ]
+            Element.with .hasClipboard <|
+                \hasClipboard ->
+                    Element.row [ alignRight, alignTop ] <|
+                        if hasClipboard then
+                            [ iconButton CopyCanvas { noRound | bottomLeft = Theme.spacing } Icons.copyOutlined
+                            , iconButton SaveCanvas noRound Icons.saveOutlined
+                            ]
+
+                        else
+                            [ iconButton SaveCanvas { noRound | bottomLeft = Theme.spacing } Icons.saveOutlined
+                            ]
 
         brButtonsRow =
             Element.row [ alignRight, alignBottom ] [ fullscreenButton ]
