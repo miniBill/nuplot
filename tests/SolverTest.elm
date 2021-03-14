@@ -3,10 +3,8 @@ module SolverTest exposing (..)
 import Dict
 import Expect
 import Expression exposing (AssociativeOperation(..), Expression(..), RelationOperation(..), SolutionTree(..))
-import Expression.Parser
-import Expression.Simplify
 import Expression.Solver
-import Expression.Utils exposing (a, atan2_, b, by, c, complex, cos_, cosh_, div, double, f, g, i, ipow, m, minus, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, t, triple, two, x, y, z, zero)
+import Expression.Utils exposing (by, c, ipow, minus, plus, square, t, x, y, z)
 import List
 import Test exposing (Test, describe, test)
 
