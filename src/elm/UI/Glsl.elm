@@ -4,15 +4,15 @@ import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Graph exposing (Graph(..))
 import Expression.Polynomial exposing (asPolynomial)
-import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, square, zero)
-import List
+import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, square)
 import List.Extra as List
 import List.MyExtra as List
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
-import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
+import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
+import UI.Glsl.Polynomial
 import UI.Glsl.Sphere as Sphere
 
 
@@ -190,127 +190,53 @@ get3DSource expandIntervals prefix e =
                                     )
                                 |> Maybe.map Dict.fromList
                                 |> Maybe.withDefault Dict.empty
-
-                        deg =
-                            poly
-                                |> Dict.keys
-                                |> List.maximum
-                                |> Maybe.withDefault 0
-
-                        get d =
-                            Dict.get d poly
-                                |> Maybe.withDefault zero
-                                |> UI.Glsl.Code.expressionToGlsl
-
-                        tFrom v =
-                            ( "t", v ++ ".x < 0.0 || abs(" ++ v ++ ".y) > " ++ threshold ++ " ? t : min(" ++ v ++ ".x, t)" )
-
-                        sols =
-                            case deg of
-                                1 ->
-                                    -- ax + b = 0
-                                    -- x = -b / a
-                                    [ ( "!dx", "mix(d[0].x, d[1].x, 0.5)" )
-                                    , ( "!dy", "mix(d[0].y, d[1].y, 0.5)" )
-                                    , ( "!dz", "mix(d[0].z, d[1].z, 0.5)" )
-                                    , ( "a", get 1 )
-                                    , ( "b", get 0 )
-                                    , ( "x", "div(-b, a)" )
-                                    , tFrom "x"
-                                    ]
-
-                                2 ->
-                                    -- ax² + bx + c = 0
-                                    [ ( "!dx", "mix(d[0].x, d[1].x, 0.5)" )
-                                    , ( "!dy", "mix(d[0].y, d[1].y, 0.5)" )
-                                    , ( "!dz", "mix(d[0].z, d[1].z, 0.5)" )
-                                    , ( "a", get 2 )
-                                    , ( "b", get 1 )
-                                    , ( "c", get 0 )
-                                    , ( "delta", "by(b,b) - 4.0 * by(a,c)" )
-                                    , ( "sqdelta", "csqrt(delta)" )
-                                    , ( "den", "2.0 * a" )
-                                    , ( "pos", "div(- b + sqdelta, den)" )
-                                    , tFrom "pos"
-                                    , ( "neg", "div(- b - sqdelta, den)" )
-                                    , tFrom "neg"
-                                    ]
-
-                                {- 3 ->
-                                   [ ( "!dx", "mix(d[0].x, d[1].x, 0.5)" )
-                                   , ( "!dy", "mix(d[0].y, d[1].y, 0.5)" )
-                                   , ( "!dz", "mix(d[0].z, d[1].z, 0.5)" )
-                                   , ( "a", get 3 )
-                                   , ( "b", get 2 )
-                                   , ( "c", get 1 )
-                                   , ( "dd", get 0 )
-                                   , ( "deltaZero", "by(b,b) - 3.0 * by(a,c)" )
-                                   , ( "deltaOne", "2.0 * by(b,b,b) - 9.0 * by(a,b,c) + 27.0 * by(a,a, dd)" )
-                                   , ( "inner", "csqrt(by(deltaOne,deltaOne) - 4.0 * by(deltaZero,deltaZero,deltaZero))" )
-                                   , ( "CargPlus", "deltaOne + inner" )
-                                   , ( "CargMinus", "deltaOne - inner" )
-                                   , ( "Carg", "length(CargMinus) > length(CargPlus) ? CargMinus : CargPlus" )
-                                   , ( "C", "ccbrt(0.5 * Carg)" )
-                                   , ( "coeff", "-div(vec2(1,0), 3.0 * a)" )
-                                   , ( "xi", "0.5 * vec2(-1,sqrt(3.0))" )
-                                   , ( "x", "by(coeff, b + C + div(deltaZero, C))" )
-                                   , tFrom "x"
-                                   , ( "C", "by(xi,C)" )
-                                   , ( "x", "by(coeff, b + C + div(deltaZero, C))" )
-                                   , tFrom "x"
-                                   , ( "C", "by(xi,C)" )
-                                   , ( "x", "by(coeff, b + C + div(deltaZero, C))" )
-                                   , tFrom "x"
-                                   ]
-                                -}
-                                _ ->
-                                    []
                     in
-                    if not <| List.isEmpty sols then
-                        let
-                            checks =
-                                sols
-                                    |> List.foldl
-                                        (\( k, v ) ( known, lines ) ->
-                                            let
-                                                ( decl, drop ) =
-                                                    if List.member k known then
-                                                        ( "", 0 )
+                    case UI.Glsl.Polynomial.getSolutions poly of
+                        Just ( deg, sols ) ->
+                            let
+                                checks =
+                                    sols
+                                        |> List.foldl
+                                            (\( k, v ) ( known, lines ) ->
+                                                let
+                                                    ( decl, drop ) =
+                                                        if List.member k known then
+                                                            ( "", 0 )
 
-                                                    else if String.startsWith "!" k then
-                                                        ( "float ", 1 )
+                                                        else if String.startsWith "!" k then
+                                                            ( "float ", 1 )
 
-                                                    else
-                                                        ( "vec2 ", 0 )
+                                                        else
+                                                            ( "vec2 ", 0 )
 
-                                                newLine =
-                                                    decl ++ String.dropLeft drop k ++ " = " ++ v ++ ";"
-                                            in
-                                            ( k :: known, newLine :: lines )
-                                        )
-                                        ( [ "t" ], [] )
-                                    |> Tuple.second
-                                    |> List.reverse
-                                    |> String.join "\n                                    "
+                                                    newLine =
+                                                        decl ++ String.dropLeft drop k ++ " = " ++ v ++ ";"
+                                                in
+                                                ( k :: known, newLine :: lines )
+                                            )
+                                            ( [ "t" ], [] )
+                                        |> Tuple.second
+                                        |> List.reverse
+                                        |> String.join "\n                                        "
 
-                            srcExpr =
-                                """
-                                bool bisect""" ++ prefix ++ """(vec3 o, mat2x3 d, float max_distance, out vec3 found) {
-                                    float t = max_distance * 2.0;
-                                    """ ++ checks ++ """
-                                    found = o + t * mix(d[0], d[1], 0.5);
-                                    return t < max_distance && t > 0.0;
-                                }
-                                """
-                        in
-                        { expr = div one <| sqrt_ <| cbrt <| ipow e 3
-                        , srcExpr = deindent 28 srcExpr
-                        }
+                                srcExpr =
+                                    """
+                                    bool bisect""" ++ prefix ++ """(vec3 o, mat2x3 d, float max_distance, out vec3 found) {
+                                        float t = max_distance * 2.0;
+                                        """ ++ checks ++ """
+                                        found = o + t * mix(d[0], d[1], 0.5);
+                                        return t < max_distance && t > 0.0;
+                                    }
+                                    """
+                            in
+                            { expr = div one <| sqrt_ <| cbrt <| ipow e 3
+                            , srcExpr = deindent 32 srcExpr
+                            }
 
-                    else
-                        { expr = e
-                        , srcExpr = toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
-                        }
+                        Nothing ->
+                            { expr = e
+                            , srcExpr = toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
+                            }
 
 
 transitiveClosure : List Requirement -> List Requirement

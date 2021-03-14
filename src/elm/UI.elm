@@ -22,9 +22,7 @@ import File.Download
 import File.Select
 import Html
 import Html.Attributes
-import List
 import List.Extra as List
-import Maybe
 import Maybe.MyExtra as Maybe
 import Task
 import UI.L10N as L10N exposing (L10N, Language(..), text, title)

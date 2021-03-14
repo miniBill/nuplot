@@ -24,7 +24,6 @@ module Zipper exposing
     )
 
 import Codec exposing (Codec)
-import List
 import List.Extra as List
 
 

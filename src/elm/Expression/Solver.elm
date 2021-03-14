@@ -7,7 +7,6 @@ import Expression.Simplify exposing (simplify, stepSimplify)
 import Expression.Utils exposing (by, byShort, cbrt, div, divShort, double, factor, i, ipow, ipowShort, isZero, minus, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
 import Fraction exposing (Fraction, gcd)
 import List.Extra as List
-import Result
 import Result.Extra as Result
 
 

@@ -3,7 +3,6 @@ module Expression.Polynomial exposing (Exponents, Polynomial, asPolynomial)
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
 import Expression.Utils exposing (byShort, div, negateShort, one, plusShort)
-import List
 import List.Extra as List
 import List.MyExtra as List
 import Maybe.Extra as Maybe

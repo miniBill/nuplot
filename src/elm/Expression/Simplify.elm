@@ -22,7 +22,6 @@ import Expression.Derivative
 import Expression.Polynomial exposing (asPolynomial)
 import Expression.Utils exposing (abs_, by, byShort, cbrt, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
 import Fraction
-import List
 import List.Extra as List
 import List.MyExtra exposing (groupOneWith)
 import Maybe.Extra as Maybe

@@ -38,7 +38,6 @@ import Dict exposing (Dict)
 import Element.WithContext as Element exposing (Element)
 import Element.WithContext.Border as Border
 import Element.WithContext.Font
-import List
 import Set exposing (Set)
 import Trie exposing (Trie)
 

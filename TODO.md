@@ -1,4 +1,5 @@
 # Todo
+* Vector fields
 * "Reset zoom" button
 * Zoom controls on desktop
 * Axes' labels

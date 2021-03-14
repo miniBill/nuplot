@@ -15,7 +15,6 @@ import Expression
         )
 import Expression.Cleaner as Cleaner
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
-import List
 import List.Extra as List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), getChompedString)
 import Trie exposing (Trie)
