@@ -50,6 +50,9 @@ export class NuPlot extends HTMLElement {
   originalCenter!: Point;
   originalViewportWidth!: number;
   hasWebGl2!: boolean;
+  isFullscreen = false;
+  preFullscreenWidth = 0;
+  preFullscreenHeight = 0;
 
   constructor() {
     super();
@@ -78,7 +81,7 @@ export class NuPlot extends HTMLElement {
       if (!name) return;
 
       const dataUrl = this.canvas.toDataURL();
-      var downloadElement = document.createElement("a");
+      const downloadElement = document.createElement("a");
       downloadElement.setAttribute("href", dataUrl);
       downloadElement.setAttribute("download", name);
       downloadElement.click();
@@ -174,7 +177,7 @@ export class NuPlot extends HTMLElement {
     this.gl.useProgram(this.program);
 
     /* create a vertex buffer for a full-screen triangle */
-    var vertex_buf = this.gl.createBuffer();
+    const vertex_buf = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertex_buf);
     this.gl.bufferData(
       this.gl.ARRAY_BUFFER,
@@ -183,7 +186,7 @@ export class NuPlot extends HTMLElement {
     );
 
     /* set up the position attribute */
-    var position_attrib_location = this.gl.getAttribLocation(
+    const position_attrib_location = this.gl.getAttribLocation(
       this.program,
       "a_Position"
     );
@@ -217,6 +220,20 @@ export class NuPlot extends HTMLElement {
       },
       false
     );
+    if ("onfullscreenchange" in this)
+      this.onfullscreenchange = (e) => {
+        this.isFullscreen = document.fullscreenElement === e.target;
+        if (this.isFullscreen) {
+          this.preFullscreenWidth = this.canvas.width;
+          this.preFullscreenHeight = this.canvas.height;
+          this.canvas.width = window.innerWidth;
+          this.canvas.height = window.innerHeight;
+        } else {
+          this.canvas.width = this.preFullscreenWidth;
+          this.canvas.height = this.preFullscreenHeight;
+        }
+        this.renderOnAnimationFrame();
+      };
     this.canvas.style.touchAction = "none";
     // Sync with Theme.elm
     this.canvas.style.borderRadius = "3px";
@@ -333,7 +350,7 @@ export class NuPlot extends HTMLElement {
 
     switch (Object.keys(this.originalPointers).length) {
       case 1:
-        var dx = (pointer.x - original.x) / this.canvas.width;
+        let dx = (pointer.x - original.x) / this.canvas.width;
         const dy = (pointer.y - original.y) / this.canvas.height;
         if (this.is3D) {
           this.theta = this.originalTheta + dy * 3;
@@ -459,7 +476,7 @@ export class NuPlot extends HTMLElement {
   render() {
     if (this.gl == null || this.program == null) return;
 
-    this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
     /* bind inputs & render frame */
     this.uniform1f("u_whiteLines", this.whiteLines);
@@ -479,26 +496,26 @@ export class NuPlot extends HTMLElement {
   private uniform1f(name: string, value: number) {
     if (!this.gl || !this.program) return;
 
-    var uniform_location = this.gl.getUniformLocation(this.program, name);
+    const uniform_location = this.gl.getUniformLocation(this.program, name);
     this.gl.uniform1f(uniform_location, value);
   }
 
   private uniform2f(name: string, arg1: number, arg2: number) {
     if (!this.gl || !this.program) return;
 
-    var uniform_location = this.gl.getUniformLocation(this.program, name);
+    const uniform_location = this.gl.getUniformLocation(this.program, name);
     this.gl.uniform2f(uniform_location, arg1, arg2);
   }
 
   attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
     switch (name) {
       case "canvas-width":
-        if (!newValue) return;
+        if (!newValue || this.isFullscreen) return;
         this.canvas.width = +newValue;
         break;
 
       case "canvas-height":
-        if (!newValue) return;
+        if (!newValue || this.isFullscreen) return;
         this.canvas.height = +newValue;
         break;
 
@@ -531,7 +548,7 @@ export class NuPlot extends HTMLElement {
   reloadFragmentShader() {
     if (!this.gl || !this.program || !this.fragment_shader || !this.src) return;
 
-    var src = this.buildFragmentShader(this.src);
+    const src = this.buildFragmentShader(this.src);
 
     this.sourceAndCompile(this.fragment_shader, src);
 
@@ -544,6 +561,10 @@ export class NuPlot extends HTMLElement {
       .map((l, i) => (i + 1).toString().padStart(3) + " " + l)
       .join("\n");
   }
+
+  /*requestFullscreen(options?: FullscreenOptions | undefined) {
+    return this.canvas.requestFullscreen();
+  }*/
 
   sourceAndCompile(shader: WebGLShader, built: string) {
     if (!this.gl) return;
@@ -571,13 +592,13 @@ ${translated}`;
     this.gl.shaderSource(shader, built);
     this.gl.compileShader(shader);
 
-    var compiled = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
+    const compiled = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
 
     this.label.innerHTML = "";
 
     if (!compiled) {
       if (process.env.NODE_ENV === "development") {
-        var preNode = document.createElement("pre");
+        const preNode = document.createElement("pre");
         preNode.style.whiteSpace = "pre-wrap";
         preNode.innerText = `Error compiling shader, log:
 
@@ -590,7 +611,7 @@ ${NuPlot.withLines(built)}`;
         console.error("Error compiling shader, source:\n", built);
         console.error("Log:\n", this.gl.getShaderInfoLog(shader));
       } else {
-        var errorNode = document.createElement("div");
+        const errorNode = document.createElement("div");
         errorNode.innerText =
           "Error creating graph. Try contacting the author.";
         this.label.appendChild(errorNode);

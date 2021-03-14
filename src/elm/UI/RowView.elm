@@ -5,6 +5,7 @@ import Complex
 import Dict
 import Document exposing (Output(..), Row, RowData(..))
 import Element.WithContext as Element exposing (DeviceClass(..), Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, row, shrink, spacing, text, width)
+import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
 import Element.WithContext.Input as Input
@@ -76,29 +77,45 @@ draw { width, height } id { wdiv, hdiv } graph =
         imageHeight =
             min rawImageHeight <| rawImageWidth * 4 // 3
 
-        saveButton =
-            Input.button []
-                { label = Element.element <| Icons.saveOutlined Theme.lightIconAttrs
-                , onPress = Just <| SaveCanvas id
+        iconButton msg icon =
+            Input.button
+                [ Element.behindContent <|
+                    el
+                        [ Element.width fill
+                        , Element.height fill
+                        , Background.color <| Element.rgba 0 0 0 0.1
+                        ]
+                        none
+                , padding Theme.spacing
+                ]
+                { label = Element.element <| icon Theme.lightIconAttrs
+                , onPress = Just <| msg id
                 }
+
+        saveButton =
+            iconButton SaveCanvas Icons.saveOutlined
+
+        fullscreenButton =
+            iconButton FullscreenCanvas Icons.fullscreenOutlined
 
         copyButton =
             Element.with .hasClipboard <|
                 \hasClipboard ->
                     if hasClipboard then
-                        Input.button []
-                            { label = Element.element <| Icons.copyOutlined Theme.lightIconAttrs
-                            , onPress = Just <| CopyCanvas id
-                            }
+                        iconButton CopyCanvas Icons.copyOutlined
 
                     else
                         none
 
-        buttonsRow =
-            Theme.row [ alignRight, alignTop, padding Theme.spacing ] [ copyButton, saveButton ]
+        urButtonsRow =
+            Element.row [ alignRight, alignTop ] [ copyButton, saveButton ]
+
+        brButtonsRow =
+            Element.row [ alignRight, alignBottom ] [ fullscreenButton ]
 
         attrs =
-            [ inFront buttonsRow
+            [ inFront urButtonsRow
+            , inFront brButtonsRow
             ]
     in
     Element.with identity <|

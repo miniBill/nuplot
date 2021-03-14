@@ -928,6 +928,9 @@ update msg =
                         SaveCanvas canvasId ->
                             ( model, UI.Ports.saveCanvas canvasId )
 
+                        FullscreenCanvas canvasId ->
+                            ( model, UI.Ports.fullscreenCanvas canvasId )
+
                         Input input ->
                             updateRow (\r -> { r | input = input })
 

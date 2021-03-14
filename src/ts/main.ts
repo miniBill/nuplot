@@ -13,8 +13,8 @@ customElements.define("ka-tex", KaTeXElement);
 const storageKey = "documents";
 
 function fromLS() {
-  var saved: { [key: string]: string } = {};
-  for (var i = 0; i < localStorage.length; i++) {
+  const saved: { [key: string]: string } = {};
+  for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key === null) continue;
     const value = localStorage.getItem(key);
@@ -33,7 +33,7 @@ function innerInit(Elm: ElmType, saved: { [key: string]: string }) {
     return;
   }
 
-  var app = Elm.UI.init({
+  const app = Elm.UI.init({
     node: node,
     flags: {
       saved: saved,
@@ -51,11 +51,15 @@ function innerInit(Elm: ElmType, saved: { [key: string]: string }) {
     localForage.setItem(storageKey, value);
   });
   app.ports.save.subscribe((id) => {
-    var element = document.getElementById(id) as NuPlot;
+    const element = document.getElementById(id) as NuPlot;
     element?.save();
   });
+  app.ports.fullscreen.subscribe((id) => {
+    const element = document.getElementById(id) as NuPlot;
+    element?.requestFullscreen();
+  });
   app.ports.copy.subscribe((id) => {
-    var element = document.getElementById(id) as NuPlot;
+    const element = document.getElementById(id) as NuPlot;
     element?.copy();
   });
   app.ports.saveGoogleAccessToken.subscribe((token) => {

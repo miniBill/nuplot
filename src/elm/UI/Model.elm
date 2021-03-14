@@ -113,6 +113,7 @@ type CellMsg
     | Calculate
     | Input String
     | SaveCanvas CanvasId
+    | FullscreenCanvas CanvasId
     | CopyCanvas CanvasId
 
 

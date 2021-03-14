@@ -28,14 +28,14 @@ export class KaTeXElement extends HTMLElement {
     this.wrapper.style.overflowX = "auto";
     this.wrapper.style.overflowY = "hidden";
 
-    var link = document.createElement("link");
+    let link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = "https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css";
     link.integrity =
       "sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X";
     link.crossOrigin = "anonymous";
 
-    var style = document.createElement("style");
+    let style = document.createElement("style");
     style.innerHTML = ".katex { padding: 0.5em }";
 
     // attach the created elements to the shadow DOM

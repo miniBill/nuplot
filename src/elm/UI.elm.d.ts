@@ -28,6 +28,9 @@ export type UIInstance = {
     copy: {
       subscribe(callback: (id: string) => void): void;
     };
+    fullscreen: {
+      subscribe(callback: (id: string) => void): void;
+    };
     saveGoogleAccessToken: {
       subscribe(callback: (token: string) => void): void;
     };

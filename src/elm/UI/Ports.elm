@@ -1,4 +1,4 @@
-port module UI.Ports exposing (copyCanvas, gotGoogleAccessToken, openWindow, persist, saveCanvas, saveGoogleAccessToken, saveGoogleAccessTokenAndCloseWindow)
+port module UI.Ports exposing (copyCanvas, fullscreenCanvas, gotGoogleAccessToken, openWindow, persist, saveCanvas, saveGoogleAccessToken, saveGoogleAccessTokenAndCloseWindow)
 
 import Json.Decode exposing (Value)
 import UI.Model exposing (CanvasId(..))
@@ -24,6 +24,14 @@ saveCanvas (CanvasId id) =
 
 
 port save : String -> Cmd msg
+
+
+fullscreenCanvas : CanvasId -> Cmd msg
+fullscreenCanvas (CanvasId id) =
+    fullscreen id
+
+
+port fullscreen : String -> Cmd msg
 
 
 port saveGoogleAccessToken : String -> Cmd msg
