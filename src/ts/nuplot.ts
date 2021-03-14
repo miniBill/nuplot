@@ -65,6 +65,7 @@ export class NuPlot extends HTMLElement {
     this.label = this.wrapper.appendChild(document.createElement("div"));
 
     this.canvas = this.wrapper.appendChild(document.createElement("canvas"));
+    this.canvas.style.display = "block";
     this.initCanvas();
 
     // attach the created elements to the shadow DOM
@@ -211,7 +212,8 @@ export class NuPlot extends HTMLElement {
           cancelAnimationFrame(this.pendingRequestAnimationFrame);
         if (this.pendingTimeout >= 0) clearTimeout(this.pendingTimeout);
         this.wrapper.removeChild(this.canvas);
-        this.label.innerHTML = "Broken.<br/>Try reloading";
+        this.label.innerHTML =
+          "Something went wrong with the graphics.<br/>Try reloading the page";
       },
       false
     );
