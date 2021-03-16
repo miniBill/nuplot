@@ -12,7 +12,7 @@ type Graph
     | Relation2D Expression
     | Implicit2D Expression Expression
     | Polar2D Expression
-    | VectorField2D Expression
+    | VectorField2D Expression Expression
     | Parametric2D Expression Expression
     | Implicit3D Expression
     | Contour Expression
@@ -120,8 +120,8 @@ toString g =
         Contour c ->
             "Contour " ++ Expression.toString c
 
-        VectorField2D e ->
-            "VectorField2D" ++ Expression.toString e
+        VectorField2D x y ->
+            "VectorField2D" ++ Expression.toString x ++ ", " ++ Expression.toString y
 
         GraphList gs ->
             "GraphList [" ++ String.join ", " (List.map toString gs) ++ "]"
@@ -148,8 +148,8 @@ toExpression g =
         Polar2D e ->
             e
 
-        VectorField2D e ->
-            e
+        VectorField2D x y ->
+            List [ x, y ]
 
         Parametric2D x y ->
             List [ x, y ]

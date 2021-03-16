@@ -503,7 +503,7 @@ outputBlock blockId ({ width } as size) output =
                             ( draw size (CanvasId id) coeffs g, True )
 
                         ComplexValue c ->
-                            ( text <| Complex.toString c, False )
+                            ( text <| invariant <| Complex.toString c, False )
 
                         ErrorValue err ->
                             ( viewError err, False )
@@ -514,7 +514,12 @@ outputBlock blockId ({ width } as size) output =
                                     ( viewExpression width <| Lambda x e, False )
 
                                 Nothing ->
-                                    ( Element.row [] [ text <| x ++ " => ", Tuple.first (viewValue id coeffs f) ], False )
+                                    ( Element.row []
+                                        [ text <| invariant <| x ++ " => "
+                                        , Tuple.first (viewValue id coeffs f)
+                                        ]
+                                    , False
+                                    )
 
                         ListValue ls ->
                             let

@@ -106,6 +106,15 @@ getGlsl expandIntervals rayDifferentials graph =
                     , pixel3D = List.concatMap .pixel3D extracted
                     }
 
+                VectorField2D x y ->
+                    { expr = x
+                    , srcExpr = toSrcContour prefix x
+                    , interval = StraightOnly
+                    , thetaDelta = True
+                    , pixel2D = [ { name = "pixel" ++ prefix, color = False } ]
+                    , pixel3D = []
+                    }
+
         thetaDeltaCode =
             deindent 4 <|
                 if thetaDelta then
