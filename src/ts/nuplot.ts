@@ -141,7 +141,7 @@ export class NuPlot extends HTMLElement {
   }
 
   private initCanvas() {
-    this.canvas.width = this.canvas.height = 400;
+    this.setSize(400, 400);
 
     this.gl = this.canvas.getContext("webgl2");
     this.hasWebGl2 = this.gl !== null;
@@ -224,13 +224,13 @@ export class NuPlot extends HTMLElement {
       this.onfullscreenchange = (e) => {
         this.isFullscreen = document.fullscreenElement === e.target;
         if (this.isFullscreen) {
-          this.preFullscreenWidth = this.canvas.width;
-          this.preFullscreenHeight = this.canvas.height;
-          this.canvas.width = window.innerWidth;
-          this.canvas.height = window.innerHeight;
+          this.preFullscreenWidth = this.canvas.clientWidth;
+          this.preFullscreenHeight = this.canvas.clientHeight;
+          this.setWidth(window.innerWidth);
+          this.setHeight(window.innerHeight);
         } else {
-          this.canvas.width = this.preFullscreenWidth;
-          this.canvas.height = this.preFullscreenHeight;
+          this.setWidth(this.preFullscreenWidth);
+          this.setHeight(this.preFullscreenHeight);
         }
         this.renderOnAnimationFrame();
       };
@@ -240,6 +240,21 @@ export class NuPlot extends HTMLElement {
 
     /* display initial frame */
     this.renderOnAnimationFrame();
+  }
+
+  setSize(width: number, height: number) {
+    this.setWidth(width);
+    this.setHeight(height);
+  }
+
+  setWidth(width: number) {
+    this.canvas.width = Math.round(width * (window.devicePixelRatio || 1));
+    this.canvas.style.width = width + "px";
+  }
+
+  setHeight(height: number) {
+    this.canvas.height = Math.round(height * (window.devicePixelRatio || 1));
+    this.canvas.style.height = height + "px";
   }
 
   private buildFragmentShader(expr: string) {
@@ -511,12 +526,12 @@ export class NuPlot extends HTMLElement {
     switch (name) {
       case "canvas-width":
         if (!newValue || this.isFullscreen) return;
-        this.canvas.width = +newValue;
+        this.setWidth(+newValue);
         break;
 
       case "canvas-height":
         if (!newValue || this.isFullscreen) return;
-        this.canvas.height = +newValue;
+        this.setHeight(+newValue);
         break;
 
       case "white-lines":
