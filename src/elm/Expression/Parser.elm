@@ -18,6 +18,7 @@ import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
 import List.Extra as List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), getChompedString)
 import Trie exposing (Trie)
+import UI.L10N exposing (L10N, invariant)
 
 
 type alias ExpressionParser a =
@@ -38,49 +39,71 @@ type ParserContext
     | VectorContext
 
 
-contextToString : ParserContext -> String
+contextToString : ParserContext -> L10N String
 contextToString ctx =
     case ctx of
         AddSubtractionContext ->
-            "an addition or subtraction"
+            { en = "an addition or subtraction"
+            , it = "un addizione o una sottrazione"
+            }
 
         AtomContext ->
-            "an atom"
+            { en = "an atomic expression"
+            , it = "un espressione atomica"
+            }
 
         ExpressionContext ->
-            "an expression"
+            { en = "an expression"
+            , it = "un espressione"
+            }
 
         ListContext ->
-            "a list"
+            { en = "a list"
+            , it = "una lista"
+            }
 
         MultiDivisionContext ->
-            "a multiplication or a division"
+            { en = "a multiplication or a division"
+            , it = "una moltiplicazione o una divisione"
+            }
 
         NumberContext ->
-            "a number"
+            { en = "a number"
+            , it = "un numero"
+            }
 
         PowerContext ->
-            "an exponentiation"
+            { en = "an exponentiation"
+            , it = "un elevamento a potenza"
+            }
 
         ReplacementContext ->
-            "a replacement"
+            { en = "a replacement"
+            , it = "una sostituzione"
+            }
 
         ReplacementListContext ->
-            "a replacement list"
+            { en = "a replacement list"
+            , it = "una lista di sostituzioni"
+            }
 
         VariableContext ->
-            "a variable"
+            { en = "a variable"
+            , it = "una variabile"
+            }
 
         VectorContext ->
-            "a vector"
+            { en = "a vector"
+            , it = "un vettore"
+            }
 
 
 type Problem
-    = Expected String
+    = Expected (L10N String)
     | Unexpected
 
 
-errorsToString : String -> List (Parser.DeadEnd ParserContext Problem) -> String
+errorsToString : String -> List (Parser.DeadEnd ParserContext Problem) -> L10N String
 errorsToString input err =
     let
         errsString =
@@ -96,7 +119,7 @@ errorsToString input err =
                 prefix =
                     case contextStack of
                         [] ->
-                            String.repeat (col + 1) " " ++ "^ "
+                            invariant <| String.repeat (col + 1) " " ++ "^ "
 
                         frame :: _ ->
                             let
@@ -108,20 +131,31 @@ errorsToString input err =
                                         String.repeat (frame.col + 1) " "
                                             ++ "|"
                                             ++ String.repeat (col - frame.col - 1) "-"
+
+                                ctxString =
+                                    contextToString frame.context
                             in
-                            pprefix ++ "^ While trying to parse " ++ contextToString frame.context ++ ". "
+                            { en = pprefix ++ "^ While trying to parse " ++ ctxString.en ++ ". "
+                            , it = pprefix ++ "^ Durante il parsing di " ++ ctxString.it ++ ". "
+                            }
             in
-            String.concat
+            UI.L10N.concat
                 [ prefix
                 , if List.any ((==) Unexpected) allProblems then
                     if List.all ((==) Unexpected) allProblems then
-                        "Unexpected"
+                        { en = "Unexpected"
+                        , it = "Inatteso"
+                        }
 
                     else
-                        "Unexpected, expected "
+                        { en = "Unexpected, expected "
+                        , it = "Inatteso, atteso "
+                        }
 
                   else
-                    "Expected "
+                    { en = "Expected "
+                    , it = "Atteso "
+                    }
                 , allProblems
                     |> List.filterMap
                         (\p ->
@@ -135,26 +169,34 @@ errorsToString input err =
                     |> (\expecteds ->
                             case List.reverse expecteds of
                                 [] ->
-                                    ""
+                                    invariant ""
 
                                 [ single ] ->
                                     single
 
                                 last :: init ->
-                                    String.join ", " (List.reverse init) ++ " or " ++ last
+                                    UI.L10N.concat
+                                        [ UI.L10N.map (String.join ", ") <| UI.L10N.sequence (List.reverse init)
+                                        , { en = " or ", it = " o " }
+                                        , last
+                                        ]
                        )
                 ]
     in
-    String.join "\n" <|
-        [ "Error parsing expression:"
-        , "  " ++ input
-        ]
-            ++ (if List.isEmpty err then
-                    [ "No valid parse?" ]
+    UI.L10N.map (String.join "\n") <|
+        UI.L10N.sequence <|
+            [ { en = "Error parsing expression:", it = "Errore nel parsing dell'espressione:" }
+            , invariant <| "  " ++ input
+            ]
+                ++ (if List.isEmpty err then
+                        [ { en = "No valid parse?"
+                          , it = "Nessuna interpretazione possibile?"
+                          }
+                        ]
 
-                else
-                    errsString
-               )
+                    else
+                        errsString
+                   )
 
 
 parse : String -> Result (List (Parser.DeadEnd ParserContext Problem)) Expression
@@ -191,7 +233,12 @@ mainParser =
 
 token : String -> Token Problem
 token x =
-    Token x (Expected <| "a '" ++ x ++ "'")
+    Token x
+        (Expected
+            { en = "a '" ++ x ++ "'"
+            , it = "un '" ++ x ++ "'"
+            }
+        )
 
 
 replacementParser : ExpressionParser Expression
@@ -206,6 +253,14 @@ replacementParser context =
         |> Parser.inContext ReplacementContext
 
 
+expectedALetter : Problem
+expectedALetter =
+    Expected
+        { en = "a letter"
+        , it = "una lettera"
+        }
+
+
 replacementListParser : ExpressionParser (Dict String (Maybe Expression))
 replacementListParser context =
     let
@@ -217,7 +272,7 @@ replacementListParser context =
                             |> Parser.andThen
                                 (\s ->
                                     if String.isEmpty s then
-                                        Parser.problem <| Expected "a letter"
+                                        Parser.problem expectedALetter
 
                                     else
                                         Parser.succeed s
@@ -231,14 +286,14 @@ replacementListParser context =
 
         shortVariable =
             Parser.succeed (\p e -> ( p, Just e ))
-                |= Parser.getChompedString (Parser.chompIf isVariableLetter (Expected "a letter"))
+                |= Parser.getChompedString (Parser.chompIf isVariableLetter expectedALetter)
                 |. whitespace
                 |. (Parser.chompWhile ((==) '=')
                         |> Parser.getChompedString
                         |> Parser.andThen
                             (\s ->
                                 if String.length s > 1 then
-                                    Parser.problem <| Expected "0 or 1 '='"
+                                    Parser.problem <| Expected { en = "0 or 1 '='", it = "0 o 1 '='" }
 
                                 else
                                     Parser.succeed ()
@@ -255,7 +310,7 @@ replacementListParser context =
                         |> Parser.andThen
                             (\s ->
                                 if String.isEmpty s then
-                                    Parser.problem <| Expected "a letter"
+                                    Parser.problem expectedALetter
 
                                 else
                                     Parser.succeed s
@@ -333,7 +388,11 @@ relationParser context =
                                     Parser.succeed <| Lambda v r
 
                                 _ ->
-                                    Parser.problem <| Expected "left side of lambda"
+                                    Parser.problem <|
+                                        Expected
+                                            { en = "left side of lambda"
+                                            , it = "la parte sinistra di una lambda"
+                                            }
                         )
                         |. Parser.symbol (token "=>")
                         |. whitespace
@@ -494,7 +553,12 @@ atomParser context =
                 Parser.andThen tryParseNumber <|
                     getChompedString <|
                         Parser.succeed ()
-                            |. Parser.chompIf (\c -> c == '.' || Char.isDigit c) (Expected "a digit, or a dot")
+                            |. Parser.chompIf (\c -> c == '.' || Char.isDigit c)
+                                (Expected
+                                    { en = "a digit, or a dot"
+                                    , it = "una cifra, o un punto"
+                                    }
+                                )
                             |. Parser.chompWhile (\c -> c == '.' || Char.isDigit c)
             ]
 
@@ -511,7 +575,12 @@ tryParseNumber n =
                     Parser.succeed <| Float f
 
                 Nothing ->
-                    Parser.problem (Expected "a number")
+                    Parser.problem
+                        (Expected
+                            { en = "a number"
+                            , it = "un numero"
+                            }
+                        )
 
 
 optional : Parser c x () -> Parser c x ()
@@ -573,7 +642,7 @@ variableParser context =
                                     |. chomp (String.length name)
 
                             Nothing ->
-                                Parser.problem (Expected "a letter")
+                                Parser.problem expectedALetter
             )
 
 

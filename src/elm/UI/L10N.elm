@@ -1,4 +1,4 @@
-module UI.L10N exposing (L10N, Language(..), invariant, localize, map, text, title)
+module UI.L10N exposing (L10N, Language(..), concat, invariant, localize, map, sequence, text, title, traverse)
 
 import Element.WithContext as Element exposing (Element)
 import Html.Attributes
@@ -20,6 +20,31 @@ map f { en, it } =
     { en = f en
     , it = f it
     }
+
+
+traverse : (a -> L10N b) -> List a -> L10N (List b)
+traverse f =
+    List.foldr
+        (\e { en, it } ->
+            let
+                fe =
+                    f e
+            in
+            { en = fe.en :: en
+            , it = fe.it :: it
+            }
+        )
+        { en = [], it = [] }
+
+
+sequence : List (L10N a) -> L10N (List a)
+sequence =
+    traverse identity
+
+
+concat : List (L10N String) -> L10N String
+concat =
+    sequence >> map String.concat
 
 
 invariant : a -> L10N a

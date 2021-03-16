@@ -445,7 +445,7 @@ viewPendingActions actions =
                         [ label
                         , Input.button
                             [ alignRight
-                            , Element.htmlAttribute <| Html.Attributes.title "Do it"
+                            , title { en = "Run", it = "Esegui" }
                             ]
                             { onPress = Just m
                             , label = Element.element <| Icons.playSquareOutlined Theme.darkIconAttrs

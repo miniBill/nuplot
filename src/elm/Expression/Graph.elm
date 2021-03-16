@@ -1,8 +1,9 @@
 module Expression.Graph exposing (Graph(..), fromExpression, toExpression, toString)
 
-import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), getFreeVariables)
+import Expression exposing (AssociativeOperation, BinaryOperation, Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation, getFreeVariables)
 import Expression.Simplify
 import Expression.Utils exposing (minus)
+import Result.Extra as Result
 import Set
 
 
@@ -11,10 +12,21 @@ type Graph
     | Relation2D Expression
     | Implicit2D Expression Expression
     | Polar2D Expression
+    | VectorField2D Expression
     | Parametric2D Expression Expression
     | Implicit3D Expression
     | Contour Expression
     | GraphList (List Graph)
+
+
+type GraphExpression
+    = GFloat Float
+    | GVariable String
+    | GAssociative AssociativeOperation GraphExpression GraphExpression (List GraphExpression)
+    | GBinary BinaryOperation GraphExpression GraphExpression
+    | GUnary UnaryOperation GraphExpression
+    | GApply FunctionName (List GraphExpression)
+    | GList (List GraphExpression)
 
 
 fromExpression : Expression -> Graph
@@ -108,6 +120,9 @@ toString g =
         Contour c ->
             "Contour " ++ Expression.toString c
 
+        VectorField2D e ->
+            "VectorField2D" ++ Expression.toString e
+
         GraphList gs ->
             "GraphList [" ++ String.join ", " (List.map toString gs) ++ "]"
 
@@ -131,6 +146,9 @@ toExpression g =
             e
 
         Polar2D e ->
+            e
+
+        VectorField2D e ->
             e
 
         Parametric2D x y ->

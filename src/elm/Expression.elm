@@ -10,6 +10,7 @@ module Expression exposing
     , SolutionTree(..)
     , UnaryOperation(..)
     , VariableStatus(..)
+    , asMatrix
     , defaultContext
     , equals
     , filterContext
@@ -40,6 +41,7 @@ import Element.WithContext.Border as Border
 import Element.WithContext.Font
 import Set exposing (Set)
 import Trie exposing (Trie)
+import UI.L10N exposing (L10N, invariant)
 
 
 type Expression
@@ -58,7 +60,7 @@ type Expression
 
 type SolutionTree
     = SolutionForall String
-    | SolutionError String
+    | SolutionError (L10N String)
     | SolutionNone String
     | SolutionDone Expression
     | SolutionStep Expression SolutionTree
@@ -391,26 +393,28 @@ toString =
         >> toStringPrec 0
 
 
-solutionTreeToString : SolutionTree -> String
+solutionTreeToString : SolutionTree -> L10N String
 solutionTreeToString tree =
     case tree of
         SolutionDone e ->
-            toString e
+            invariant <| toString e
 
         SolutionForall v ->
-            "∀" ++ v ++ "∈ ℝ"
+            invariant <| "∀" ++ v ++ "∈ ℝ"
 
         SolutionError e ->
-            "Error: " ++ e
+            { en = "Error: " ++ e.en
+            , it = "Errore: " ++ e.it
+            }
 
         SolutionNone v ->
-            "∄" ++ v ++ "∈ ℝ"
+            invariant <| "∄" ++ v ++ "∈ ℝ"
 
         SolutionStep e n ->
-            toString e ++ ", " ++ solutionTreeToString n
+            UI.L10N.map (\p -> toString e ++ ", " ++ p) (solutionTreeToString n)
 
         SolutionBranch ls ->
-            "(" ++ String.join ") (" (List.map solutionTreeToString ls) ++ ")"
+            UI.L10N.map (\ps -> "(" ++ String.join ") (" ps ++ ")") (UI.L10N.traverse solutionTreeToString ls)
 
 
 type PrintExpression
@@ -1111,6 +1115,18 @@ asMatrixPrint =
                 _ ->
                     Nothing
         )
+
+
+asMatrix : Expression -> Maybe (List (List Expression))
+asMatrix =
+    genericAsMatrix <|
+        \e ->
+            case e of
+                List es ->
+                    Just es
+
+                _ ->
+                    Nothing
 
 
 genericAsMatrix : (a -> Maybe (List a)) -> a -> Maybe (List (List a))

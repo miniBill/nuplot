@@ -48,7 +48,7 @@ type RowData
 
 
 type Output
-    = ParseError String
+    = ParseError (L10N String)
     | Parsed Expression
 
 

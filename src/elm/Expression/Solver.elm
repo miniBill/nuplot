@@ -30,7 +30,10 @@ solve e x =
                 |> cut
 
         _ ->
-            SolutionError "The second argument of `solve` must be the variable you want to solve for"
+            SolutionError
+                { en = "The second argument of `solve` must be the variable you want to solve for"
+                , it = "Il secondo argomento di `solve` deve essere la variabile per cui risolvere l'equazione"
+                }
 
 
 type Shortcut
@@ -86,7 +89,10 @@ innerSolve v expr =
             SolutionStep expr <| solveEquation v l r
 
         RelationOperation _ _ _ ->
-            SolutionError "Cannot solve disequations [yet!]"
+            SolutionError
+                { en = "Cannot solve disequations [yet!]"
+                , it = "Non è [per ora!] possibile risolvere le disequazioni"
+                }
 
         _ ->
             case expr of
@@ -104,7 +110,10 @@ solveEquation v l r =
         go expr =
             case asPolynomial [ v ] expr |> Maybe.map (Dict.map (always simplify)) of
                 Nothing ->
-                    SolutionError <| "Cannot solve " ++ Expression.toString expr
+                    SolutionError <|
+                        { en = "Cannot solve " ++ Expression.toString expr
+                        , it = "Impossibile risolvere " ++ Expression.toString expr
+                        }
 
                 Just coeffs ->
                     let
@@ -138,7 +147,10 @@ solveEquation v l r =
                                         ]
 
                                 Err e ->
-                                    SolutionError <| "Cannot solve " ++ Expression.toString rebuilt ++ ", " ++ e
+                                    SolutionError <|
+                                        { en = "Cannot solve " ++ Expression.toString rebuilt ++ ", " ++ e
+                                        , it = "Impossibile risolvere " ++ Expression.toString rebuilt ++ ", " ++ e
+                                        }
 
                         last =
                             case List.head cleanCoeffs of

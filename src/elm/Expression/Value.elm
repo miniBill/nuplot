@@ -7,10 +7,11 @@ import Expression.Graph exposing (Graph(..))
 import Expression.Simplify
 import Expression.Solver
 import Expression.Utils as Utils
+import UI.L10N exposing (L10N, invariant)
 
 
 type Value
-    = ErrorValue String
+    = ErrorValue (L10N String)
     | SolutionTreeValue SolutionTree
     | SymbolicValue Expression
     | ComplexValue Complex
@@ -195,7 +196,12 @@ partialSubstitute var val expr =
 matrixMultiplication : Dict String Value -> List Value -> List Value -> Value
 matrixMultiplication context l r =
     genericMatrixMultiplication { asList = asList, by = by context, plus = plus context, toList = ListValue } (ListValue l) (ListValue r)
-        |> Maybe.withDefault (ErrorValue "Cannot multiply matrices")
+        |> Maybe.withDefault
+            (ErrorValue
+                { en = "Cannot multiply the matrices"
+                , it = "Impossibile moltiplicare let matrici"
+                }
+            )
 
 
 applyValue : Dict String Value -> FunctionName -> List Expression -> Value
@@ -279,7 +285,7 @@ applyValue context name args =
                     determinant context <| innerValue context c
 
                 _ ->
-                    ErrorValue "Unexpected number of args to pw, expected 1"
+                    unexpectedArgCount (Just "det") 1
 
         KnownFunction Exp ->
             unaryFunctionValue context args Exp Complex.exp
@@ -294,19 +300,19 @@ applyValue context name args =
                         innerValue context t
 
                 _ ->
-                    ErrorValue "Unexpected number of args to pw, expected 3"
+                    unexpectedArgCount (Just "pw") 3
 
         KnownFunction Gra ->
-            ErrorValue "TODO"
+            ErrorValue <| invariant "TODO"
 
         KnownFunction Dd ->
-            ErrorValue "TODO"
+            ErrorValue <| invariant "TODO"
 
         KnownFunction Ii ->
-            ErrorValue "TODO"
+            ErrorValue <| invariant "TODO"
 
         KnownFunction Mod ->
-            ErrorValue "TODO"
+            ErrorValue <| invariant "TODO"
 
         KnownFunction Solve ->
             case args of
@@ -315,7 +321,7 @@ applyValue context name args =
                         Expression.Solver.solve e x
 
                 _ ->
-                    ErrorValue "Error in solve: wrong number of arguments"
+                    unexpectedArgCount (Just "solve") 2
 
         KnownFunction Simplify ->
             case args of
@@ -323,7 +329,7 @@ applyValue context name args =
                     SymbolicValue <| Expression.Simplify.simplify e
 
                 _ ->
-                    ErrorValue "Error in simplify: wrong number of arguments"
+                    unexpectedArgCount (Just "simplify") 1
 
         KnownFunction StepSimplify ->
             case args of
@@ -331,7 +337,7 @@ applyValue context name args =
                     SolutionTreeValue <| Expression.Solver.stepSimplify SolutionDone e
 
                 _ ->
-                    ErrorValue "Error in stepsimplify: wrong number of arguments"
+                    unexpectedArgCount (Just "stepsimplify") 1
 
         KnownFunction Plot ->
             case args of
@@ -339,10 +345,44 @@ applyValue context name args =
                     GraphValue <| Expression.Graph.fromExpression e
 
                 _ ->
-                    ErrorValue "Error in plot: wrong number of arguments"
+                    unexpectedArgCount (Just "plot") 1
 
         UserFunction _ ->
-            ErrorValue "TODO"
+            ErrorValue <| invariant "TODO"
+
+
+unexpectedArgCount : Maybe String -> Int -> Value
+unexpectedArgCount maybeName count =
+    case maybeName of
+        Just name ->
+            ErrorValue
+                { en = "Unexpected number of args to " ++ name ++ ", expected " ++ String.fromInt count
+                , it =
+                    "Numero di argomenti inatteso per "
+                        ++ name
+                        ++ ", "
+                        ++ (if count == 1 then
+                                "atteso "
+
+                            else
+                                "attesi"
+                           )
+                        ++ String.fromInt count
+                }
+
+        Nothing ->
+            ErrorValue
+                { en = "Unexpected number of args, expected " ++ String.fromInt count
+                , it =
+                    "Numero di argomenti inatteso, "
+                        ++ (if count == 1 then
+                                "atteso "
+
+                            else
+                                "attesi"
+                           )
+                        ++ String.fromInt count
+                }
 
 
 asList : Value -> Maybe (List Value)
@@ -392,16 +432,31 @@ determinant context val =
                             , by = by context
                             , negate = negateValue
                             }
-                        |> Maybe.withDefault (ErrorValue "Error in calculating the determinant")
+                        |> Maybe.withDefault
+                            (ErrorValue
+                                { en = "Error in calculating the determinant"
+                                , it = "Errore nel calcolo del determinante"
+                                }
+                            )
 
                 Nothing ->
-                    ErrorValue "Cannot calculate the determinant of a nonquare matrix"
+                    ErrorValue <|
+                        UI.L10N.concat
+                            [ strings.cannotCalculateDeterminantOf
+                            , { en = "a nonquare matrix"
+                              , it = "una matrice non quadrata"
+                              }
+                            ]
 
         SymbolicValue s ->
             SymbolicValue <| Utils.determinant s
 
         GraphValue _ ->
-            ErrorValue "Cannot calculate the determinant of a graph"
+            ErrorValue <|
+                UI.L10N.concat
+                    [ strings.cannotCalculateDeterminantOf
+                    , strings.graphs
+                    ]
 
         ComplexValue _ ->
             val
@@ -413,7 +468,11 @@ determinant context val =
             val
 
         SolutionTreeValue _ ->
-            ErrorValue "Cannot calculate the determinant of a solution"
+            ErrorValue <|
+                UI.L10N.concat
+                    [ strings.cannotCalculateDeterminantOf
+                    , strings.solutionTrees
+                    ]
 
 
 unaryFunctionValue : Dict String Value -> List Expression -> KnownFunction -> (Complex -> Complex) -> Value
@@ -430,7 +489,7 @@ unaryFunctionValue context args s f =
                 innerValue context e
 
         _ ->
-            ErrorValue "Unexpected number of arguments, expected 1"
+            unexpectedArgCount Nothing 1
 
 
 binaryFunctionValue : Dict String Value -> List Expression -> KnownFunction -> (Complex -> Complex -> Complex) -> Value
@@ -448,32 +507,43 @@ binaryFunctionValue context args s f =
                 (innerValue context r)
 
         _ ->
-            ErrorValue "Unexpected number of arguments, expected 1"
+            unexpectedArgCount Nothing 2
 
 
-toString : Value -> String
+toString : Value -> L10N String
 toString v =
     case v of
         ComplexValue z ->
-            Complex.toString z
+            invariant <| Complex.toString z
 
         ListValue ls ->
-            "{" ++ String.join ", " (List.map toString ls) ++ "}"
+            UI.L10N.concat
+                [ invariant "{"
+                , UI.L10N.map (String.join ", ") (UI.L10N.traverse toString ls)
+                , invariant "}"
+                ]
 
         ErrorValue e ->
-            "Error: " ++ e
+            { en = "Error: " ++ e.en
+            , it = "Errore: " ++ e.it
+            }
 
         SymbolicValue s ->
-            Expression.toString s
+            invariant <| Expression.toString s
 
         GraphValue g ->
-            "Graph: " ++ Expression.Graph.toString g
+            { en = "Graph: " ++ Expression.Graph.toString g
+            , it = "Grafico: " ++ Expression.Graph.toString g
+            }
 
         LambdaValue x f ->
-            "Lambda: " ++ x ++ " => " ++ toString f
+            UI.L10N.map (\fs -> "Lambda: " ++ x ++ " => " ++ fs) (toString f)
 
         SolutionTreeValue s ->
-            "SolutionTree: " ++ Expression.solutionTreeToString s
+            UI.L10N.concat
+                [ { en = "SolutionTree: ", it = "Albero di Soluzioni: " }
+                , Expression.solutionTreeToString s
+                ]
 
 
 relationValue : RelationOperation -> Complex -> Complex -> Complex
@@ -536,10 +606,18 @@ complexMap ({ lambda, symbolic, complex, list } as fs) v =
             ComplexValue <| complex c
 
         GraphValue _ ->
-            ErrorValue "Tried to apply function to graph"
+            ErrorValue <|
+                UI.L10N.concat
+                    [ strings.cannotApplyFunctionsTo
+                    , strings.graphs
+                    ]
 
         SolutionTreeValue _ ->
-            ErrorValue "Tried to apply function to solution tree"
+            ErrorValue <|
+                UI.L10N.concat
+                    [ strings.cannotApplyFunctionsTo
+                    , strings.solutionTrees
+                    ]
 
         SymbolicValue w ->
             SymbolicValue <| symbolic w
@@ -564,6 +642,30 @@ simpleComplexMap2 symbolic complex context l r =
         (innerValue context r)
 
 
+strings =
+    { cannotCalculateDeterminantOf =
+        { en = "Cannot calculate the determinant of "
+        , it = "Impossibile calcolare il determinante di "
+        }
+    , cannotPerformCalculationsOn =
+        { en = "Cannot perform calculations on "
+        , it = "Impossibile effettuare operazioni su "
+        }
+    , cannotApplyFunctionsTo =
+        { en = "Cannot apply functions to "
+        , it = "Impossibile applicare funzioni a "
+        }
+    , graphs =
+        { en = "graphs"
+        , it = "grafici"
+        }
+    , solutionTrees =
+        { en = "solution trees"
+        , it = "alberi di soluzioni"
+        }
+    }
+
+
 complexMap2 :
     { symbolic : Expression -> Expression -> Expression
     , complex : Complex -> Complex -> Complex
@@ -583,10 +685,18 @@ complexMap2 ({ symbolic, complex, list, lambda, context } as fs) v w =
             w
 
         ( SolutionTreeValue _, _ ) ->
-            ErrorValue "Tried to apply function to solution tree"
+            ErrorValue <|
+                UI.L10N.concat
+                    [ strings.cannotPerformCalculationsOn
+                    , strings.solutionTrees
+                    ]
 
         ( _, SolutionTreeValue _ ) ->
-            ErrorValue "Tried to apply function to solution tree"
+            ErrorValue <|
+                UI.L10N.concat
+                    [ strings.cannotPerformCalculationsOn
+                    , strings.solutionTrees
+                    ]
 
         ( LambdaValue x f, _ ) ->
             case lambda of
@@ -632,10 +742,18 @@ complexMap2 ({ symbolic, complex, list, lambda, context } as fs) v w =
             ListValue <| List.map (\re -> complexMap2 fs v re) r
 
         ( GraphValue _, _ ) ->
-            ErrorValue "Cannot perform calculations on graphs"
+            ErrorValue <|
+                UI.L10N.concat
+                    [ strings.cannotPerformCalculationsOn
+                    , strings.graphs
+                    ]
 
         ( _, GraphValue _ ) ->
-            ErrorValue "Cannot perform calculations on graphs"
+            ErrorValue <|
+                UI.L10N.concat
+                    [ strings.cannotPerformCalculationsOn
+                    , strings.graphs
+                    ]
 
 
 toSymbolic : Value -> Expression

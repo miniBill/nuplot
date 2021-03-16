@@ -4,7 +4,7 @@ import Ant.Icons as Icons
 import Complex
 import Dict
 import Document exposing (Output(..), Row, RowData(..))
-import Element.WithContext as Element exposing (DeviceClass(..), Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, row, shrink, spacing, text, width)
+import Element.WithContext as Element exposing (DeviceClass(..), Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, row, shrink, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -21,6 +21,7 @@ import List.Extra as List
 import Markdown.Parser
 import Markdown.Renderer
 import UI.Glsl exposing (getGlsl)
+import UI.L10N exposing (L10N, invariant, text, title)
 import UI.Model exposing (CanvasId(..), CellMsg(..), Context, DocumentMsg(..), Msg(..))
 import UI.Theme as Theme
 
@@ -168,17 +169,32 @@ view size index { input, editing, data } =
                     (codeInputLine size index input :: outputRows)
 
             MarkdownRow ->
-                if editing then
-                    Theme.row [ Element.width fill ]
-                        [ inputBox (size.width - 100) input
-                        , Input.button [ htmlAttribute <| Html.Attributes.title "End editing" ]
-                            { onPress = Just EndEditing
-                            , label = Element.element <| Icons.enterOutlined Theme.darkIconAttrs
-                            }
-                        , Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Convert to Code cell" ]
+                let
+                    toCodeCellButton =
+                        Input.button
+                            [ alignRight
+                            , title
+                                { en = "Convert to Code cell"
+                                , it = "Converti in cella con Codice"
+                                }
+                            ]
                             { label = Element.element <| Icons.swapOutlined Theme.darkIconAttrs
                             , onPress = Just ToCode
                             }
+                in
+                if editing then
+                    Theme.row [ Element.width fill ]
+                        [ inputBox (size.width - 100) input
+                        , Input.button
+                            [ title
+                                { en = "End editing"
+                                , it = "Fine modifica"
+                                }
+                            ]
+                            { onPress = Just EndEditing
+                            , label = Element.element <| Icons.enterOutlined Theme.darkIconAttrs
+                            }
+                        , toCodeCellButton
                         ]
 
                 else
@@ -192,16 +208,23 @@ view size index { input, editing, data } =
                         |> (\e ->
                                 Theme.row [ Element.width fill ]
                                     [ e
-                                    , Input.button [ htmlAttribute <| Html.Attributes.title "Edit" ]
-                                        { onPress = Just StartEditing
-                                        , label = Element.element <| Icons.editOutlined Theme.darkIconAttrs
-                                        }
-                                    , Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Convert to Code cell" ]
-                                        { label = Element.element <| Icons.swapOutlined Theme.darkIconAttrs
-                                        , onPress = Just ToCode
-                                        }
+                                    , editButton
+                                    , toCodeCellButton
                                     ]
                            )
+
+
+editButton : Element CellMsg
+editButton =
+    Input.button
+        [ title
+            { en = "Edit"
+            , it = "Modifica"
+            }
+        ]
+        { onPress = Just StartEditing
+        , label = Element.element <| Icons.editOutlined Theme.darkIconAttrs
+        }
 
 
 inputBox : Int -> String -> Element CellMsg
@@ -226,22 +249,40 @@ codeInputLine : { a | width : Int } -> Int -> String -> Element CellMsg
 codeInputLine size index input =
     let
         buttons =
-            [ Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Press Ctrl+Enter to calculate" ]
+            [ Input.button
+                [ alignRight
+                , title
+                    { en = "Press Ctrl+Enter to calculate"
+                    , it = "Premere Ctrl+Invio per calcolare"
+                    }
+                ]
                 { onPress = Just Calculate
                 , label = Element.element <| Icons.playSquareOutlined Theme.darkIconAttrs
                 }
-            , Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Convert to Markdown cell" ]
+            , Input.button
+                [ alignRight
+                , title
+                    { en = "Convert to Markdown cell"
+                    , it = "Converti in cella con Markdown"
+                    }
+                ]
                 { label = Element.element <| Icons.swapOutlined Theme.darkIconAttrs
                 , onPress = Just ToMarkdown
                 }
-            , Input.button [ alignRight, htmlAttribute <| Html.Attributes.title "Clear result" ]
+            , Input.button
+                [ alignRight
+                , title
+                    { en = "Clear result"
+                    , it = "Pulisci risultato"
+                    }
+                ]
                 { label = Element.element <| Icons.stopOutlined Theme.darkIconAttrs
                 , onPress = Just Clear
                 }
             ]
 
         label =
-            text <| "In [" ++ String.fromInt index ++ "]"
+            text <| invariant <| "In [" ++ String.fromInt index ++ "]"
     in
     Element.with .deviceClass <|
         \deviceClass ->
@@ -267,7 +308,7 @@ statusLine pageWidth output =
         Parsed e ->
             if False then
                 Theme.column [ alignTop, width <| Element.maximum 200 fill ]
-                    [ text "Interpreted as: "
+                    [ text { en = "Interpreted as: ", it = "Interpretato come: " }
                     , viewExpression pageWidth e
                     ]
 
@@ -275,16 +316,20 @@ statusLine pageWidth output =
                 none
 
 
-viewError : String -> Element msg
+viewError : L10N String -> Element msg
 viewError e =
     let
+        tuples =
+            List.map2 (\en it -> { en = en, it = it })
+                (String.split "\n" e.en)
+                (String.split "\n" e.it)
+
         viewErrorLine l =
             Element.paragraph
                 [ htmlAttribute <| Html.Attributes.class "pre" ]
                 [ text l ]
     in
-    e
-        |> String.split "\n"
+    tuples
         |> List.map viewErrorLine
         |> Element.textColumn
             [ alignTop
@@ -313,7 +358,11 @@ viewSolutionTree pageWidth tree =
             [ viewLaTeX pageWidth <| "\\forall " ++ v ++ " \\in \\mathbb{R}" ]
 
         SolutionError e ->
-            [ text <| "Error: " ++ e ]
+            [ text
+                { en = "Error: " ++ e.en
+                , it = "Errore: " ++ e.it
+                }
+            ]
 
         SolutionNone v ->
             [ viewLaTeX pageWidth <| "\\not \\exists " ++ v ++ " \\in \\mathbb{R}" ]
