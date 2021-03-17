@@ -48,7 +48,7 @@ build n d =
     else
         let
             g =
-                abs <| gcd n d
+                gcd n d
         in
         Fraction (n // g) (d // g)
 
@@ -71,7 +71,7 @@ isZero (Fraction n _) =
 gcd : Int -> Int -> Int
 gcd ll rr =
     if ll < 0 then
-        -(gcd -ll rr)
+        gcd -ll rr
 
     else if ll < rr then
         gcd rr ll

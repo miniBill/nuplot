@@ -20,7 +20,7 @@ import Expression
         )
 import Expression.Derivative
 import Expression.Polynomial exposing (asPolynomial)
-import Expression.Utils exposing (abs_, by, byShort, cbrt, cos_, div, factor, i, im, ipow, ipowShort, minus, negateShort, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
+import Expression.Utils exposing (abs_, by, byShort, cbrt, cos_, div, divShort, factor, i, im, ipow, ipowShort, minus, negateShort, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
 import Fraction
 import List.Extra as List
 import List.MyExtra exposing (groupOneWith)
@@ -336,6 +336,9 @@ stepSimplifySin sarg =
         UnaryOperation Negate c ->
             Just <| negateShort <| sin_ c
 
+        BinaryOperation Division (AssociativeOperation Addition l m r) d ->
+            stepSimplifySin <| plus <| List.map (\n -> divShort n d) (l :: m :: r)
+
         AssociativeOperation Addition l m r ->
             let
                 rr =
@@ -346,6 +349,113 @@ stepSimplifySin sarg =
                     [ by [ sin_ l, cos_ rr ]
                     , by [ cos_ l, sin_ rr ]
                     ]
+
+        BinaryOperation Division n d ->
+            asPiFraction n d
+                |> Maybe.andThen (\( pn, pd ) -> getSinValueForPiFraction pn pd)
+
+        _ ->
+            Nothing
+
+
+getSinValueForPiFraction : Int -> Int -> Maybe Expression
+getSinValueForPiFraction pn pd =
+    if pd < 0 then
+        getSinValueForPiFraction -pn -pd
+
+    else if pd == 0 then
+        Nothing
+
+    else if pn == 0 then
+        Just zero
+
+    else
+        case Fraction.gcd pn pd of
+            1 ->
+                case modBy pd 4 of
+                    0 ->
+                        case modBy 8 (pn * 4 // pd) of
+                            0 ->
+                                Just zero
+
+                            1 ->
+                                Just <| div (sqrt_ <| Integer 2) two
+
+                            2 ->
+                                Just one
+
+                            3 ->
+                                Just <| div (sqrt_ <| Integer 2) two
+
+                            4 ->
+                                Just zero
+
+                            5 ->
+                                Just <| div (negate_ <| sqrt_ <| Integer 2) two
+
+                            6 ->
+                                Just <| Integer -1
+
+                            -- 7
+                            _ ->
+                                Just <| div (negate_ <| sqrt_ <| Integer 2) two
+
+                    _ ->
+                        case modBy pd 6 of
+                            0 ->
+                                case modBy 12 (pn * 6 // pd) of
+                                    0 ->
+                                        Just zero
+
+                                    1 ->
+                                        Just <| div one two
+
+                                    2 ->
+                                        Just <| div (sqrt_ <| Integer 3) two
+
+                                    3 ->
+                                        Just one
+
+                                    4 ->
+                                        Just <| div (sqrt_ <| Integer 3) two
+
+                                    5 ->
+                                        Just <| div one two
+
+                                    6 ->
+                                        Just zero
+
+                                    7 ->
+                                        Just <| div (Integer -1) two
+
+                                    8 ->
+                                        Just <| div (negate_ <| sqrt_ <| Integer 3) two
+
+                                    9 ->
+                                        Just <| Integer -1
+
+                                    10 ->
+                                        Just <| div (negate_ <| sqrt_ <| Integer 3) two
+
+                                    -- 11
+                                    _ ->
+                                        Just <| div (Integer -1) two
+
+                            _ ->
+                                Nothing
+
+            g ->
+                getSinValueForPiFraction (pn // g) (pd // g)
+
+
+asPiFraction : Expression -> Expression -> Maybe ( Int, Int )
+asPiFraction n d =
+    case ( n, d ) of
+        ( Variable "pi", Integer di ) ->
+            Just ( 1, di )
+
+        ( AssociativeOperation Multiplication (Integer ni) (Variable "pi") [], Integer di ) ->
+            Just ( ni, di )
 
         _ ->
             Nothing
@@ -363,6 +473,9 @@ stepSimplifyCos sarg =
         UnaryOperation Negate c ->
             Just <| cos_ c
 
+        BinaryOperation Division (AssociativeOperation Addition l m r) d ->
+            stepSimplifyCos <| plus <| List.map (\n -> divShort n d) (l :: m :: r)
+
         AssociativeOperation Addition l m r ->
             let
                 rr =
@@ -372,6 +485,10 @@ stepSimplifyCos sarg =
                 minus
                     (by [ cos_ l, cos_ rr ])
                     (by [ sin_ l, sin_ rr ])
+
+        BinaryOperation Division n d ->
+            asPiFraction n d
+                |> Maybe.andThen (\( pn, pd ) -> getSinValueForPiFraction (pn * 2 + pd) (pd * 2))
 
         _ ->
             Nothing
@@ -544,6 +661,29 @@ stepSimplifyRe sargs =
 
 stepSimplifyDivision : Expression -> Expression -> Expression
 stepSimplifyDivision ls rs =
+    let
+        trySimplifyFactors nz dz dzip =
+            case stepSimplifyDivision (Zipper.selected nz) (Zipper.selected dz) of
+                BinaryOperation Division _ _ ->
+                    if Zipper.canGoRight dz then
+                        trySimplifyFactors nz (Zipper.right 1 dz) dzip
+
+                    else if Zipper.canGoRight nz then
+                        trySimplifyFactors (Zipper.right 1 nz) dzip dzip
+
+                    else
+                        div ls rs
+
+                Integer 1 ->
+                    div
+                        (by <| Zipper.getLeft nz ++ Zipper.getRight nz)
+                        (by <| Zipper.getLeft dz ++ Zipper.getRight dz)
+
+                reduced ->
+                    div
+                        (by <| Zipper.getLeft nz ++ reduced :: Zipper.getRight nz)
+                        (by <| Zipper.getLeft dz ++ Zipper.getRight dz)
+    in
     case ( ls, rs ) of
         ( BinaryOperation Division lsn lsd, _ ) ->
             div lsn <| by [ lsd, rs ]
@@ -619,30 +759,28 @@ stepSimplifyDivision ls rs =
 
                 dzip =
                     Zipper.fromNonemptyList dl (dm :: dr)
-
-                go nz dz =
-                    case stepSimplifyDivision (Zipper.selected nz) (Zipper.selected dz) of
-                        BinaryOperation Division _ _ ->
-                            if Zipper.canGoRight dz then
-                                go nz (Zipper.right 1 dz)
-
-                            else if Zipper.canGoRight nz then
-                                go (Zipper.right 1 nz) dzip
-
-                            else
-                                div ls rs
-
-                        Integer 1 ->
-                            div
-                                (by <| Zipper.getLeft nz ++ Zipper.getRight nz)
-                                (by <| Zipper.getLeft dz ++ Zipper.getRight dz)
-
-                        reduced ->
-                            div
-                                (by <| Zipper.getLeft nz ++ reduced :: Zipper.getRight nz)
-                                (by <| Zipper.getLeft dz ++ Zipper.getRight dz)
             in
-            go nzip dzip
+            trySimplifyFactors nzip dzip dzip
+
+        ( n, AssociativeOperation Multiplication dl dm dr ) ->
+            let
+                nzip =
+                    Zipper.fromNonemptyList n []
+
+                dzip =
+                    Zipper.fromNonemptyList dl (dm :: dr)
+            in
+            trySimplifyFactors nzip dzip dzip
+
+        ( AssociativeOperation Multiplication nl nm nr, d ) ->
+            let
+                nzip =
+                    Zipper.fromNonemptyList nl (nm :: nr)
+
+                dzip =
+                    Zipper.fromNonemptyList d []
+            in
+            trySimplifyFactors nzip dzip dzip
 
         _ ->
             if Expression.equals ls rs then
@@ -928,6 +1066,9 @@ stepSimplifyAddition left right =
             case ( left, right ) of
                 ( _, Integer 0 ) ->
                     Just left
+
+                ( Integer 0, _ ) ->
+                    Just right
 
                 ( Integer il, Integer ir ) ->
                     Just <| Integer <| il + ir

@@ -69,7 +69,7 @@ defaultDocument =
     , "plot(sin²x+sin²y+sin²z = pw(z>1,-1,.5sinsqrt(x²+y²+z²"
     , "simplifydet{{a,b,c},{0,1,0},{1,2,3"
     , "plot{z=sin(x²+y²),x²+y²+(z-2)² = 3}"
-    , "simplify(sin(x+pi))"
+    , "stepsimplify(sin(pi-x))"
     , "[zx+iy]{plot(z³-1),plotabs(z³-1),plotarg(z³-1)}"
     , ""
     ]
