@@ -64,12 +64,13 @@ main =
 
 defaultDocument : List String
 defaultDocument =
-    [ "{{plotsinx, plot(x<y), plot(x²+y²=3)}, {[zx+iy]plotexp(1/z), plot(x²+y²+z²=3), plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}}"
-    , "[zx+iy]{plot(z³-1),plotabs(z³-1),plotarg(z³-1)}"
-    , "plot(sin²x+sin²y+sin²z = pw(z>1,-1,.5sinsqrt(x²+y²+z²"
-    , "plot{z=sin(x²+y²),x²+y²+(z-2)² = 3}"
-    , "simplifydet{{a,b,c},{0,1,0},{1,2,3"
+    [ "{{plotsin, plot(x<y), plot(x²+y²=3)},{[zx+iy]plotexp(1/z), plot(x²+y²+z²=3), plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}, {plot(r=3/(t+1)), plot{sin(3t),cos(5t)}, plot(signx/(x²+y²+1)}}"
     , "solve(x+2(x-(x²-6)+1),x"
+    , "plot(sin²x+sin²y+sin²z = pw(z>1,-1,.5sinsqrt(x²+y²+z²"
+    , "simplifydet{{a,b,c},{0,1,0},{1,2,3"
+    , "plot{z=sin(x²+y²),x²+y²+(z-2)² = 3}"
+    , "simplify(sin(x+pi))"
+    , "[zx+iy]{plot(z³-1),plotabs(z³-1),plotarg(z³-1)}"
     , ""
     ]
 
@@ -897,7 +898,7 @@ update msg =
         calculateRow r =
             case r.data of
                 CodeRow _ ->
-                    { r | editing = False, data = CodeRow <| List.filterMap parseOrError <| String.split "\n" r.input }
+                    { r | editing = False, data = CodeRow <| List.filterMap parseOrError <| String.split "\n" <| String.replace "\\\n" "" r.input }
 
                 MarkdownRow ->
                     { r | editing = False }
