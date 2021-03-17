@@ -20,7 +20,7 @@ import Expression
         )
 import Expression.Derivative
 import Expression.Polynomial exposing (asPolynomial)
-import Expression.Utils exposing (abs_, by, byShort, cbrt, cos_, div, factor, i, im, ipow, ipowShort, minus, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
+import Expression.Utils exposing (abs_, by, byShort, cbrt, cos_, div, factor, i, im, ipow, ipowShort, minus, negateShort, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
 import Fraction
 import List.Extra as List
 import List.MyExtra exposing (groupOneWith)
@@ -330,6 +330,12 @@ stepSimplifySin sarg =
         Float j ->
             Just <| Float <| sin j
 
+        Variable "pi" ->
+            Just zero
+
+        UnaryOperation Negate c ->
+            Just <| negateShort <| sin_ c
+
         AssociativeOperation Addition l m r ->
             let
                 rr =
@@ -350,6 +356,12 @@ stepSimplifyCos sarg =
     case sarg of
         Float j ->
             Just <| Float <| cos j
+
+        Variable "pi" ->
+            Just one
+
+        UnaryOperation Negate c ->
+            Just <| cos_ c
 
         AssociativeOperation Addition l m r ->
             let
