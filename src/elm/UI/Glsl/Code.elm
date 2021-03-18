@@ -959,7 +959,10 @@ toSrcVectorField2D suffix x y =
         float angleVector = arg(vector);
         float delta = mod(angleCorner - angleVector, radians(360.0));
         float l = length(vector) / mx;
-        return (delta < radians(6.0) || delta > radians(354.0)) && length(o - corner) < deltaX * 20.0 * (l / 2.0 + 0.5);
+        float maxLength = deltaX * 30.0 * (l < """ ++ floatToGlsl epsilon ++ """ ? 0.0 : l / 2.0 + 0.5);
+        float wantedLength = length(o - corner);
+        float angularDistance = mix(180.0, 0.0, pow(wantedLength / maxLength, 0.3));
+        return (delta < radians(angularDistance) || delta > radians(360.0 - angularDistance)) && wantedLength < maxLength;
     }
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
@@ -968,20 +971,20 @@ toSrcVectorField2D suffix x y =
         float mx = 0.0;
         for(int xi = -30; xi <= 30; xi++) {
             for(int yi = -30; yi <= 30; yi++) {
-                vec2 p = u_zoomCenter + vec2(deltaX * 20.0 * float(xi), deltaX * 20.0 * float(yi));
+                vec2 p = u_zoomCenter + vec2(deltaX * 30.0 * float(xi), deltaX * 30.0 * float(yi));
 
                 vec2 v = vector""" ++ suffix ++ """(p.x, p.y);
                 mx = max(mx, length(v));
             }
         }
 
-        x = o.x - mod(o.x, deltaX * 20.0);
-        y = o.y - mod(o.y, deltaX * 20.0);
+        x = o.x - mod(o.x, deltaX * 30.0);
+        y = o.y - mod(o.y, deltaX * 30.0);
 
         vec2 bl = vector""" ++ suffix ++ """(x, y);
-        vec2 br = vector""" ++ suffix ++ """(x + deltaX * 20.0, y);
-        vec2 ul = vector""" ++ suffix ++ """(x, y + deltaX * 20.0);
-        vec2 ur = vector""" ++ suffix ++ """(x + deltaX * 20.0, y + deltaX * 20.0);
+        vec2 br = vector""" ++ suffix ++ """(x + deltaX * 30.0, y);
+        vec2 ul = vector""" ++ suffix ++ """(x, y + deltaX * 30.0);
+        vec2 ur = vector""" ++ suffix ++ """(x + deltaX * 30.0, y + deltaX * 30.0);
 
         float angleO;
         vec2 corner;
@@ -992,17 +995,17 @@ toSrcVectorField2D suffix x y =
         if(near(o, corner, bl, deltaX, mx))
             return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
 
-        corner = vec2(x + deltaX * 20.0, y);
+        corner = vec2(x + deltaX * 30.0, y);
         l = length(br) / mx;
         if(near(o, corner, br, deltaX, mx))
             return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
 
-        corner = vec2(x, y + deltaX * 20.0);
+        corner = vec2(x, y + deltaX * 30.0);
         l = length(ul) / mx;
         if(near(o, corner, ul, deltaX, mx))
             return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
 
-        corner = vec2(x + deltaX * 20.0, y + deltaX * 20.0);
+        corner = vec2(x + deltaX * 30.0, y + deltaX * 30.0);
         l = length(ur) / mx;
         if(near(o, corner, ur, deltaX, mx))
             return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
