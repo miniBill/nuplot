@@ -250,11 +250,13 @@ export class NuPlot extends HTMLElement {
   setWidth(width: number) {
     this.canvas.width = Math.round(width * (window.devicePixelRatio || 1));
     this.canvas.style.width = width + "px";
+    this.reloadFragmentShader();
   }
 
   setHeight(height: number) {
     this.canvas.height = Math.round(height * (window.devicePixelRatio || 1));
     this.canvas.style.height = height + "px";
+    this.reloadFragmentShader();
   }
 
   private buildFragmentShader(expr: string) {
@@ -577,14 +579,13 @@ export class NuPlot extends HTMLElement {
       .join("\n");
   }
 
-  /*requestFullscreen(options?: FullscreenOptions | undefined) {
-    return this.canvas.requestFullscreen();
-  }*/
-
   sourceAndCompile(shader: WebGLShader, built: string) {
     if (!this.gl) return;
 
     built = `#define MAX_ITERATIONS ${this.currIterations.toString()}
+#define X_POINTS ${Math.ceil(this.canvas.width / 60)}
+#define Y_POINTS ${Math.ceil(this.canvas.height / 60)}
+#define VECTOR_SPACING ${60 / 2}.0
 ${built}`;
     if (this.hasWebGl2) {
       const translated = built
