@@ -75,7 +75,12 @@ fromExpression =
                                 GraphList <| List.map fromExpression ls
 
                     else
-                        GraphList <| List.map fromExpression ls
+                        case ls of
+                            [ List [ x ], List [ y ] ] ->
+                                VectorField2D x y
+
+                            _ ->
+                                GraphList <| List.map fromExpression ls
 
                 Apply (KnownFunction Simplify) [ e ] ->
                     go <| Expression.Simplify.simplify e

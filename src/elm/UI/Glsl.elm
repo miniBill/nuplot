@@ -9,7 +9,7 @@ import List.Extra as List
 import List.MyExtra as List
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
-import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
+import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -19,14 +19,14 @@ import UI.Glsl.Sphere as Sphere
 getGlsl : Bool -> Bool -> Graph -> String
 getGlsl expandIntervals rayDifferentials graph =
     let
-        { expr, srcExpr, interval, thetaDelta, pixel2D, pixel3D } =
+        { expr, srcExpr, interval, usesThetaDelta, pixel2D, pixel3D } =
             extract "" graph
 
         build2d toSrc prefix e =
             { expr = e
             , srcExpr = toSrc prefix e
             , interval = StraightOnly
-            , thetaDelta = False
+            , usesThetaDelta = False
             , pixel2D = [ { name = "pixel" ++ prefix, color = True } ]
             , pixel3D = []
             }
@@ -55,7 +55,7 @@ getGlsl expandIntervals rayDifferentials graph =
                     { expr = e
                     , srcExpr = toSrcParametric expandIntervals prefix e
                     , interval = IntervalOnly
-                    , thetaDelta = False
+                    , usesThetaDelta = False
                     , pixel2D = [ { name = "pixel" ++ prefix, color = True } ]
                     , pixel3D = []
                     }
@@ -67,7 +67,7 @@ getGlsl expandIntervals rayDifferentials graph =
                     { expr = e
                     , srcExpr = toSrcContour prefix e
                     , interval = StraightOnly
-                    , thetaDelta = True
+                    , usesThetaDelta = True
                     , pixel2D = [ { name = "pixel" ++ prefix, color = False } ]
                     , pixel3D = []
                     }
@@ -80,7 +80,7 @@ getGlsl expandIntervals rayDifferentials graph =
                     { expr = f.expr
                     , srcExpr = f.srcExpr
                     , interval = IntervalAndStraight
-                    , thetaDelta = True
+                    , usesThetaDelta = True
                     , pixel2D = []
                     , pixel3D = [ prefix ]
                     }
@@ -101,27 +101,26 @@ getGlsl expandIntervals rayDifferentials graph =
 
                         else
                             StraightOnly
-                    , thetaDelta = List.any .thetaDelta extracted
+                    , usesThetaDelta = List.any .usesThetaDelta extracted
                     , pixel2D = List.concatMap .pixel2D extracted
                     , pixel3D = List.concatMap .pixel3D extracted
                     }
 
                 VectorField2D x y ->
-                    { expr = x
-                    , srcExpr = toSrcContour prefix x
+                    { expr = Apply (KnownFunction Arg) [ x, y ]
+                    , srcExpr = toSrcVectorField2D prefix x y
                     , interval = StraightOnly
-                    , thetaDelta = True
+                    , usesThetaDelta = True
                     , pixel2D = [ { name = "pixel" ++ prefix, color = False } ]
                     , pixel3D = []
                     }
 
         thetaDeltaCode =
-            deindent 4 <|
-                if thetaDelta then
-                    UI.Glsl.Code.thetaDelta
+            if usesThetaDelta then
+                deindent 4 <| UI.Glsl.Code.thetaDelta
 
-                else
-                    ""
+            else
+                ""
 
         reqs =
             expr

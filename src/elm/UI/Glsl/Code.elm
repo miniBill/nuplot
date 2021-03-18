@@ -1,4 +1,4 @@
-module UI.Glsl.Code exposing (constantToGlsl, deindent, expressionToGlsl, floatToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation)
+module UI.Glsl.Code exposing (constantToGlsl, deindent, expressionToGlsl, floatToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
@@ -410,6 +410,10 @@ straightFunctionToGlsl name =
 
         Arg22 ->
             """
+            float arg(vec2 v) {
+                return atan(v.y, v.x);
+            }
+
             vec2 carg(vec2 v) {
                 return vec2(atan(v.y, v.x), 0);
             }
@@ -790,7 +794,7 @@ intervalFunctionToGlsl name =
             vec2 imod(vec2 x, vec2 y) {
                 return x + ineg(iby(y, ifloor(idiv(x, y))));
             }
-            
+
             vec4 gmod(vec4 l, vec4 r) {
                 return vec4(mod(l.x, r.x), l.yzw);
             }
@@ -937,6 +941,73 @@ thetaDelta =
         float thetaSix = theta * u_whiteLines + 0.5;
         float thetaNeigh = 0.05;
         return abs(fract(thetaSix) - 0.5) / thetaNeigh;
+    }
+    """
+
+
+toSrcVectorField2D : String -> Expression -> Expression -> String
+toSrcVectorField2D suffix x y =
+    """
+    vec2 vector""" ++ suffix ++ """(float x, float y) {
+        vec2 xv = """ ++ expressionToGlsl x ++ """;
+        vec2 yv = """ ++ expressionToGlsl y ++ """;
+        return abs(xv.y) + abs(yv.y) < """ ++ floatToGlsl epsilon ++ """ ? vec2(xv.x, yv.x) : vec2(0,0);
+    }
+
+    bool near(vec2 o, vec2 corner, vec2 vector, float deltaX, float mx) {
+        float angleCorner = arg(o - corner);
+        float angleVector = arg(vector);
+        float delta = mod(angleCorner - angleVector, radians(360.0));
+        float l = length(vector) / mx;
+        return (delta < radians(6.0) || delta > radians(354.0)) && length(o - corner) < deltaX * 20.0 * (l / 2.0 + 0.5);
+    }
+
+    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
+        vec2 o = vec2(x, y);
+
+        float mx = 0.0;
+        for(int xi = -30; xi <= 30; xi++) {
+            for(int yi = -30; yi <= 30; yi++) {
+                vec2 p = u_zoomCenter + vec2(deltaX * 20.0 * float(xi), deltaX * 20.0 * float(yi));
+
+                vec2 v = vector""" ++ suffix ++ """(p.x, p.y);
+                mx = max(mx, length(v));
+            }
+        }
+
+        x = o.x - mod(o.x, deltaX * 20.0);
+        y = o.y - mod(o.y, deltaX * 20.0);
+
+        vec2 bl = vector""" ++ suffix ++ """(x, y);
+        vec2 br = vector""" ++ suffix ++ """(x + deltaX * 20.0, y);
+        vec2 ul = vector""" ++ suffix ++ """(x, y + deltaX * 20.0);
+        vec2 ur = vector""" ++ suffix ++ """(x + deltaX * 20.0, y + deltaX * 20.0);
+
+        float angleO;
+        vec2 corner;
+        float l;
+
+        corner = vec2(x, y);
+        l = length(bl) / mx;
+        if(near(o, corner, bl, deltaX, mx))
+            return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
+
+        corner = vec2(x + deltaX * 20.0, y);
+        l = length(br) / mx;
+        if(near(o, corner, br, deltaX, mx))
+            return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
+
+        corner = vec2(x, y + deltaX * 20.0);
+        l = length(ul) / mx;
+        if(near(o, corner, ul, deltaX, mx))
+            return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
+
+        corner = vec2(x + deltaX * 20.0, y + deltaX * 20.0);
+        l = length(ur) / mx;
+        if(near(o, corner, ur, deltaX, mx))
+            return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
+
+        return vec3(0,0,0);
     }
     """
 
