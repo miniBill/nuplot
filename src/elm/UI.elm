@@ -64,7 +64,7 @@ main =
 
 defaultDocument : List String
 defaultDocument =
-    [ "{{plotsin, plot(x<y), plot(x²+y²=3)},{[zx+iy]plotexp(1/z), plot(x²+y²+z²=3), plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}, {plot(r=3/(t+1)), plot{sin(3t),cos(5t)}, plot(signx/(x²+y²+1)}}"
+    [ "{{plotsin, plot(x<y), plot(x²+y²=3)},{[zx+iy]plotexp(1/z), plot(x²+y²+z²=3), plot{sinx,x,-sinhx,-x,x²+y²=3,cosx,sinhx,-cosx,-sinx,x²+y²=4}}, {plot(r=3/(t+1)), plot{sin(3t),cos(5t)}, plot((x²-y²+1,2xy)}}"
     , "solve(x+2(x-(x²-6)+1),x"
     , "plot(sin²x+sin²y+sin²z = pw(z>1,-1,.5sinsqrt(x²+y²+z²"
     , "simplifydet{{a,b,c},{0,1,0},{1,2,3"
