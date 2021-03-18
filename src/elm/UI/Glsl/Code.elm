@@ -969,14 +969,16 @@ toSrcVectorField2D suffix x y =
         vec2 o = vec2(x, y);
 
         float mx = 0.0;
-        for(int xi = -20; xi <= 20; xi++) {
-            for(int yi = -20; yi <= 20; yi++) {
+        for(int xi = -18; xi <= 18; xi++) {
+            for(int yi = -12; yi <= 12; yi++) {
                 vec2 p = u_zoomCenter + vec2(deltaX * 30.0 * float(xi), deltaX * 30.0 * float(yi));
-
                 vec2 v = vector""" ++ suffix ++ """(p.x, p.y);
                 mx = max(mx, length(v));
             }
         }
+
+        vec3 colorA = vec3(0.0, 1.0, 0.0);
+        vec3 colorB = vec3(0.0, 0.0, 1.0);
 
         x = o.x - mod(o.x, deltaX * 30.0);
         y = o.y - mod(o.y, deltaX * 30.0);
@@ -993,22 +995,22 @@ toSrcVectorField2D suffix x y =
         corner = vec2(x, y);
         l = length(bl) / mx;
         if(near(o, corner, bl, deltaX, mx))
-            return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
+            return mix(colorA, colorB, l);
 
         corner = vec2(x + deltaX * 30.0, y);
         l = length(br) / mx;
         if(near(o, corner, br, deltaX, mx))
-            return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
+            return mix(colorA, colorB, l);
 
         corner = vec2(x, y + deltaX * 30.0);
         l = length(ul) / mx;
         if(near(o, corner, ul, deltaX, mx))
-            return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
+            return mix(colorA, colorB, l);
 
         corner = vec2(x + deltaX * 30.0, y + deltaX * 30.0);
         l = length(ur) / mx;
         if(near(o, corner, ur, deltaX, mx))
-            return mix(vec3(0.8, 0.5, 0.5), vec3(0.5, 0.5, 0.8), l);
+            return mix(colorA, colorB, l);
 
         return vec3(0,0,0);
     }
