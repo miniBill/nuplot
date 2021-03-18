@@ -969,8 +969,8 @@ toSrcVectorField2D suffix x y =
         vec2 o = vec2(x, y);
 
         float mx = 0.0;
-        for(int xi = -30; xi <= 30; xi++) {
-            for(int yi = -30; yi <= 30; yi++) {
+        for(int xi = -20; xi <= 20; xi++) {
+            for(int yi = -20; yi <= 20; yi++) {
                 vec2 p = u_zoomCenter + vec2(deltaX * 30.0 * float(xi), deltaX * 30.0 * float(yi));
 
                 vec2 v = vector""" ++ suffix ++ """(p.x, p.y);
