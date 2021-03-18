@@ -909,10 +909,10 @@ update msg =
 
         inner model =
             case msg of
-                DocumentMsg id (DocumentCellMsg data) ->
+                DocumentMsg docId (DocumentCellMsg data) ->
                     let
                         updateRow rowF =
-                            updateCurrent
+                            updateByDocId docId
                                 (\curr ->
                                     { curr
                                         | rows =
@@ -961,20 +961,18 @@ update msg =
                         , googleId = Nothing
                         }
 
-                DocumentMsg id DocumentSelect ->
+                DocumentMsg docId DocumentSelect ->
                     let
                         documents =
                             Maybe.map
-                                (Zipper.focusFind (\d -> d.id == id))
+                                (Zipper.focusFind (\{ id } -> id == docId))
                                 model.documents
                     in
-                    ( { model | documents = documents }
-                    , persist documents
-                    )
+                    persist { model | documents = documents }
 
                 DocumentMsg docId (DocumentClose { ask }) ->
                     if ask then
-                        updateCurrent
+                        updateByDocId docId
                             (\document ->
                                 { document
                                     | modals = ModalClose :: document.modals
@@ -988,15 +986,17 @@ update msg =
                                 model.documents
                                     |> Maybe.andThen (Zipper.filter (\{ id } -> id /= docId))
                         in
-                        ( { model | documents = documents }
-                        , persist documents
+                        persist { model | documents = documents }
+
+                DocumentMsg docId DocumentCalculateAll ->
+                    updateByDocId docId
+                        (\doc ->
+                            { doc | rows = List.map calculateRow doc.rows }
                         )
+                        model
 
-                DocumentMsg _ DocumentCalculateAll ->
-                    updateCurrent (\doc -> { doc | rows = List.map calculateRow doc.rows }) model
-
-                DocumentMsg _ DocumentClearAll ->
-                    updateCurrent
+                DocumentMsg docId DocumentClearAll ->
+                    updateByDocId docId
                         (\doc ->
                             { doc
                                 | rows =
@@ -1014,8 +1014,8 @@ update msg =
                         )
                         model
 
-                DocumentMsg _ (DocumentRename name) ->
-                    updateCurrent
+                DocumentMsg docId (DocumentRename name) ->
+                    updateByDocId docId
                         (\doc ->
                             { doc
                                 | name =
@@ -1045,25 +1045,21 @@ update msg =
                 DocumentOpen ->
                     ( model, File.Select.file [ "text/plain", ".txt" ] DocumentOpenSelected )
 
-                DocumentMsg _ (DocumentPushModal modal) ->
-                    updateCurrent (\document -> { document | modals = modal :: document.modals }) model
+                DocumentMsg docId (DocumentPushModal modal) ->
+                    updateByDocId docId (\document -> { document | modals = modal :: document.modals }) model
 
-                DocumentMsg _ DocumentPopModal ->
-                    updateCurrent (\document -> { document | modals = List.drop 1 document.modals }) model
+                DocumentMsg docId DocumentPopModal ->
+                    updateByDocId docId (\document -> { document | modals = List.drop 1 document.modals }) model
 
-                DocumentMsg _ (DocumentReplaceModal modal) ->
-                    updateCurrent (\document -> { document | modals = modal :: List.drop 1 document.modals }) model
+                DocumentMsg docId (DocumentReplaceModal modal) ->
+                    updateByDocId docId (\document -> { document | modals = modal :: List.drop 1 document.modals }) model
 
-                DocumentMsg _ DocumentDownload ->
-                    case model.documents of
+                DocumentMsg docId DocumentDownload ->
+                    case List.find (\{ id } -> id == docId) <| Maybe.withDefault [] <| Maybe.map Zipper.toList model.documents of
                         Nothing ->
                             ( model, Cmd.none )
 
-                        Just docs ->
-                            let
-                                document =
-                                    Zipper.selected docs
-                            in
+                        Just document ->
                             -- TODO: ask the user for a name if empty
                             ( model
                             , File.Download.string
@@ -1132,114 +1128,7 @@ update msg =
                             ( model, Cmd.none )
 
                 DocumentMsg docId (DocumentGoogleId res) ->
-                    case res of
-                        Ok googleId ->
-                            let
-                                google =
-                                    model.google
-
-                                maybeDoc =
-                                    model.google.waitingId
-                                        |> List.find (\{ id } -> id == docId)
-
-                                google_ { name, content } request =
-                                    { google
-                                        | waitingId = List.filter (\{ id } -> id /= docId) google.waitingId
-                                        , waitingSave =
-                                            { id = docId
-                                            , name = name
-                                            , content = content
-                                            , googleId = googleId
-                                            , request = request
-                                            }
-                                                :: google.waitingSave
-                                    }
-
-                                documents_ =
-                                    Maybe.map
-                                        (Zipper.map
-                                            (\_ ({ id } as document) ->
-                                                if id == docId then
-                                                    { document
-                                                        | googleId = Just googleId
-                                                    }
-
-                                                else
-                                                    document
-                                            )
-                                        )
-                                        model.documents
-                            in
-                            case maybeDoc of
-                                Nothing ->
-                                    ( model
-                                    , Cmd.none
-                                    )
-
-                                Just data ->
-                                    case google.accessToken of
-                                        Missing ->
-                                            ( { model
-                                                | google = google_ data WaitingAccessToken
-                                                , documents = documents_
-                                              }
-                                            , persist documents_
-                                            )
-
-                                        Expired ->
-                                            ( { model
-                                                | google = google_ data WaitingAccessToken
-                                                , documents = documents_
-                                              }
-                                            , persist documents_
-                                            )
-
-                                        Present token ->
-                                            ( { model
-                                                | google = google_ data Running
-                                                , documents = documents_
-                                              }
-                                            , Cmd.batch
-                                                [ Task.attempt (DocumentMsg docId << DocumentGoogleSaveResult)
-                                                    (Google.uploadFile
-                                                        { id = googleId
-                                                        , name = data.name
-                                                        , content = data.content
-                                                        , accessToken = token
-                                                        }
-                                                    )
-                                                , persist documents_
-                                                ]
-                                            )
-
-                        Err e ->
-                            let
-                                google =
-                                    model.google
-
-                                google_ =
-                                    { google
-                                        | waitingId =
-                                            List.map
-                                                (\({ id } as data) ->
-                                                    if id == docId then
-                                                        { data | request = Google.Errored e }
-
-                                                    else
-                                                        data
-                                                )
-                                                google.waitingId
-                                    }
-                            in
-                            if e == Google.Unauthorized then
-                                ( { model
-                                    | google = { google_ | accessToken = Expired }
-                                  }
-                                , UI.Ports.saveGoogleAccessToken ""
-                                )
-
-                            else
-                                ( { model | google = google_ }, Cmd.none )
+                    documentGoogleId docId res model
 
                 DocumentMsg docId (DocumentGoogleSaveResult res) ->
                     let
@@ -1334,6 +1223,119 @@ update msg =
     \model -> inner { model | openMenu = False, showPendingActions = False }
 
 
+documentGoogleId : Document.Id -> Result Google.Error Google.FileId -> Model -> ( Model, Cmd Msg )
+documentGoogleId docId res model =
+    case res of
+        Ok googleId ->
+            let
+                google =
+                    model.google
+
+                maybeDoc =
+                    model.google.waitingId
+                        |> List.find (\{ id } -> id == docId)
+
+                google_ { name, content } request =
+                    { google
+                        | waitingId = List.filter (\{ id } -> id /= docId) google.waitingId
+                        , waitingSave =
+                            { id = docId
+                            , name = name
+                            , content = content
+                            , googleId = googleId
+                            , request = request
+                            }
+                                :: google.waitingSave
+                    }
+
+                documents_ =
+                    Maybe.map
+                        (Zipper.map
+                            (\_ ({ id } as document) ->
+                                if id == docId then
+                                    { document
+                                        | googleId = Just googleId
+                                    }
+
+                                else
+                                    document
+                            )
+                        )
+                        model.documents
+            in
+            case maybeDoc of
+                Nothing ->
+                    ( model
+                    , Cmd.none
+                    )
+
+                Just data ->
+                    case google.accessToken of
+                        Missing ->
+                            persist
+                                { model
+                                    | google = google_ data WaitingAccessToken
+                                    , documents = documents_
+                                }
+
+                        Expired ->
+                            persist
+                                { model
+                                    | google = google_ data WaitingAccessToken
+                                    , documents = documents_
+                                }
+
+                        Present token ->
+                            { model
+                                | google = google_ data Running
+                                , documents = documents_
+                            }
+                                |> persist
+                                |> withCommand
+                                    (Task.attempt (DocumentMsg docId << DocumentGoogleSaveResult) <|
+                                        Google.uploadFile
+                                            { id = googleId
+                                            , name = data.name
+                                            , content = data.content
+                                            , accessToken = token
+                                            }
+                                    )
+
+        Err e ->
+            let
+                google =
+                    model.google
+
+                google_ =
+                    { google
+                        | waitingId =
+                            List.map
+                                (\({ id } as data) ->
+                                    if id == docId then
+                                        { data | request = Google.Errored e }
+
+                                    else
+                                        data
+                                )
+                                google.waitingId
+                    }
+            in
+            if e == Google.Unauthorized then
+                ( { model
+                    | google = { google_ | accessToken = Expired }
+                  }
+                , UI.Ports.saveGoogleAccessToken ""
+                )
+
+            else
+                ( { model | google = google_ }, Cmd.none )
+
+
+withCommand : Cmd Msg -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+withCommand cmd ( model, cmds ) =
+    ( model, Cmd.batch [ cmd, cmds ] )
+
+
 addDocument : Model -> StoredDocument -> ( Model, Cmd Msg )
 addDocument model { name, rows, googleId } =
     let
@@ -1356,20 +1358,21 @@ addDocument model { name, rows, googleId } =
                             |> Zipper.append toAppend
                             |> Zipper.allRight
     in
-    ( { model
-        | documents = documents
-        , nextId = model.nextId + 1
-      }
-    , persist documents
-    )
+    persist
+        { model
+            | documents = documents
+            , nextId = model.nextId + 1
+        }
 
 
-persist : Maybe (Zipper UIDocument) -> Cmd msg
-persist documents =
-    documents
+persist : Model -> ( Model, Cmd msg )
+persist model =
+    ( model
+    , model.documents
         |> Maybe.map (Zipper.map (\_ -> Document.toStored))
         |> Codec.encodeToValue Model.documentsCodec
         |> UI.Ports.persist
+    )
 
 
 googleSave : Model -> UIDocument -> ( Model, Cmd Msg )
@@ -1440,23 +1443,26 @@ googleSave model document =
             )
 
 
-updateCurrent : (UIDocument -> UIDocument) -> Model -> ( Model, Cmd msg )
-updateCurrent f model =
+updateByDocId : Document.Id -> (UIDocument -> UIDocument) -> Model -> ( Model, Cmd msg )
+updateByDocId docId f model =
     case model.documents of
         Nothing ->
             ( model, Cmd.none )
 
         Just docs ->
             let
-                selected =
-                    Zipper.selected docs
-
                 documents =
-                    Just <| Zipper.setSelected (f selected) docs
+                    Zipper.map
+                        (\_ ({ id } as doc) ->
+                            if id == docId then
+                                f doc
+
+                            else
+                                doc
+                        )
+                        docs
             in
-            ( { model | documents = documents }
-            , persist documents
-            )
+            persist { model | documents = Just documents }
 
 
 parseOrError : String -> Maybe Output
