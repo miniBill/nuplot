@@ -84,7 +84,7 @@ draw { width, height } id { wdiv, hdiv } graph =
                     el
                         [ Element.width fill
                         , Element.height fill
-                        , Background.color <| Element.rgba 0 0 0 0.1
+                        , Background.color <| Element.rgba 0 0 0 0.2
                         , Border.roundEach rounds
                         ]
                         none
@@ -102,19 +102,18 @@ draw { width, height } id { wdiv, hdiv } graph =
                 \{ isFullscreen, hasFullscreen } ->
                     Element.row [ alignRight, alignBottom ] <|
                         if isFullscreen then
-                            [ iconButton ExitFullscreenCanvas
-                                { noRound | topLeft = Theme.spacing }
-                                Icons.fullscreenExitOutlined
+                            [ iconButton ResetZoom { noRound | topLeft = Theme.spacing } Icons.aimOutlined
+                            , iconButton ExitFullscreenCanvas noRound Icons.fullscreenExitOutlined
                             ]
 
                         else if hasFullscreen then
-                            [ iconButton FullscreenCanvas
-                                { noRound | topLeft = Theme.spacing }
-                                Icons.fullscreenOutlined
+                            [ iconButton ResetZoom { noRound | topLeft = Theme.spacing } Icons.aimOutlined
+                            , iconButton FullscreenCanvas noRound Icons.fullscreenOutlined
                             ]
 
                         else
-                            []
+                            [ iconButton ResetZoom { noRound | topLeft = Theme.spacing } Icons.aimOutlined
+                            ]
 
         urButtonsRow =
             Element.with .hasClipboard <|

@@ -57,7 +57,7 @@ export class NuPlot extends HTMLElement {
   constructor() {
     super();
 
-    this.resetZoom();
+    this.resetZoom(false);
 
     // Create a shadow root
     const shadowRoow = this.attachShadow({ mode: "open" }); // sets and returns 'this.shadowRoot'
@@ -133,11 +133,12 @@ export class NuPlot extends HTMLElement {
     this.reloadFragmentShader();
   }
 
-  resetZoom() {
+  resetZoom(reRender: boolean) {
     this.center = this.originalCenter = { x: 0, y: 0 };
     this.viewportWidth = this.originalViewportWidth = 2 * Math.PI;
     this.phi = this.originalPhi = 0;
     this.theta = this.originalTheta = 0;
+    if (reRender) this.renderOnAnimationFrame(true);
   }
 
   private initCanvas() {
@@ -207,7 +208,7 @@ export class NuPlot extends HTMLElement {
     this.canvas.onpointercancel = (e) => this.canvasOnPointerUp(e);
     this.canvas.onpointermove = (e) => this.canvasOnPointerMove(e);
     this.canvas.onwheel = (e) => this.canvasOnWheel(e);
-    this.canvas.ondblclick = () => this.resetZoom();
+    this.canvas.ondblclick = () => this.resetZoom(false);
     this.canvas.addEventListener(
       "webglcontextlost",
       (e) => {
@@ -345,15 +346,15 @@ export class NuPlot extends HTMLElement {
 
     if (e.buttons == 4) {
       // central wheel
-      this.resetZoom();
+      this.resetZoom(true);
     } else {
       this.canvas.setPointerCapture(e.pointerId);
       this.pointers[e.pointerId] = this.originalPointers[e.pointerId] = {
         x: e.offsetX,
         y: e.offsetY,
       };
+      this.renderOnAnimationFrame(true);
     }
-    this.renderOnAnimationFrame(true);
     return true;
   }
 

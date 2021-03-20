@@ -958,6 +958,9 @@ update msg =
                         ExitFullscreenCanvas canvasId ->
                             ( model, UI.Ports.exitFullscreenCanvas canvasId )
 
+                        ResetZoom canvasId ->
+                            ( model, UI.Ports.resetZoomCanvas canvasId )
+
                 DocumentNew ->
                     addDocument model
                         { rows = [ Document.emptyRow ]

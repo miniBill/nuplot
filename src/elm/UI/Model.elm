@@ -115,6 +115,7 @@ type CellMsg
     | StartEditing
     | Calculate
     | Input String
+    | ResetZoom CanvasId
     | SaveCanvas CanvasId
     | FullscreenCanvas CanvasId
     | ExitFullscreenCanvas CanvasId

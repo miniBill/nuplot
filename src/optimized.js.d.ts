@@ -35,6 +35,9 @@ export type UIInstance = {
     exitFullscreen: {
       subscribe(callback: (id: string) => void): void;
     };
+    resetZoom: {
+      subscribe(callback: (id: string) => void): void;
+    };
     saveGoogleAccessToken: {
       subscribe(callback: (token: string) => void): void;
     };

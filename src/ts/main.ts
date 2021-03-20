@@ -64,6 +64,10 @@ function innerInit(Elm: ElmType, saved: { [key: string]: string }) {
     document.addEventListener("fullscreenchange", (e) =>
       app.ports.isFullscreen.send(document.fullscreenElement !== null)
     );
+  app.ports.resetZoom.subscribe((id) => {
+    const element = document.getElementById(id) as NuPlot;
+    element?.resetZoom(true);
+  });
   app.ports.copy.subscribe((id) => {
     const element = document.getElementById(id) as NuPlot;
     element?.copy();
