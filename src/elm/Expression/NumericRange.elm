@@ -109,6 +109,9 @@ getRange ctx e =
                 Apply (KnownFunction Pw) [ _, t, f ] ->
                     union (getRange ctx t) (getRange ctx f)
 
+                Apply (KnownFunction Mbrot) _ ->
+                    Complex
+
                 Apply (KnownFunction _) args ->
                     if List.any (\c -> getRange ctx c == Complex) args then
                         Complex

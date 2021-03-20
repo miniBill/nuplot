@@ -113,6 +113,7 @@ type KnownFunction
     | StepSimplify
     | Solve
     | Mod
+    | Mbrot
 
 
 type UnaryOperation
@@ -755,6 +756,7 @@ binaryFunctions =
     , ( "dd", Dd )
     , ( "solve", Solve )
     , ( "mod", Mod )
+    , ( "mbrot", Mbrot )
     ]
 
 
@@ -950,6 +952,9 @@ functionNameToString name =
 
         KnownFunction Mod ->
             "mod"
+
+        KnownFunction Mbrot ->
+            "mbrot"
 
         UserFunction u ->
             u

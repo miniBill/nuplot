@@ -503,6 +503,9 @@ toGlslFunction name =
         Solve ->
             Nothing
 
+        Mbrot ->
+            Just Mbrot22
+
 
 dependenciesOf : Requirement -> List Requirement
 dependenciesOf req =
@@ -599,6 +602,9 @@ dependenciesOf req =
 
         RequireFunction Round22 ->
             []
+
+        RequireFunction Mbrot22 ->
+            [ RequireOperation GlslMultiplication ]
 
         RequireOperation GlslPower ->
             RequireOperation GlslMultiplication :: List.map RequireFunction [ Exp22, Ln22 ]

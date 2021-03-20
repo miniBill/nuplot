@@ -20,6 +20,7 @@ type GlslFunction
     | Max222
     | Min222
     | Mod22
+    | Mbrot22
     | Pw22
     | Re22
     | Round22

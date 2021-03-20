@@ -279,6 +279,9 @@ applyValue context name args =
         KnownFunction Log10 ->
             unaryFunctionValue context args Log10 <| \v -> Complex.div v (Complex.ln <| Complex.fromReal 10)
 
+        KnownFunction Mbrot ->
+            SymbolicValue <| Apply name args
+
         KnownFunction Det ->
             case args of
                 [ c ] ->

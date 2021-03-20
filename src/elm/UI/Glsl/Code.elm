@@ -468,6 +468,29 @@ straightFunctionToGlsl name =
             }
             """
 
+        Mbrot22 ->
+            """
+            vec2 cmbrot(vec2 x, vec2 y) {
+                vec2 c = x + vec2(-y.y, y.x);
+
+                float p = length(c - vec2(0.25, 0));
+                if(c.x <= p - 2.0*p*p + 0.25 || length(c + vec2(1,0)) <= 0.25)
+                    return vec2(0,0);
+
+                vec2 z = c;
+                for(int i = 0; i < 4000; i++) {
+                    z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+                    if(length(z) > 1000000.0) {
+                        float logLength = log(length(z));
+                        float nu = log(logLength / log(2.0)) / log(2.0);
+                        float fi = float(i) - nu;
+                        return vec2(sin(fi),cos(fi));
+                    }
+                }
+                return vec2(0,0);
+            }
+            """
+
 
 intervalFunctionToGlsl : GlslFunction -> String
 intervalFunctionToGlsl name =
@@ -799,6 +822,9 @@ intervalFunctionToGlsl name =
                 return vec4(mod(l.x, r.x), l.yzw);
             }
             """
+
+        Mbrot22 ->
+            """TODO"""
 
 
 toSrcImplicit : String -> Expression -> String
