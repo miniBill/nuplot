@@ -221,6 +221,7 @@ init ({ saved, hasClipboard, hasFullscreen, languages } as flags) url key =
             , context =
                 { hasClipboard = hasClipboard
                 , hasFullscreen = hasFullscreen
+                , isFullscreen = False
                 , language =
                     languages
                         |> List.map parseLanguage
@@ -954,6 +955,9 @@ update msg =
                         Clear ->
                             updateRow (\r -> { r | data = CodeRow [] })
 
+                        ExitFullscreenCanvas canvasId ->
+                            ( model, UI.Ports.exitFullscreenCanvas canvasId )
+
                 DocumentNew ->
                     addDocument model
                         { rows = [ Document.emptyRow ]
@@ -1166,6 +1170,20 @@ update msg =
 
                     else
                         ( { model | google = google_ }, Cmd.none )
+
+                IsFullscreen isFullscreen ->
+                    let
+                        context =
+                            model.context
+                    in
+                    ( { model
+                        | context =
+                            { context
+                                | isFullscreen = isFullscreen
+                            }
+                      }
+                    , Cmd.none
+                    )
 
                 GoogleGotAccessToken token ->
                     let
@@ -1485,4 +1503,5 @@ subscriptions _ =
     Sub.batch
         [ Browser.Events.onResize (\w h -> Resized { width = w, height = h })
         , UI.Ports.gotGoogleAccessToken GoogleGotAccessToken
+        , UI.Ports.isFullscreen IsFullscreen
         ]

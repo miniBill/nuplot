@@ -98,11 +98,19 @@ draw { width, height } id { wdiv, hdiv } graph =
             { topLeft = 0, topRight = 0, bottomLeft = 0, bottomRight = 0 }
 
         brButtonsRow =
-            Element.with .hasFullscreen <|
-                \hasFullscreen ->
+            Element.with identity <|
+                \{ isFullscreen, hasFullscreen } ->
                     Element.row [ alignRight, alignBottom ] <|
-                        if hasFullscreen then
-                            [ iconButton FullscreenCanvas { noRound | topLeft = Theme.spacing } Icons.fullscreenOutlined
+                        if isFullscreen then
+                            [ iconButton ExitFullscreenCanvas
+                                { noRound | topLeft = Theme.spacing }
+                                Icons.fullscreenExitOutlined
+                            ]
+
+                        else if hasFullscreen then
+                            [ iconButton FullscreenCanvas
+                                { noRound | topLeft = Theme.spacing }
+                                Icons.fullscreenOutlined
                             ]
 
                         else
@@ -121,9 +129,13 @@ draw { width, height } id { wdiv, hdiv } graph =
                             [ iconButton SaveCanvas { noRound | bottomLeft = Theme.spacing } Icons.saveOutlined
                             ]
 
+        (CanvasId cid) =
+            id
+
         attrs =
             [ inFront urButtonsRow
             , inFront brButtonsRow
+            , Element.htmlAttribute <| Html.Attributes.id <| cid ++ "-parent"
             ]
     in
     Element.with identity <|
@@ -131,11 +143,7 @@ draw { width, height } id { wdiv, hdiv } graph =
             el attrs <|
                 Element.html <|
                     Html.node "nu-plot"
-                        [ let
-                            (CanvasId cid) =
-                                id
-                          in
-                          Html.Attributes.id cid
+                        [ Html.Attributes.id cid
                         , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl expandIntervals rayDifferentials graph
                         , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
                         , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv

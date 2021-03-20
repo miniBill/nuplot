@@ -1,4 +1,4 @@
-port module UI.Ports exposing (copyCanvas, fullscreenCanvas, gotGoogleAccessToken, openWindow, persist, saveCanvas, saveGoogleAccessToken, saveGoogleAccessTokenAndCloseWindow)
+port module UI.Ports exposing (copyCanvas, exitFullscreenCanvas, fullscreenCanvas, gotGoogleAccessToken, isFullscreen, openWindow, persist, saveCanvas, saveGoogleAccessToken, saveGoogleAccessTokenAndCloseWindow)
 
 import Json.Decode exposing (Value)
 import UI.Model exposing (CanvasId(..))
@@ -31,6 +31,11 @@ fullscreenCanvas (CanvasId id) =
     fullscreen id
 
 
+exitFullscreenCanvas : CanvasId -> Cmd msg
+exitFullscreenCanvas (CanvasId id) =
+    exitFullscreen id
+
+
 port fullscreen : String -> Cmd msg
 
 
@@ -41,3 +46,9 @@ port saveGoogleAccessTokenAndCloseWindow : String -> Cmd msg
 
 
 port gotGoogleAccessToken : (String -> msg) -> Sub msg
+
+
+port exitFullscreen : String -> Cmd msg
+
+
+port isFullscreen : (Bool -> msg) -> Sub msg

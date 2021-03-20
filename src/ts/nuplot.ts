@@ -220,9 +220,10 @@ export class NuPlot extends HTMLElement {
       },
       false
     );
-    if ("onfullscreenchange" in this)
-      this.onfullscreenchange = (e) => {
-        this.isFullscreen = document.fullscreenElement === e.target;
+    if ("onfullscreenchange" in document)
+      document.addEventListener("fullscreenchange", (e) => {
+        this.isFullscreen =
+          document.fullscreenElement?.id === this.id + "-parent";
         if (this.isFullscreen) {
           this.preFullscreenWidth = this.canvas.clientWidth;
           this.preFullscreenHeight = this.canvas.clientHeight;
@@ -233,7 +234,7 @@ export class NuPlot extends HTMLElement {
           this.setHeight(this.preFullscreenHeight);
         }
         this.renderOnAnimationFrame();
-      };
+      });
     this.canvas.style.touchAction = "none";
     // Sync with Theme.elm
     this.canvas.style.borderRadius = "3px";

@@ -1,8 +1,8 @@
 # Todo
-* Vector fields
 * "Reset zoom" button
 * Zoom controls on desktop
 * Axes' labels
+* 3D vector fields
 * Integrals
 * Intersections
 * Wrap equations in KaTeX

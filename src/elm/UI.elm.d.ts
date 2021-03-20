@@ -32,6 +32,9 @@ export type UIInstance = {
     fullscreen: {
       subscribe(callback: (id: string) => void): void;
     };
+    exitFullscreen: {
+      subscribe(callback: (id: string) => void): void;
+    };
     saveGoogleAccessToken: {
       subscribe(callback: (token: string) => void): void;
     };
@@ -43,6 +46,9 @@ export type UIInstance = {
     };
     gotGoogleAccessToken: {
       send(token: string): void;
+    };
+    isFullscreen: {
+      send(isFullscreen: boolean): void;
     };
   };
 };

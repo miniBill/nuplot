@@ -56,9 +56,14 @@ function innerInit(Elm: ElmType, saved: { [key: string]: string }) {
     element?.save();
   });
   app.ports.fullscreen.subscribe((id) => {
-    const element = document.getElementById(id) as NuPlot;
+    const element = document.getElementById(id)?.parentElement;
     element?.requestFullscreen();
   });
+  app.ports.exitFullscreen.subscribe((id) => document.exitFullscreen());
+  if ("onfullscreenchange" in document)
+    document.addEventListener("fullscreenchange", (e) =>
+      app.ports.isFullscreen.send(document.fullscreenElement !== null)
+    );
   app.ports.copy.subscribe((id) => {
     const element = document.getElementById(id) as NuPlot;
     element?.copy();

@@ -57,6 +57,7 @@ type alias Context =
     , expandIntervals : Bool
     , rayDifferentials : Bool
     , deviceClass : DeviceClass
+    , isFullscreen : Bool
     }
 
 
@@ -86,6 +87,7 @@ type Msg
     | Language Language
     | GoogleAuth
     | GoogleGotAccessToken String
+    | IsFullscreen Bool
     | Nop String
 
 
@@ -115,6 +117,7 @@ type CellMsg
     | Input String
     | SaveCanvas CanvasId
     | FullscreenCanvas CanvasId
+    | ExitFullscreenCanvas CanvasId
     | CopyCanvas CanvasId
 
 
