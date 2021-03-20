@@ -1,22 +1,29 @@
 # Todo
-* Zoom controls on desktop
-* Axes' labels
-* 3D vector fields
 * Integrals
-* Intersections
-* Wrap equations in KaTeX
-* In step simplify, prefilter 1 and 0 out of associative
 * Fuzzy test the solver
-* Add all the graph types to the default example
-* Better onboarding
-* Save on Google
 * Fix parse of `(x-α)(x-β)(x-γ)`
   * Publish elm-unicode
-* Save to folder
 * User functions
-* undo/redo
-* solve (x-pi)(x-e)
+* Undo/redo
+
+## Meh
+* Zoom controls on desktop
+
+## Long term
+* Intersections
+* Profile [blocked by https://github.com/NixOS/nixpkgs/issues/107585]
+
+## Ugh
+* 3D vector fields
+* Save to folder
+* Axes' labels
+* Wrap equations in KaTeX
+* Better onboarding
+* Save on Google
+* solve (x-pi)(x-e)(x-2)(x-3)
 * Implement nonshitty 3d navigation
 * Manual
-* Profile [blocked by https://github.com/NixOS/nixpkgs/issues/107585]
-* Fix save image [?]
+
+## Uh?
+* In step simplify, prefilter 1 and 0 out of associative
+* Fix save image
