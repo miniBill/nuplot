@@ -12,12 +12,6 @@ uniform float u_canvasHeight;
 uniform float u_phi;
 uniform float u_theta;
 
-vec3 hl2rgb(float h, float l)
-{
-    vec3 rgb = clamp(abs(mod(h*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);
-    return l + (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
-}
-
 vec2 dup(float x) {
     return vec2(x, x);
 }
@@ -81,4 +75,61 @@ ivec2 right_shift(ivec2 i) {
 
 int right_shift(int i) {
     return i / 2;
+}
+
+const vec3 n = vec3(0.95047, 1.0, 1.08883);
+const float t0 = 4.0 / 29.0;
+const float t1 = 6.0 / 29.0;
+const float t2 = 3.0 * pow(t1, 2.0);
+const mat3 coeffs = mat3(
+    3.2404542, -0.969266, 0.0556434, // first column
+    -1.5371385, 1.8760108, -0.2040259,
+    -0.4985314, 0.041556, 1.0572252
+);
+
+vec3 lessThanForMix(vec3 l, vec3 r) {
+    return sign(r - l)/2.0 + vec3(0.5);
+}
+
+vec3 lab2xyz( vec3 t ) {
+    return mix(
+        t2 * (t - t0),
+        pow(t, vec3(3.0)),
+        lessThanForMix(vec3(t1), t)
+    );
+}
+
+vec3 xyz2rgb(vec3 r) {
+    return mix(
+        1.055 * pow(r, vec3(1.0 / 2.4)) - 0.055,
+        12.92 * r,
+        lessThanForMix(r,vec3(0.00304))
+    );
+}
+
+vec3 lab2rgb(float lightness, float labA, float labB ) {
+    vec3 startY = vec3((lightness + 16.0) / 116.0);
+    vec3 lab = startY + vec3(
+        (labA / 500.0),
+        0,
+        -(labB / 200.0)
+    );
+    vec3 xyz = lab2xyz(lab) * n;
+    vec3 rgb = xyz2rgb(coeffs * xyz);
+    return clamp(rgb,0.0,1.0);
+}
+
+// luminance: [0, 100]?
+// chroma: [0, 100]?
+// hue: [0, 360], 30° is red
+vec3 lch2rgb(float luminance, float chroma, float hue) {
+    float hueInRadians = radians(hue);
+    return lab2rgb( luminance, cos(hueInRadians) * chroma, sin(hueInRadians) * chroma );
+}
+
+vec3 hl2rgb(float h, float l)
+{
+    return lch2rgb(l * 130.0, 80.0, h * 360.0 + 30.0);
+    vec3 rgb = clamp(abs(mod(h*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);
+    return l + (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
 }
