@@ -75,7 +75,7 @@ reduce poly =
 toGlsl : String -> Sphere -> String
 toGlsl suffix (Sphere { center, radius }) =
     """
-    bool bisect""" ++ suffix ++ """(vec3 o, mat2x3 d, float max_distance, out vec3 found) {
+    bool bisect""" ++ suffix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
         vec3 center = vec3(""" ++ floatToGlsl center.x ++ """,""" ++ floatToGlsl center.y ++ """,""" ++ floatToGlsl center.z ++ """);
 
         vec3 to_center = o - center;

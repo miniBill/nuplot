@@ -229,7 +229,7 @@ get3DSource expandIntervals prefix e =
 
                                 srcExpr =
                                     """
-                                    bool bisect""" ++ prefix ++ """(vec3 o, mat2x3 d, float max_distance, out vec3 found) {
+                                    bool bisect""" ++ prefix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
                                         float t = max_distance * 2.0;
                                         """ ++ checks ++ """
                                         found = o + t * mix(d[0], d[1], 0.5);

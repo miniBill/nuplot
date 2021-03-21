@@ -1551,7 +1551,7 @@ toSrc3D expandIntervals suffix e =
         return normalize(gradient.yzw);
     }
 
-    vec2 interval""" ++ suffix ++ """(mat2x3 f, mat2x3 t) {
+    vec2 interval""" ++ suffix ++ """(mat3 f, mat3 t) {
         vec3 mn = min(f[0], t[0]);
         vec3 mx = max(f[1], t[1]);
         vec2 x = vec2(mn.x, mx.x);
@@ -1600,7 +1600,7 @@ main3D rayDifferentials suffixes =
 
                 vec3 diffs = abs(fwidth(ray_direction));
                 float k = """ ++ iif rayDifferentials "0.001" "0.0" ++ """;
-                mat2x3 d = mat2x3(ray_direction - k * diffs, ray_direction + k * diffs);
+                mat3 d = mat3(ray_direction - k * diffs, ray_direction + k * diffs, vec3(0));
 
                 float max_distance = 100.0 * eye_dist;
                 return raytrace(canvas_point, d, max_distance);
@@ -1639,7 +1639,7 @@ raytrace suffixes =
             """
     in
     """
-            vec4 raytrace(vec3 o, mat2x3 d, float max_distance) {
+            vec4 raytrace(vec3 o, mat3 d, float max_distance) {
                 vec3 found = vec3(0);
                 float curr_distance = max_distance;
                 int found_index = -1;
@@ -1651,7 +1651,7 @@ raytrace suffixes =
 
                     vec3 ld = normalize(vec3(-0.3, 0.0, 1.0));
                     vec3 diffs = d[1] - d[0];
-                    mat2x3 light_direction = mat2x3(ld - 0.5 * diffs, ld + 0.5 * diffs);
+                    mat3 light_direction = mat3(ld - 0.5 * diffs, ld + 0.5 * diffs, vec3(0));
                     float light_distance = max_distance;
                     float light_coeff = 0.45;
                     vec3 offseted = found + 0.0001 * max_distance * normalize(o - found);
@@ -1679,14 +1679,14 @@ threshold =
 suffixToBisect : String -> String
 suffixToBisect suffix =
     """
-            bool bisect""" ++ suffix ++ """(vec3 o, mat2x3 d, float max_distance, out vec3 found) {
-                mat2x3 from = mat2x3(o, o);
-                mat2x3 to = from + max_distance * d;
+            bool bisect""" ++ suffix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
+                mat3 from = mat3(o, o, vec3(0));
+                mat3 to = from + max_distance * d;
                 float ithreshold = """ ++ threshold ++ """;
                 int depth = 0;
                 int choices = 0;
                 for(int it = 0; it < MAX_ITERATIONS; it++) {
-                    mat2x3 midpoint = 0.5 * (from + to);
+                    mat3 midpoint = 0.5 * (from + to);
                     vec2 front = interval""" ++ suffix ++ """(from, midpoint);
                     vec2 back = interval""" ++ suffix ++ """(midpoint, to);
                     if(depth >= MAX_DEPTH

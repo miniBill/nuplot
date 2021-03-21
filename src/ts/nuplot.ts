@@ -594,12 +594,21 @@ ${built}`;
         .replace("attribute", "in")
         .replace("gl_FragColor", "fragColor")
         .replace("float sinh", "float sinh_")
-        .replace("float cosh", "float cosh_");
+        .replace("float cosh", "float cosh_")
+        .replace("    lessThanForMix", "    lessThan");
       built = `#version 300 es
 precision highp float;
 out vec4 fragColor;
 ${translated}`;
+    } else {
+      if (this.gl.getExtension("OES_standard_derivatives")) {
+        built = `#extension GL_OES_standard_derivatives : enable
+${built}`;
+      } else {
+        built = built.replace("abs(fwidth(ray_direction))", "vec3(0)");
+      }
     }
+
     if (
       process.env.NODE_ENV === "development" &&
       this.currIterations == this.maxIterations &&
