@@ -24,7 +24,8 @@
             "elm-explorations/test": "1.2.2",
             "lemol/ant-design-icons-elm-ui": "1.0.0",
             "miniBill/elm-codec": "2.0.0",
-            "miniBill/elm-ui-with-context": "1.0.0"
+            "miniBill/elm-ui-with-context": "1.0.0",
+            "miniBill/elm-unicode": "1.0.2"
         },
         "indirect": {
             "elm/random": "1.0.0",

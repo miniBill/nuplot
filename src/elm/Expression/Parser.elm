@@ -19,6 +19,7 @@ import List.Extra as List
 import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), getChompedString)
 import Trie exposing (Trie)
 import UI.L10N exposing (L10N, invariant)
+import Unicode
 
 
 type alias ExpressionParser a =
@@ -642,7 +643,21 @@ variableParser context =
                                     |. chomp (String.length name)
 
                             Nothing ->
-                                Parser.problem expectedALetter
+                                let
+                                    l =
+                                        String.left 1 rest
+                                in
+                                case String.toList l of
+                                    [ v ] ->
+                                        if isVariableLetter v then
+                                            Parser.succeed (Variable l)
+                                                |. chomp 1
+
+                                        else
+                                            Parser.problem expectedALetter
+
+                                    _ ->
+                                        Parser.problem expectedALetter
             )
 
 
@@ -715,5 +730,5 @@ parseArgs count greedy context =
 
 
 isVariableLetter : Char -> Bool
-isVariableLetter c =
-    Char.isAlpha c || (Char.toCode c >= Char.toCode 'Ά' && Char.toCode c <= Char.toCode 'Ͽ')
+isVariableLetter =
+    Unicode.isAlpha

@@ -1,8 +1,6 @@
 # Todo
 * Integrals
 * Fuzzy test the solver
-* Fix parse of `(x-α)(x-β)(x-γ)`
-  * Publish elm-unicode
 * User functions
 * Undo/redo
 
