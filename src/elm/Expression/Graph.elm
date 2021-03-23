@@ -3,7 +3,6 @@ module Expression.Graph exposing (Graph(..), fromExpression, toExpression, toStr
 import Expression exposing (AssociativeOperation, BinaryOperation, Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation, getFreeVariables)
 import Expression.Simplify
 import Expression.Utils exposing (minus)
-import Result.Extra as Result
 import Set
 
 

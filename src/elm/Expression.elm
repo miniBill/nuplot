@@ -34,7 +34,6 @@ module Expression exposing
     )
 
 import Char
-import Complex exposing (Complex(..))
 import Dict exposing (Dict)
 import Element.WithContext as Element exposing (Element)
 import Element.WithContext.Border as Border

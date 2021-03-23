@@ -17,7 +17,6 @@ import Expression.Value exposing (Value(..))
 import Html
 import Html.Attributes
 import Json.Encode
-import List.Extra as List
 import Markdown.Parser
 import Markdown.Renderer
 import UI.Glsl exposing (getGlsl)

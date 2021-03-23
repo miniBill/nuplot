@@ -1,7 +1,6 @@
 module Trie exposing (Trie, empty, fromList, get, getLongestPrefix, insert, isEmpty, member, size, union)
 
 import Dict exposing (Dict)
-import List.Extra as List
 
 
 type Trie a

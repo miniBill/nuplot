@@ -3,7 +3,7 @@ module Expression.Value exposing (Value(..), complexToSymbolic, toString, value)
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..), filterContext, fullSubstitute, genericAsSquareMatrix, genericDeterminant, genericMatrixMultiplication)
-import Expression.Graph exposing (Graph(..))
+import Expression.Graph exposing (Graph)
 import Expression.Simplify
 import Expression.Solver
 import Expression.Utils as Utils

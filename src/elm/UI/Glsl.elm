@@ -5,8 +5,6 @@ import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expre
 import Expression.Graph exposing (Graph(..))
 import Expression.Polynomial exposing (asPolynomial)
 import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, square)
-import List.Extra as List
-import List.MyExtra as List
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)

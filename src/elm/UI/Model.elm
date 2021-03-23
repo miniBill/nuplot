@@ -7,8 +7,6 @@ import Document exposing (RowData(..), StoredDocument, UIDocument)
 import Element.WithContext exposing (DeviceClass)
 import File exposing (File)
 import Json.Decode as JD
-import List.Extra as List
-import List.MyExtra as List exposing (LeftOrRight(..))
 import UI.L10N exposing (Language)
 import Zipper exposing (Zipper)
 

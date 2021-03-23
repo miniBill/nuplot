@@ -3,7 +3,7 @@ module Expression.Solver exposing (solve, stepSimplify)
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
 import Expression.Polynomial exposing (Exponents, Polynomial, asPolynomial)
-import Expression.Simplify exposing (simplify, stepSimplify)
+import Expression.Simplify exposing (simplify)
 import Expression.Utils exposing (by, byShort, cbrt, div, divShort, double, factor, i, ipow, ipowShort, isZero, minus, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
 import Fraction exposing (Fraction, gcd)
 import List.Extra as List
