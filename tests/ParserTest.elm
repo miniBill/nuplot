@@ -28,7 +28,7 @@ suite =
                                 (Expression.toString ok ++ " = " ++ Debug.toString ok)
 
                         Err err ->
-                            Expect.fail <| Parser.errorsToString from err
+                            Expect.fail (Parser.errorsToString from err).en
     in
     describe "The Parser module"
         [ describe "Parser.parse" <|

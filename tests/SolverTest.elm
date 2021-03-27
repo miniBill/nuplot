@@ -29,7 +29,7 @@ suite =
                             [ Variable <| "forall: " ++ s ]
 
                         SolutionError e ->
-                            [ Variable <| "error:" ++ e ]
+                            [ Variable <| "error:" ++ e.en ]
 
                         SolutionNone e ->
                             [ Variable <| "none: " ++ e ]
