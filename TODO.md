@@ -1,10 +1,10 @@
 # Todo
-* Integrals
 * Fuzzy test the solver
 * User functions
 * Undo/redo
 
 ## Meh
+* Integrals
 * Zoom controls on desktop
 
 ## Long term
