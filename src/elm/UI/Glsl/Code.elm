@@ -512,7 +512,18 @@ intervalFunctionToGlsl name =
 
         Acos22 ->
             """
-            TODO Acos22
+            vec2 iacos(vec2 z) {
+                // Don't use clamp so if z is fully outside range the result is empty
+                vec2 clamped = vec2(
+                    max(z.x, -1.0),
+                    min(z.y, 1.0)
+                );
+                return acos(clamped).yx;
+            }
+
+            vec4 gacos(vec4 v) {
+                return vec4(acos(v.x), -v.yzw / sqrt(1.0 - v.x * v.x));
+            }
             """
 
         Arg22 ->
@@ -543,7 +554,18 @@ intervalFunctionToGlsl name =
 
         Asin22 ->
             """
-            TODO Asin22
+            vec2 iasin(vec2 z) {
+                // Don't use clamp so if z is fully outside range the result is empty
+                vec2 clamped = vec2(
+                    max(z.x, -1.0),
+                    min(z.y, 1.0)
+                );
+                return asin(clamped);
+            }
+
+            vec4 gasin(vec4 v) {
+                return vec4(asin(v.x), v.yzw / sqrt(1.0 - v.x * v.x));
+            }
             """
 
         Atan22 ->
