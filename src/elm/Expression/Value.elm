@@ -337,7 +337,7 @@ applyValue context name args =
         KnownFunction StepSimplify ->
             case args of
                 [ e ] ->
-                    SolutionTreeValue <| Expression.Solver.stepSimplify SolutionDone e
+                    SolutionTreeValue <| Expression.Solver.stepSimplify e
 
                 _ ->
                     unexpectedArgCount (Just "stepsimplify") 1

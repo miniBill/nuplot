@@ -14,20 +14,59 @@ solve : Expression -> Expression -> SolutionTree
 solve e x =
     case x of
         Variable v ->
-            e
-                |> stepSimplify
-                    (\s ->
-                        case s of
-                            RelationOperation Equals l (BinaryOperation Division n d) ->
-                                stepSimplify (innerSolve v) <| RelationOperation Equals (by [ l, d ]) n
+            let
+                go m =
+                    m
+                        |> stepSimplify
+                        |> onLeaves
+                            (\s ->
+                                case s of
+                                    RelationOperation Equals l (BinaryOperation Division n d) ->
+                                        RelationOperation Equals (by [ l, d ]) n
+                                            |> stepSimplify
+                                            |> onLeaves (innerSolve v)
 
-                            RelationOperation Equals (BinaryOperation Division n d) r ->
-                                stepSimplify (innerSolve v) <| RelationOperation Equals n (by [ r, d ])
+                                    RelationOperation Equals (BinaryOperation Division n d) r ->
+                                        RelationOperation Equals n (by [ r, d ])
+                                            |> stepSimplify
+                                            |> onLeaves (innerSolve v)
 
-                            _ ->
-                                innerSolve v s
-                    )
-                |> cut
+                                    _ ->
+                                        innerSolve v s
+                            )
+            in
+            cut <|
+                case e of
+                    RelationOperation Equals l r ->
+                        if isZero l then
+                            if isZero r then
+                                go e
+
+                            else
+                                SolutionStep e <| go (RelationOperation Equals r l)
+
+                        else if isZero r then
+                            case l of
+                                AssociativeOperation Multiplication ml mm mr ->
+                                    SolutionStep e <| SolutionBranch <| List.map (\mc -> go (RelationOperation Equals mc zero)) (ml :: mm :: mr)
+
+                                _ ->
+                                    go e
+
+                        else
+                            go e
+
+                    AssociativeOperation Multiplication ml mm mr ->
+                        SolutionStep e <|
+                            SolutionStep (RelationOperation Equals e zero) <|
+                                SolutionBranch <|
+                                    List.map (\mc -> go (RelationOperation Equals mc zero)) (ml :: mm :: mr)
+
+                    RelationOperation _ _ _ ->
+                        go e
+
+                    _ ->
+                        SolutionStep e <| go <| RelationOperation Equals e zero
 
         _ ->
             SolutionError
@@ -97,7 +136,9 @@ innerSolve v expr =
         _ ->
             case expr of
                 BinaryOperation Division n _ ->
-                    stepSimplify (innerSolve v) <| RelationOperation Equals n zero
+                    RelationOperation Equals n zero
+                        |> stepSimplify
+                        |> onLeaves (innerSolve v)
 
                 _ ->
                     SolutionStep (RelationOperation Equals expr zero) <|
@@ -443,15 +484,15 @@ coeffsToEq coeffs =
 
 solutionBranch : String -> Expression -> SolutionTree
 solutionBranch v sol =
-    stepSimplify SolutionDone (solIs v sol)
+    stepSimplify <| solIs v sol
 
 
-stepSimplify : (Expression -> SolutionTree) -> Expression -> SolutionTree
-stepSimplify final =
+stepSimplify : Expression -> SolutionTree
+stepSimplify =
     let
         go i e =
             if i <= 0 then
-                final e
+                SolutionDone e
 
             else
                 let
@@ -459,12 +500,28 @@ stepSimplify final =
                         Expression.Simplify.stepSimplify Dict.empty e
                 in
                 if Expression.equals next e then
-                    final e
+                    SolutionDone e
 
                 else
                     SolutionStep e <| go (i - 1) next
     in
     go 50
+
+
+onLeaves : (Expression -> SolutionTree) -> SolutionTree -> SolutionTree
+onLeaves f tree =
+    case tree of
+        SolutionBranch cs ->
+            SolutionBranch <| List.map (onLeaves f) cs
+
+        SolutionDone e ->
+            f e
+
+        SolutionStep s c ->
+            SolutionStep s <| onLeaves f c
+
+        _ ->
+            tree
 
 
 solIs : String -> Expression -> Expression
@@ -596,15 +653,12 @@ solve4Biquad v a c e =
         let
             solPlus =
                 pow (divShort (negateShort e) a) (div one (Integer 4))
-
-            branch =
-                solutionBranch v
         in
         SolutionBranch
-            [ branch solPlus
-            , branch <| negateShort solPlus
-            , branch <| byShort [ i, solPlus ]
-            , branch <| byShort [ negateShort i, solPlus ]
+            [ solutionBranch v solPlus
+            , solutionBranch v <| negateShort solPlus
+            , solutionBranch v <| byShort [ i, solPlus ]
+            , solutionBranch v <| byShort [ negateShort i, solPlus ]
             ]
 
     else
@@ -617,13 +671,10 @@ solve4Biquad v a c e =
 
             solMinus =
                 sqrt_ <| div (minus (negateShort c) (sqrt_ delta)) (byShort [ Integer 2, a ])
-
-            branch sol =
-                stepSimplify SolutionDone (solIs v sol)
         in
         SolutionBranch
-            [ branch solPlus
-            , branch solMinus
-            , branch <| negateShort solPlus
-            , branch <| negateShort solMinus
+            [ solutionBranch v solPlus
+            , solutionBranch v solMinus
+            , solutionBranch v <| negateShort solPlus
+            , solutionBranch v <| negateShort solMinus
             ]
