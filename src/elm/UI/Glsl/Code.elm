@@ -663,7 +663,13 @@ intervalFunctionToGlsl name =
 
         Log1022 ->
             """
-            TODO Log1022
+            vec2 ilog10(vec2 z) {
+                return log(z) / log(10.0);
+            }
+
+            vec4 glog10(vec4 z) {
+                return vec4(log(z.x), z.yzw / z.x) / log(10.0);
+            }
             """
 
         Pw22 ->
@@ -705,7 +711,13 @@ intervalFunctionToGlsl name =
 
         Round22 ->
             """
-            TODO Round22
+            vec2 iround(vec2 z) {
+                return round(z);
+            }
+
+            vec4 ground(vec4 z) {
+                return gnum(round(z.x));
+            }
             """
 
         Sin22 ->

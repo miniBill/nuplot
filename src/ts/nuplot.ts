@@ -627,6 +627,7 @@ ${built}`;
       if (process.env.NODE_ENV === "development") {
         const preNode = document.createElement("pre");
         preNode.style.whiteSpace = "pre-wrap";
+        preNode.style.maxWidth = "90vw";
         preNode.innerText = `Error compiling shader, log:
 
 ${this.gl.getShaderInfoLog(shader)}
