@@ -12,7 +12,6 @@
 * Profile [blocked by https://github.com/NixOS/nixpkgs/issues/107585]
 
 ## Ugh
-* Plot `{x,y}/2`
 * 3D vector fields
 * Save to folder
 * Axes' labels

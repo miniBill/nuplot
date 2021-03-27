@@ -168,7 +168,7 @@ partialSubstitute : String -> Value -> Value -> Value
 partialSubstitute var val expr =
     case expr of
         SymbolicValue s ->
-            SymbolicValue <| Expression.partialSubstitute var (toSymbolic val) s
+            SymbolicValue <| Expression.partialSubstitute var (toExpression val) s
 
         LambdaValue x f ->
             if x == var then
@@ -345,7 +345,7 @@ applyValue context name args =
         KnownFunction Plot ->
             case args of
                 [ e ] ->
-                    GraphValue <| Expression.Graph.fromExpression e
+                    GraphValue <| Expression.Graph.fromExpression <| toExpression <| value Dict.empty e
 
                 _ ->
                     unexpectedArgCount (Just "plot") 1
@@ -709,7 +709,7 @@ complexMap2 ({ symbolic, complex, list, lambda, context } as fs) v w =
                 Nothing ->
                     LambdaValue x <|
                         innerValue (Dict.remove x context)
-                            (symbolic (toSymbolic f) (toSymbolic w))
+                            (symbolic (toExpression f) (toExpression w))
 
         ( _, LambdaValue x f ) ->
             case lambda of
@@ -719,7 +719,7 @@ complexMap2 ({ symbolic, complex, list, lambda, context } as fs) v w =
                 Nothing ->
                     LambdaValue x <|
                         innerValue (Dict.remove x context)
-                            (symbolic (toSymbolic v) (toSymbolic f))
+                            (symbolic (toExpression v) (toExpression f))
 
         ( ListValue ls, ListValue rs ) ->
             case list of
@@ -733,10 +733,10 @@ complexMap2 ({ symbolic, complex, list, lambda, context } as fs) v w =
             ComplexValue <| complex l r
 
         ( SymbolicValue l, _ ) ->
-            SymbolicValue <| symbolic l (toSymbolic w)
+            SymbolicValue <| symbolic l (toExpression w)
 
         ( _, SymbolicValue r ) ->
-            SymbolicValue <| symbolic (toSymbolic v) r
+            SymbolicValue <| symbolic (toExpression v) r
 
         ( ListValue l, ComplexValue _ ) ->
             ListValue <| List.map (\le -> complexMap2 fs le w) l
@@ -759,11 +759,11 @@ complexMap2 ({ symbolic, complex, list, lambda, context } as fs) v w =
                     ]
 
 
-toSymbolic : Value -> Expression
-toSymbolic v =
+toExpression : Value -> Expression
+toExpression v =
     case v of
         LambdaValue x f ->
-            Lambda x <| toSymbolic f
+            Lambda x <| toExpression f
 
         SymbolicValue s ->
             s
@@ -772,7 +772,7 @@ toSymbolic v =
             complexToSymbolic c
 
         ListValue l ->
-            List <| List.map toSymbolic l
+            List <| List.map toExpression l
 
         GraphValue g ->
             Apply (KnownFunction Plot) [ Expression.Graph.toExpression g ]
