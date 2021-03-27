@@ -570,7 +570,13 @@ intervalFunctionToGlsl name =
 
         Atan22 ->
             """
-            TODO Atan22
+            vec2 iatan(vec2 z) {
+                return atan(z);
+            }
+
+            vec4 gatan(vec4 v) {
+                return vec4(atan(v.x), v.yzw / (1.0 + v.x * v.x));
+            }
             """
 
         Atan222 ->
