@@ -229,6 +229,10 @@ stepSimplifyApply fname sargs =
                     stepSimplifySin arg
                         |> Maybe.withDefault (sin_ arg)
 
+                ( Abs, [ arg ] ) ->
+                    stepSimplifyAbs arg
+                        |> Maybe.withDefault (abs_ arg)
+
                 ( Cos, [ arg ] ) ->
                     stepSimplifyCos arg
                         |> Maybe.withDefault (cos_ arg)
@@ -283,6 +287,33 @@ stepSimplifyApply fname sargs =
 
                 _ ->
                     Apply fname sargs
+
+
+stepSimplifyAbs : Expression -> Maybe Expression
+stepSimplifyAbs sarg =
+    case sarg of
+        Integer i ->
+            Just <| Integer <| abs i
+
+        Float f ->
+            Just <| Float <| abs f
+
+        Variable v ->
+            case v of
+                "e" ->
+                    Just sarg
+
+                "pi" ->
+                    Just sarg
+
+                _ ->
+                    Nothing
+
+        Apply (KnownFunction Abs) _ ->
+            Just sarg
+
+        _ ->
+            Nothing
 
 
 stepSimplifySqrt : Expression -> Maybe Expression
