@@ -162,6 +162,8 @@ intervalOperationToGlsl op =
             }
 
             vec2 ipow(vec2 b, vec2 e) {
+                if(e.y - e.x < 0.000001 && abs(e.x - round(e.x)) < 0.000001)
+                    return ipow(b, int(e.x));
                 return iexp(iby(iln(b), e));
             }
 

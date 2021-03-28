@@ -296,26 +296,26 @@ applyValue context name args =
         KnownFunction Pw ->
             case args of
                 [ c, t, f ] ->
-                    if ComplexValue Complex.zero == innerValue context c then
-                        innerValue context f
+                    case innerValue context c of
+                        ComplexValue cv ->
+                            innerValue context <|
+                                if cv == Complex.zero then
+                                    f
 
-                    else
-                        innerValue context t
+                                else
+                                    t
+
+                        ErrorValue e ->
+                            ErrorValue e
+
+                        SymbolicValue s ->
+                            SymbolicValue <| Apply (KnownFunction Pw) [ s, t, f ]
+
+                        _ ->
+                            SymbolicValue <| Apply (KnownFunction Pw) args
 
                 _ ->
                     unexpectedArgCount (Just "pw") 3
-
-        KnownFunction Gra ->
-            ErrorValue <| invariant "TODO"
-
-        KnownFunction Dd ->
-            ErrorValue <| invariant "TODO"
-
-        KnownFunction Ii ->
-            ErrorValue <| invariant "TODO"
-
-        KnownFunction Mod ->
-            ErrorValue <| invariant "TODO"
 
         KnownFunction Solve ->
             case args of
@@ -350,8 +350,25 @@ applyValue context name args =
                 _ ->
                     unexpectedArgCount (Just "plot") 1
 
+        KnownFunction Gra ->
+            --TODO
+            SymbolicValue <| Apply name args
+
+        KnownFunction Dd ->
+            --TODO
+            SymbolicValue <| Apply name args
+
+        KnownFunction Ii ->
+            --TODO
+            SymbolicValue <| Apply name args
+
+        KnownFunction Mod ->
+            --TODO
+            SymbolicValue <| Apply name args
+
         UserFunction _ ->
-            ErrorValue <| invariant "TODO"
+            --TODO
+            SymbolicValue <| Apply name args
 
 
 unexpectedArgCount : Maybe String -> Int -> Value
