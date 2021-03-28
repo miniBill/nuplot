@@ -353,6 +353,9 @@ expressionToRequirements e =
         BinaryOperation Power b (Integer _) ->
             [ RequireOperation GlslPower, RequireOperation GlslMultiplication, RequireFunction Square22 ] ++ expressionToRequirements b
 
+        BinaryOperation Power b (Float _) ->
+            [ RequireOperation GlslPower, RequireOperation GlslMultiplication, RequireFunction Square22 ] ++ expressionToRequirements b
+
         BinaryOperation op l r ->
             let
                 op_ =

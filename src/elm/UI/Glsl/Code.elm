@@ -1366,6 +1366,13 @@ expressionToIntervalGlslPrec expandIntervals p expr =
         PPower l (PInteger 2) ->
             expand <| "isquare(" ++ expressionToIntervalGlslPrec expandIntervals 0 l ++ ")"
 
+        PPower l (PFloat f) ->
+            if f == 2.0 then
+                expand <| "isquare(" ++ expressionToIntervalGlslPrec expandIntervals 0 l ++ ")"
+
+            else
+                expand <| apply "ipow" [ l, PFloat f ]
+
         PPower l (PInteger ri) ->
             let
                 ris =
