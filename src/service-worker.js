@@ -1,6 +1,6 @@
 self.addEventListener("install", function (event) {
   event.waitUntil(
-    caches.open("progessive-elm").then(function (cache) {
+    caches.open("progressive-elm").then(function (cache) {
       return cache.addAll(['/', '/index.html']).then(
         cache.addAll(SERVICE_WORKER_MANIFEST_ENTRIES.map(entry => entry.url))
       );
