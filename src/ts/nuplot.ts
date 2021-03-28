@@ -556,6 +556,10 @@ export class NuPlot extends HTMLElement {
     this.renderOnAnimationFrame();
   }
 
+  get exprSrc() {
+    return this.src;
+  }
+
   set exprSrc(newValue: string) {
     if (newValue == this.src) return;
     this.currIterations = this.maxIterations;
