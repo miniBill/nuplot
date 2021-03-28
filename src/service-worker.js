@@ -5,7 +5,7 @@ self.addEventListener("install", function (event) {
         cache.addAll(SERVICE_WORKER_MANIFEST_ENTRIES.map(entry => entry.url))
       );
     }).catch(function (ex) {
-      debugger;
+      console.error(ex);
     })
   )
 });
@@ -15,7 +15,7 @@ self.addEventListener("fetch", function (event) {
     fetch(event.request).then(function (response) {
       cache.put(event.request, response.clone());
     }).catch(function (ex) {
-      debugger;
+      console.error(ex);
       return caches.match(event.request);
     }))
   )
