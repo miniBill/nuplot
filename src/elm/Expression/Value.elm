@@ -244,10 +244,10 @@ applyValue context name args =
             unaryFunctionValue context args Round Complex.round
 
         KnownFunction Min ->
-            binaryFunctionValue context args Min Complex.min
+            arbitraryFunctionValue context args Min Complex.min
 
         KnownFunction Max ->
-            binaryFunctionValue context args Max Complex.max
+            arbitraryFunctionValue context args Max Complex.max
 
         KnownFunction Atan2 ->
             binaryFunctionValue context args Atan2 Complex.atan2
@@ -528,6 +528,29 @@ binaryFunctionValue context args s f =
 
         _ ->
             unexpectedArgCount Nothing 2
+
+
+arbitraryFunctionValue : Dict String Value -> List Expression -> KnownFunction -> (Complex -> Complex -> Complex) -> Value
+arbitraryFunctionValue context args s f =
+    case args of
+        h :: t ->
+            List.foldr
+                (\e a ->
+                    complexMap2
+                        { symbolic = \lv rv -> Apply (KnownFunction s) [ lv, rv ]
+                        , complex = f
+                        , list = Nothing
+                        , lambda = Nothing
+                        , context = context
+                        }
+                        (innerValue context e)
+                        a
+                )
+                (innerValue context h)
+                t
+
+        _ ->
+            unexpectedArgCount Nothing 1
 
 
 toString : Value -> L10N String
