@@ -14,6 +14,7 @@ self.addEventListener("fetch", function (event) {
   event.respondWith(caches.open("progressive-elm").then((cache) =>
     fetch(event.request).then(function (response) {
       cache.put(event.request, response.clone());
+      return response;
     }).catch(function (ex) {
       console.error(ex);
       return caches.match(event.request);
