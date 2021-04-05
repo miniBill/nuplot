@@ -813,6 +813,27 @@ stepSimplifyDivision ls rs =
             in
             trySimplifyFactors nzip dzip dzip
 
+        ( BinaryOperation Power lb le, BinaryOperation Power rb re ) ->
+            if Expression.equals lb rb then
+                pow lb (minus le re)
+
+            else
+                div ls rs
+
+        ( _, BinaryOperation Power rb re ) ->
+            if Expression.equals ls rb then
+                pow ls (minus one re)
+
+            else
+                div ls rs
+
+        ( BinaryOperation Power lb le, _ ) ->
+            if Expression.equals lb rs then
+                pow lb (minus le one)
+
+            else
+                div ls rs
+
         _ ->
             if Expression.equals ls rs then
                 one
@@ -855,6 +876,9 @@ isImmaginary e =
 stepSimplifyPower : Expression -> Expression -> Expression
 stepSimplifyPower ls rs =
     case ( ls, rs ) of
+        ( _, Integer 1 ) ->
+            ls
+
         ( AssociativeOperation Multiplication lm rm om, Integer rsi ) ->
             AssociativeOperation Multiplication
                 (ipow lm rsi)
@@ -929,8 +953,18 @@ stepSimplifyPower ls rs =
             else
                 negate_ <| pow nl rs
 
+        ( BinaryOperation Power bb be, _ ) ->
+            pow bb <| by [ be, rs ]
+
         ( _, UnaryOperation Negate n ) ->
             div one (pow ls n)
+
+        ( _, Integer n ) ->
+            if n < 0 then
+                div one (ipow ls -n)
+
+            else
+                pow ls rs
 
         _ ->
             pow ls rs
@@ -1144,7 +1178,12 @@ stepSimplifyAddition left right =
                         Just <| by [ two, right ]
 
                     else
-                        Nothing
+                        case nr of
+                            BinaryOperation Division rn rd ->
+                                Just <| div (minus (by [ left, rd ]) rn) rd
+
+                            _ ->
+                                Nothing
 
                 ( BinaryOperation Division ln ld, BinaryOperation Division rn rd ) ->
                     Just <| div (plus [ by [ ln, rd ], by [ rn, ld ] ]) (by [ ld, rd ])
