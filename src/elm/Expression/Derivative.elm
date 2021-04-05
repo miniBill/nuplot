@@ -1,7 +1,7 @@
 module Expression.Derivative exposing (derivative)
 
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..), filterContext, fullSubstitute)
-import Expression.Utils exposing (by, byShort, div, ipowShort, ln_, minus, one, plus, pow, square, zero)
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), filterContext, fullSubstitute)
+import Expression.Utils exposing (by, byShort, cos_, cosh_, div, e, exp_, ipowShort, ln_, log10_, minus, negate_, one, plus, pow, sign, sin_, sinh_, sqrt_, square, tan_, zero)
 
 
 derivative : String -> Expression -> Expression
@@ -79,5 +79,156 @@ derivative var expr =
         Replace ctx e ->
             derivative var <| fullSubstitute (filterContext ctx) e
 
+        Apply (KnownFunction f) [ x ] ->
+            case x of
+                Variable xv ->
+                    if xv == var then
+                        knownDerivative f x
+
+                    else
+                        zero
+
+                _ ->
+                    by [ knownDerivative f x, derivative var x ]
+
         Apply _ _ ->
+            --TODO
+            Variable "TODO"
+
+
+knownDerivative : KnownFunction -> Expression -> Expression
+knownDerivative name x =
+    case name of
+        Sin ->
+            cos_ x
+
+        Cos ->
+            negate_ <| sin_ x
+
+        Tan ->
+            plus [ one, square <| tan_ x ]
+
+        Asin ->
+            div one <| sqrt_ (minus one (square x))
+
+        Acos ->
+            negate_ <| div one <| sqrt_ (minus one (square x))
+
+        Atan ->
+            div one (plus [ one, square x ])
+
+        Atan2 ->
+            --TODO
+            Variable "TODO"
+
+        Sinh ->
+            cosh_ x
+
+        Cosh ->
+            sinh_ x
+
+        Tanh ->
+            --TODO
+            Variable "TODO"
+
+        Abs ->
+            sign x
+
+        Root n ->
+            let
+                ni =
+                    Integer n
+            in
+            div
+                (pow x
+                    (div
+                        (Integer (1 - n))
+                        ni
+                    )
+                )
+                ni
+
+        Ln ->
+            div one x
+
+        Log10 ->
+            by [ div one x, log10_ (Variable "e") ]
+
+        Exp ->
+            exp_ x
+
+        Sign ->
             zero
+
+        Re ->
+            --TODO
+            Variable "TODO"
+
+        Im ->
+            --TODO
+            Variable "TODO"
+
+        Arg ->
+            --TODO
+            Variable "TODO"
+
+        Gra ->
+            --TODO
+            Variable "TODO"
+
+        Det ->
+            --TODO
+            Variable "TODO"
+
+        Dd ->
+            --TODO
+            Variable "TODO"
+
+        Ii ->
+            --TODO
+            Variable "TODO"
+
+        Min ->
+            --TODO
+            Variable "TODO"
+
+        Max ->
+            --TODO
+            Variable "TODO"
+
+        Round ->
+            zero
+
+        Floor ->
+            zero
+
+        Ceiling ->
+            zero
+
+        Pw ->
+            --TODO
+            Variable "TODO"
+
+        Plot ->
+            --TODO
+            Variable "TODO"
+
+        Simplify ->
+            --TODO
+            Variable "TODO"
+
+        StepSimplify ->
+            --TODO
+            Variable "TODO"
+
+        Solve ->
+            --TODO
+            Variable "TODO"
+
+        Mod ->
+            --TODO
+            Variable "TODO"
+
+        Mbrot ->
+            --TODO
+            Variable "TODO"

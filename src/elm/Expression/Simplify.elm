@@ -929,6 +929,9 @@ stepSimplifyPower ls rs =
             else
                 negate_ <| pow nl rs
 
+        ( _, UnaryOperation Negate n ) ->
+            div one (pow ls n)
+
         _ ->
             pow ls rs
 
