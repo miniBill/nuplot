@@ -583,7 +583,18 @@ intervalFunctionToGlsl name =
 
         Atan222 ->
             """
-            TODO Atan222
+            vec2 iatan2(vec2 y, vec2 x) {
+                // TODO: improve this
+                vec2 r = vec2(atan(y.x, x.x), atan(y.y, x.x));
+                vec2 q = vec2(atan(y.x, x.y), atan(y.y, x.y));
+                vec2 rs = vec2(min(r.x, r.y), max(r.x, r.y));
+                vec2 qs = vec2(min(q.x, q.y), max(q.x, q.y));
+                return vec2(min(rs.x,qs.x),max(rs.y,qs.y));
+            }
+
+            vec4 gatan2(vec4 y, vec4 x) {
+                return vec4(atan(y.x, x.x), y.yzw / x.yzw / (1.0 + y.x * y.x / x.x / x.x));
+            }
             """
 
         Ceiling22 ->

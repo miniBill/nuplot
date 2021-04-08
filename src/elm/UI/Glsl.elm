@@ -530,7 +530,7 @@ dependenciesOf req =
             [ RequireConstant I, RequireOperation GlslMultiplication, RequireOperation GlslDivision, RequireFunction Ln22 ]
 
         RequireFunction Atan222 ->
-            []
+            [ RequireFunction Atan22, RequireOperation GlslMultiplication, RequireFunction Sign22 ]
 
         RequireFunction Sinh22 ->
             [ RequireFunction Exp22, RequireFunction Sinh11 ]
