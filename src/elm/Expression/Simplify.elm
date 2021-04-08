@@ -285,8 +285,47 @@ stepSimplifyApply fname sargs =
                     in
                     plus [ by [ re l, im rest ], by [ im l, re rest ] ]
 
+                ( Ii, [ expr, Variable var, from, to ] ) ->
+                    stepSimplifyIntegral expr var from to
+
                 _ ->
                     Apply fname sargs
+
+
+stepSimplifyIntegral : Expression -> String -> Expression -> Expression -> Expression
+stepSimplifyIntegral expr var from to =
+    let
+        default () =
+            Apply (KnownFunction Ii) [ expr, Variable var, from, to ]
+    in
+    case asPolynomial [ var ] expr of
+        Just poly ->
+            let
+                integrateOne ( v, exp ) =
+                    div
+                        (ipow (Variable v) (exp + 1))
+                        (Integer (exp + 1))
+
+                integrateMonomial ( vars, coeff ) =
+                    case vars of
+                        [] ->
+                            by [ coeff, Variable var ]
+
+                        _ ->
+                            by <| coeff :: List.map integrateOne vars
+
+                primitive =
+                    poly
+                        |> Dict.toList
+                        |> List.map integrateMonomial
+                        |> plus
+            in
+            minus
+                (partialSubstitute var to primitive)
+                (partialSubstitute var from primitive)
+
+        Nothing ->
+            default ()
 
 
 stepSimplifyAbs : Expression -> Maybe Expression
