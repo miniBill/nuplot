@@ -505,8 +505,7 @@ unaryFunctionValue context args s f =
                 , list = Nothing
                 , lambda = Nothing
                 }
-            <|
-                innerValue context e
+                (innerValue context e)
 
         _ ->
             unexpectedArgCount Nothing 1
@@ -535,7 +534,7 @@ arbitraryFunctionValue context args s f =
     case args of
         h :: t ->
             List.foldr
-                (\e a ->
+                (\e ->
                     complexMap2
                         { symbolic = \lv rv -> Apply (KnownFunction s) [ lv, rv ]
                         , complex = f
@@ -544,7 +543,6 @@ arbitraryFunctionValue context args s f =
                         , context = context
                         }
                         (innerValue context e)
-                        a
                 )
                 (innerValue context h)
                 t
