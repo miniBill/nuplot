@@ -274,7 +274,18 @@ view model =
 
                         textarea.input {
                             word-break: break-word !important;
-                        }"""
+                        }
+
+                        @media (hover: hover) {
+                            div.hover-parent div.on-parent-hover {
+                                visibility: hidden;
+                            }
+
+                            div.hover-parent:hover div.on-parent-hover {
+                                visibility: visible;
+                            }
+                        }
+                    """
                 ]
         , documentPicker model
         , documentView

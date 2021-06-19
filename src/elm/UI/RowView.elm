@@ -88,6 +88,7 @@ draw { width, height } id { wdiv, hdiv } graph =
                         ]
                         none
                 , padding Theme.spacing
+                , Element.htmlAttribute <| Html.Attributes.class "on-parent-hover"
                 ]
                 { label = Element.element <| icon Theme.lightIconAttrs
                 , onPress = Just <| msg id
@@ -134,6 +135,7 @@ draw { width, height } id { wdiv, hdiv } graph =
             [ inFront urButtonsRow
             , inFront brButtonsRow
             , Element.htmlAttribute <| Html.Attributes.id <| cid ++ "-parent"
+            , Element.htmlAttribute <| Html.Attributes.class "hover-parent"
             ]
     in
     Element.with identity <|
