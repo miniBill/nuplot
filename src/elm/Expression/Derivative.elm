@@ -128,8 +128,7 @@ knownDerivative name x =
             sinh_ x
 
         Tanh ->
-            --TODO
-            Variable "TODO"
+            div one <| square <| cosh_ x
 
         Abs ->
             sign x
