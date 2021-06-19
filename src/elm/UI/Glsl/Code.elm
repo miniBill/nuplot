@@ -882,25 +882,35 @@ intervalFunctionToGlsl name =
 
 toSrcImplicit : String -> Expression -> String
 toSrcImplicit suffix e =
+    let
+        antialiasingSamples =
+            7
+    in
     """
     float f""" ++ suffix ++ """(float x, float y) {
         vec2 complex = """ ++ expressionToGlsl e ++ """;
         if(abs(complex.y) > """ ++ floatToGlsl epsilon ++ """) {
-            return -1.0;
+            return 0.0;
         }
-        return complex.x > 0.0 ? 1.0 : 0.0;
+        return complex.x > 0.0 ? 1.0 : -1.0;
     }
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        x += deltaX / 2.0;
-        y += deltaY / 2.0;
-        float h = f""" ++ suffix ++ """(x,y);
-        float l = f""" ++ suffix ++ """(x - deltaX,y);
-        float ul = f""" ++ suffix ++ """(x - deltaX,y - deltaY);
-        float u = f""" ++ suffix ++ """(x,y - deltaY);
-        return (h != l || h != u || h != ul)
-            && (h >= 0.0 && l >= 0.0 && ul >= 0.0 && u >= 0.0)
-                ? vec3(1,1,1) : vec3(0,0,0);
+        float sum = 0.0;
+        float samples = """ ++ floatToGlsl antialiasingSamples ++ """ * 2.0 + 1.0;
+        samples *= samples;
+        float coeff = 0.0875;
+        for(int w = -""" ++ String.fromInt antialiasingSamples ++ """; w <= """ ++ String.fromInt antialiasingSamples ++ """; w++)
+            for(int h = -""" ++ String.fromInt antialiasingSamples ++ """; h <= """ ++ String.fromInt antialiasingSamples ++ """; h++) {
+                float piece = f""" ++ suffix ++ """(x + deltaX * coeff * float(w), y + deltaX * coeff * float(h));
+                if(piece == 0.0)
+                    return vec3(0);
+                sum += piece;
+            }
+
+        float perc = (samples - abs(sum)) / samples;
+        perc = pow(perc, 0.2);
+        return perc * vec3(1,1,1);
     }
     """
 
