@@ -15,7 +15,7 @@ type Value
     | SolutionTreeValue SolutionTree
     | SymbolicValue Expression
     | ComplexValue Complex
-    | GraphValue Graph
+    | GraphValue { axes : Bool, graph : Graph }
     | LambdaValue String Value
     | ListValue (List Value)
 
@@ -345,10 +345,24 @@ applyValue context name args =
         KnownFunction Plot ->
             case args of
                 [ e ] ->
-                    GraphValue <| Expression.Graph.fromExpression <| toExpression <| value Dict.empty e
+                    GraphValue
+                        { axes = True
+                        , graph = Expression.Graph.fromExpression <| toExpression <| value Dict.empty e
+                        }
 
                 _ ->
                     unexpectedArgCount (Just "plot") [ 1 ]
+
+        KnownFunction APlot ->
+            case args of
+                [ e ] ->
+                    GraphValue
+                        { axes = False
+                        , graph = Expression.Graph.fromExpression <| toExpression <| value Dict.empty e
+                        }
+
+                _ ->
+                    unexpectedArgCount (Just "aplot") [ 1 ]
 
         KnownFunction For ->
             case Utils.runForLoop args of
@@ -587,8 +601,18 @@ toString v =
             invariant <| Expression.toString s
 
         GraphValue g ->
-            { en = "Graph: " ++ Expression.Graph.toString g
-            , it = "Grafico: " ++ Expression.Graph.toString g
+            { en =
+                if g.axes then
+                    "Graph: " ++ Expression.Graph.toString g.graph
+
+                else
+                    "Graph without axes: " ++ Expression.Graph.toString g.graph
+            , it =
+                if g.axes then
+                    "Grafico: " ++ Expression.Graph.toString g.graph
+
+                else
+                    "Grafico senza assi: " ++ Expression.Graph.toString g.graph
             }
 
         LambdaValue x f ->
@@ -826,8 +850,16 @@ toExpression v =
         ListValue l ->
             List <| List.map toExpression l
 
-        GraphValue g ->
-            Apply (KnownFunction Plot) [ Expression.Graph.toExpression g ]
+        GraphValue { graph, axes } ->
+            Apply
+                (KnownFunction <|
+                    if axes then
+                        Plot
+
+                    else
+                        APlot
+                )
+                [ Expression.Graph.toExpression graph ]
 
         ErrorValue _ ->
             Integer 0

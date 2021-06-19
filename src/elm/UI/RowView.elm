@@ -29,8 +29,8 @@ type alias Element msg =
     Element.Element Context msg
 
 
-draw : { width : Int, height : Int } -> CanvasId -> { wdiv : Int, hdiv : Int } -> Graph -> Element CellMsg
-draw { width, height } id { wdiv, hdiv } graph =
+draw : { width : Int, height : Int } -> CanvasId -> { wdiv : Int, hdiv : Int } -> { graph : Graph, axes : Bool } -> Element CellMsg
+draw { width, height } id { wdiv, hdiv } { graph, axes } =
     let
         isCompletelyReal g =
             case g of
@@ -149,6 +149,7 @@ draw { width, height } id { wdiv, hdiv } graph =
                         , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
                         , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
                         , Html.Attributes.attribute "completely-real" <| boolToIntString <| isCompletelyReal graph
+                        , Html.Attributes.attribute "draw-axes" <| boolToIntString axes
                         , Html.Attributes.attribute "is-3d" <| boolToIntString <| is3D graph
                         , Html.Attributes.title <| Expression.toString <| Expression.Graph.toExpression graph
                         ]

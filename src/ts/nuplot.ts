@@ -27,6 +27,7 @@ export class NuPlot extends HTMLElement {
 
   whiteLines = 6;
   completelyReal = 0;
+  drawAxes = 1;
   is3D = 0;
   minIterations = 50;
   currIterations = 400;
@@ -500,6 +501,7 @@ export class NuPlot extends HTMLElement {
     /* bind inputs & render frame */
     this.uniform1f("u_whiteLines", this.whiteLines);
     this.uniform1f("u_completelyReal", this.completelyReal);
+    this.uniform1f("u_drawAxes", this.drawAxes);
     this.uniform1f("u_viewportWidth", this.viewportWidth);
     this.uniform1f("u_canvasWidth", this.canvas.width);
     this.uniform1f("u_canvasHeight", this.canvas.height);
@@ -546,6 +548,11 @@ export class NuPlot extends HTMLElement {
       case "completely-real":
         if (!newValue) return;
         this.completelyReal = +newValue;
+        break;
+
+      case "draw-axes":
+        if (!newValue) return;
+        this.drawAxes = +newValue;
         break;
 
       case "is-3d":
@@ -659,6 +666,7 @@ ${NuPlot.withLines(built)}`;
       "canvas-height",
       "white-lines",
       "completely-real",
+      "draw-axes",
       "is-3d",
     ];
   }

@@ -5,6 +5,7 @@ precision highp float;
 
 uniform float u_whiteLines;
 uniform float u_completelyReal;
+uniform float u_drawAxes;
 uniform vec2 u_zoomCenter;
 uniform float u_viewportWidth;
 uniform float u_canvasWidth;

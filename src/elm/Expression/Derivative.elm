@@ -220,6 +220,10 @@ knownDerivative name x =
             --TODO
             Variable "TODO"
 
+        APlot ->
+            --TODO
+            Variable "TODO"
+
         Simplify ->
             --TODO
             Variable "TODO"

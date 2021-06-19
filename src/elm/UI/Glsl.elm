@@ -495,6 +495,9 @@ toGlslFunction name =
         Plot ->
             Nothing
 
+        APlot ->
+            Nothing
+
         Simplify ->
             Nothing
 

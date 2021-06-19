@@ -1603,8 +1603,8 @@ main2D pixels =
             ++ inner
             ++ """
             float maxDelta = max(deltaX, deltaY);
-            vec3 yax = axis(x, y, maxDelta) * vec3(0,1,0);
-            vec3 xax = axis(y, x, maxDelta) * vec3(1,0,0);
+            vec3 yax = u_drawAxes == 1.0 ? axis(x, y, maxDelta) * vec3(0,1,0) : vec3(0);
+            vec3 xax = u_drawAxes == 1.0 ? axis(y, x, maxDelta) * vec3(1,0,0) : vec3(0);
             return vec4(max(px, max(xax, yax)), 1.0);
         }
         """

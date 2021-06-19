@@ -1525,6 +1525,9 @@ innerHoistLabmda expr =
                 ( KnownFunction Plot, _ ) ->
                     Nothing
 
+                ( KnownFunction APlot, _ ) ->
+                    Nothing
+
                 ( _, [ Lambda x f ] ) ->
                     Just <| Lambda x <| hoistLambda <| Apply fn [ f ]
 
