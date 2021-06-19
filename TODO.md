@@ -2,7 +2,6 @@
 * Fuzzy test the solver
 * User functions
 * Undo/redo
-* plot(sin(x²+y²))
 
 ## Meh
 * Integrals

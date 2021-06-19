@@ -1,4 +1,4 @@
-module Expression.Value exposing (Value(..), complexToSymbolic, toString, value)
+module Expression.Value exposing (Value(..), complexToSymbolic, toExpression, toString, value)
 
 import Complex exposing (Complex(..))
 import Dict exposing (Dict)

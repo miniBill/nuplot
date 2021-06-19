@@ -38,11 +38,7 @@ draw { width, height } id { wdiv, hdiv } { graph, axes } =
                     List.all isCompletelyReal gs
 
                 Contour e ->
-                    if Expression.NumericRange.isCompletelyReal e then
-                        True
-
-                    else
-                        False
+                    Expression.NumericRange.isCompletelyReal e
 
                 _ ->
                     False

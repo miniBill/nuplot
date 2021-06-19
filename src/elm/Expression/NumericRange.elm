@@ -174,9 +174,28 @@ powerRange ctx brange ex =
 
                 _ ->
                     Complex
+
+        asInteger n =
+            case n of
+                Integer i ->
+                    Just i
+
+                Float f ->
+                    let
+                        rounded =
+                            round f
+                    in
+                    if toFloat rounded == f then
+                        Just rounded
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
     in
-    case ex of
-        Integer j ->
+    case asInteger ex of
+        Just j ->
             if abs j > 10 then
                 default ()
 
@@ -189,7 +208,7 @@ powerRange ctx brange ex =
             else
                 squareRange brange
 
-        _ ->
+        Nothing ->
             default ()
 
 
