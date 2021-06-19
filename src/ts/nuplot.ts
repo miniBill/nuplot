@@ -153,7 +153,7 @@ export class NuPlot extends HTMLElement {
     const vertex_shader = `precision highp float;
     attribute vec2 a_Position;
     void main() {
-      gl_Position = vec4(a_Position.x, a_Position.y, 0.0, 1.0);
+      gl_Position = vec4(a_Position, 0.0, 1.0);
     }`;
 
     this.program = this.gl.createProgram();
