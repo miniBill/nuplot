@@ -91,6 +91,14 @@ derivative var expr =
                 _ ->
                     by [ knownDerivative f x, derivative var x ]
 
+        Apply (KnownFunction For) args ->
+            case Expression.Utils.runForLoop args of
+                Just result ->
+                    derivative var <| List result
+
+                Nothing ->
+                    Variable "TODO"
+
         Apply _ _ ->
             --TODO
             Variable "TODO"
@@ -229,5 +237,9 @@ knownDerivative name x =
             Variable "TODO"
 
         Mbrot ->
+            --TODO
+            Variable "TODO"
+
+        For ->
             --TODO
             Variable "TODO"

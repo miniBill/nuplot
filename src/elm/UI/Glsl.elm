@@ -507,6 +507,9 @@ toGlslFunction name =
         Mbrot ->
             Just Mbrot22
 
+        For ->
+            Nothing
+
 
 dependenciesOf : Requirement -> List Requirement
 dependenciesOf req =

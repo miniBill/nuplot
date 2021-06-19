@@ -288,7 +288,7 @@ applyValue context name args =
                     determinant context <| innerValue context c
 
                 _ ->
-                    unexpectedArgCount (Just "det") 1
+                    unexpectedArgCount (Just "det") [ 1 ]
 
         KnownFunction Exp ->
             unaryFunctionValue context args Exp Complex.exp
@@ -315,7 +315,7 @@ applyValue context name args =
                             SymbolicValue <| Apply (KnownFunction Pw) args
 
                 _ ->
-                    unexpectedArgCount (Just "pw") 3
+                    unexpectedArgCount (Just "pw") [ 3 ]
 
         KnownFunction Solve ->
             case args of
@@ -324,7 +324,7 @@ applyValue context name args =
                         Expression.Solver.solve e x
 
                 _ ->
-                    unexpectedArgCount (Just "solve") 2
+                    unexpectedArgCount (Just "solve") [ 2 ]
 
         KnownFunction Simplify ->
             case args of
@@ -332,7 +332,7 @@ applyValue context name args =
                     SymbolicValue <| Expression.Simplify.simplify e
 
                 _ ->
-                    unexpectedArgCount (Just "simplify") 1
+                    unexpectedArgCount (Just "simplify") [ 1 ]
 
         KnownFunction StepSimplify ->
             case args of
@@ -340,7 +340,7 @@ applyValue context name args =
                     SolutionTreeValue <| Expression.Solver.stepSimplify e
 
                 _ ->
-                    unexpectedArgCount (Just "stepsimplify") 1
+                    unexpectedArgCount (Just "stepsimplify") [ 1 ]
 
         KnownFunction Plot ->
             case args of
@@ -348,7 +348,15 @@ applyValue context name args =
                     GraphValue <| Expression.Graph.fromExpression <| toExpression <| value Dict.empty e
 
                 _ ->
-                    unexpectedArgCount (Just "plot") 1
+                    unexpectedArgCount (Just "plot") [ 1 ]
+
+        KnownFunction For ->
+            case Utils.runForLoop args of
+                Just values ->
+                    value context <| List values
+
+                _ ->
+                    unexpectedArgCount (Just "for") [ 2, 3 ]
 
         KnownFunction Gra ->
             --TODO
@@ -371,37 +379,43 @@ applyValue context name args =
             SymbolicValue <| Apply name args
 
 
-unexpectedArgCount : Maybe String -> Int -> Value
+unexpectedArgCount : Maybe String -> List Int -> Value
 unexpectedArgCount maybeName count =
     case maybeName of
         Just name ->
             ErrorValue
-                { en = "Unexpected number of args to " ++ name ++ ", expected " ++ String.fromInt count
+                { en =
+                    "Unexpected number of args to "
+                        ++ name
+                        ++ ", expected "
+                        ++ String.join " or " (List.map String.fromInt count)
                 , it =
                     "Numero di argomenti inatteso per "
                         ++ name
                         ++ ", "
-                        ++ (if count == 1 then
+                        ++ (if count == [ 1 ] then
                                 "atteso "
 
                             else
                                 "attesi"
                            )
-                        ++ String.fromInt count
+                        ++ String.join " o " (List.map String.fromInt count)
                 }
 
         Nothing ->
             ErrorValue
-                { en = "Unexpected number of args, expected " ++ String.fromInt count
+                { en =
+                    "Unexpected number of args, expected "
+                        ++ String.join " or " (List.map String.fromInt count)
                 , it =
                     "Numero di argomenti inatteso, "
-                        ++ (if count == 1 then
+                        ++ (if count == [ 1 ] then
                                 "atteso "
 
                             else
                                 "attesi"
                            )
-                        ++ String.fromInt count
+                        ++ String.join " o " (List.map String.fromInt count)
                 }
 
 
@@ -508,7 +522,7 @@ unaryFunctionValue context args s f =
                 (innerValue context e)
 
         _ ->
-            unexpectedArgCount Nothing 1
+            unexpectedArgCount Nothing [ 1 ]
 
 
 binaryFunctionValue : Dict String Value -> List Expression -> KnownFunction -> (Complex -> Complex -> Complex) -> Value
@@ -526,7 +540,7 @@ binaryFunctionValue context args s f =
                 (innerValue context r)
 
         _ ->
-            unexpectedArgCount Nothing 2
+            unexpectedArgCount Nothing [ 2 ]
 
 
 arbitraryFunctionValue : Dict String Value -> List Expression -> KnownFunction -> (Complex -> Complex -> Complex) -> Value
@@ -548,7 +562,7 @@ arbitraryFunctionValue context args s f =
                 t
 
         _ ->
-            unexpectedArgCount Nothing 1
+            unexpectedArgCount Nothing [ 1 ]
 
 
 toString : Value -> L10N String

@@ -38,6 +38,7 @@ import Dict exposing (Dict)
 import Element.WithContext as Element exposing (Element)
 import Element.WithContext.Border as Border
 import Element.WithContext.Font
+import Parser exposing (Step(..))
 import Set exposing (Set)
 import Trie exposing (Trie)
 import UI.L10N exposing (L10N, invariant)
@@ -113,6 +114,8 @@ type KnownFunction
     | Solve
     | Mod
     | Mbrot
+      -- Loops
+    | For
 
 
 type UnaryOperation
@@ -773,6 +776,7 @@ variadicFunctions : List ( String, KnownFunction )
 variadicFunctions =
     [ ( "min", Min )
     , ( "max", Max )
+    , ( "for", For )
     ]
 
 
@@ -954,6 +958,9 @@ functionNameToString name =
 
         KnownFunction Mbrot ->
             "mbrot"
+
+        KnownFunction For ->
+            "for"
 
         UserFunction u ->
             u
