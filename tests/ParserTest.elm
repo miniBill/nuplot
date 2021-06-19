@@ -328,7 +328,24 @@ tests =
     , straight "e^x" <| pow (Variable "e") x
     , ( "ln(ex)", ln_ <| by [ Variable "e", x ], "ln(e*x)" )
     , straight "exp(x)" <| exp_ x
-    , ( "[!ox;!oy;!oz;!dx;!dy;!dz][x=ox+tdx;y=oy+tdy;z=oz+tdz]solve(z=1/(x²+y²))", x, "?" )
+    , ( "[!ox;!oy;!oz;!dx;!dy;!dz][x=ox+tdx;y=oy+tdy;z=oz+tdz]solve(z=1/(x²+y²),t)"
+      , let
+            bangs =
+                [ "ox", "oy", "oz", "dx", "dy", "dz" ]
+                    |> List.map (\k -> ( k, Nothing ))
+                    |> Dict.fromList
+
+            lines =
+                [ "x", "y", "z" ]
+                    |> List.map (\l -> ( l, Just <| plus [ Variable ("o" ++ l), by [ t, Variable ("d" ++ l) ] ] ))
+                    |> Dict.fromList
+
+            eq =
+                RelationOperation Equals z (div one (plus [ square x, square y ]))
+        in
+        Replace bangs <| (Replace lines <| Apply (KnownFunction Solve) [ eq, t ])
+      , "[!dx; !dy; !dz; !ox; !oy; !oz] [x = ox + t*dx; y = oy + t*dy; z = oz + t*dz] solve(z = 1/(x² + y²), t)"
+      )
 
     -- Check values for those
     , straight "1/x" <| div one x

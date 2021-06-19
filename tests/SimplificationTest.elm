@@ -81,10 +81,7 @@ simplificationTests =
     , simplified <| div a b
     , simplified <| by [ a, b, c ]
     , simplified <| div (by [ a, b ]) c
-    , ( by [ div a b, c ]
-      , --div (by [ a, c ]) b
-        by [ div a b, c ]
-      )
+    , ( by [ div a b, c ], div (by [ a, c ]) b )
     , ( div (div a b) c, div a <| by [ b, c ] )
     , ( div a a, one )
     , ( Replace
