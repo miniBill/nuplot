@@ -79,7 +79,7 @@ toGlsl suffix (Sphere { center, radius }) =
         vec3 center = vec3(""" ++ floatToGlsl center.x ++ """,""" ++ floatToGlsl center.y ++ """,""" ++ floatToGlsl center.z ++ """);
 
         vec3 to_center = o - center;
-        float b = dot(to_center, 0.5 * (d[0] + d[1]));
+        float b = dot(to_center, mix(d[0], d[1], 0.5));
         float c = dot(to_center, to_center) - """ ++ floatToGlsl (radius * radius) ++ """;
         float delta = b*b - c;
         if(delta < 0.0)
@@ -87,7 +87,7 @@ toGlsl suffix (Sphere { center, radius }) =
         float x = -b - sqrt(delta);
         if(x < """ ++ threshold ++ """)
             return false;
-        found = o + x * 0.5 * (d[0] + d[1]);
+        found = o + x * mix(d[0], d[1], 0.5);
         return true;
     }
     """

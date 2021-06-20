@@ -137,112 +137,120 @@ getGlsl expandIntervals rayDifferentials graph =
 
 get3DSource : Bool -> String -> Expression -> { expr : Expression, srcExpr : String }
 get3DSource expandIntervals prefix e =
-    case Sphere.asSphere e of
-        Just sphere ->
+    case Sphere.asSphere e |> Maybe.map (Sphere.toGlsl prefix) of
+        Just glsl ->
             { expr = e
-            , srcExpr = Sphere.toGlsl prefix sphere
+            , srcExpr = glsl
             }
 
         Nothing ->
-            case Plane.asPlane e of
-                Just plane ->
+            case Plane.asPlane e |> Maybe.map (Plane.toGlsl prefix) of
+                Just glsl ->
                     { expr = e
-                    , srcExpr = Plane.toGlsl prefix plane
+                    , srcExpr = glsl
                     }
 
                 Nothing ->
-                    let
-                        t =
-                            Variable "t"
-
-                        var v =
-                            plus [ Variable <| "o." ++ v, by [ t, Variable <| "d" ++ v ] ]
-
-                        repls =
-                            [ "x", "y", "z" ]
-                                |> List.map (\c -> ( c, var c ))
-                                |> Dict.fromList
-
-                        replaced =
-                            Expression.fullSubstitute repls e
-
-                        poly =
-                            (case replaced of
-                                RelationOperation Equals l r ->
-                                    minus l r
-
-                                _ ->
-                                    replaced
-                            )
-                                |> asPolynomial [ "t" ]
-                                |> Maybe.map Dict.toList
-                                |> Maybe.andThen
-                                    (Maybe.traverse
-                                        (\p ->
-                                            case p of
-                                                ( [], k ) ->
-                                                    Just ( 0, k )
-
-                                                ( [ ( v, d ) ], k ) ->
-                                                    if v == "t" then
-                                                        Just ( d, k )
-
-                                                    else
-                                                        Nothing
-
-                                                _ ->
-                                                    Nothing
-                                        )
-                                    )
-                                |> Maybe.map Dict.fromList
-                                |> Maybe.withDefault Dict.empty
-                    in
-                    case UI.Glsl.Polynomial.getSolutions poly of
-                        Just ( deg, sols ) ->
-                            let
-                                checks =
-                                    sols
-                                        |> List.foldl
-                                            (\( k, v ) ( known, lines ) ->
-                                                let
-                                                    ( decl, drop ) =
-                                                        if List.member k known then
-                                                            ( "", 0 )
-
-                                                        else if String.startsWith "!" k then
-                                                            ( "float ", 1 )
-
-                                                        else
-                                                            ( "vec2 ", 0 )
-
-                                                    newLine =
-                                                        decl ++ String.dropLeft drop k ++ " = " ++ v ++ ";"
-                                                in
-                                                ( k :: known, newLine :: lines )
-                                            )
-                                            ( [ "t" ], [] )
-                                        |> Tuple.second
-                                        |> List.reverse
-                                        |> String.join "\n                                        "
-
-                                srcExpr =
-                                    """
-                                    bool bisect""" ++ prefix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
-                                        float t = max_distance * 2.0;
-                                        """ ++ checks ++ """
-                                        found = o + t * mix(d[0], d[1], 0.5);
-                                        return t < max_distance && t > 0.0;
-                                    }
-                                    """
-                            in
-                            { expr = div one <| sqrt_ <| cbrt <| ipow e 3
-                            , srcExpr = deindent 32 srcExpr
-                            }
+                    case tryGlslFromPolynomial prefix e of
+                        Just o ->
+                            o
 
                         Nothing ->
                             { expr = e
                             , srcExpr = toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
                             }
+
+
+tryGlslFromPolynomial : String -> Expression -> Maybe { expr : Expression, srcExpr : String }
+tryGlslFromPolynomial prefix e =
+    let
+        t =
+            Variable "t"
+
+        var v =
+            plus [ Variable <| "o." ++ v, by [ t, Variable <| "d" ++ v ] ]
+
+        repls =
+            [ "x", "y", "z" ]
+                |> List.map (\c -> ( c, var c ))
+                |> Dict.fromList
+
+        replaced =
+            Expression.fullSubstitute repls e
+
+        poly =
+            (case replaced of
+                RelationOperation Equals l r ->
+                    minus l r
+
+                _ ->
+                    replaced
+            )
+                |> asPolynomial [ "t" ]
+                |> Maybe.map Dict.toList
+                |> Maybe.andThen
+                    (Maybe.traverse
+                        (\p ->
+                            case p of
+                                ( [], k ) ->
+                                    Just ( 0, k )
+
+                                ( [ ( v, d ) ], k ) ->
+                                    if v == "t" then
+                                        Just ( d, k )
+
+                                    else
+                                        Nothing
+
+                                _ ->
+                                    Nothing
+                        )
+                    )
+                |> Maybe.map Dict.fromList
+                |> Maybe.withDefault Dict.empty
+
+        fromSols sols =
+            let
+                checks =
+                    sols
+                        |> List.foldl
+                            (\( k, v ) ( known, lines ) ->
+                                let
+                                    ( decl, drop ) =
+                                        if List.member k known then
+                                            ( "", 0 )
+
+                                        else if String.startsWith "!" k then
+                                            ( "float ", 1 )
+
+                                        else
+                                            ( "vec2 ", 0 )
+
+                                    newLine =
+                                        decl ++ String.dropLeft drop k ++ " = " ++ v ++ ";"
+                                in
+                                ( k :: known, newLine :: lines )
+                            )
+                            ( [ "t" ], [] )
+                        |> Tuple.second
+                        |> List.reverse
+                        |> String.join "\n                        "
+
+                srcExpr =
+                    """
+                    bool bisect""" ++ prefix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
+                        float t = max_distance * 2.0;
+                        """ ++ checks ++ """
+                        found = o + t * mix(d[0], d[1], 0.5);
+                        return t < max_distance && t > 0.0;
+                    }
+                    """
+            in
+            { expr = div one <| sqrt_ <| cbrt <| ipow e 3
+            , srcExpr = deindent 16 srcExpr
+            }
+    in
+    UI.Glsl.Polynomial.getSolutions poly |> Maybe.map (\( _, sols ) -> fromSols sols)
 
 
 transitiveClosure : List Requirement -> List Requirement
