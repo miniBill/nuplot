@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (call, decl, float, fun, mat3, return, toGlsl, vec2, vec3, vec4)
+module UI.Glsl.Generator exposing (Code, call, decl, floatT, fun, mat3T, return, toGlsl, vec2, vec2T, vec3, vec3T, vec4T)
 
 
 type Code
@@ -72,26 +72,36 @@ call fname args =
     fname ++ "(" ++ String.join ", " args ++ ")"
 
 
-float : Type
-float =
+floatT : Type
+floatT =
     Type "float"
 
 
-vec2 : Type
-vec2 =
+vec2T : Type
+vec2T =
     Type "vec2"
 
 
-vec3 : Type
-vec3 =
+vec2 : Expression -> Expression -> Expression
+vec2 x y =
+    call "vec2" [ x, y ]
+
+
+vec3T : Type
+vec3T =
     Type "vec3"
 
 
-vec4 : Type
-vec4 =
+vec3 : Expression -> Expression -> Expression -> Expression
+vec3 x y z =
+    call "vec3" [ x, y, z ]
+
+
+vec4T : Type
+vec4T =
     Type "vec4"
 
 
-mat3 : Type
-mat3 =
+mat3T : Type
+mat3T =
     Type "mat3"

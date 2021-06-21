@@ -1,33 +1,27 @@
 module UI.Glsl.Code exposing (constantToGlsl, deindent, expressionToGlsl, floatToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
-import UI.Glsl.Generator as Generator exposing (call, decl, float, fun, mat3, return, vec2, vec3, vec4)
+import UI.Glsl.Generator exposing (Code, call, decl, floatT, fun, mat3T, return, vec2, vec2T, vec3T, vec4T)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
-constantToGlsl : GlslConstant -> String
+constantToGlsl : GlslConstant -> Code
 constantToGlsl c =
     case c of
         I ->
-            """
-            vec2 i() {
-                return vec2(0,1);
-            }
-            """
+            fun vec2T "i" [] <|
+                [ return <| vec2 "0" "1"
+                ]
 
         Pi ->
-            """
-            vec2 pi() {
-                return vec2(radians(180.0), 0.0);
-            }
-            """
+            fun vec2T "pi" [] <|
+                [ return <| vec2 "radians(180.0)" "0.0"
+                ]
 
         E ->
-            """
-            vec2 e() {
-                return vec2(exp(1.0), 0.0);
-            }
-            """
+            fun vec2T "e" [] <|
+                [ return <| vec2 "exp(1.0)" "0.0"
+                ]
 
 
 straightOperationToGlsl : GlslOperation -> String
@@ -1611,26 +1605,24 @@ main2D pixels =
         """
 
 
-toSrc3D : Bool -> String -> Expression -> String
+toSrc3D : Bool -> String -> Expression -> List Code
 toSrc3D expandIntervals suffix e =
-    [ fun vec3 ("normal" ++ suffix) [ ( vec3, "p" ) ] <|
-        [ decl float "x" "p.x"
-        , decl float "y" "p.y"
-        , decl float "z" "p.z"
-        , decl vec4 "gradient" (expressionToNormalGlsl e)
+    [ fun vec3T ("normal" ++ suffix) [ ( vec3T, "p" ) ] <|
+        [ decl floatT "x" "p.x"
+        , decl floatT "y" "p.y"
+        , decl floatT "z" "p.z"
+        , decl vec4T "gradient" (expressionToNormalGlsl e)
         , return <| call "normalize" [ "gradient.yzw" ]
         ]
-    , fun vec2 ("interval" ++ suffix) [ ( mat3, "f" ), ( mat3, "t" ) ] <|
-        [ decl vec3 "mn" <| call "min" [ "f[0]", "t[0]" ]
-        , decl vec3 "mx" <| call "max" [ "f[1]", "t[1]" ]
-        , decl vec2 "x" <| call "vec2" [ "mn.x", "mx.x" ]
-        , decl vec2 "y" <| call "vec2" [ "mn.y", "mx.y" ]
-        , decl vec2 "z" <| call "vec2" [ "mn.z", "mx.z" ]
+    , fun vec2T ("interval" ++ suffix) [ ( mat3T, "f" ), ( mat3T, "t" ) ] <|
+        [ decl vec3T "mn" <| call "min" [ "f[0]", "t[0]" ]
+        , decl vec3T "mx" <| call "max" [ "f[1]", "t[1]" ]
+        , decl vec2T "x" <| vec2 "mn.x" "mx.x"
+        , decl vec2T "y" <| vec2 "mn.y" "mx.y"
+        , decl vec2T "z" <| vec2 "mn.z" "mx.z"
         , return <| expressionToIntervalGlsl expandIntervals e
         ]
     ]
-        |> List.map Generator.toGlsl
-        |> String.join "\n\n"
 
 
 main3D : Bool -> List String -> String

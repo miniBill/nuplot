@@ -8,6 +8,7 @@ import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, 
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+import UI.Glsl.Generator as Generator
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -156,8 +157,14 @@ get3DSource expandIntervals prefix e =
                             o
 
                         Nothing ->
+                            let
+                                glsl =
+                                    toSrc3D expandIntervals prefix e
+                                        |> List.map Generator.toGlsl
+                                        |> String.join "\n\n"
+                            in
                             { expr = e
-                            , srcExpr = toSrc3D expandIntervals prefix e ++ UI.Glsl.Code.suffixToBisect prefix
+                            , srcExpr = glsl ++ UI.Glsl.Code.suffixToBisect prefix
                             }
 
 
@@ -319,7 +326,7 @@ requirementToGlsl i r =
             functionToGlsl i f
 
         RequireConstant c ->
-            constantToGlsl c
+            constantToGlsl c |> Generator.toGlsl
 
         RequireOperation o ->
             operationToGlsl i o
