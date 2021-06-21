@@ -654,13 +654,13 @@ operationToGlsl : RequiresInterval -> GlslOperation -> String
 operationToGlsl interval op =
     case interval of
         StraightOnly ->
-            deindent 12 <| straightOperationToGlsl op
+            String.join "\n\n" <| List.map Generator.toGlsl <| straightOperationToGlsl op
 
         IntervalOnly ->
             deindent 12 <| intervalOperationToGlsl op
 
         IntervalAndStraight ->
-            deindent 12 <| straightOperationToGlsl op ++ "\n" ++ intervalOperationToGlsl op
+            deindent 12 <| (String.join "\n\n" <| List.map Generator.toGlsl <| straightOperationToGlsl op) ++ "\n" ++ intervalOperationToGlsl op
 
 
 functionToGlsl : RequiresInterval -> GlslFunction -> String

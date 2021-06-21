@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Code, call, decl, floatT, fun, mat3T, return, toGlsl, vec2, vec2T, vec3, vec3T, vec4T)
+module UI.Glsl.Generator exposing (Code, ands, call, decl, floatT, fun, mat3T, return, ternary, toGlsl, vec2, vec2T, vec3, vec3T, vec4T)
 
 
 type Code
@@ -62,9 +62,19 @@ indent i line =
     String.repeat (4 * i) " " ++ line
 
 
-return : String -> Code
+return : Expression -> Code
 return v =
     Line <| "return " ++ v
+
+
+ternary : Expression -> Expression -> Expression -> Expression
+ternary c t f =
+    c ++ " ? " ++ t ++ " : " ++ f
+
+
+ands : List Expression -> Expression
+ands =
+    String.join " && "
 
 
 call : String -> List Expression -> Statement

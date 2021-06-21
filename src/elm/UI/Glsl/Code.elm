@@ -1,7 +1,7 @@
 module UI.Glsl.Code exposing (constantToGlsl, deindent, expressionToGlsl, floatToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
-import UI.Glsl.Generator exposing (Code, call, decl, floatT, fun, mat3T, return, vec2, vec2T, vec3T, vec4T)
+import UI.Glsl.Generator exposing (Code, ands, call, decl, floatT, fun, mat3T, return, ternary, vec2, vec2T, vec3T, vec4T)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -24,48 +24,43 @@ constantToGlsl c =
                 ]
 
 
-straightOperationToGlsl : GlslOperation -> String
+straightOperationToGlsl : GlslOperation -> List Code
 straightOperationToGlsl op =
     case op of
         GlslAddition ->
-            ""
+            []
 
         GlslMultiplication ->
-            """
-            vec2 by(vec2 a, vec2 b) {
-                return vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x);
-            }
-
-            vec2 by(vec2 a, vec2 b, vec2 c) {
-                return by(by(a, b), c);
-            }
-            """
+            [ fun vec2T "by" [ ( vec2T, "a" ), ( vec2T, "b" ) ] <|
+                [ return <| vec2 "a.x*b.x-a.y*b.y" "a.x*b.y+a.y*b.x" ]
+            , fun vec2T "by" [ ( vec2T, "a" ), ( vec2T, "b" ), ( vec2T, "c" ) ] <|
+                [ return <| call "by" [ call "by" [ "a", "b" ], "c" ] ]
+            ]
 
         GlslNegation ->
-            ""
+            []
 
         GlslDivision ->
-            """
-            vec2 div(vec2 a, vec2 b) {
-                float k = 1.0 / dot(b, b);
-                float r = k * dot(a, b);
-                float i = k * (a.y*b.x - a.x*b.y);
-                return vec2(r, i);
-            }
-            """
+            [ fun vec2T "div" [ ( vec2T, "a" ), ( vec2T, "b" ) ] <|
+                [ decl floatT "k" "1.0 / dot(b, b)"
+                , decl floatT "r" "k * dot(a, b)"
+                , decl floatT "i" "k * (a.y*b.x - a.x*b.y)"
+                , return <| vec2 "r" "i"
+                ]
+            ]
 
         GlslPower ->
-            """
-            vec2 cpow(vec2 w, vec2 z) {
-                if(w.x >= 0.0 && w.y == 0.0 && z.y == 0.0) {
-                    return vec2(pow(w.x, z.x), 0);
-                }
-                return cexp(by(cln(w), z));
-            }
-            """
+            [ fun vec2T "cpow" [ ( vec2T, "w" ), ( vec2T, "z" ) ] <|
+                [ return <|
+                    ternary
+                        (ands [ "w.x >= 0.0", "w.y == 0.0", "z.y == 0.0" ])
+                        (vec2 "pow(w.x, z.x)" "0")
+                        "cexp(by(cln(w), z))"
+                ]
+            ]
 
         GlslRelations ->
-            ""
+            []
 
 
 intervalOperationToGlsl : GlslOperation -> String
