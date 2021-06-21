@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (call, decl, fun, return, toGlsl)
+module UI.Glsl.Generator exposing (call, decl, float, fun, mat3, return, toGlsl, vec2, vec3, vec4)
 
 
 type Code
@@ -14,29 +14,30 @@ type alias Expression =
     String
 
 
-type alias TypedName =
-    ( String, String )
-
-
-fun : TypedName -> List TypedName -> List Code -> Code
-fun nameAndType args body =
+fun : Type -> Name -> List ( Type, Name ) -> List Code -> Code
+fun (Type type_) name args body =
     Block
-        (typedNameToString nameAndType
+        (type_
+            ++ " "
+            ++ name
             ++ "("
-            ++ String.join ", " (List.map typedNameToString args)
+            ++ String.join ", " (List.map (\( Type t, n ) -> t ++ " " ++ n) args)
             ++ ")"
         )
         body
 
 
-typedNameToString : TypedName -> String
-typedNameToString ( type_, name ) =
-    type_ ++ " " ++ name
+type Type
+    = Type String
 
 
-decl : TypedName -> Expression -> Code
-decl nameAndType value =
-    Line (typedNameToString nameAndType ++ " = " ++ value)
+type alias Name =
+    String
+
+
+decl : Type -> Name -> Expression -> Code
+decl (Type type_) name value =
+    Line (type_ ++ " " ++ name ++ " = " ++ value)
 
 
 toGlsl : Code -> String
@@ -69,3 +70,28 @@ return v =
 call : String -> List Expression -> Statement
 call fname args =
     fname ++ "(" ++ String.join ", " args ++ ")"
+
+
+float : Type
+float =
+    Type "float"
+
+
+vec2 : Type
+vec2 =
+    Type "vec2"
+
+
+vec3 : Type
+vec3 =
+    Type "vec3"
+
+
+vec4 : Type
+vec4 =
+    Type "vec4"
+
+
+mat3 : Type
+mat3 =
+    Type "mat3"

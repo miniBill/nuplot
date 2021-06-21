@@ -1,7 +1,7 @@
 module UI.Glsl.Code exposing (constantToGlsl, deindent, expressionToGlsl, floatToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
-import UI.Glsl.Generator as Generator exposing (call, decl, fun, return)
+import UI.Glsl.Generator as Generator exposing (call, decl, float, fun, mat3, return, vec2, vec3, vec4)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1613,19 +1613,19 @@ main2D pixels =
 
 toSrc3D : Bool -> String -> Expression -> String
 toSrc3D expandIntervals suffix e =
-    [ fun ( "vec3", "normal" ++ suffix ) [ ( "vec3", "p" ) ] <|
-        [ decl ( "float", "x" ) "p.x"
-        , decl ( "float", "y" ) "p.y"
-        , decl ( "float", "z" ) "p.z"
-        , decl ( "vec4", "gradient" ) (expressionToNormalGlsl e)
+    [ fun vec3 ("normal" ++ suffix) [ ( vec3, "p" ) ] <|
+        [ decl float "x" "p.x"
+        , decl float "y" "p.y"
+        , decl float "z" "p.z"
+        , decl vec4 "gradient" (expressionToNormalGlsl e)
         , return <| call "normalize" [ "gradient.yzw" ]
         ]
-    , fun ( "vec2", "interval" ++ suffix ) [ ( "mat3", "f" ), ( "mat3", "t" ) ] <|
-        [ decl ( "vec3", "mn" ) <| call "min" [ "f[0]", "t[0]" ]
-        , decl ( "vec3", "mx" ) <| call "max" [ "f[1]", "t[1]" ]
-        , decl ( "vec2", "x" ) <| call "vec2" [ "mn.x", "mx.x" ]
-        , decl ( "vec2", "y" ) <| call "vec2" [ "mn.y", "mx.y" ]
-        , decl ( "vec2", "z" ) <| call "vec2" [ "mn.z", "mx.z" ]
+    , fun vec2 ("interval" ++ suffix) [ ( mat3, "f" ), ( mat3, "t" ) ] <|
+        [ decl vec3 "mn" <| call "min" [ "f[0]", "t[0]" ]
+        , decl vec3 "mx" <| call "max" [ "f[1]", "t[1]" ]
+        , decl vec2 "x" <| call "vec2" [ "mn.x", "mx.x" ]
+        , decl vec2 "y" <| call "vec2" [ "mn.y", "mx.y" ]
+        , decl vec2 "z" <| call "vec2" [ "mn.z", "mx.z" ]
         , return <| expressionToIntervalGlsl expandIntervals e
         ]
     ]
