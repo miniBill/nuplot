@@ -411,7 +411,7 @@ unexpectedArgCount maybeName count =
                                 "atteso "
 
                             else
-                                "attesi"
+                                "attesi "
                            )
                         ++ String.join " o " (List.map String.fromInt count)
                 }
@@ -427,7 +427,7 @@ unexpectedArgCount maybeName count =
                                 "atteso "
 
                             else
-                                "attesi"
+                                "attesi "
                            )
                         ++ String.join " o " (List.map String.fromInt count)
                 }
