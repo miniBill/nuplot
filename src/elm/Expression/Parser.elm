@@ -643,7 +643,7 @@ variableParser context =
                                 [ Parser.succeed Just
                                     |. Parser.symbol (token "(")
                                     |. whitespace
-                                    |= parseArgs arity True context
+                                    |= parseArgs Nothing True context
                                     |. Parser.oneOf [ Parser.symbol (token ")"), Parser.succeed () ]
                                     |. whitespace
                                 , Parser.map Just <| parseArgs arity False context
