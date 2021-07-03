@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, ipow, ln_, minus, n, negate_, one, plus, pow, sin_, sinh_, sqrt_, square, t, triple, two, vector, x, y, z, zero)
+import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, ipow, ln_, minus, n, negate_, one, plus, pow, r, sin_, sinh_, sqrt_, square, t, triple, two, vector, x, y, z, zero)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -346,6 +346,21 @@ tests =
         Replace bangs <| (Replace lines <| Apply (KnownFunction Solve) [ eq, t ])
       , "[!dx; !dy; !dz; !ox; !oy; !oz] [x = ox + t*dx; y = oy + t*dy; z = oz + t*dz] solve(z = 1/(x² + y²), t)"
       )
+    , ( "a+-b", minus a b, "a - b" )
+    , ( "a-+b", minus a b, "a - b" )
+    , ( "a++b", plus [ a, b ], "a + b" )
+    , ( "a+++++-+-+b", plus [ a, b ], "a + b" )
+    , ( "+2", two, "2" )
+    , ( "[r=sqrt(x²+y²);t=atan2(y,x)]r=2/t"
+      , Replace
+            (Dict.fromList
+                [ ( "r", Just <| sqrt_ <| plus [ square x, square y ] )
+                , ( "t", Just <| atan2_ y x )
+                ]
+            )
+            (RelationOperation Equals r <| div two t)
+      , "[r = sqrt(x² + y²); t = atan2(y, x)] r = 2/t"
+      )
 
     -- Check values for those
     , straight "1/x" <| div one x
@@ -438,10 +453,6 @@ tests =
    justParse("aa", "a^2");
    justParse("aabb", "a^2b^2");
    justParse("c(a+b)");
-   assertSimplify("a++a", "2a");
-   justParse("a+-b", "a-b");
-   justParse("a-+b", "a-b");
-   justParse("a+++++-+-+b", "a+b");
    assertSimplify("(a+b)+(c+d)", "a+b+c+d");
    final ICalculable left = justParse("a+b");
    final Expression right = justParse("c+d");

@@ -432,17 +432,37 @@ addsubtractionParser context =
 
 multidivisionParser : ExpressionParser Expression
 multidivisionParser context =
-    Parser.inContext MultiDivisionContext <|
-        multiSequence
-            { separators =
-                [ ( \l r -> by [ l, r ], \_ -> Parser.symbol <| token "*" )
-                , ( \l r -> div l r, \_ -> Parser.symbol <| token "/" )
-                , ( \l r -> by [ l, r ], \_ -> Parser.succeed () )
+    let
+        signLoopStep b =
+            Parser.oneOf
+                [ Parser.succeed (Loop <| not b)
+                    |. Parser.symbol (token "-")
+                , Parser.succeed (Loop b)
+                    |. Parser.symbol (token "+")
+                , Parser.succeed
+                    (Done <|
+                        if b then
+                            negate_
+
+                        else
+                            identity
+                    )
                 ]
-            , item = powerParser
-            , allowNegation = True
-            }
-            context
+    in
+    Parser.inContext MultiDivisionContext <|
+        Parser.succeed (\maybeNegate md -> maybeNegate md)
+            |= Parser.loop False signLoopStep
+            |. whitespace
+            |= multiSequence
+                { separators =
+                    [ ( \l r -> by [ l, r ], \_ -> Parser.symbol <| token "*" )
+                    , ( \l r -> div l r, \_ -> Parser.symbol <| token "/" )
+                    , ( \l r -> by [ l, r ], \_ -> Parser.succeed () )
+                    ]
+                , item = powerParser
+                , allowNegation = True
+                }
+                context
 
 
 powerParser : ExpressionParser Expression
@@ -470,11 +490,6 @@ type alias SequenceData =
 multiSequence : SequenceData -> ExpressionParser Expression
 multiSequence data context =
     Parser.succeed identity
-        |= Parser.oneOf
-            [ Parser.succeed negate_
-                |. Parser.symbol (token "-")
-            , Parser.succeed identity
-            ]
         |= data.item context
         |> Parser.andThen
             (\first ->
