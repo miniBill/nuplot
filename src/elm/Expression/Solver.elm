@@ -79,6 +79,8 @@ type Shortcut
     = Shortcut SolutionTree (Dict String Shortcut)
 
 
+{-| Simplify a `SolutionTree` by simplifying branches of the form `x -> ... -> x` to `x`
+-}
 cut : SolutionTree -> SolutionTree
 cut =
     let
