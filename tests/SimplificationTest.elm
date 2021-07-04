@@ -5,7 +5,7 @@ import Expect
 import Expression exposing (AssociativeOperation(..), Expression(..), RelationOperation(..))
 import Expression.Parser
 import Expression.Simplify
-import Expression.Utils exposing (a, atan2_, b, by, c, complex, cos_, cosh_, div, double, f, g, i, ipow, m, minus, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, triple, two, x, y, z, zero)
+import Expression.Utils exposing (a, atan2_, b, by, c, complex, cos_, cosh_, div, double, f, g, i, ipow, m, minus, minusOne, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, triple, two, x, y, z, zero)
 import Test exposing (Test, describe, test)
 
 
@@ -111,7 +111,7 @@ simplificationTests =
       , Integer 9
       )
     , simplified <| by [ two, x ]
-    , ( square i, Integer -1 )
+    , ( square i, minusOne )
     , ( ipow i 69, i )
     , ( by [ a, negate_ <| by [ b, i ] ], negate_ <| by [ a, b, i ] )
     , ( by [ complex a b, minus a <| by [ i, b ] ], plus [ square a, square b ] )
@@ -123,7 +123,7 @@ simplificationTests =
     , ( cosh_ <| by [ i, x ], cos_ x )
     , simplified <| plus [ Float 0.5, triple i ]
     , ( div one i, negate_ i )
-    , ( byself i, Integer -1 )
+    , ( byself i, minusOne )
     , simplified <| negate_ a
     , ( sqrt_ <| negate_ one, i )
     , ( let

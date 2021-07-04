@@ -2,9 +2,9 @@ module Expression.Solver exposing (solve, stepSimplify)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
-import Expression.Polynomial exposing (Exponents, Polynomial, asPolynomial)
+import Expression.Polynomial exposing (Polynomial, asPolynomial)
 import Expression.Simplify exposing (simplify)
-import Expression.Utils exposing (by, byShort, cbrt, div, divShort, double, factor, i, ipow, ipowShort, isZero, minus, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
+import Expression.Utils exposing (by, byShort, cbrt, div, divShort, double, factor, i, ipow, ipowShort, isZero, minus, minusOne, negateShort, negate_, one, plus, plusShort, pow, sqrt_, square, zero)
 import Fraction exposing (Fraction, gcd)
 import List.Extra as List
 import Result.Extra as Result
@@ -241,110 +241,110 @@ solveEquation v l r =
 findRationalRoot : String -> Polynomial -> Result String { root : Expression, rest : Expression }
 findRationalRoot v coeffs =
     let
-        findRoot : List ( Exponents, Fraction ) -> Result String { root : Expression, rest : Expression }
-        findRoot rats =
-            let
-                commonMultiple =
-                    rats
-                        |> List.map Tuple.second
-                        |> List.foldl (\f a -> abs <| Fraction.divisor f * a // gcd (Fraction.divisor f) a) 1
+        toMonovariablePolynomial =
+            List.foldl
+                (\( exps, coeff ) acc ->
+                    case exps of
+                        [] ->
+                            Result.map ((::) ( 0, coeff )) acc
 
-                reduced =
-                    rats
-                        |> List.map
-                            (Tuple.mapSecond
-                                (Fraction.toPair
-                                    >> (\( n, d ) ->
-                                            n * commonMultiple // d
-                                       )
-                                )
-                            )
+                        [ ( w, e ) ] ->
+                            if w == v then
+                                Result.map ((::) ( e, coeff )) acc
 
-                known =
-                    reduced
-                        |> List.find (\( d, _ ) -> List.isEmpty d)
-                        |> Maybe.map Tuple.second
-                        |> Maybe.withDefault 0
+                            else
+                                Err "Unexpected monomial in intermediate solution polynomial"
 
-                potentialsN =
-                    allDivisors known
+                        _ ->
+                            Err "Unexpected monomial in intermediate solution polynomial"
+                )
+                (Ok [])
 
-                head =
-                    reduced
-                        |> List.sortBy
-                            (\( d, _ ) ->
-                                d
-                                    |> List.map Tuple.second
-                                    |> List.sum
-                                    |> negate
-                            )
-                        |> List.head
-                        |> Maybe.map Tuple.second
-                        |> Maybe.withDefault 1
+        mono =
+            coeffs
+                |> Dict.toList
+                |> toMonovariablePolynomial
+    in
+    mono
+        |> Result.andThen
+            (List.map (\( d, e ) -> Result.map (Tuple.pair d) (asFraction e))
+                >> Result.combine
+                >> Result.andThen (findRationalRootFromFractions v)
+            )
 
-                potentialsD =
-                    allDivisors head
 
-                allDivisors n =
-                    n
-                        |> abs
-                        |> factor
-                        |> (::) ( 1, 0 )
-                        |> List.map (\( f, m ) -> List.initialize (m + 1) (\exp -> f ^ exp))
-                        |> List.cartesianProduct
-                        |> List.map List.product
+findRationalRootFromFractions : String -> List ( Int, Fraction ) -> Result String { root : Expression, rest : Expression }
+findRationalRootFromFractions v rats =
+    let
+        commonMultiple =
+            rats
+                |> List.map Tuple.second
+                |> List.foldl (\f a -> abs <| Fraction.divisor f * a // gcd (Fraction.divisor f) a) 1
 
-                potentials =
-                    potentialsN
-                        |> List.concatMap
-                            (\n ->
-                                List.map (Fraction.build n) potentialsD
-                            )
-                        |> List.concatMap (\f -> [ f, Fraction.negate f ])
-                        |> List.uniqueBy Fraction.toPair
-                        |> List.sortBy Fraction.toFloat
+        reduced =
+            rats
+                |> List.map
+                    (Tuple.mapSecond
+                        (Fraction.toPair
+                            >> (\( n, d ) ->
+                                    n * commonMultiple // d
+                               )
+                        )
+                    )
 
-                res =
-                    potentials
-                        |> List.filterMap tryDivision
-                        |> List.head
+        known =
+            reduced
+                |> List.find (\( d, _ ) -> d == 0)
+                |> Maybe.map Tuple.second
+                |> Maybe.withDefault 0
 
-                reducedDict =
-                    Dict.fromList reduced
+        potentialsN =
+            allDivisors known
 
-                maximumDegree =
-                    Dict.keys reducedDict
-                        |> List.map (List.map Tuple.second >> List.sum)
-                        |> List.maximum
-                        |> Maybe.withDefault 0
+        head =
+            reduced
+                |> List.sortBy (\( d, _ ) -> negate d)
+                |> List.head
+                |> Maybe.map Tuple.second
+                |> Maybe.withDefault 1
 
-                getCoeff d =
-                    Fraction.fromInt <| Maybe.withDefault 0 <| Dict.get [ ( v, d ) ] reducedDict
+        potentialsD =
+            allDivisors head
 
-                tryDivision potential =
-                    List.range 0 (maximumDegree - 1)
-                        |> List.foldr
-                            (\degree ( r, a ) ->
-                                let
-                                    k =
-                                        getCoeff degree
+        allDivisors n =
+            n
+                |> abs
+                |> factor
+                |> (::) ( 1, 0 )
+                |> List.map (\( f, m ) -> List.initialize (m + 1) (\exp -> f ^ exp))
+                |> List.cartesianProduct
+                |> List.map List.product
 
-                                    r_ =
-                                        Fraction.plus k (Fraction.by r potential)
-                                in
-                                ( r_, r :: a )
-                            )
-                            ( getCoeff maximumDegree, [] )
-                        |> (\( r, c ) ->
-                                if Fraction.isZero r then
-                                    Just <| rootAndRest potential c
+        potentials =
+            potentialsN
+                |> List.concatMap
+                    (\n ->
+                        List.map (Fraction.build n) potentialsD
+                    )
+                |> List.concatMap (\f -> [ f, Fraction.negate f ])
+                |> List.uniqueBy Fraction.toPair
+                |> List.sortBy Fraction.toFloat
 
-                                else
-                                    Nothing
-                           )
-            in
-            res
-                |> Result.fromMaybe "no rational root found, and no simple formula is usable"
+        res =
+            potentials
+                |> List.filterMap tryDivision
+                |> List.head
+
+        reducedDict =
+            Dict.fromList reduced
+
+        maximumDegree =
+            Dict.keys reducedDict
+                |> List.maximum
+                |> Maybe.withDefault 0
+
+        getCoeff d =
+            Fraction.fromInt <| Maybe.withDefault 0 <| Dict.get d reducedDict
 
         rootAndRest potential c =
             let
@@ -400,12 +400,31 @@ findRationalRoot v coeffs =
             { root = toExpr potential
             , rest = rest
             }
+
+        tryDivision potential =
+            List.range 0 (maximumDegree - 1)
+                |> List.foldr
+                    (\degree ( r, a ) ->
+                        let
+                            k =
+                                getCoeff degree
+
+                            r_ =
+                                Fraction.plus k (Fraction.by r potential)
+                        in
+                        ( r_, r :: a )
+                    )
+                    ( getCoeff maximumDegree, [] )
+                |> (\( r, c ) ->
+                        if Fraction.isZero r then
+                            Just <| rootAndRest potential c
+
+                        else
+                            Nothing
+                   )
     in
-    coeffs
-        |> Dict.toList
-        |> List.map (\( d, e ) -> Result.map (Tuple.pair d) (asFraction e))
-        |> Result.combine
-        |> Result.andThen findRoot
+    res
+        |> Result.fromMaybe "no rational root found, and no simple formula is usable"
 
 
 asFraction : Expression -> Result String Fraction
@@ -559,10 +578,14 @@ solve2 v a b c =
             solPlus =
                 sqrt_ (divShort (negateShort c) a)
         in
-        SolutionBranch
-            [ solutionBranch v <| negateShort solPlus
-            , solutionBranch v solPlus
-            ]
+        if simplify solPlus == Integer 0 then
+            solutionBranch v solPlus
+
+        else
+            SolutionBranch
+                [ solutionBranch v solPlus
+                , solutionBranch v <| negateShort solPlus
+                ]
 
     else
         let
@@ -575,10 +598,14 @@ solve2 v a b c =
             solMinus =
                 divShort (minus (negateShort b) (sqrt_ delta)) (byShort [ Integer 2, a ])
         in
-        SolutionBranch
-            [ solutionBranch v solMinus
-            , solutionBranch v solPlus
-            ]
+        if simplify delta == Integer 0 then
+            solutionBranch v solPlus
+
+        else
+            SolutionBranch
+                [ solutionBranch v solPlus
+                , solutionBranch v solMinus
+                ]
 
 
 solve3 : String -> Expression -> Expression -> Expression -> Expression -> SolutionTree
@@ -592,10 +619,10 @@ solve3 v a b c d =
                 cbrt (negate_ d)
 
             xi =
-                div (plus [ Integer -1, sqrt_ (Integer -3) ]) (Integer 2)
+                div (plus [ minusOne, sqrt_ (Integer -3) ]) (Integer 2)
 
             xiTwo =
-                div (minus (Integer -1) (sqrt_ (Integer -3))) (Integer 2)
+                div (minus minusOne (sqrt_ (Integer -3))) (Integer 2)
         in
         SolutionBranch
             [ solutionBranch v solPlus
@@ -618,10 +645,10 @@ solve3 v a b c d =
                         (Integer 2)
 
             xi =
-                div (plus [ Integer -1, sqrt_ (Integer -3) ]) (Integer 2)
+                div (plus [ minusOne, sqrt_ (Integer -3) ]) (Integer 2)
 
             xiTwo =
-                div (minus (Integer -1) (sqrt_ (Integer -3))) (Integer 2)
+                div (minus minusOne (sqrt_ (Integer -3))) (Integer 2)
 
             sol k =
                 let
@@ -630,7 +657,7 @@ solve3 v a b c d =
                 in
                 by
                     [ div
-                        (Integer -1)
+                        minusOne
                         (by [ Integer 3, a ])
                     , plus
                         [ b

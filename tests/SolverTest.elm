@@ -4,16 +4,15 @@ import Dict
 import Expect
 import Expression exposing (AssociativeOperation(..), Expression(..), RelationOperation(..), SolutionTree(..))
 import Expression.Solver
-import Expression.Utils exposing (by, c, ipow, minus, plus, square, t, x, y, z)
+import Expression.Utils exposing (by, c, div, i, ipow, minus, minusOne, negate_, one, plus, square, t, two, x, y, z, zero)
 import List
 import Test exposing (Test, describe, test)
 
 
 suite : Test
 suite =
-    Test.skip <|
-        describe "The Expression.Solver module"
-            [ describe "Expression.Solver.solve" <| List.map toTestSolve solveTests ]
+    describe "The Expression.Solver module"
+        [ describe "Expression.Solver.solve" <| List.map toTestSolve solveTests ]
 
 
 toTestSolve : ( Expression, Expression, List Expression ) -> Test
@@ -57,26 +56,45 @@ toTestSolve ( from, x, to ) =
 
 solveTests : List ( Expression, Expression, List Expression )
 solveTests =
-    [ let
-        repls =
-            [ "x", "y", "z" ]
-                |> List.map
-                    (\v ->
-                        ( v
-                        , Just <|
-                            plus
-                                [ Variable <| "o" ++ v
-                                , by [ t, Variable <| "d" ++ v ]
-                                ]
-                        )
-                    )
-                |> Dict.fromList
-      in
-      ( Replace repls <|
-            minus
-                (plus [ square x, square y ])
-                (ipow z 2)
-      , t
-      , []
-      )
+    let
+        xeq =
+            RelationOperation Equals x
+
+        none =
+            Variable "none: x"
+    in
+    [ {- let
+           repls =
+               [ "x", "y", "z" ]
+                   |> List.map
+                       (\v ->
+                           ( v
+                           , Just <|
+                               plus
+                                   [ Variable <| "o" ++ v
+                                   , by [ t, Variable <| "d" ++ v ]
+                                   ]
+                           )
+                       )
+                   |> Dict.fromList
+         in
+         ( Replace repls <|
+               minus
+                   (plus [ square x, square y ])
+                   (ipow z 2)
+         , t
+         , []
+         ),
+      -}
+      ( zero, x, [ Variable "forall: x" ] )
+    , ( one, x, [ none ] )
+    , ( x, x, [ xeq zero ] )
+    , ( plus [ x, one ], x, [ xeq minusOne ] )
+    , ( plus [ by [ two, x ], one ], x, [ xeq <| negate_ <| div one two ] )
+    , ( square x, x, [ xeq zero ] )
+    , ( plus [ square x, minusOne ], x, [ xeq one, xeq minusOne ] )
+    , ( plus [ square x, one ], x, [ xeq i, xeq <| negate_ i ] )
+    , ( plus [ square x, x ], x, [ xeq zero, xeq minusOne ] )
+    , ( plus [ square x, by [ two, x ], one ], x, [ xeq minusOne ] )
+    , ( plus [ square x, by [ two, x ], Integer -3 ], x, [ xeq one, xeq (Integer -3) ] )
     ]

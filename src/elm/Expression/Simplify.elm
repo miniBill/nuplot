@@ -20,7 +20,7 @@ import Expression
         )
 import Expression.Derivative
 import Expression.Polynomial exposing (asPolynomial)
-import Expression.Utils exposing (abs_, by, byShort, cbrt, cos_, div, divShort, factor, i, im, ipow, ipowShort, minus, negateShort, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
+import Expression.Utils exposing (abs_, by, byShort, cbrt, cos_, div, divShort, factor, i, im, ipow, ipowShort, minus, minusOne, negateShort, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
 import Fraction
 import List.Extra as List
 import List.MyExtra exposing (groupOneWith)
@@ -464,7 +464,7 @@ getSinValueForPiFraction pn pd =
                                 Just <| div (negate_ <| sqrt_ <| Integer 2) two
 
                             6 ->
-                                Just <| Integer -1
+                                Just minusOne
 
                             -- 7
                             _ ->
@@ -496,20 +496,20 @@ getSinValueForPiFraction pn pd =
                                         Just zero
 
                                     7 ->
-                                        Just <| div (Integer -1) two
+                                        Just <| div minusOne two
 
                                     8 ->
                                         Just <| div (negate_ <| sqrt_ <| Integer 3) two
 
                                     9 ->
-                                        Just <| Integer -1
+                                        Just minusOne
 
                                     10 ->
                                         Just <| div (negate_ <| sqrt_ <| Integer 3) two
 
                                     -- 11
                                     _ ->
-                                        Just <| div (Integer -1) two
+                                        Just <| div minusOne two
 
                             _ ->
                                 Nothing
@@ -973,7 +973,7 @@ stepSimplifyPower ls rs =
                     i
 
                 2 ->
-                    Integer -1
+                    minusOne
 
                 -- 3
                 _ ->

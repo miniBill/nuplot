@@ -1,4 +1,4 @@
-module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, byShort, c, cbrt, complex, cos_, cosh_, d, dd, det, determinant, div, divShort, double, e, exp_, f, factor, g, gra_, h, i, icomplex, ii, im, ipow, ipowShort, isOne, isZero, j, k, l, ln_, log10_, m, minus, n, negateShort, negate_, o, one, p, plus, plusShort, pow, q, r, re, runForLoop, s, sign, sin_, sinh_, sqrt_, square, squash, t, tan_, triple, two, u, v, vector, w, x, y, z, zero)
+module Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, byShort, c, cbrt, complex, cos_, cosh_, d, dd, det, determinant, div, divShort, double, e, exp_, f, factor, g, gra_, h, i, icomplex, ii, im, ipow, ipowShort, isOne, isZero, j, k, l, ln_, log10_, m, minus, minusOne, n, negateShort, negate_, o, one, p, plus, plusShort, pow, q, r, re, runForLoop, s, sign, sin_, sinh_, sqrt_, square, squash, t, tan_, triple, two, u, v, vector, w, x, y, z, zero)
 
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), genericAsSquareMatrix, genericDeterminant, visit)
@@ -22,6 +22,11 @@ one =
 two : Expression
 two =
     Integer 2
+
+
+minusOne : Expression
+minusOne =
+    Integer -1
 
 
 
