@@ -97,4 +97,17 @@ solveTests =
     , ( plus [ square x, x ], x, [ xeq zero, xeq minusOne ] )
     , ( plus [ square x, by [ two, x ], one ], x, [ xeq minusOne ] )
     , ( plus [ square x, by [ two, x ], Integer -3 ], x, [ xeq one, xeq (Integer -3) ] )
+    , ( by
+            [ minus x one
+            , minus x two
+            , minus x minusOne
+            , minus x two
+            ]
+      , x
+      , [ xeq one
+        , xeq two
+        , xeq minusOne
+        , xeq two
+        ]
+      )
     ]
