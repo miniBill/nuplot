@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Expression, File, FunDecl, Mat3, Name, Statement(..), TypedName, Vec2, Vec3, Vec4, abs_, add, ands, arr, assign, by, call0, call1, call2, call4, ceil_, decl, div, dot2, dot3, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gt, if_, int, leq, log, lt, mat3T, max_, min_, negate_, normalize, one, pow, radians_, return, sign, statementToGlsl, subtract, ternary, true, unknown, unknownFunDecl, unknownName, unknownTypedName, vec2, vec2T, vec3, vec3T, vec4T, voidT, zero)
+module UI.Glsl.Generator exposing (Expression, File, FunDecl, Mat3, Name, Statement(..), TypedName, Vec2, Vec3, Vec4, abs_, add, ands, arr, assign, by, call0, call1, call2, call4, ceil_, decl, div, dot2, dot3, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gt, if_, int, leq, log, lt, mat3T, max_, min_, negate_, normalize, one, pow, radians_, return, sign, statementToGlsl, subtract, ternary, true, unknown, unknownFunDecl, unknownName, unknownTypedName, unsafeCall, vec2, vec2T, vec3, vec3T, vec4, vec4T, voidT, zero)
 
 import Array exposing (Array)
 import Expression exposing (RelationOperation(..))
@@ -435,6 +435,11 @@ gt l r =
     Comparison GreaterThan (typecastExpression l) (typecastExpression r)
 
 
+unsafeCall : String -> List (Expression t) -> Expression r
+unsafeCall name =
+    Call name << List.map typecastExpression
+
+
 call0 : TypedName r -> Expression r
 call0 ( _, Name fname ) =
     Call fname []
@@ -585,6 +590,11 @@ vec2 =
 vec3 : Expression Float -> Expression Float -> Expression Float -> Expression Vec3
 vec3 =
     call3 ( Type "", Name "vec3" )
+
+
+vec4 : Expression Float -> Expression Float -> Expression Float -> Expression Float -> Expression Vec4
+vec4 =
+    call4 ( Type "", Name "vec4" )
 
 
 min_ : Expression t -> Expression t -> Expression t

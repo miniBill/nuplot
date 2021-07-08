@@ -1,7 +1,7 @@
 module UI.Glsl.Code exposing (constantToGlsl, deindent, expressionToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
-import UI.Glsl.Generator as Generator exposing (Expression, File, FunDecl, Statement(..), TypedName, Vec2, abs_, add, ands, arr, assign, by, call0, call1, call2, call4, ceil_, decl, div, dot2, dotted2, dotted3, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gt, if_, int, log, lt, mat3T, max_, min_, negate_, normalize, one, pow, radians_, return, sign, subtract, ternary, unknown, unknownFunDecl, unknownTypedName, vec2, vec2T, vec3T, vec4T, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression, File, FunDecl, Statement(..), TypedName, Vec2, Vec4, abs_, add, ands, arr, assign, by, call0, call1, call2, call4, ceil_, decl, div, dot2, dotted2, dotted3, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gt, if_, int, log, lt, mat3T, max_, min_, negate_, normalize, one, pow, radians_, return, sign, subtract, ternary, unknown, unknownFunDecl, unknownTypedName, unsafeCall, vec2, vec2T, vec3T, vec4, vec4T, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1326,13 +1326,6 @@ expressionToIntervalGlsl expandIntervals =
         >> wordWrap
 
 
-expressionToNormalGlsl : Expression.Expression -> String
-expressionToNormalGlsl =
-    Expression.toPrintExpression
-        >> expressionToNormalGlslPrec 0
-        >> wordWrap
-
-
 expressionToGlslPrec : Int -> PrintExpression -> String
 expressionToGlslPrec p expr =
     let
@@ -1550,92 +1543,93 @@ expressionToIntervalGlslPrec expandIntervals p expr =
             "vec2(0)"
 
 
-expressionToNormalGlslPrec : Int -> PrintExpression -> String
-expressionToNormalGlslPrec p expr =
+expressionToNormalGlsl : { x : Expression Float, y : Expression Float, z : Expression Float } -> Expression.Expression -> Expression Vec4
+expressionToNormalGlsl { x, y, z } =
     let
-        infixl_ n op l r =
-            paren (p > n) <| expressionToNormalGlslPrec n l ++ op ++ expressionToNormalGlslPrec (n + 1) r
+        gnum : Expression Float -> Expression Vec4
+        gnum =
+            call1 (unknownTypedName "gnum")
 
-        apply name ex =
-            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (expressionToNormalGlslPrec 0) ex) ++ ")"
+        go expr =
+            case expr of
+                PVariable "pi" ->
+                    gnum (radians_ <| float 180)
+
+                PVariable "e" ->
+                    gnum <| exp one
+
+                PVariable "x" ->
+                    vec4 x one zero zero
+
+                PVariable "y" ->
+                    vec4 y zero one zero
+
+                PVariable "z" ->
+                    vec4 z zero zero one
+
+                PInteger v ->
+                    gnum <| float <| toFloat v
+
+                PFloat f ->
+                    gnum <| float f
+
+                PNegate expression ->
+                    call1 (unknownTypedName "gneg") (go expression)
+
+                PAdd l r ->
+                    add (go l) (go r)
+
+                PRel op l r ->
+                    if op == "<=" || op == "<" then
+                        subtract (go r) (go l)
+
+                    else if op == "=" then
+                        abs_ <| subtract (go r) (go l)
+
+                    else
+                        subtract (go l) (go r)
+
+                PBy l r ->
+                    call2 (unknownTypedName "gby") (go l) (go r)
+
+                PDiv l r ->
+                    call2 (unknownTypedName "gdiv") (go l) (go r)
+
+                PPower l (PInteger 2) ->
+                    call1 (unknownTypedName "gsquare") (go l)
+
+                PPower l (PInteger ri) ->
+                    call2 (unknownTypedName "gpow") (go l) (int ri)
+
+                PPower l r ->
+                    call2 (unknownTypedName "gpow") (go l) (go r)
+
+                PApply name ex ->
+                    if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
+                        case List.map go ex of
+                            [] ->
+                                vec4 zero zero zero zero
+
+                            head :: tail ->
+                                List.foldl (\e a -> call2 (unknownTypedName <| "g" ++ Expression.functionNameToString name) a e) head tail
+
+                    else
+                        unsafeCall ("g" ++ Expression.functionNameToString name) (List.map go ex)
+
+                PList es ->
+                    unsafeCall ("vec" ++ String.fromInt (List.length es)) (List.map go es)
+
+                PReplace var e ->
+                    go (Expression.pfullSubstitute var e)
+
+                PVariable _ ->
+                    vec4 zero zero zero zero
+
+                -- If this happens, it's too late
+                PLambda _ _ ->
+                    vec4 zero zero zero zero
     in
-    case expr of
-        PVariable "pi" ->
-            "gnum(radians(180.0))"
-
-        PVariable "e" ->
-            "gnum(exp(1.0))"
-
-        PVariable "x" ->
-            "vec4(x,1,0,0)"
-
-        PVariable "y" ->
-            "vec4(y,0,1,0)"
-
-        PVariable "z" ->
-            "vec4(z,0,0,1)"
-
-        PVariable v ->
-            v
-
-        PInteger v ->
-            "gnum(" ++ String.fromInt v ++ ".0)"
-
-        PFloat f ->
-            "gnum(" ++ floatToGlsl f ++ ")"
-
-        PNegate expression ->
-            "gneg(" ++ expressionToNormalGlslPrec 10 expression ++ ")"
-
-        PAdd l r ->
-            infixl_ 6 " + " l r
-
-        PRel op l r ->
-            if op == "<=" || op == "<" then
-                infixl_ 6 " - " r l
-
-            else if op == "=" then
-                "(abs(" ++ infixl_ 6 " - " r l ++ "))"
-
-            else
-                infixl_ 6 " - " l r
-
-        PBy l r ->
-            apply "gby" [ l, r ]
-
-        PDiv l r ->
-            apply "gdiv" [ l, r ]
-
-        PPower l (PInteger 2) ->
-            apply "gsquare" [ l ]
-
-        PPower l (PInteger ri) ->
-            "gpow(" ++ expressionToNormalGlslPrec 0 l ++ ", " ++ String.fromInt ri ++ ")"
-
-        PPower l r ->
-            apply "gpow" [ l, r ]
-
-        PApply name ex ->
-            if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
-                case List.map (expressionToNormalGlslPrec 0) ex of
-                    [] ->
-                        "vec2(0)"
-
-                    head :: tail ->
-                        List.foldl (\e a -> "g" ++ Expression.functionNameToString name ++ "(" ++ a ++ "," ++ e ++ ")") head tail
-
-            else
-                apply ("g" ++ Expression.functionNameToString name) ex
-
-        PList es ->
-            "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (expressionToNormalGlslPrec 0) es) ++ ")"
-
-        PReplace var e ->
-            expressionToNormalGlslPrec p (Expression.pfullSubstitute var e)
-
-        -- If this happens, it's too late
-        PLambda _ _ ->
-            "vec4(0)"
+    Expression.toPrintExpression >> go
 
 
 mainGlsl :
@@ -1782,7 +1776,7 @@ toSrc3D expandIntervals suffix e =
                             \y ->
                                 decl floatT "z" dp.z <|
                                     \z ->
-                                        decl vec4T "gradient" (unknown <| expressionToNormalGlsl e) <|
+                                        decl vec4T "gradient" (expressionToNormalGlsl { x = x, y = y, z = z } e) <|
                                             \gradient ->
                                                 [ return <| normalize (dotted4 gradient).yzw ]
     , Tuple.first <|
