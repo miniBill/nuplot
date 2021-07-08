@@ -267,9 +267,18 @@ findRationalRoot v coeffs =
     in
     mono
         |> Result.andThen
-            (List.map (\( d, e ) -> Result.map (Tuple.pair d) (asFraction e))
-                >> Result.combine
-                >> Result.andThen (findRationalRootFromFractions v)
+            (\monoCoeff ->
+                case
+                    monoCoeff
+                        |> List.map (\( d, e ) -> Result.map (Tuple.pair d) (asFraction e))
+                        |> Result.combine
+                        |> Result.andThen (findRationalRootFromFractions v)
+                of
+                    (Ok _) as resultFromFractions ->
+                        resultFromFractions
+
+                    Err _ ->
+                        Err "todo"
             )
 
 
@@ -450,6 +459,48 @@ asFraction e =
 
         _ ->
             Err <| Expression.toString e ++ " is not a fraction"
+
+
+type alias SimpleCoefficient =
+    List SimpleAtom
+
+
+type alias SimpleAtom =
+    ( Int, Dict String Int )
+
+
+simpleCoefficientAlgebra :
+    { negate : SimpleCoefficient -> SimpleCoefficient
+    , plus : SimpleCoefficient -> SimpleCoefficient -> SimpleCoefficient
+    , by : SimpleCoefficient -> SimpleCoefficient -> SimpleCoefficient
+    }
+simpleCoefficientAlgebra =
+    let
+        negate t =
+            List.map (\( c, v ) -> ( -c, v )) t
+
+        squash =
+            List.gatherEqualsBy Tuple.second
+                >> List.map (\( ( h, c ), t ) -> ( h + List.sum (List.map Tuple.first t), c ))
+
+        plus l r =
+            squash <| l ++ r
+
+        by ls rs =
+            List.concatMap (\l -> List.map (byHelper l) rs) ls
+
+        byHelper ( lc, lv ) ( rc, rv ) =
+            ( lc * rc
+            , (Dict.toList lv ++ Dict.toList rv)
+                |> List.gatherEqualsBy Tuple.first
+                |> List.map (\( ( l, h ), t ) -> ( l, h + List.sum (List.map Tuple.second t) ))
+                |> Dict.fromList
+            )
+    in
+    { negate = negate
+    , plus = plus
+    , by = by
+    }
 
 
 coeffsToEq : Polynomial -> Expression

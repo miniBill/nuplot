@@ -3,7 +3,8 @@ module UI.Glsl.Sphere exposing (Sphere, asSphere, toGlsl)
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
 import Expression.Polynomial exposing (Exponents)
-import UI.Glsl.Code exposing (floatToGlsl, threshold)
+import UI.Glsl.Code exposing (threshold)
+import UI.Glsl.Generator exposing (float, floatToGlsl)
 import UI.Glsl.Polynomial as Polynomial
 
 
@@ -82,7 +83,7 @@ toGlsl suffix (Sphere { center, radius }) =
         float b = dot(to_center, mix(d[0], d[1], 0.5));
         float c = dot(to_center, to_center) - """ ++ floatToGlsl (radius * radius) ++ """;
         float delta = b*b - c;
-        if(delta < 0.0)
+        if(delta < 0.)
             return false;
         float x = -b - sqrt(delta);
         if(x < """ ++ threshold ++ """)

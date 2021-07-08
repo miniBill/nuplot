@@ -1,8 +1,8 @@
 module SolverTest exposing (suite)
 
-import Dict
 import Expect
 import Expression exposing (AssociativeOperation(..), Expression(..), RelationOperation(..), SolutionTree(..))
+import Expression.Simplify exposing (simplify)
 import Expression.Solver
 import Expression.Utils exposing (by, c, div, i, ipow, minus, minusOne, negate_, one, plus, square, t, two, x, y, z, zero)
 import List
@@ -62,6 +62,9 @@ solveTests =
 
         none =
             Variable "none: x"
+
+        pi =
+            Variable "pi"
     in
     [ {- let
            repls =
@@ -97,17 +100,29 @@ solveTests =
     , ( plus [ square x, x ], x, [ xeq zero, xeq minusOne ] )
     , ( plus [ square x, by [ two, x ], one ], x, [ xeq minusOne ] )
     , ( plus [ square x, by [ two, x ], Integer -3 ], x, [ xeq one, xeq (Integer -3) ] )
-    , ( by
-            [ minus x one
-            , minus x two
-            , minus x minusOne
-            , minus x two
-            ]
+    , ( simplify <|
+            by
+                [ minus x one
+                , minus x two
+                , minus x minusOne
+                , minus x two
+                ]
       , x
-      , [ xeq one
+      , [ xeq minusOne
+        , xeq one
         , xeq two
-        , xeq minusOne
-        , xeq two
+        ]
+      )
+    , ( simplify <|
+            by
+                [ minus x pi
+                , minus x pi
+                , minus x pi
+                ]
+      , x
+      , [ xeq pi
+        , xeq pi
+        , xeq pi
         ]
       )
     ]

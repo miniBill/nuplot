@@ -4,7 +4,7 @@ import Dict
 import Expect
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..))
 import Expression.Parser as Parser exposing (Problem(..))
-import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp_, f, g, gra_, i, icomplex, ii, ipow, ln_, minus, n, negate_, one, plus, pow, r, sin_, sinh_, sqrt_, square, t, triple, two, vector, x, y, z, zero)
+import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp, f, g, gra_, i, icomplex, ii, ipow, ln_, minus, n, negate_, one, plus, pow, r, sin_, sinh_, sqrt_, square, t, triple, two, vector, x, y, z, zero)
 import Parser
 import Test exposing (Test, describe, test)
 
@@ -327,7 +327,7 @@ tests =
     , ( "xx+1", plus [ by [ x, x ], one ], "x*x + 1" )
     , straight "e^x" <| pow (Variable "e") x
     , ( "ln(ex)", ln_ <| by [ Variable "e", x ], "ln(e*x)" )
-    , straight "exp(x)" <| exp_ x
+    , straight "exp(x)" <| exp x
     , ( "[!ox;!oy;!oz;!dx;!dy;!dz][x=ox+tdx;y=oy+tdy;z=oz+tdz]solve(z=1/(x²+y²),t)"
       , let
             bangs =

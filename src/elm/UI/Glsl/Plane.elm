@@ -3,7 +3,8 @@ module UI.Glsl.Plane exposing (Plane, asPlane, toGlsl)
 import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
 import Maybe
-import UI.Glsl.Code exposing (floatToGlsl, threshold)
+import UI.Glsl.Code exposing (threshold)
+import UI.Glsl.Generator exposing (floatToGlsl)
 import UI.Glsl.Polynomial as Polynomial
 
 

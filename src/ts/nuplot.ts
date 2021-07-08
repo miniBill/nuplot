@@ -606,6 +606,7 @@ ${built}`;
         .replace("gl_FragColor", "fragColor")
         .replace("float sinh", "float sinh_")
         .replace("float cosh", "float cosh_")
+        .replace("float tanh", "float tanh_")
         .replace("    lessThanForMix", "    lessThan");
       built = `#version 300 es
 precision highp float;

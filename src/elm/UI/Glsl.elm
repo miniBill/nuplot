@@ -8,7 +8,7 @@ import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, 
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator
+import UI.Glsl.Generator as Generator exposing (unknownTypedName)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -133,7 +133,16 @@ getGlsl expandIntervals rayDifferentials graph =
         ++ reqs
         ++ "\n/* Expression */\n"
         ++ deindent 4 srcExpr
-        ++ mainGlsl rayDifferentials pixel2D pixel3D
+        ++ mainGlsl rayDifferentials
+            (List.map
+                (\p ->
+                    { name = unknownTypedName p.name
+                    , color = p.color
+                    }
+                )
+                pixel2D
+            )
+            pixel3D
 
 
 get3DSource : Bool -> String -> Expression -> { expr : Expression, srcExpr : String }
@@ -160,8 +169,7 @@ get3DSource expandIntervals prefix e =
                             let
                                 glsl =
                                     toSrc3D expandIntervals prefix e
-                                        |> List.map Generator.toGlsl
-                                        |> String.join "\n\n"
+                                        |> Generator.fileToGlsl
                             in
                             { expr = e
                             , srcExpr = glsl ++ UI.Glsl.Code.suffixToBisect prefix
@@ -326,7 +334,7 @@ requirementToGlsl i r =
             functionToGlsl i f
 
         RequireConstant c ->
-            constantToGlsl c |> Generator.toGlsl
+            constantToGlsl c |> Generator.funDeclToGlsl
 
         RequireOperation o ->
             operationToGlsl i o
@@ -654,23 +662,27 @@ operationToGlsl : RequiresInterval -> GlslOperation -> String
 operationToGlsl interval op =
     case interval of
         StraightOnly ->
-            String.join "\n\n" <| List.map Generator.toGlsl <| straightOperationToGlsl op
+            Generator.fileToGlsl <| straightOperationToGlsl op
 
         IntervalOnly ->
             deindent 12 <| intervalOperationToGlsl op
 
         IntervalAndStraight ->
-            deindent 12 <| (String.join "\n\n" <| List.map Generator.toGlsl <| straightOperationToGlsl op) ++ "\n" ++ intervalOperationToGlsl op
+            (Generator.fileToGlsl <| straightOperationToGlsl op)
+                ++ "\n"
+                ++ deindent 12 (intervalOperationToGlsl op)
 
 
 functionToGlsl : RequiresInterval -> GlslFunction -> String
 functionToGlsl interval name =
     case interval of
         StraightOnly ->
-            deindent 12 <| straightFunctionToGlsl name
+            Generator.fileToGlsl <| straightFunctionToGlsl name
 
         IntervalOnly ->
             deindent 12 <| intervalFunctionToGlsl name
 
         IntervalAndStraight ->
-            deindent 12 <| straightFunctionToGlsl name ++ "\n" ++ intervalFunctionToGlsl name
+            Generator.fileToGlsl (straightFunctionToGlsl name)
+                ++ "\n"
+                ++ deindent 12 (intervalFunctionToGlsl name)

@@ -1,7 +1,7 @@
 module Expression.Derivative exposing (derivative)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), filterContext, fullSubstitute)
-import Expression.Utils exposing (by, byShort, cos_, cosh_, div, e, exp_, ipowShort, ln_, log10_, minus, negate_, one, plus, pow, sign, sin_, sinh_, sqrt_, square, tan_, zero)
+import Expression.Utils exposing (by, byShort, cos_, cosh_, div, e, exp, ipowShort, ln_, log10_, minus, negate_, one, plus, pow, sign, sin_, sinh_, sqrt_, square, tan_, zero)
 
 
 derivative : String -> Expression -> Expression
@@ -162,7 +162,7 @@ knownDerivative name x =
             by [ div one x, log10_ (Variable "e") ]
 
         Exp ->
-            exp_ x
+            exp x
 
         Sign ->
             zero
