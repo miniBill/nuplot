@@ -141,7 +141,7 @@ straightOperationToGlsl op =
                                     ]
                                 )
                                 (vec2 (pow dw.x dz.x) zero)
-                                (call1 (unknownTypedName "cexp") <| by (unknown "cln(w)") z)
+                                (call1 (unknownTypedName "cexp") <| by (call1 (unknownTypedName "cln") w) z)
                         ]
             ]
 
@@ -286,13 +286,13 @@ straightFunctionToGlsl name =
         Sinh11 ->
             [ Tuple.first <|
                 fun1 floatT "sinh" (floatT "x") <|
-                    \_ -> [ return <| unknown "0.5 * (exp(x) - exp(-x))" ]
+                    \x -> [ return <| by (float 0.5) <| subtract (exp x) (exp <| negate_ x) ]
             ]
 
         Cosh11 ->
             [ Tuple.first <|
                 fun1 floatT "cosh" (floatT "x") <|
-                    \_ -> [ return <| unknown "0.5 * (exp(x) + exp(-x))" ]
+                    \x -> [ return <| by (float 0.5) <| add (exp x) (exp <| negate_ x) ]
             ]
 
         Tanh11 ->
@@ -1701,7 +1701,9 @@ main2D pixels =
                 |> String.concat
     in
     Generator.funDeclToGlsl log10Decl
+        ++ "\n\n"
         ++ Generator.funDeclToGlsl axis
+        ++ "\n\n"
         ++ deindent 8
             ("""
         vec4 pixel2 () {
@@ -1733,7 +1735,7 @@ axis : FunDecl
 axis =
     fun3 floatT "axis" (floatT "coord") (floatT "otherCoord") (floatT "maxDelta") <|
         \coord otherCoord maxDelta ->
-            decl floatT "across" (unknown "1.0 - abs(coord/maxDelta)") <|
+            decl floatT "across" (subtract one <| abs_ <| div coord maxDelta) <|
                 \across ->
                     if_ (lt across (float -12))
                         (return zero)
@@ -1745,18 +1747,18 @@ axis =
                                                 "unit"
                                                 (ternary
                                                     (lt across (float -6))
-                                                    (unknown "smallUnit * 100.0")
+                                                    (by smallUnit (float 100))
                                                     (ternary
-                                                        (unknown "across < -0.1")
-                                                        (unknown "smallUnit * 10.0")
-                                                        (unknown "smallUnit * 5.0")
+                                                        (lt across (float -0.1))
+                                                        (by smallUnit (float 10))
+                                                        (by smallUnit (float 5))
                                                     )
                                                 )
                                             <|
                                                 \unit ->
-                                                    decl floatT "parallel" (ternary (unknown "mod(abs(otherCoord), unit) < maxDelta") one zero) <|
+                                                    decl floatT "parallel" (ternary (lt (unknown "mod(abs(otherCoord), unit)") maxDelta) one zero) <|
                                                         \parallel ->
-                                                            [ return <| max_ zero (max_ (unknown "across") (unknown "parallel")) ]
+                                                            [ return <| max_ zero (max_ across parallel) ]
                                            )
                            )
 

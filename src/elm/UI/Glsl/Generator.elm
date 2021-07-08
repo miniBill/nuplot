@@ -154,10 +154,10 @@ statementToGlsl =
         go i c =
             case c of
                 Block h b ->
-                    indent i h
-                        ++ "{\n"
-                        ++ String.join "\n" (List.map (go (i + 1)) b)
-                        ++ "\n}"
+                    String.join "\n" <|
+                        (indent i h ++ " {")
+                            :: List.map (go (i + 1)) b
+                            ++ [ indent i "}" ]
 
                 Line l ->
                     indent i l ++ ";"
@@ -171,7 +171,7 @@ statementToGlsl =
                 Decl t (Name n) e ->
                     indent i <| t ++ " " ++ n ++ " = " ++ expressionToGlsl e ++ ";"
     in
-    go 0
+    go 1
 
 
 expressionToGlsl : Expression t -> String
@@ -686,7 +686,7 @@ fun typeF name args body =
         , body =
             String.join "\n" <|
                 (rt ++ " " ++ name ++ "(" ++ argsList ++ ") {")
-                    :: List.map (indent 1 << statementToGlsl) body
+                    :: List.map statementToGlsl body
                     ++ [ "}" ]
         }
 
