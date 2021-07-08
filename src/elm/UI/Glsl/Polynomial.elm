@@ -6,6 +6,7 @@ import Expression.Polynomial exposing (Exponents)
 import Expression.Utils exposing (minus, zero)
 import Maybe.Extra as Maybe
 import UI.Glsl.Code exposing (threshold)
+import UI.Glsl.Generator as Generator exposing (unknown)
 
 
 getDegree : Dict (List ( a, number )) b -> number
@@ -76,6 +77,14 @@ getSolutions poly =
             Dict.get d poly
                 |> Maybe.withDefault zero
                 |> UI.Glsl.Code.expressionToGlsl
+                    [ ( "dx", unknown "dx" )
+                    , ( "dy", unknown "dy" )
+                    , ( "dz", unknown "dz" )
+                    , ( "o.x", unknown "o.x" )
+                    , ( "o.y", unknown "o.y" )
+                    , ( "o.z", unknown "o.z" )
+                    ]
+                |> Generator.expressionToGlsl
 
         tFrom v =
             ( "t", v ++ ".x < 0.0 || abs(" ++ v ++ ".y) > " ++ threshold ++ " ? t : min(" ++ v ++ ".x, t)" )

@@ -8,7 +8,7 @@ import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, 
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (unknownTypedName)
+import UI.Glsl.Generator as Generator exposing (floatT, uniform, unknownTypedName, vec2T)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -18,6 +18,15 @@ import UI.Glsl.Sphere as Sphere
 getGlsl : Bool -> Bool -> Graph -> String
 getGlsl expandIntervals rayDifferentials graph =
     let
+        uniforms =
+            { u_canvasWidth = uniform floatT "u_canvasWidth"
+            , u_canvasHeight = uniform floatT "u_canvasHeight"
+            , u_viewportWidth = uniform floatT "u_viewportWidth"
+            , u_viewportHeight = uniform floatT "u_viewportHeight"
+            , u_zoomCenter = uniform vec2T "u_zoomCenter"
+            , u_drawAxes = uniform floatT "u_drawAxes"
+            }
+
         { expr, srcExpr, interval, usesThetaDelta, pixel2D, pixel3D } =
             extract "" graph
 
@@ -133,7 +142,9 @@ getGlsl expandIntervals rayDifferentials graph =
         ++ reqs
         ++ "\n/* Expression */\n"
         ++ deindent 4 srcExpr
-        ++ mainGlsl rayDifferentials
+        ++ mainGlsl
+            uniforms
+            rayDifferentials
             (List.map
                 (\p ->
                     { name = unknownTypedName p.name

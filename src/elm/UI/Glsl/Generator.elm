@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Expression, File, FunDecl, Mat3, Name, Statement(..), TypedName, Vec2, Vec3, Vec4, abs_, add, ands, arr, assign, by, call0, call1, call2, call4, ceil_, decl, div, dot2, dot3, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gt, if_, int, leq, log, lt, mat3T, max_, min_, negate_, normalize, one, pow, radians_, return, sign, statementToGlsl, subtract, ternary, true, unknown, unknownFunDecl, unknownName, unknownTypedName, unsafeCall, vec2, vec2T, vec3, vec3T, vec4, vec4T, voidT, zero)
+module UI.Glsl.Generator exposing (Expression, File, FunDecl, Mat3, Name, Statement(..), TypedName, Vec2, Vec3, Vec4, abs_, add, ands, arr, assign, by, byF, call0, call1, call2, call4, ceil_, decl, def, div, dot2, dot3, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, if_, int, leq, log, lt, mat3T, max_, min_, mod, negate_, normalize, one, pow, radians_, return, sign, statementToGlsl, subtract, ternary, true, uniform, unknown, unknownFunDecl, unknownName, unknownTypedName, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
 
 import Array exposing (Array)
 import Expression exposing (RelationOperation(..))
@@ -18,7 +18,7 @@ type Statement r
     | Line String
     | Return (Expression r)
     | Expression (Expression Never)
-    | Decl String Name (Expression Never)
+    | Decl String Name (Maybe (Expression Never))
 
 
 type Expression t
@@ -168,8 +168,11 @@ statementToGlsl =
                 Expression e ->
                     indent i <| expressionToGlsl e ++ ";"
 
-                Decl t (Name n) e ->
+                Decl t (Name n) (Just e) ->
                     indent i <| t ++ " " ++ n ++ " = " ++ expressionToGlsl e ++ ";"
+
+                Decl t (Name n) Nothing ->
+                    indent i <| t ++ " " ++ n ++ ";"
     in
     go 1
 
@@ -405,6 +408,11 @@ by =
     By
 
 
+byF : Expression Float -> Expression t -> Expression t
+byF l =
+    By (typecastExpression l)
+
+
 div : Expression t -> Expression t -> Expression t
 div =
     Div
@@ -513,6 +521,11 @@ log =
     call1 ( Type "", Name "log" )
 
 
+mod : Expression t -> Expression t -> Expression t
+mod =
+    call2 ( Type "", Name "mod" )
+
+
 dotted2 :
     Expression Vec2
     ->
@@ -553,6 +566,7 @@ dotted4 :
         { x : Expression Float
         , y : Expression Float
         , z : Expression Float
+        , xy : Expression Vec2
         , yzw : Expression Vec3
         }
 dotted4 e =
@@ -563,6 +577,7 @@ dotted4 e =
     { x = Dot tc "x"
     , y = Dot tc "y"
     , z = Dot tc "z"
+    , xy = Dot tc "xy"
     , yzw = Dot tc "yzw"
     }
 
@@ -587,14 +602,34 @@ vec2 =
     call2 ( Type "", Name "vec2" )
 
 
+vec2Zero : Expression Vec2
+vec2Zero =
+    call1 ( Type "", Name "vec2" ) (int 0)
+
+
 vec3 : Expression Float -> Expression Float -> Expression Float -> Expression Vec3
 vec3 =
     call3 ( Type "", Name "vec3" )
 
 
+vec3Zero : Expression Vec3
+vec3Zero =
+    call1 ( Type "", Name "vec3" ) (int 0)
+
+
 vec4 : Expression Float -> Expression Float -> Expression Float -> Expression Float -> Expression Vec4
 vec4 =
     call4 ( Type "", Name "vec4" )
+
+
+vec4Zero : Expression Vec4
+vec4Zero =
+    call1 ( Type "", Name "vec4" ) (int 0)
+
+
+vec4_3_1 : Expression Vec3 -> Expression Float -> Expression Vec4
+vec4_3_1 =
+    call2 ( Type "", Name "vec4" )
 
 
 min_ : Expression t -> Expression t -> Expression t
@@ -644,6 +679,16 @@ unknown =
 gl_FragColor : Expression Vec3
 gl_FragColor =
     Variable "gl_FragColor"
+
+
+gl_FragCoord : Expression Vec4
+gl_FragCoord =
+    Variable "gl_FragCoord"
+
+
+uniform : TypingFunction t -> String -> Expression t
+uniform _ name =
+    Variable name
 
 
 unknownName : String -> Name
@@ -723,10 +768,12 @@ fun2 typeF name arg0 arg1 body =
     )
 
 
-fun3 : TypingFunction r -> String -> TypedName a -> TypedName b -> TypedName c -> (Expression a -> Expression b -> Expression c -> List (Statement r)) -> FunDecl
+fun3 : TypingFunction r -> String -> TypedName a -> TypedName b -> TypedName c -> (Expression a -> Expression b -> Expression c -> List (Statement r)) -> ( FunDecl, Expression a -> Expression b -> Expression c -> Expression r )
 fun3 typeF name arg0 arg1 arg2 body =
-    fun typeF name [ argToString arg0, argToString arg1, argToString arg2 ] <|
+    ( fun typeF name [ argToString arg0, argToString arg1, argToString arg2 ] <|
         body (toVar arg0) (toVar arg1) (toVar arg2)
+    , call3 ( Type "", Name name )
+    )
 
 
 if_ : Expression Bool -> Statement r -> Statement r
@@ -739,14 +786,26 @@ return =
     Return
 
 
-decl : TypingFunction t -> String -> Expression t -> (Expression t -> List (Statement a)) -> List (Statement a)
-decl typeF name value k =
+decl : TypingFunction t -> String -> (Expression t -> List (Statement a)) -> List (Statement a)
+decl typeF name k =
     let
         ( Type t, _ ) =
             typeF name
 
         go =
-            Decl t (Name name) <| typecastExpression value
+            Decl t (Name name) Nothing
+    in
+    go :: k (Variable name)
+
+
+def : TypingFunction t -> String -> Expression t -> (Expression t -> List (Statement a)) -> List (Statement a)
+def typeF name value k =
+    let
+        ( Type t, _ ) =
+            typeF name
+
+        go =
+            Decl t (Name name) (Just <| typecastExpression value)
     in
     go :: k (Variable name)
 
