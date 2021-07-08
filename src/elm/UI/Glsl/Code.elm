@@ -1,7 +1,7 @@
 module UI.Glsl.Code exposing (constantToGlsl, deindent, expressionToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..))
-import UI.Glsl.Generator as Generator exposing (Expression, File, FunDecl, Statement(..), TypedName, Vec2, add, ands, arr, assign, by, call0, call1, call2, call4, ceil_, decl, div, dot2, dotted2, dotted3, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, if_, int, log, mat3T, max_, min_, normalize, one, pow, radians_, return, sign, subtract, ternary, unknown, unknownFunDecl, unknownTypedName, vec2, vec2T, vec3T, vec4T, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression, File, FunDecl, Statement(..), TypedName, Vec2, abs_, add, ands, arr, assign, by, call0, call1, call2, call4, ceil_, decl, div, dot2, dotted2, dotted3, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gt, if_, int, log, lt, mat3T, max_, min_, negate_, normalize, one, pow, radians_, return, sign, subtract, ternary, unknown, unknownFunDecl, unknownTypedName, vec2, vec2T, vec3T, vec4T, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -59,11 +59,25 @@ div2Tuple : ( FunDecl, Generator.Expression Vec2 -> Generator.Expression Vec2 ->
 div2Tuple =
     fun2 vec2T "div" (vec2T "a") (vec2T "b") <|
         \a b ->
-            [ decl floatT "k" <| div one <| dot2 b b
-            , decl floatT "r" <| by (unknown "k") <| dot2 a b
-            , decl floatT "i" <| by (unknown "k") (unknown "(a.y*b.x - a.x*b.y)")
-            , return <| vec2 (unknown "r") (unknown "i")
-            ]
+            let
+                da =
+                    dotted2 a
+
+                db =
+                    dotted2 b
+            in
+            decl floatT "k" (div one <| dot2 b b) <|
+                \k ->
+                    decl floatT "r" (by k <| dot2 a b) <|
+                        \r ->
+                            decl floatT
+                                "i"
+                                (by k
+                                    (subtract (by da.y db.x) (by da.x db.y))
+                                )
+                            <|
+                                \i ->
+                                    [ return <| vec2 r i ]
 
 
 div2Decl : FunDecl
@@ -285,11 +299,15 @@ straightFunctionToGlsl name =
             [ Tuple.first <|
                 fun1 floatT "tanh" (floatT "x") <|
                     \x ->
-                        [ if_ (unknown "abs(x) > 10.0") <| return <| sign x
-                        , decl floatT "p" <| exp x
-                        , decl floatT "m" <| exp (unknown "-x")
-                        , return <| div (unknown "(p - m)") (unknown "(p + m)")
-                        ]
+                        if_ (gt (abs_ x) (float 10))
+                            (return <| sign x)
+                            :: (decl floatT "p" (exp x) <|
+                                    \p ->
+                                        decl floatT "m" (exp <| negate_ x) <|
+                                            \m ->
+                                                [ return <| div (subtract p m) (add p m)
+                                                ]
+                               )
             ]
 
         Sin22 ->
@@ -1720,24 +1738,33 @@ main2D pixels =
 axis : FunDecl
 axis =
     fun3 floatT "axis" (floatT "coord") (floatT "otherCoord") (floatT "maxDelta") <|
-        \_ _ maxDelta ->
-            [ decl floatT "across" <| unknown "1.0 - abs(coord/maxDelta)"
-            , if_ (unknown "across < -12.0") <| return zero
-            , decl floatT "smallUnit" <| pow (float 10) (ceil_ (log10 maxDelta))
-            , if_ (ands [ unknown "across < 0.0", unknown "abs(otherCoord) < maxDelta * 2.0" ])
-                (return zero)
-            , decl floatT "unit" <|
-                ternary
-                    (unknown "across < -6.0")
-                    (unknown "smallUnit * 100.0")
-                    (ternary
-                        (unknown "across < -0.1")
-                        (unknown "smallUnit * 10.0")
-                        (unknown "smallUnit * 5.0")
-                    )
-            , decl floatT "parallel" <| ternary (unknown "mod(abs(otherCoord), unit) < maxDelta") one zero
-            , return <| max_ zero (max_ (unknown "across") (unknown "parallel"))
-            ]
+        \coord otherCoord maxDelta ->
+            decl floatT "across" (unknown "1.0 - abs(coord/maxDelta)") <|
+                \across ->
+                    if_ (lt across (float -12))
+                        (return zero)
+                        :: (decl floatT "smallUnit" (pow (float 10) (ceil_ (log10 maxDelta))) <|
+                                \smallUnit ->
+                                    if_ (ands [ lt across zero, lt (abs_ otherCoord) (by maxDelta (float 2)) ])
+                                        (return zero)
+                                        :: (decl floatT
+                                                "unit"
+                                                (ternary
+                                                    (lt across (float -6))
+                                                    (unknown "smallUnit * 100.0")
+                                                    (ternary
+                                                        (unknown "across < -0.1")
+                                                        (unknown "smallUnit * 10.0")
+                                                        (unknown "smallUnit * 5.0")
+                                                    )
+                                                )
+                                            <|
+                                                \unit ->
+                                                    decl floatT "parallel" (ternary (unknown "mod(abs(otherCoord), unit) < maxDelta") one zero) <|
+                                                        \parallel ->
+                                                            [ return <| max_ zero (max_ (unknown "across") (unknown "parallel")) ]
+                                           )
+                           )
 
 
 toSrc3D : Bool -> String -> Expression.Expression -> File
@@ -1745,22 +1772,40 @@ toSrc3D expandIntervals suffix e =
     [ Tuple.first <|
         fun1 vec3T ("normal" ++ suffix) (vec3T "p") <|
             \p ->
-                [ decl floatT "x" (dotted3 p).x
-                , decl floatT "y" (dotted3 p).y
-                , decl floatT "z" (dotted3 p).z
-                , decl vec4T "gradient" <| unknown <| expressionToNormalGlsl e
-                , return <| normalize (dotted4 <| unknown "gradient").yzw
-                ]
+                let
+                    dp =
+                        dotted3 p
+                in
+                decl floatT "x" dp.x <|
+                    \x ->
+                        decl floatT "y" dp.y <|
+                            \y ->
+                                decl floatT "z" dp.z <|
+                                    \z ->
+                                        decl vec4T "gradient" (unknown <| expressionToNormalGlsl e) <|
+                                            \gradient ->
+                                                [ return <| normalize (dotted4 gradient).yzw ]
     , Tuple.first <|
         fun2 vec2T ("interval" ++ suffix) (mat3T "f") (mat3T "t") <|
             \f t ->
-                [ decl vec3T "mn" <| min_ (arr f <| int 0) (arr t <| int 0)
-                , decl vec3T "mx" <| max_ (arr f <| int 1) (arr t <| int 1)
-                , decl vec2T "x" <| vec2 (dotted3 <| unknown "mn").x (dotted3 <| unknown "mx").x
-                , decl vec2T "y" <| vec2 (dotted3 <| unknown "mn").y (dotted3 <| unknown "mx").y
-                , decl vec2T "z" <| vec2 (dotted3 <| unknown "mn").z (dotted3 <| unknown "mx").z
-                , return <| unknown <| expressionToIntervalGlsl expandIntervals e
-                ]
+                decl vec3T "mn" (min_ (arr f <| int 0) (arr t <| int 0)) <|
+                    \mn ->
+                        decl vec3T "mx" (max_ (arr f <| int 1) (arr t <| int 1)) <|
+                            \mx ->
+                                let
+                                    dmn =
+                                        dotted3 mn
+
+                                    dmx =
+                                        dotted3 mx
+                                in
+                                decl vec2T "x" (vec2 dmn.x dmx.x) <|
+                                    \x ->
+                                        decl vec2T "y" (vec2 dmn.y dmx.y) <|
+                                            \y ->
+                                                decl vec2T "z" (vec2 dmn.z dmx.z) <|
+                                                    \z ->
+                                                        [ return <| unknown <| expressionToIntervalGlsl expandIntervals e ]
     ]
 
 
