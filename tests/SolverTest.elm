@@ -1,10 +1,10 @@
 module SolverTest exposing (suite)
 
 import Expect
-import Expression exposing (AssociativeOperation(..), Expression(..), RelationOperation(..), SolutionTree(..))
+import Expression exposing (Expression(..), RelationOperation(..), SolutionTree(..))
 import Expression.Simplify exposing (simplify)
 import Expression.Solver
-import Expression.Utils exposing (by, c, div, i, ipow, minus, minusOne, negate_, one, plus, square, t, two, x, y, z, zero)
+import Expression.Utils exposing (by, c, div, i, minus, minusOne, negate_, one, plus, square, two, x, zero)
 import List
 import Test exposing (Test, describe, test)
 

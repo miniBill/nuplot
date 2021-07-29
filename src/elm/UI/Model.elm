@@ -3,7 +3,7 @@ module UI.Model exposing (CanvasId(..), CellMsg(..), Context, DocumentMsg(..), F
 import API.Google as Google
 import Browser.Navigation exposing (Key)
 import Codec exposing (Codec)
-import Document exposing (RowData(..), StoredDocument, UIDocument)
+import Document exposing (StoredDocument, UIDocument)
 import Element.WithContext exposing (DeviceClass)
 import File exposing (File)
 import Json.Decode as JD

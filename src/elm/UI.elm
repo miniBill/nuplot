@@ -15,7 +15,6 @@ import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
 import Element.WithContext.Input as Input
 import Element.WithContext.Lazy as Lazy
-import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Parser
 import File
 import File.Download

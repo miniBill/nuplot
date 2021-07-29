@@ -3,9 +3,8 @@ module ParserTest exposing (suite)
 import Dict
 import Expect
 import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..))
-import Expression.Parser as Parser exposing (Problem(..))
+import Expression.Parser as Parser
 import Expression.Utils exposing (a, abs_, asin_, atan2_, b, by, c, complex, cos_, cosh_, d, dd, div, double, exp, f, g, gra_, i, icomplex, ii, ipow, ln_, minus, n, negate_, one, plus, pow, r, sin_, sinh_, sqrt_, square, t, triple, two, vector, x, y, z, zero)
-import Parser
 import Test exposing (Test, describe, test)
 
 

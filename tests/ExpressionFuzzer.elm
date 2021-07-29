@@ -1,6 +1,6 @@
 module ExpressionFuzzer exposing (expressionFuzzer)
 
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), UnaryOperation(..))
+import Expression exposing (BinaryOperation(..), Expression(..), UnaryOperation(..))
 import Fuzz exposing (Fuzzer)
 
 

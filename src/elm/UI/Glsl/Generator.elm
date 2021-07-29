@@ -1,6 +1,5 @@
 module UI.Glsl.Generator exposing (Expression, File, FunDecl, Mat3, Name, Statement(..), TypedName, Vec2, Vec3, Vec4, abs_, add, ands, arr, assign, by, byF, call0, call1, call2, call4, ceil_, decl, def, div, dot2, dot3, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, if_, int, leq, log, lt, mat3T, max_, min_, mod, negate_, normalize, one, pow, radians_, return, sign, statementToGlsl, subtract, ternary, true, uniform, unknown, unknownFunDecl, unknownName, unknownTypedName, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
 
-import Array exposing (Array)
 import Expression exposing (RelationOperation(..))
 import Set
 

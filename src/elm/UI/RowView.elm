@@ -10,7 +10,7 @@ import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
 import Element.WithContext.Input as Input
 import Element.WithContext.Lazy as Lazy
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..), genericAsMatrix)
+import Expression exposing (Expression(..), SolutionTree(..), genericAsMatrix)
 import Expression.Graph exposing (Graph(..))
 import Expression.NumericRange
 import Expression.Value exposing (Value(..))
@@ -21,7 +21,7 @@ import Markdown.Parser
 import Markdown.Renderer
 import UI.Glsl exposing (getGlsl)
 import UI.L10N exposing (L10N, invariant, text, title)
-import UI.Model exposing (CanvasId(..), CellMsg(..), Context, DocumentMsg(..), Msg(..))
+import UI.Model exposing (CanvasId(..), CellMsg(..), Context, DocumentMsg(..))
 import UI.Theme as Theme
 
 

@@ -1,7 +1,7 @@
 module UI.Glsl.Plane exposing (Plane, asPlane, toGlsl)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
+import Expression exposing (Expression)
 import Maybe
 import UI.Glsl.Code exposing (threshold)
 import UI.Glsl.Generator exposing (floatToGlsl)

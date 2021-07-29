@@ -1,8 +1,6 @@
 module TrieTest exposing (suite)
 
 import Expect
-import Expression exposing (Expression(..), RelationOperation(..))
-import Expression.Parser exposing (Problem(..))
 import Fuzz
 import Test exposing (Test, describe)
 import Trie

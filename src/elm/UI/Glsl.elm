@@ -1,7 +1,7 @@
 module UI.Glsl exposing (getGlsl)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), SolutionTree(..), UnaryOperation(..))
+import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..))
 import Expression.Graph exposing (Graph(..))
 import Expression.Polynomial exposing (asPolynomial)
 import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, square)

@@ -1,10 +1,10 @@
 module UI.Glsl.Sphere exposing (Sphere, asSphere, toGlsl)
 
 import Dict exposing (Dict)
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), UnaryOperation(..))
+import Expression exposing (Expression)
 import Expression.Polynomial exposing (Exponents)
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator exposing (float, floatToGlsl)
+import UI.Glsl.Generator exposing (floatToGlsl)
 import UI.Glsl.Polynomial as Polynomial
 
 

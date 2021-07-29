@@ -1,18 +1,7 @@
 module Expression.Parser exposing (ParserContext(..), Problem(..), errorsToString, parse)
 
 import Dict exposing (Dict)
-import Expression
-    exposing
-        ( AssociativeOperation(..)
-        , BinaryOperation(..)
-        , Context
-        , Expression(..)
-        , FunctionName(..)
-        , KnownFunction(..)
-        , RelationOperation(..)
-        , VariableStatus(..)
-        , defaultContext
-        )
+import Expression exposing (Context, Expression(..), RelationOperation(..), VariableStatus(..), defaultContext)
 import Expression.Cleaner as Cleaner
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
 import List.Extra as List

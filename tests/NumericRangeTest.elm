@@ -2,9 +2,8 @@ module NumericRangeTest exposing (suite)
 
 import Dict
 import Expect
-import Expression exposing (Expression(..), RelationOperation(..))
+import Expression exposing (Expression)
 import Expression.NumericRange as NumericRange exposing (NumericRange(..))
-import Expression.Parser exposing (Problem(..))
 import Expression.Utils exposing (plus, sin_, square, x, y)
 import Expression.Value as Value
 import Test exposing (Test, describe)
