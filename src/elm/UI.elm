@@ -137,6 +137,7 @@ init ({ saved, hasClipboard, hasFullscreen, languages } as flags) url key =
                         , height = floor viewport.height
                         }
                     )
+                |> Task.perform Resized
 
         parseLanguage lang =
             case String.split "-" lang of
@@ -239,10 +240,13 @@ init ({ saved, hasClipboard, hasFullscreen, languages } as flags) url key =
     ( model
     , case googleAccessTokenFromUrl of
         Nothing ->
-            Task.perform Resized measure
+            measure
 
         Just token ->
-            UI.Ports.saveGoogleAccessTokenAndCloseWindow token
+            Cmd.batch
+                [ measure
+                , UI.Ports.saveGoogleAccessTokenAndCloseWindow token
+                ]
     )
 
 
