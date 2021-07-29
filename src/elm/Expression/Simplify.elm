@@ -657,37 +657,38 @@ cbrtInteger j =
 
         r =
             truncate (toFloat a ^ (1.0 / 3.0))
-
-        s =
-            let
-                ( outer, inner ) =
-                    factor a
-                        |> List.foldl
-                            (\( f, e ) ( o, i ) ->
-                                ( o * f ^ (e // 3)
-                                , i * f ^ modBy 3 e
-                                )
-                            )
-                            ( 1, 1 )
-            in
-            case ( outer, inner ) of
-                ( _, 1 ) ->
-                    Just <| Integer outer
-
-                ( 1, _ ) ->
-                    Nothing
-
-                _ ->
-                    Just <| by [ Integer outer, cbrt <| Integer inner ]
     in
     if r * r * r == j then
         Just <| Integer r
 
-    else if j < 0 then
-        Just <| negate_ <| Maybe.withDefault (cbrt (Integer a)) s
-
     else
-        s
+        let
+            ( outer, inner ) =
+                factor a
+                    |> List.foldl
+                        (\( f, e ) ( o, i ) ->
+                            ( o * f ^ (e // 3)
+                            , i * f ^ modBy 3 e
+                            )
+                        )
+                        ( 1, 1 )
+
+            s =
+                case ( outer, inner ) of
+                    ( _, 1 ) ->
+                        Just <| Integer outer
+
+                    ( 1, _ ) ->
+                        Nothing
+
+                    _ ->
+                        Just <| by [ Integer outer, cbrt <| Integer inner ]
+        in
+        if j < 0 then
+            Just <| negate_ <| Maybe.withDefault (cbrt (Integer a)) s
+
+        else
+            s
 
 
 stepSimplifyRe : List Expression -> Expression

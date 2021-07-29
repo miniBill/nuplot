@@ -106,84 +106,6 @@ type Problem
 
 errorsToString : String -> List (Parser.DeadEnd ParserContext Problem) -> L10N String
 errorsToString input err =
-    let
-        errsString =
-            err
-                |> List.gatherEqualsBy (\{ col, contextStack } -> { col = col, contextStack = contextStack })
-                |> List.map problemGroupToString
-
-        problemGroupToString ( { col, contextStack, problem }, problems ) =
-            let
-                allProblems =
-                    problem :: List.map .problem problems
-
-                prefix =
-                    case contextStack of
-                        [] ->
-                            invariant <| String.repeat (col + 1) " " ++ "^ "
-
-                        frame :: _ ->
-                            let
-                                pprefix =
-                                    if col == frame.col then
-                                        String.repeat (col + 1) " "
-
-                                    else
-                                        String.repeat (frame.col + 1) " "
-                                            ++ "|"
-                                            ++ String.repeat (col - frame.col - 1) "-"
-
-                                ctxString =
-                                    contextToString frame.context
-                            in
-                            { en = pprefix ++ "^ While trying to parse " ++ ctxString.en ++ ". "
-                            , it = pprefix ++ "^ Durante il parsing di " ++ ctxString.it ++ ". "
-                            }
-            in
-            UI.L10N.concat
-                [ prefix
-                , if List.any ((==) Unexpected) allProblems then
-                    if List.all ((==) Unexpected) allProblems then
-                        { en = "Unexpected"
-                        , it = "Inatteso"
-                        }
-
-                    else
-                        { en = "Unexpected, expected "
-                        , it = "Inatteso, atteso "
-                        }
-
-                  else
-                    { en = "Expected "
-                    , it = "Atteso "
-                    }
-                , allProblems
-                    |> List.filterMap
-                        (\p ->
-                            case p of
-                                Unexpected ->
-                                    Nothing
-
-                                Expected e ->
-                                    Just e
-                        )
-                    |> (\expecteds ->
-                            case List.reverse expecteds of
-                                [] ->
-                                    invariant ""
-
-                                [ single ] ->
-                                    single
-
-                                last :: init ->
-                                    UI.L10N.concat
-                                        [ UI.L10N.map (String.join ", ") <| UI.L10N.sequence (List.reverse init)
-                                        , { en = " or ", it = " o " }
-                                        , last
-                                        ]
-                       )
-                ]
-    in
     UI.L10N.map (String.join "\n") <|
         UI.L10N.sequence <|
             [ { en = "Error parsing expression:", it = "Errore nel parsing dell'espressione:" }
@@ -196,8 +118,88 @@ errorsToString input err =
                         ]
 
                     else
-                        errsString
+                        err
+                            |> List.gatherEqualsBy (\{ col, contextStack } -> { col = col, contextStack = contextStack })
+                            |> List.map problemGroupToString
                    )
+
+
+problemGroupToString :
+    ( Parser.DeadEnd ParserContext Problem
+    , List (Parser.DeadEnd ParserContext Problem)
+    )
+    -> L10N String
+problemGroupToString ( { col, contextStack, problem }, problems ) =
+    let
+        allProblems =
+            problem :: List.map .problem problems
+
+        prefix =
+            case contextStack of
+                [] ->
+                    invariant <| String.repeat (col + 1) " " ++ "^ "
+
+                frame :: _ ->
+                    let
+                        pprefix =
+                            if col == frame.col then
+                                String.repeat (col + 1) " "
+
+                            else
+                                String.repeat (frame.col + 1) " "
+                                    ++ "|"
+                                    ++ String.repeat (col - frame.col - 1) "-"
+
+                        ctxString =
+                            contextToString frame.context
+                    in
+                    { en = pprefix ++ "^ While trying to parse " ++ ctxString.en ++ ". "
+                    , it = pprefix ++ "^ Durante il parsing di " ++ ctxString.it ++ ". "
+                    }
+    in
+    UI.L10N.concat
+        [ prefix
+        , if List.any ((==) Unexpected) allProblems then
+            if List.all ((==) Unexpected) allProblems then
+                { en = "Unexpected"
+                , it = "Inatteso"
+                }
+
+            else
+                { en = "Unexpected, expected "
+                , it = "Inatteso, atteso "
+                }
+
+          else
+            { en = "Expected "
+            , it = "Atteso "
+            }
+        , allProblems
+            |> List.filterMap
+                (\p ->
+                    case p of
+                        Unexpected ->
+                            Nothing
+
+                        Expected e ->
+                            Just e
+                )
+            |> (\expecteds ->
+                    case List.reverse expecteds of
+                        [] ->
+                            invariant ""
+
+                        [ single ] ->
+                            single
+
+                        last :: init ->
+                            UI.L10N.concat
+                                [ UI.L10N.map (String.join ", ") <| UI.L10N.sequence (List.reverse init)
+                                , { en = " or ", it = " o " }
+                                , last
+                                ]
+               )
+        ]
 
 
 parse : String -> Result (List (Parser.DeadEnd ParserContext Problem)) Expression

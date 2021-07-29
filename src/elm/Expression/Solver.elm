@@ -517,38 +517,37 @@ coeffsToEq coeffs =
                     else
                         Just c
 
+                else if isZero c then
+                    Nothing
+
                 else
                     let
                         pows =
                             byShort <| List.map (\( v, e ) -> ipowShort (Variable v) e) exps
                     in
-                    if isZero c then
-                        Nothing
+                    case c of
+                        Integer i ->
+                            if i == 1 then
+                                Just pows
 
-                    else
-                        case c of
-                            Integer i ->
-                                if i == 1 then
-                                    Just pows
+                            else if i == -1 then
+                                Just <| negate_ pows
 
-                                else if i == -1 then
-                                    Just <| negate_ pows
-
-                                else
-                                    Just <| by [ c, pows ]
-
-                            Float f ->
-                                if f == 1 then
-                                    Just pows
-
-                                else if f == -1 then
-                                    Just <| negate_ pows
-
-                                else
-                                    Just <| by [ c, pows ]
-
-                            _ ->
+                            else
                                 Just <| by [ c, pows ]
+
+                        Float f ->
+                            if f == 1 then
+                                Just pows
+
+                            else if f == -1 then
+                                Just <| negate_ pows
+
+                            else
+                                Just <| by [ c, pows ]
+
+                        _ ->
+                            Just <| by [ c, pows ]
             )
         |> plus
         |> (\l -> RelationOperation Equals l zero)

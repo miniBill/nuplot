@@ -919,10 +919,6 @@ update msg =
                 MarkdownRow ->
                     { r | editing = False }
 
-        filterEmpty =
-            List.filterNot (.input >> String.isEmpty)
-                >> (\rs -> rs ++ [ Document.emptyRow ])
-
         inner model =
             case msg of
                 DocumentMsg docId (DocumentCellMsg data) ->
@@ -934,7 +930,8 @@ update msg =
                                         | rows =
                                             curr.rows
                                                 |> List.updateAt data.index rowF
-                                                |> filterEmpty
+                                                |> List.filterNot (.input >> String.isEmpty)
+                                                |> (\rs -> rs ++ [ Document.emptyRow ])
                                     }
                                 )
                                 model
@@ -1283,21 +1280,6 @@ documentGoogleId docId res model =
                             }
                                 :: google.waitingSave
                     }
-
-                documents_ =
-                    Maybe.map
-                        (Zipper.map
-                            (\_ ({ id } as document) ->
-                                if id == docId then
-                                    { document
-                                        | googleId = Just googleId
-                                    }
-
-                                else
-                                    document
-                            )
-                        )
-                        model.documents
             in
             case maybeDoc of
                 Nothing ->
@@ -1306,6 +1288,22 @@ documentGoogleId docId res model =
                     )
 
                 Just data ->
+                    let
+                        documents_ =
+                            Maybe.map
+                                (Zipper.map
+                                    (\_ ({ id } as document) ->
+                                        if id == docId then
+                                            { document
+                                                | googleId = Just googleId
+                                            }
+
+                                        else
+                                            document
+                                    )
+                                )
+                                model.documents
+                    in
                     case google.accessToken of
                         Missing ->
                             persist
