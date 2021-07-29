@@ -1,4 +1,4 @@
-module UI.Theme exposing (Attribute, Element, bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, hr, iconSize, lightIconAttrs, onCtrlEnter, onEnter, onKey, roundness, row, smallDarkIconAttrs, spacing, whiteLines, wrappedRow)
+module UI.Theme exposing (Attribute, Element, bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, hr, iconSize, lightIconAttrs, onCtrlEnter, onEnter, onKey, padding, roundness, row, rythm, smallDarkIconAttrs, spacing, whiteLines, wrappedRow)
 
 import Ant.Icon
 import Color
@@ -59,8 +59,18 @@ fontSize =
     20
 
 
-spacing : number
+spacing : Attribute msg
 spacing =
+    Element.spacing rythm
+
+
+padding : Attribute msg
+padding =
+    Element.padding rythm
+
+
+rythm : number
+rythm =
     10
 
 
@@ -127,17 +137,17 @@ mapHsl f =
 
 row : List (Attribute msg) -> List (Element msg) -> Element msg
 row attrs =
-    Element.row (Element.spacing spacing :: attrs)
+    Element.row (spacing :: attrs)
 
 
 wrappedRow : List (Attribute msg) -> List (Element msg) -> Element msg
 wrappedRow attrs =
-    Element.wrappedRow (Element.spacing spacing :: attrs)
+    Element.wrappedRow (spacing :: attrs)
 
 
 column : List (Attribute msg) -> List (Element msg) -> Element msg
 column attrs =
-    Element.column (Element.spacing spacing :: attrs)
+    Element.column (spacing :: attrs)
 
 
 grid : List (Attribute msg) -> List (List (Element msg)) -> Element msg
@@ -164,7 +174,7 @@ grid attrs rows =
                     |> List.maximum
                     |> Maybe.withDefault 0
         in
-        Element.table (Element.spacing spacing :: attrs)
+        Element.table (spacing :: attrs)
             { columns = List.map toColumn <| List.range 0 (w - 1)
             , data = rows
             }

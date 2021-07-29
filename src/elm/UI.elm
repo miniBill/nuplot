@@ -306,7 +306,7 @@ toolbar ({ google, openMenu, showPendingActions } as model) =
             Input.button
                 ([ alignRight
                  , centerY
-                 , padding Theme.spacing
+                 , Theme.padding
                  , Border.rounded 999
                  , Element.mouseOver [ Background.color <| Theme.darken Theme.colors.background ]
                  , title label
@@ -423,7 +423,7 @@ toolbar ({ google, openMenu, showPendingActions } as model) =
                     )
     in
     Element.row
-        [ padding <| Theme.spacing // 4
+        [ padding <| Theme.rythm // 4
         , if openMenu then
             Element.below <| dropdown model
 
@@ -468,7 +468,7 @@ viewPendingActions actions =
         [ alignRight
         , Background.color Theme.colors.background
         , Border.width 1
-        , padding Theme.spacing
+        , Theme.padding
         ]
         (List.intersperse hr <| List.map viewPendingAction actions)
 
@@ -496,7 +496,7 @@ dropdown model =
 
         btn msg icon lbl =
             Input.button
-                [ padding Theme.spacing
+                [ Theme.padding
                 , width fill
                 ]
                 { onPress = Just msg
@@ -675,14 +675,14 @@ documentPicker ({ documents } as model) =
                    ]
     in
     Element.row
-        [ Element.paddingEach { left = Theme.spacing, right = Theme.spacing, top = Theme.spacing, bottom = 0 }
+        [ Element.paddingEach { left = Theme.rythm, right = Theme.rythm, top = Theme.rythm, bottom = 0 }
         , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
         , width fill
-        , spacing <| Theme.spacing // 2
+        , spacing <| Theme.rythm // 2
         ]
         [ Element.row
             [ alignBottom
-            , spacing <| Theme.spacing // 2
+            , spacing <| Theme.rythm // 2
             , scrollbarX
             , width fill
             ]
@@ -759,14 +759,14 @@ documentTabButton ({ selected, onPress, closeMsg, label } as config) =
                 el
                     [ case closeMsg of
                         Nothing ->
-                            padding Theme.spacing
+                            Theme.padding
 
                         Just _ ->
                             Element.paddingEach
-                                { left = Theme.spacing
-                                , top = Theme.spacing
-                                , bottom = Theme.spacing
-                                , right = Theme.spacing // 2
+                                { left = Theme.rythm
+                                , top = Theme.rythm
+                                , bottom = Theme.rythm
+                                , right = Theme.rythm // 2
                                 }
                     ]
                     label
@@ -778,10 +778,10 @@ documentTabButton ({ selected, onPress, closeMsg, label } as config) =
             Just _ ->
                 Input.button
                     [ Element.paddingEach
-                        { left = Theme.spacing // 2
-                        , top = Theme.spacing
-                        , bottom = Theme.spacing
-                        , right = Theme.spacing
+                        { left = Theme.rythm // 2
+                        , top = Theme.rythm
+                        , bottom = Theme.rythm
+                        , right = Theme.rythm
                         }
                     , focusStyleChild
                     , title
@@ -803,7 +803,7 @@ viewDocumentModal document =
                 el
                     [ width fill
                     , height fill
-                    , padding <| Theme.spacing * 8
+                    , padding <| Theme.rythm * 8
                     , Background.color Theme.colors.modalTransparentBackground
                     , Element.htmlAttribute <| Html.Attributes.style "backdrop-filter" "blur(2px)"
                     ]
@@ -815,15 +815,15 @@ viewDocumentModal document =
                         , Border.rounded Theme.roundness
                         ]
                     <|
-                        el [ padding Theme.spacing ] <|
+                        el [ Theme.padding ] <|
                             Theme.column []
                                 (e
                                     ++ [ Theme.row [ alignRight ]
-                                            [ Input.button [ padding Theme.spacing ]
+                                            [ Input.button [ Theme.padding ]
                                                 { onPress = Just onOk
                                                 , label = text { en = "Ok", it = "Ok" }
                                                 }
-                                            , Input.button [ padding Theme.spacing ]
+                                            , Input.button [ Theme.padding ]
                                                 { onPress = Just DocumentPopModal
                                                 , label = text { en = "Cancel", it = "Annulla" }
                                                 }
@@ -894,8 +894,8 @@ viewDocument size { id, rows } =
     in
     Element.map (DocumentMsg id) <|
         Element.column
-            [ spacing <| 2 * Theme.spacing
-            , padding Theme.spacing
+            [ spacing <| 2 * Theme.rythm
+            , Theme.padding
             , width fill
             , height fill
             , Element.scrollbarY

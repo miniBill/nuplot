@@ -4,7 +4,7 @@ import Ant.Icons as Icons
 import Complex
 import Dict
 import Document exposing (Output(..), Row, RowData(..))
-import Element.WithContext as Element exposing (DeviceClass(..), alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, row, shrink, spacing, width)
+import Element.WithContext as Element exposing (DeviceClass(..), alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, paddingXY, px, row, shrink, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -58,10 +58,10 @@ draw size id { wdiv, hdiv } { graph, axes } =
                 "0"
 
         rawImageWidth =
-            min 1920 <| size.width - (8 + wdiv) * Theme.spacing
+            min 1920 <| size.width - (8 + wdiv) * Theme.rythm
 
         rawImageHeight =
-            min 1080 <| size.height - (14 + hdiv) * Theme.spacing
+            min 1080 <| size.height - (14 + hdiv) * Theme.rythm
 
         imageWidth =
             min rawImageWidth <| rawImageHeight * 4 // 3
@@ -79,7 +79,7 @@ draw size id { wdiv, hdiv } { graph, axes } =
                         , Border.roundEach rounds
                         ]
                         none
-                , padding Theme.spacing
+                , Theme.padding
                 , htmlAttribute <| Html.Attributes.class "on-parent-hover"
                 ]
                 { label = Element.element <| icon Theme.lightIconAttrs
@@ -94,17 +94,17 @@ draw size id { wdiv, hdiv } { graph, axes } =
                 \{ isFullscreen, hasFullscreen } ->
                     row [ alignRight, alignBottom ] <|
                         if isFullscreen then
-                            [ iconButton ResetZoom { noRound | topLeft = Theme.spacing } Icons.aimOutlined
+                            [ iconButton ResetZoom { noRound | topLeft = Theme.rythm } Icons.aimOutlined
                             , iconButton ExitFullscreenCanvas noRound Icons.fullscreenExitOutlined
                             ]
 
                         else if hasFullscreen then
-                            [ iconButton ResetZoom { noRound | topLeft = Theme.spacing } Icons.aimOutlined
+                            [ iconButton ResetZoom { noRound | topLeft = Theme.rythm } Icons.aimOutlined
                             , iconButton FullscreenCanvas noRound Icons.fullscreenOutlined
                             ]
 
                         else
-                            [ iconButton ResetZoom { noRound | topLeft = Theme.spacing } Icons.aimOutlined
+                            [ iconButton ResetZoom { noRound | topLeft = Theme.rythm } Icons.aimOutlined
                             ]
 
         urButtonsRow =
@@ -112,12 +112,12 @@ draw size id { wdiv, hdiv } { graph, axes } =
                 \hasClipboard ->
                     row [ alignRight, alignTop ] <|
                         if hasClipboard then
-                            [ iconButton CopyCanvas { noRound | bottomLeft = Theme.spacing } Icons.copyOutlined
+                            [ iconButton CopyCanvas { noRound | bottomLeft = Theme.rythm } Icons.copyOutlined
                             , iconButton SaveCanvas noRound Icons.saveOutlined
                             ]
 
                         else
-                            [ iconButton SaveCanvas { noRound | bottomLeft = Theme.spacing } Icons.saveOutlined
+                            [ iconButton SaveCanvas { noRound | bottomLeft = Theme.rythm } Icons.saveOutlined
                             ]
 
         (CanvasId cid) =
@@ -292,7 +292,7 @@ codeInputLine size index input =
                     Theme.column [ width fill ]
                         [ Theme.row [ width fill ]
                             (label :: buttons)
-                        , inputBox (size.width - 2 * Theme.spacing) input
+                        , inputBox (size.width - 2 * Theme.rythm) input
                         ]
 
                 _ ->
@@ -376,12 +376,12 @@ viewSolutionTree pageWidth tree =
                 br =
                     el [ width <| px 1, height fill, Border.width 1 ] none
             in
-            [ row [ spacing Theme.spacing ] <|
+            [ row [ Theme.spacing ] <|
                 List.intersperse br <|
                     List.map
                         (\c ->
                             Element.column
-                                [ spacing Theme.spacing, alignTop ]
+                                [ Theme.spacing, alignTop ]
                                 (viewSolutionTree pageWidth c)
                         )
                         children
@@ -394,7 +394,7 @@ viewLaTeX pageWidth tex =
         Element.html <|
             Html.node "ka-tex"
                 [ Html.Attributes.attribute "tex-src" tex
-                , Html.Attributes.attribute "container-width" <| String.fromInt <| pageWidth - 2 * Theme.spacing
+                , Html.Attributes.attribute "container-width" <| String.fromInt <| pageWidth - 2 * Theme.rythm
                 ]
                 []
 
@@ -491,12 +491,12 @@ outputBlock blockId size output =
 
                         SolutionTreeValue t ->
                             ( Element.column
-                                [ spacing Theme.spacing
+                                [ Theme.spacing
                                 , Element.scrollbarX
-                                , width <| Element.maximum (size.width - 2 * Theme.spacing) fill
+                                , width <| Element.maximum (size.width - 2 * Theme.rythm) fill
                                 ]
                               <|
-                                viewSolutionTree (size.width - 2 * Theme.spacing) t
+                                viewSolutionTree (size.width - 2 * Theme.rythm) t
                             , False
                             )
 
