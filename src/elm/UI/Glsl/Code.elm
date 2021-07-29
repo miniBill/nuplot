@@ -1739,13 +1739,14 @@ pixel2Decl uniforms pixels =
             let
                 k =
                     if color then
+                        let
+                            h =
+                                float <| (toFloat (i + 2) / pi)
+                        in
                         by (call2 (unknownTypedName "hl2rgb") h (float 0.5)) (call4 name deltaX deltaY x y)
 
                     else
                         call4 name deltaX deltaY x y
-
-                h =
-                    float <| (toFloat (i + 2) / pi)
             in
             [ assign curr k
             , assign px <| ternary (eq curr vec3Zero) px curr

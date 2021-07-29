@@ -375,14 +375,14 @@ findRationalRootFromFractions v rats =
                     c
                         |> List.indexedMap
                             (\exponent k ->
-                                let
-                                    ke =
-                                        toExpr k
-                                in
                                 if Fraction.isZero k then
                                     Nothing
 
                                 else
+                                    let
+                                        ke =
+                                            toExpr k
+                                    in
                                     Just <|
                                         case exponent of
                                             0 ->
@@ -645,14 +645,15 @@ solve2 v a b c =
 
             solPlus =
                 divShort (plusShort [ negateShort b, sqrt_ delta ]) (byShort [ Integer 2, a ])
-
-            solMinus =
-                divShort (minus (negateShort b) (sqrt_ delta)) (byShort [ Integer 2, a ])
         in
         if simplify delta == Integer 0 then
             solutionBranch v solPlus
 
         else
+            let
+                solMinus =
+                    divShort (minus (negateShort b) (sqrt_ delta)) (byShort [ Integer 2, a ])
+            in
             SolutionBranch
                 [ solutionBranch v solPlus
                 , solutionBranch v solMinus
@@ -683,18 +684,6 @@ solve3 v a b c d =
 
     else
         let
-            deltaZero =
-                minus (square b) (by [ Integer 3, a, c ])
-
-            deltaOne =
-                plus [ double <| ipow b 3, negate_ <| by [ Integer 9, a, b, c ], by [ Integer 27, square a, d ] ]
-
-            bigC =
-                cbrt <|
-                    div
-                        (plus [ deltaOne, sqrt_ <| minus (square deltaOne) (by [ Integer 4, ipow deltaZero 3 ]) ])
-                        (Integer 2)
-
             xi =
                 div (plus [ minusOne, sqrt_ (Integer -3) ]) (Integer 2)
 
@@ -703,6 +692,18 @@ solve3 v a b c d =
 
             sol k =
                 let
+                    deltaOne =
+                        plus [ double <| ipow b 3, negate_ <| by [ Integer 9, a, b, c ], by [ Integer 27, square a, d ] ]
+
+                    deltaZero =
+                        minus (square b) (by [ Integer 3, a, c ])
+
+                    bigC =
+                        cbrt <|
+                            div
+                                (plus [ deltaOne, sqrt_ <| minus (square deltaOne) (by [ Integer 4, ipow deltaZero 3 ]) ])
+                                (Integer 2)
+
                     xiC =
                         byShort [ k, bigC ]
                 in

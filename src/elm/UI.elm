@@ -325,15 +325,15 @@ toolbar ({ google, openMenu, showPendingActions } as model) =
 
         pendingActions =
             let
-                waitingAccessTokenLabel =
-                    { en = "Waiting for user to authenticate with Google"
-                    , it = "In attesa che l'utente si autentichi con Google"
-                    }
-            in
-            let
                 viewGoogleAction { en, it } { name, request } =
                     case request of
                         Google.WaitingAccessToken ->
+                            let
+                                waitingAccessTokenLabel =
+                                    { en = "Waiting for user to authenticate with Google"
+                                    , it = "In attesa che l'utente si autentichi con Google"
+                                    }
+                            in
                             ( text
                                 { en = name ++ ": " ++ waitingAccessTokenLabel.en
                                 , it = name ++ ": " ++ waitingAccessTokenLabel.it
@@ -518,30 +518,11 @@ dropdown model =
                 [ Element.element <| icon Theme.darkIconAttrs ]
                 lbl
 
-        vr =
-            el
-                [ height fill
-                , Border.widthEach
-                    { top = 0
-                    , bottom = 0
-                    , right = 1
-                    , left = 0
-                    }
-                ]
-                Element.none
-
         languageButton lang flag =
             el [ width fill ] <|
                 el [ centerX ] <|
                     btn (Language lang) [] <|
                         L10N.invariant flag
-
-        languagesRow =
-            Element.row [ width fill ]
-                [ languageButton En "🇬🇧"
-                , vr
-                , languageButton It "🇮🇹"
-                ]
 
         expandIntervalsButton expandIntervals =
             if expandIntervals then
@@ -579,6 +560,25 @@ dropdown model =
 
         buttons =
             let
+                vr =
+                    el
+                        [ height fill
+                        , Border.widthEach
+                            { top = 0
+                            , bottom = 0
+                            , right = 1
+                            , left = 0
+                            }
+                        ]
+                        Element.none
+
+                languagesRow =
+                    Element.row [ width fill ]
+                        [ languageButton En "🇬🇧"
+                        , vr
+                        , languageButton It "🇮🇹"
+                        ]
+
                 sid =
                     selectedDocumentId model
             in
