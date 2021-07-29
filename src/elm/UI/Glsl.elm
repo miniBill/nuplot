@@ -43,11 +43,11 @@ getGlsl expandIntervals rayDifferentials graph =
             case g of
                 Explicit2D c ->
                     build2d toSrcImplicit prefix <|
-                        Expression.Utils.minus Expression.Utils.y c
+                        minus Expression.Utils.y c
 
                 Implicit2D l r ->
                     build2d toSrcImplicit prefix <|
-                        Expression.Utils.minus l r
+                        minus l r
 
                 Polar2D e ->
                     build2d toSrcPolar prefix e

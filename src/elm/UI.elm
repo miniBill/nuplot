@@ -9,7 +9,7 @@ import Browser.Events
 import Browser.Navigation exposing (Key)
 import Codec
 import Document exposing (Modal(..), Output(..), Row, RowData(..), StoredDocument, UIDocument)
-import Element.WithContext as Element exposing (DeviceClass(..), alignBottom, alignRight, centerX, centerY, el, fill, height, inFront, padding, scrollbarX, shrink, spacing, width)
+import Element.WithContext as Element exposing (DeviceClass(..), alignBottom, alignRight, centerX, centerY, el, fill, height, padding, scrollbarX, shrink, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -25,17 +25,13 @@ import List.Extra as List
 import Maybe.MyExtra as Maybe
 import Task
 import UI.L10N as L10N exposing (L10N, Language(..), text, title)
-import UI.Model as Model exposing (CellMsg(..), Context, DocumentMsg(..), Flags, Model, Msg(..))
+import UI.Model as Model exposing (CellMsg(..), DocumentMsg(..), Flags, Model, Msg(..))
 import UI.Ports
 import UI.RowView
-import UI.Theme as Theme exposing (hr, onKey)
+import UI.Theme as Theme exposing (Element, hr, onKey)
 import Url exposing (Url)
 import Url.Parser
 import Zipper exposing (Zipper)
-
-
-type alias Element msg =
-    Element.Element Context msg
 
 
 main : Program Flags Model Msg
@@ -56,8 +52,8 @@ main =
                 }
         , update = update
         , subscriptions = subscriptions
-        , onUrlChange = always <| Nop "onUrlChange"
-        , onUrlRequest = always <| Nop "onUrlRequest"
+        , onUrlChange = \_ -> Nop "onUrlChange"
+        , onUrlRequest = \_ -> Nop "onUrlRequest"
         }
 
 
@@ -511,7 +507,7 @@ dropdown model =
                                 Element.none
 
                             mainIcon :: layers ->
-                                List.foldl (\e -> el [ inFront e ]) mainIcon layers
+                                List.foldl (\e -> el [ Element.inFront e ]) mainIcon layers
                         , text lbl
                         ]
                 }
@@ -714,7 +710,7 @@ ellipsize s =
 
 
 documentTabButton : { a | selected : Bool, onPress : msg, closeMsg : Maybe msg, label : Element msg, title : L10N String } -> Element msg
-documentTabButton { selected, onPress, closeMsg, label, title } =
+documentTabButton ({ selected, onPress, closeMsg, label } as config) =
     let
         focusStyle =
             Element.focused
@@ -749,7 +745,7 @@ documentTabButton { selected, onPress, closeMsg, label, title } =
 
             else
                 Theme.colors.unselectedDocument
-        , L10N.title title
+        , title config.title
         , alignBottom
         , focusStyle
         ]
@@ -763,7 +759,7 @@ documentTabButton { selected, onPress, closeMsg, label, title } =
                 el
                     [ case closeMsg of
                         Nothing ->
-                            Element.padding Theme.spacing
+                            padding Theme.spacing
 
                         Just _ ->
                             Element.paddingEach
@@ -788,7 +784,7 @@ documentTabButton { selected, onPress, closeMsg, label, title } =
                         , right = Theme.spacing
                         }
                     , focusStyleChild
-                    , L10N.title
+                    , title
                         { en = "Close"
                         , it = "Chiudi"
                         }
@@ -898,8 +894,8 @@ viewDocument size { id, rows } =
     in
     Element.map (DocumentMsg id) <|
         Element.column
-            [ Element.spacing <| 2 * Theme.spacing
-            , Element.padding Theme.spacing
+            [ spacing <| 2 * Theme.spacing
+            , padding Theme.spacing
             , width fill
             , height fill
             , Element.scrollbarY

@@ -1,7 +1,7 @@
 module UI.Glsl.Code exposing (Uniforms, constantToGlsl, deindent, expressionToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Dict
-import Expression exposing (Expression, FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
+import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
 import UI.Glsl.Generator as Generator exposing (Expression, File, FunDecl, Statement, TypedName, Vec2, Vec3, Vec4, abs_, add, ands, arr, assign, by, byF, call0, call1, call2, call4, ceil_, decl, def, div, dot2, dotted2, dotted3, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, if_, int, log, lt, mat3T, max_, min_, mod, negate_, normalize, one, pow, radians_, return, sign, subtract, ternary, unknown, unknownFunDecl, unknownTypedName, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
@@ -83,7 +83,7 @@ by3 =
     Tuple.second by3Tuple
 
 
-div2Tuple : ( FunDecl, Generator.Expression Vec2 -> Generator.Expression Vec2 -> Generator.Expression Vec2 )
+div2Tuple : ( FunDecl, Expression Vec2 -> Expression Vec2 -> Expression Vec2 )
 div2Tuple =
     fun2 vec2T "div" (vec2T "a") (vec2T "b") <|
         \a b ->
@@ -1345,7 +1345,7 @@ wordWrap =
 
 expressionToIntervalGlsl : Bool -> Expression.Expression -> String
 expressionToIntervalGlsl expandIntervals =
-    Expression.toPrintExpression
+    toPrintExpression
         >> expressionToIntervalGlslPrec expandIntervals 0
         >> wordWrap
 
@@ -1657,7 +1657,7 @@ expressionToNormalGlsl { x, y, z } =
                 PLambda _ _ ->
                     vec4Zero
     in
-    Expression.toPrintExpression >> go
+    toPrintExpression >> go
 
 
 mainGlsl :

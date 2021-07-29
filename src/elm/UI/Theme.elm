@@ -1,8 +1,8 @@
-module UI.Theme exposing (bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, hr, iconSize, lightIconAttrs, onCtrlEnter, onEnter, onKey, roundness, row, smallDarkIconAttrs, spacing, whiteLines, wrappedRow)
+module UI.Theme exposing (Attribute, Element, bracketBorderWidth, bracketWidth, colors, column, darkIconAttrs, darken, fontSize, grid, hr, iconSize, lightIconAttrs, onCtrlEnter, onEnter, onKey, roundness, row, smallDarkIconAttrs, spacing, whiteLines, wrappedRow)
 
 import Ant.Icon
 import Color
-import Element.WithContext as Element exposing (Attribute, Color, Element, el, fill, none, rgb, rgb255, rgba, shrink, width)
+import Element.WithContext as Element exposing (Color, el, fill, none, rgb, rgb255, rgba, shrink, width)
 import Element.WithContext.Border as Border
 import Html.Events
 import Json.Decode as Decode
@@ -156,7 +156,7 @@ grid attrs rows =
                             |> List.drop i
                             |> List.head
                             |> Maybe.withDefault none
-                            |> Element.el [ Element.alignBottom ]
+                            |> el [ Element.alignBottom ]
                 }
 
             w =
@@ -229,4 +229,4 @@ hr =
             , bottom = 0
             }
         ]
-        Element.none
+        none

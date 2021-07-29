@@ -5,7 +5,7 @@ import Expression exposing (Context, Expression(..), RelationOperation(..), Vari
 import Expression.Cleaner as Cleaner
 import Expression.Utils exposing (by, div, minus, negate_, plus, pow, vector)
 import List.Extra as List
-import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..), getChompedString)
+import Parser.Advanced as Parser exposing ((|.), (|=), Parser, Step(..), Token(..))
 import Trie exposing (Trie)
 import UI.L10N exposing (L10N, invariant)
 import Unicode
@@ -558,7 +558,7 @@ atomParser context =
             , Parser.inContext VariableContext <| variableParser context
             , Parser.inContext NumberContext <|
                 Parser.andThen tryParseNumber <|
-                    getChompedString <|
+                    Parser.getChompedString <|
                         Parser.succeed ()
                             |. Parser.chompIf (\c -> c == '.' || Char.isDigit c)
                                 (Expected

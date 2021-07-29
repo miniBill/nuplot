@@ -4,7 +4,7 @@ import Ant.Icons as Icons
 import Complex
 import Dict
 import Document exposing (Output(..), Row, RowData(..))
-import Element.WithContext as Element exposing (DeviceClass(..), Element, alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, row, shrink, spacing, width)
+import Element.WithContext as Element exposing (DeviceClass(..), alignBottom, alignRight, alignTop, centerX, el, fill, height, htmlAttribute, inFront, none, padding, paddingXY, px, row, shrink, spacing, width)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
 import Element.WithContext.Font as Font
@@ -21,16 +21,12 @@ import Markdown.Parser
 import Markdown.Renderer
 import UI.Glsl exposing (getGlsl)
 import UI.L10N exposing (L10N, invariant, text, title)
-import UI.Model exposing (CanvasId(..), CellMsg(..), Context, DocumentMsg(..))
-import UI.Theme as Theme
-
-
-type alias Element msg =
-    Element.Element Context msg
+import UI.Model exposing (CanvasId(..), CellMsg(..), DocumentMsg(..))
+import UI.Theme as Theme exposing (Element)
 
 
 draw : { width : Int, height : Int } -> CanvasId -> { wdiv : Int, hdiv : Int } -> { graph : Graph, axes : Bool } -> Element CellMsg
-draw { width, height } id { wdiv, hdiv } { graph, axes } =
+draw size id { wdiv, hdiv } { graph, axes } =
     let
         isCompletelyReal g =
             case g of
@@ -62,10 +58,10 @@ draw { width, height } id { wdiv, hdiv } { graph, axes } =
                 "0"
 
         rawImageWidth =
-            min 1920 <| width - (8 + wdiv) * Theme.spacing
+            min 1920 <| size.width - (8 + wdiv) * Theme.spacing
 
         rawImageHeight =
-            min 1080 <| height - (14 + hdiv) * Theme.spacing
+            min 1080 <| size.height - (14 + hdiv) * Theme.spacing
 
         imageWidth =
             min rawImageWidth <| rawImageHeight * 4 // 3
@@ -77,14 +73,14 @@ draw { width, height } id { wdiv, hdiv } { graph, axes } =
             Input.button
                 [ Element.behindContent <|
                     el
-                        [ Element.width fill
-                        , Element.height fill
+                        [ width fill
+                        , height fill
                         , Background.color <| Element.rgba 0 0 0 0.2
                         , Border.roundEach rounds
                         ]
                         none
                 , padding Theme.spacing
-                , Element.htmlAttribute <| Html.Attributes.class "on-parent-hover"
+                , htmlAttribute <| Html.Attributes.class "on-parent-hover"
                 ]
                 { label = Element.element <| icon Theme.lightIconAttrs
                 , onPress = Just <| msg id
@@ -96,7 +92,7 @@ draw { width, height } id { wdiv, hdiv } { graph, axes } =
         brButtonsRow =
             Element.with identity <|
                 \{ isFullscreen, hasFullscreen } ->
-                    Element.row [ alignRight, alignBottom ] <|
+                    row [ alignRight, alignBottom ] <|
                         if isFullscreen then
                             [ iconButton ResetZoom { noRound | topLeft = Theme.spacing } Icons.aimOutlined
                             , iconButton ExitFullscreenCanvas noRound Icons.fullscreenExitOutlined
@@ -114,7 +110,7 @@ draw { width, height } id { wdiv, hdiv } { graph, axes } =
         urButtonsRow =
             Element.with .hasClipboard <|
                 \hasClipboard ->
-                    Element.row [ alignRight, alignTop ] <|
+                    row [ alignRight, alignTop ] <|
                         if hasClipboard then
                             [ iconButton CopyCanvas { noRound | bottomLeft = Theme.spacing } Icons.copyOutlined
                             , iconButton SaveCanvas noRound Icons.saveOutlined
@@ -130,8 +126,8 @@ draw { width, height } id { wdiv, hdiv } { graph, axes } =
         attrs =
             [ inFront urButtonsRow
             , inFront brButtonsRow
-            , Element.htmlAttribute <| Html.Attributes.id <| cid ++ "-parent"
-            , Element.htmlAttribute <| Html.Attributes.class "hover-parent"
+            , htmlAttribute <| Html.Attributes.id <| cid ++ "-parent"
+            , htmlAttribute <| Html.Attributes.class "hover-parent"
             ]
     in
     Element.with identity <|
@@ -168,7 +164,7 @@ view size index { input, editing, data } =
                             output
                 in
                 Theme.column
-                    [ Element.width fill
+                    [ width fill
                     , alignTop
                     ]
                     (codeInputLine size index input :: outputRows)
@@ -188,7 +184,7 @@ view size index { input, editing, data } =
                             }
                 in
                 if editing then
-                    Theme.row [ Element.width fill ]
+                    Theme.row [ width fill ]
                         [ inputBox (size.width - 100) input
                         , Input.button
                             [ title
@@ -209,9 +205,9 @@ view size index { input, editing, data } =
                         |> Markdown.Renderer.render Markdown.Renderer.defaultHtmlRenderer
                         |> Result.withDefault []
                         |> List.map (\e -> Element.paragraph [] [ Element.html e ])
-                        |> Element.textColumn [ Element.width fill, alignTop ]
+                        |> Element.textColumn [ width fill, alignTop ]
                         |> (\e ->
-                                Theme.row [ Element.width fill ]
+                                Theme.row [ width fill ]
                                     [ e
                                     , editButton
                                     , toCodeCellButton
@@ -235,11 +231,11 @@ editButton =
 inputBox : Int -> String -> Element CellMsg
 inputBox maxWidth input =
     Input.multiline
-        [ Element.width <| Element.maximum maxWidth fill
-        , Element.htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
-        , Element.htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
-        , Element.htmlAttribute <| Html.Attributes.spellcheck False
-        , Element.htmlAttribute <| Html.Attributes.class "input"
+        [ width <| Element.maximum maxWidth fill
+        , htmlAttribute <| Html.Attributes.attribute "autocorrect" "off"
+        , htmlAttribute <| Html.Attributes.attribute "autocapitalize" "none"
+        , htmlAttribute <| Html.Attributes.spellcheck False
+        , htmlAttribute <| Html.Attributes.class "input"
         , Theme.onCtrlEnter Calculate
         ]
         { label = Input.labelHidden "Input"
@@ -380,7 +376,7 @@ viewSolutionTree pageWidth tree =
                 br =
                     el [ width <| px 1, height fill, Border.width 1 ] none
             in
-            [ Element.row [ spacing Theme.spacing ] <|
+            [ row [ spacing Theme.spacing ] <|
                 List.intersperse br <|
                     List.map
                         (\c ->
@@ -424,7 +420,7 @@ simplyBracketed lw lr rw rr blocks =
         bracket we re =
             el
                 [ width <| px Theme.bracketWidth
-                , Element.height fill
+                , height fill
                 , Border.widthEach we
                 , Border.roundEach re
                 ]
@@ -444,7 +440,7 @@ bracketed l r blocks =
 
 
 outputBlock : String -> { height : Int, width : Int } -> Output -> Element CellMsg
-outputBlock blockId ({ width } as size) output =
+outputBlock blockId size output =
     let
         showExpr : Expression -> ( Element CellMsg, Bool )
         showExpr e =
@@ -486,21 +482,21 @@ outputBlock blockId ({ width } as size) output =
         viewValue id coeffs v =
             case asExpression v of
                 Just ex ->
-                    ( viewExpression width ex, False )
+                    ( viewExpression size.width ex, False )
 
                 Nothing ->
                     case v of
                         SymbolicValue s ->
-                            ( viewExpression width s, False )
+                            ( viewExpression size.width s, False )
 
                         SolutionTreeValue t ->
                             ( Element.column
                                 [ spacing Theme.spacing
                                 , Element.scrollbarX
-                                , Element.width <| Element.maximum (width - 2 * Theme.spacing) fill
+                                , width <| Element.maximum (size.width - 2 * Theme.spacing) fill
                                 ]
                               <|
-                                viewSolutionTree (width - 2 * Theme.spacing) t
+                                viewSolutionTree (size.width - 2 * Theme.spacing) t
                             , False
                             )
 
@@ -516,10 +512,10 @@ outputBlock blockId ({ width } as size) output =
                         LambdaValue x f ->
                             case asExpression f of
                                 Just e ->
-                                    ( viewExpression width <| Lambda x e, False )
+                                    ( viewExpression size.width <| Lambda x e, False )
 
                                 Nothing ->
-                                    ( Element.row []
+                                    ( row []
                                         [ text <| invariant <| x ++ " => "
                                         , Tuple.first (viewValue id coeffs f)
                                         ]
@@ -580,6 +576,6 @@ outputBlock blockId ({ width } as size) output =
                     centerX
 
                   else
-                    Element.width fill
+                    width fill
                 ]
                 child

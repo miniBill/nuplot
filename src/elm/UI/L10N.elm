@@ -1,6 +1,6 @@
 module UI.L10N exposing (L10N, Language(..), concat, invariant, localize, map, sequence, text, title, traverse)
 
-import Element.WithContext as Element exposing (Element)
+import Element.WithContext as Element exposing (Attribute, Element)
 import Html.Attributes
 
 
@@ -70,7 +70,7 @@ text l10n =
         Element.text
 
 
-title : L10N String -> Element.Attribute { a | language : Language } msg
+title : L10N String -> Attribute { a | language : Language } msg
 title l10n =
     Element.withAttribute (localize l10n)
         (Element.htmlAttribute << Html.Attributes.title)
