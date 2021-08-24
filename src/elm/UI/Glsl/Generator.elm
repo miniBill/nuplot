@@ -345,7 +345,7 @@ expressionToGlsl =
 
                 _ ->
                     if rec then
-                        Debug.todo (Debug.toString e)
+                        "!!!Error in toString for Glsl!!!"
 
                     else
                         "(" ++ go True e ++ ")"
@@ -668,10 +668,10 @@ normalize =
 
 unknown : String -> Expression t
 unknown =
-    let
-        _ =
-            Debug.todo
-    in
+    -- let
+    --     _ =
+    --         Debug.todo
+    -- in
     Unknown
 
 
@@ -692,19 +692,19 @@ uniform _ name =
 
 unknownName : String -> Name
 unknownName =
-    let
-        _ =
-            Debug.todo
-    in
+    -- let
+    --     _ =
+    --         Debug.todo
+    -- in
     Name
 
 
 unknownTypedName : String -> TypedName t
 unknownTypedName n =
-    let
-        _ =
-            Debug.todo
-    in
+    -- let
+    --     _ =
+    --         Debug.todo
+    -- in
     ( Type "", Name n )
 
 
