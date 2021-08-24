@@ -217,6 +217,11 @@ export class NuPlot extends HTMLElement {
           cancelAnimationFrame(this.pendingRequestAnimationFrame);
         if (this.pendingTimeout >= 0) clearTimeout(this.pendingTimeout);
         this.wrapper.removeChild(this.canvas);
+
+        if (process.env.NODE_ENV === "development") {
+          console.error("webglcontextlost");
+          return;
+        }
         this.label.innerHTML =
           "Something went wrong with the graphics.<br/>Try reloading the page";
       },
@@ -600,26 +605,7 @@ export class NuPlot extends HTMLElement {
 #define Y_POINTS ${Math.ceil(this.canvas.height / 60)}
 #define VECTOR_SPACING ${60 / 2}.0
 ${built}`;
-    if (this.hasWebGl2) {
-      const translated = built
-        .replace("attribute", "in")
-        .replace("gl_FragColor", "fragColor")
-        .replace("float sinh", "float sinh_")
-        .replace("float cosh", "float cosh_")
-        .replace("float tanh", "float tanh_")
-        .replace("    lessThanForMix", "    lessThan");
-      built = `#version 300 es
-precision highp float;
-out vec4 fragColor;
-${translated}`;
-    } else {
-      if (this.gl.getExtension("OES_standard_derivatives")) {
-        built = `#extension GL_OES_standard_derivatives : enable
-${built}`;
-      } else {
-        built = built.replace("abs(fwidth(ray_direction))", "vec3(0)");
-      }
-    }
+    built = this.translateToWebGl2(built);
 
     if (
       process.env.NODE_ENV === "development" &&
@@ -636,29 +622,55 @@ ${built}`;
     this.label.innerHTML = "";
 
     if (!compiled) {
-      if (process.env.NODE_ENV === "development") {
-        const preNode = document.createElement("pre");
-        preNode.style.whiteSpace = "pre-wrap";
-        preNode.style.maxWidth = "90vw";
-        preNode.innerText = `Error compiling shader, log:
+      this.displayError(shader, built);
+      return null;
+    }
+    return compiled;
+  }
 
-${this.gl.getShaderInfoLog(shader)}
+  private translateToWebGl2(built: string) {
+    if (this.hasWebGl2) {
+      const translated = built
+        .replace("attribute", "in")
+        .replace("gl_FragColor", "fragColor")
+        .replace("float sinh", "float sinh_")
+        .replace("float cosh", "float cosh_")
+        .replace("float tanh", "float tanh_")
+        .replace("    lessThanForMix", "    lessThan");
+      return `#version 300 es
+precision highp float;
+out vec4 fragColor;
+${translated}`;
+    }
+
+    if (this.gl?.getExtension("OES_standard_derivatives"))
+      return `#extension GL_OES_standard_derivatives : enable
+${built}`;
+
+    return built.replace("abs(fwidth(ray_direction))", "vec3(0)");
+  }
+
+  private displayError(shader: WebGLShader, built: string) {
+    const log = this.gl?.getShaderInfoLog(shader);
+    if (process.env.NODE_ENV !== "development") {
+      const errorNode = document.createElement("div");
+      errorNode.innerText = "Error creating graph. Try contacting the author.";
+      this.label.appendChild(errorNode);
+    }
+
+    const preNode = document.createElement("pre");
+    preNode.style.whiteSpace = "pre-wrap";
+    preNode.style.maxWidth = "90vw";
+    preNode.innerText = `Error compiling shader, log:
+
+${log}
 
   Source:
 
 ${NuPlot.withLines(built)}`;
-        this.label.appendChild(preNode);
-        console.error("Error compiling shader, source:\n", built);
-        console.error("Log:\n", this.gl.getShaderInfoLog(shader));
-      } else {
-        const errorNode = document.createElement("div");
-        errorNode.innerText =
-          "Error creating graph. Try contacting the author.";
-        this.label.appendChild(errorNode);
-      }
-      return null;
-    }
-    return compiled;
+    this.label.appendChild(preNode);
+    console.error("Error compiling shader, source:\n", built);
+    console.error("Log:\n", log);
   }
 
   static get observedAttributes() {
