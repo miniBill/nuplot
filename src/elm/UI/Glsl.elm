@@ -8,7 +8,7 @@ import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, 
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (floatT, uniform, unknownTypedName, vec2T)
+import UI.Glsl.Generator as Generator exposing (dotted3, floatT, uniform, unsafeCall, vec2T)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -147,7 +147,7 @@ getGlsl expandIntervals rayDifferentials graph =
             rayDifferentials
             (List.map
                 (\p ->
-                    { name = unknownTypedName p.name
+                    { call = \arg0 arg1 arg2 arg3 -> dotted3 <| unsafeCall p.name [ arg0.base, arg1.base, arg2.base, arg3.base ]
                     , color = p.color
                     }
                 )
@@ -345,7 +345,9 @@ requirementToGlsl i r =
             functionToGlsl i f
 
         RequireConstant c ->
-            constantToGlsl c |> Generator.funDeclToGlsl
+            constantToGlsl c
+                |> Tuple.first
+                |> Generator.funDeclToGlsl
 
         RequireOperation o ->
             operationToGlsl i o
