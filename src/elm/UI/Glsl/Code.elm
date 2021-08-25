@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (Uniforms, constantToGlsl, deindent, expressionToGl
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call2, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -128,11 +128,6 @@ log10Decl =
 log10 : ExpressionX xa Float -> Expression1 Float
 log10 =
     Tuple.second log10Tuple
-
-
-callUnknown2 : String -> ExpressionX a l -> ExpressionX b r -> Expression1 t
-callUnknown2 =
-    call2 << unknownFun2
 
 
 straightOperationToGlsl : GlslOperation -> List FunDecl
@@ -1761,12 +1756,12 @@ expressionToNormalGlsl { x, y, z } =
 
                 PApply name ex ->
                     if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
-                        case List.map go ex of
+                        case List.map (go >> .base) ex of
                             [] ->
                                 vec4Zero
 
                             head :: tail ->
-                                List.foldl (\e a -> dotted4 (callUnknown2 ("g" ++ Expression.functionNameToString name) a e).base) head tail
+                                dotted4 <| List.foldl (\e a -> unsafeCall ("g" ++ Expression.functionNameToString name) [ a, e ]) head tail
 
                     else
                         dotted4 (unsafeCall ("g" ++ Expression.functionNameToString name) (List.map (go >> .base) ex))

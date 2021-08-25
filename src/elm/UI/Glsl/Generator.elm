@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call2, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, true, uniform, unknown, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, true, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Expression exposing (RelationOperation(..))
 import Set
@@ -753,11 +753,6 @@ unsafeCall name =
     Expression << Call name << List.map (\(Expression e) -> e)
 
 
-call2 : TypedName t (a -> b -> r) -> a -> b -> r
-call2 (TypedName _ _ expr) =
-    expr
-
-
 zero : Expression1 Float
 zero =
     float 0
@@ -892,15 +887,6 @@ unknown =
             Debug.todo
     in
     Expression << Unknown
-
-
-unknownFun2 : String -> TypedName (l -> r -> t) (ExpressionX a l -> ExpressionX b r -> Expression1 t)
-unknownFun2 n =
-    let
-        _ =
-            Debug.todo
-    in
-    TypedName (Type "") (Name n) (\l r -> dotted1 (call2Internal n l r))
 
 
 
