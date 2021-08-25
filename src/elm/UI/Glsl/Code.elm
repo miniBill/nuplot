@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (Uniforms, constantToGlsl, deindent, expressionToGl
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call2, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call2, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -216,6 +216,117 @@ gsquare =
     Tuple.second gsquareCouple
 
 
+gbyCouple : ( FunDecl, ExpressionX xa Vec4 -> ExpressionX xb Vec4 -> Expression4 )
+gbyCouple =
+    fun2 vec4T "gby" (vec4T "l") (vec4T "r") <| \l r -> [ return <| vec4_1_3 (by l.x r.x) (add (byF l.x r.yzw) (byF r.x l.yzw)) ]
+
+
+gbyDecl : FunDecl
+gbyDecl =
+    Tuple.first gbyCouple
+
+
+gby : ExpressionX xa Vec4 -> ExpressionX xb Vec4 -> Expression4
+gby =
+    Tuple.second gbyCouple
+
+
+gdivCouple : ( FunDecl, ExpressionX xa Vec4 -> ExpressionX xb Vec4 -> Expression4 )
+gdivCouple =
+    fun2 vec4T "gdiv" (vec4T "l") (vec4T "r") <|
+        \l r ->
+            [ return <|
+                vec4_1_3 (div l.x r.x)
+                    (divF
+                        (subtract (byF r.x l.yzw) (byF l.x r.yzw))
+                        (pow r.x <| float 2)
+                    )
+            ]
+
+
+gdivDecl : FunDecl
+gdivDecl =
+    Tuple.first gdivCouple
+
+
+gdiv : ExpressionX xa Vec4 -> ExpressionX xb Vec4 -> Expression4
+gdiv =
+    Tuple.second gdivCouple
+
+
+gpowICouple : ( FunDecl, ExpressionX xa Vec4 -> ExpressionX xb Int -> Expression4 )
+gpowICouple =
+    fun2 vec4T "gpow" (vec4T "b") (intT "e") <|
+        \b e ->
+            [ return <|
+                vec4_1_3
+                    (pow b.x <| floatCast e)
+                    (byF (by b.x <| floatCast <| subtract e (int 1)) b.yzw)
+            ]
+
+
+gpowIDecl : FunDecl
+gpowIDecl =
+    Tuple.first gpowICouple
+
+
+gpowI : ExpressionX xa Vec4 -> ExpressionX xb Int -> Expression4
+gpowI =
+    Tuple.second gpowICouple
+
+
+gpowCouple : ( FunDecl, ExpressionX xa Vec4 -> ExpressionX xb Vec4 -> Expression4 )
+gpowCouple =
+    fun2 vec4T "gpow" (vec4T "b") (vec4T "e") <|
+        \b e ->
+            def intT "ie" (intCast e.x) <|
+                \ie ->
+                    [ if_ (ands [ eq (floatCast ie) e.x, eq e.y zero, eq e.z zero, eq e.w zero ])
+                        (return <| gpowI b ie)
+                    , return <| gexp <| gby (gln b) e
+                    ]
+
+
+gpowDecl : FunDecl
+gpowDecl =
+    Tuple.first gpowCouple
+
+
+gpow : ExpressionX xa Vec4 -> ExpressionX xb Vec4 -> Expression4
+gpow =
+    Tuple.second gpowCouple
+
+
+gexpCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
+gexpCouple =
+    fun1 vec4T "gexp" (vec4T "z") <| \z -> [ return <| vec4_1_3 z.x (byF (exp z.x) z.yzw) ]
+
+
+gexpDecl : FunDecl
+gexpDecl =
+    Tuple.first gexpCouple
+
+
+gexp : ExpressionX xa Vec4 -> Expression4
+gexp =
+    Tuple.second gexpCouple
+
+
+glnCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
+glnCouple =
+    fun1 vec4T "gln" (vec4T "z") <| \z -> [ return <| vec4_1_3 (log z.x) (divF z.yzw z.x) ]
+
+
+glnDecl : FunDecl
+glnDecl =
+    Tuple.first glnCouple
+
+
+gln : ExpressionX xa Vec4 -> Expression4
+gln =
+    Tuple.second glnCouple
+
+
 intervalOperationToGlsl : GlslOperation -> String
 intervalOperationToGlsl op =
     case op of
@@ -240,13 +351,7 @@ intervalOperationToGlsl op =
                 float mx = max(max(a,b),max(c,d));
                 return vec2(mn, mx);
             }
-
-            vec4 gby(vec4 l, vec4 r) {
-                return vec4(
-                    l.x * r.x,
-                    l.x * r.yzw + r.x * l.yzw);
-            }
-            """
+            """ ++ fileToGlsl [ gbyDecl ]
 
         GlslDivision ->
             """
@@ -263,14 +368,7 @@ intervalOperationToGlsl op =
             vec2 idiv(vec2 l, vec2 r) {
                 return iby(l, iinverse(r));
             }
-
-            vec4 gdiv(vec4 l, vec4 r) {
-                return vec4(
-                    l.x / r.x,
-                    (r.x * l.yzw - l.x * r.yzw) / pow(r.x, 2.0)
-                );
-            }
-            """
+            """ ++ fileToGlsl [ gdivDecl ]
 
         GlslPower ->
             """
@@ -305,19 +403,7 @@ intervalOperationToGlsl op =
                     return ipow(b, int(e.x));
                 return iexp(iby(iln(b), e));
             }
-
-            vec4 gpow(vec4 b, int e) {
-                return vec4(pow(b.x, float(e)), float(e) * pow(b.x, float(e - 1)) * b.yzw);
-            }
-
-            vec4 gpow(vec4 b, vec4 e) {
-                int ie = int(e.x);
-                if(float(ie) == e.x && e.y == 0.0 && e.z == 0.0 && e.w == 0.0) {
-                    return gpow(b, ie);
-                }
-                return gexp(gby(gln(b), e));
-            }
-            """
+            """ ++ fileToGlsl [ gpowIDecl, gpowDecl ]
 
         GlslRelations ->
             """
@@ -854,14 +940,7 @@ intervalFunctionToGlsl name =
             vec2 iexp(vec2 z) {
                 return vec2(exp(z.x), exp(z.y));
             }
-
-            vec4 gexp(vec4 z) {
-                return vec4(
-                    exp(z.x),
-                    exp(z.x) * z.yzw
-                );
-            }
-            """
+            """ ++ fileToGlsl [ gexpDecl ]
 
         Floor22 ->
             """
@@ -879,11 +958,7 @@ intervalFunctionToGlsl name =
             vec2 iln(vec2 z) {
                 return vec2(log(z.x), log(z.y));
             }
-
-            vec4 gln(vec4 z) {
-                return vec4(log(z.x), z.yzw / z.x);
-            }
-            """
+            """ ++ fileToGlsl [ glnDecl ]
 
         Log1022 ->
             """
@@ -1020,7 +1095,7 @@ intervalFunctionToGlsl name =
                 float mn = min(s.x, s.y);
                 return vec2(mn, mx);
             }
-            """ ++ ([ gsquareDecl ] |> fileToGlsl)
+            """ ++ fileToGlsl [ gsquareDecl ]
 
         Tan22 ->
             """
@@ -1670,19 +1745,19 @@ expressionToNormalGlsl { x, y, z } =
                         subtract4 (go l) (go r)
 
                 PBy l r ->
-                    dotted4 (callUnknown2 "gby" (go l) (go r)).base
+                    gby (go l) (go r)
 
                 PDiv l r ->
-                    dotted4 (callUnknown2 "gdiv" (go l) (go r)).base
+                    dotted4 (gdiv (go l) (go r)).base
 
                 PPower l (PInteger 2) ->
                     gsquare (go l)
 
                 PPower l (PInteger ri) ->
-                    dotted4 (callUnknown2 "gpow" (go l) (int ri)).base
+                    gpowI (go l) (int ri)
 
                 PPower l r ->
-                    dotted4 (callUnknown2 "gpow" (go l) (go r)).base
+                    gpow (go l) (go r)
 
                 PApply name ex ->
                     if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
