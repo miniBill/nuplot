@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (Uniforms, constantToGlsl, deindent, expressionToGl
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call1, call2, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call1, call2, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -155,12 +155,10 @@ straightOperationToGlsl op =
             []
 
         GlslDivision ->
-            [ cdivDecl
-            ]
+            [ cdivDecl ]
 
         GlslPower ->
-            [ cpowDecl
-            ]
+            [ cpowDecl ]
 
         GlslRelations ->
             []
@@ -179,7 +177,7 @@ cpowTuple =
                         ]
                     )
                     (vec2 (pow w.x z.x) zero)
-                    (callUnknown1 "cexp" <| cby (cln w) z)
+                    (cexp <| cby (cln w) z)
             ]
 
 
@@ -543,14 +541,7 @@ straightFunctionToGlsl name =
             """ } ]
 
         Exp22 ->
-            [ unknownFunDecl { name = "cexp", type_ = "TODO", body = """
-            vec2 cexp(vec2 z) {
-                if(z.y == 0.0) {
-                    return vec2(exp(z.x), 0);
-                }
-                return vec2(cos(z.y) * exp(z.x), sin(z.y) * exp(z.x));
-            }
-            """ } ]
+            [ cexpDecl ]
 
         Re22 ->
             [ unknownFunDecl { name = "cre", type_ = "TODO", body = """
@@ -650,12 +641,32 @@ straightFunctionToGlsl name =
             """ } ]
 
 
+cexpTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+cexpTuple =
+    fun1 vec2T "cexp" (vec2T "z") <|
+        \z ->
+            [ if_ (eq z.y zero)
+                (return <| vec2 (exp z.x) zero)
+            , return <| vec2 (by (cos_ z.y) (exp z.x)) (by (sin_ z.y) z.x)
+            ]
+
+
+cexpDecl : FunDecl
+cexpDecl =
+    Tuple.first cexpTuple
+
+
+cexp : ExpressionX xa Vec2 -> Expression2
+cexp =
+    Tuple.second cexpTuple
+
+
 clnTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 clnTuple =
     fun1 vec2T "cln" (vec2T "z") <|
         \z ->
             if_
-                (ands [ eq z.y zero, leq z.x zero ])
+                (ands [ eq z.y zero, geq z.x zero ])
                 (return <| vec2 (log z.x) zero)
                 :: (def floatT "px" (length z) <|
                         \px ->
