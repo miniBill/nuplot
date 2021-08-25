@@ -1,8 +1,8 @@
-module UI.Glsl.Code exposing (Uniforms, constantToGlsl, deindent, expressionToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+module UI.Glsl.Code exposing (Uniforms, constantToGlsl, deindent, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDelta, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, TypedName, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, by, by2, by3, byF, call0, call1, call2, call4, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFun0, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call1, call2, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -54,6 +54,21 @@ cbyDecl =
     Tuple.first cbyTuple
 
 
+gnumTuple : ( FunDecl, ExpressionX xa Float -> Expression4 )
+gnumTuple =
+    fun1 vec4T "gnum" (floatT "f") <| \f -> [ return <| vec4 f zero zero zero ]
+
+
+gnumDecl : FunDecl
+gnumDecl =
+    Tuple.first gnumTuple
+
+
+gnum : ExpressionX xa Float -> Expression4
+gnum =
+    Tuple.second gnumTuple
+
+
 cby : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
 cby =
     Tuple.second cbyTuple
@@ -69,11 +84,6 @@ cby3Tuple =
 cby3Decl : FunDecl
 cby3Decl =
     Tuple.first cby3Tuple
-
-
-cby3 : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> ExpressionX xc Vec2 -> Expression2
-cby3 =
-    Tuple.second cby3Tuple
 
 
 cdivTuple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
@@ -169,7 +179,7 @@ cpowTuple =
                         ]
                     )
                     (vec2 (pow w.x z.x) zero)
-                    (callUnknown1 "cexp" <| cby (callUnknown1 "cln" w) z)
+                    (callUnknown1 "cexp" <| cby (cln w) z)
             ]
 
 
@@ -523,16 +533,7 @@ straightFunctionToGlsl name =
             """ } ]
 
         Ln22 ->
-            [ unknownFunDecl { name = "cln", type_ = "TODO", body = """
-            vec2 cln(vec2 z) {
-                if(z.y == 0.0 && z.x >= 0.0) {
-                    return vec2(log(z.x), 0);
-                }
-                float px = length(z);
-                float py = atan(z.y, z.x);
-                return vec2(log(px), py);
-            }
-            """ } ]
+            [ clnDecl ]
 
         Log1022 ->
             [ unknownFunDecl { name = "clog10", type_ = "TODO", body = """
@@ -647,6 +648,29 @@ straightFunctionToGlsl name =
                 return vec2(0,0);
             }
             """ } ]
+
+
+clnTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+clnTuple =
+    fun1 vec2T "cln" (vec2T "z") <|
+        \z ->
+            if_
+                (ands [ eq z.y zero, leq z.x zero ])
+                (return <| vec2 (log z.x) zero)
+                :: (def floatT "px" (length z) <|
+                        \px ->
+                            def floatT "py" (atan2_ z.y z.x) <| \py -> [ return <| vec2 (log px) py ]
+                   )
+
+
+clnDecl : FunDecl
+clnDecl =
+    Tuple.first clnTuple
+
+
+cln : ExpressionX xa Vec2 -> Expression2
+cln =
+    Tuple.second clnTuple
 
 
 intervalFunctionToGlsl : GlslFunction -> String
@@ -1578,10 +1602,6 @@ expressionToIntervalGlslPrec expandIntervals p expr =
 expressionToNormalGlsl : { x : Expression1 Float, y : Expression1 Float, z : Expression1 Float } -> Expression.Expression -> Expression4
 expressionToNormalGlsl { x, y, z } =
     let
-        gnum : Expression1 Float -> Expression4
-        gnum e =
-            dotted4 (callUnknown1 "gnum" e).base
-
         go expr =
             case expr of
                 PVariable "pi" ->
@@ -1900,11 +1920,11 @@ toSrc3D expandIntervals suffix e =
                         def vec3T "mx" (max_ (arr f <| int 1) (arr t <| int 1)) <|
                             \mx ->
                                 def vec2T "x" (vec2 mn.x mx.x) <|
-                                    \x ->
+                                    \_ ->
                                         def vec2T "y" (vec2 mn.y mx.y) <|
-                                            \y ->
+                                            \_ ->
                                                 def vec2T "z" (vec2 mn.z mx.z) <|
-                                                    \z ->
+                                                    \_ ->
                                                         [ return <| dotted2 <| unknown <| expressionToIntervalGlsl expandIntervals e ]
     ]
 

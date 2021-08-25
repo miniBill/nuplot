@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, by, by2, by3, byF, call0, call1, call2, call3, call4, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, statementToGlsl, subtract, subtract2, subtract4, ternary, ternary2, ternary3, true, uniform, unknown, unknownFun0, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call0, call1, call2, call3, call4, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, statementToGlsl, subtract, subtract2, subtract4, ternary, ternary2, ternary3, true, uniform, unknown, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
 
 import Expression exposing (RelationOperation(..))
 import Set
@@ -622,6 +622,16 @@ normalize =
     dotted1 << call1Internal "normalize"
 
 
+length : ExpressionX a t -> Expression1 Float
+length =
+    dotted1 << call1Internal "length"
+
+
+atan2_ : ExpressionX a Float -> ExpressionX a Float -> Expression1 Float
+atan2_ l r =
+    dotted1 <| call2Internal "atan" l r
+
+
 arr : ExpressionX a Mat3 -> ExpressionX b Int -> Expression1 Vec3
 arr =
     expr2 Array
@@ -891,15 +901,6 @@ unknown =
             Debug.todo
     in
     Expression << Unknown
-
-
-unknownFun0 : String -> TypedName t (Expression1 t)
-unknownFun0 n =
-    let
-        _ =
-            Debug.todo
-    in
-    TypedName (Type "") (Name n) (dotted1 <| call0Internal n)
 
 
 unknownFun1 : String -> TypedName (l -> t) (ExpressionX a l -> Expression1 t)

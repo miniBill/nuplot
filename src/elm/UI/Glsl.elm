@@ -7,8 +7,8 @@ import Expression.Polynomial exposing (asPolynomial)
 import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, square)
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
-import UI.Glsl.Code exposing (constantToGlsl, deindent, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (dotted3, floatT, uniform, unsafeCall, vec2T)
+import UI.Glsl.Code exposing (constantToGlsl, deindent, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+import UI.Glsl.Generator as Generator exposing (dotted3, floatT, fun1, uniform, unsafeCall, vec2T)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -138,7 +138,8 @@ getGlsl expandIntervals rayDifferentials graph =
                 |> List.map (requirementToGlsl interval)
                 |> String.join "\n"
     in
-    thetaDeltaCode
+    declarations
+        ++ thetaDeltaCode
         ++ reqs
         ++ "\n/* Expression */\n"
         ++ deindent 4 srcExpr
@@ -154,6 +155,12 @@ getGlsl expandIntervals rayDifferentials graph =
                 pixel2D
             )
             pixel3D
+
+
+declarations : String
+declarations =
+    [ gnumDecl ]
+        |> Generator.fileToGlsl
 
 
 get3DSource : Bool -> String -> Expression -> { expr : Expression, srcExpr : String }
