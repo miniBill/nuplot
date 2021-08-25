@@ -23,10 +23,6 @@ vec2 dup(float x) {
     return vec2(x, x);
 }
 
-vec4 gnum(float f) {
-    return vec4(f, 0, 0, 0);
-}
-
 float atanPlus(float y, float x) {
     return mod(radians(360.0) + atan(y, x), radians(360.0));
 }
