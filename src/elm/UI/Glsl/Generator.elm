@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call2, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, true, uniform, unknown, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call2, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, true, uniform, unknown, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Expression exposing (RelationOperation(..))
 import Set
@@ -477,6 +477,11 @@ byF =
     expr2 By
 
 
+divF : ExpressionX a t -> ExpressionX b Float -> Expression1 t
+divF =
+    expr2 Div
+
+
 div : ExpressionX a t -> ExpressionX a t -> Expression1 t
 div =
     expr2 Div
@@ -620,6 +625,16 @@ length =
 atan2_ : ExpressionX a Float -> ExpressionX a Float -> Expression1 Float
 atan2_ l r =
     dotted1 <| call2Internal "atan" l r
+
+
+intCast : ExpressionX a Float -> Expression1 Int
+intCast =
+    dotted1 << call1Internal "int"
+
+
+floatCast : ExpressionX a Int -> Expression1 Float
+floatCast =
+    dotted1 << call1Internal "float"
 
 
 arr : ExpressionX a Mat3 -> ExpressionX b Int -> Expression1 Vec3
@@ -1072,6 +1087,11 @@ type Mat3
 voidT : TypingFunction (Never -> a) (Never -> a)
 voidT n =
     ( TypedName (Type "void") (Name n) never, always never )
+
+
+intT : TypingFunction Int (Expression1 Int)
+intT n =
+    ( TypedName (Type "int") (Name n) (dotted1Internal (Variable n)), dotted1 )
 
 
 floatT : TypingFunction Float (Expression1 Float)
