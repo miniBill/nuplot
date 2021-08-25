@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (Uniforms, constantToGlsl, deindent, expressionToGl
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call1, call2, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call1, call2, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -130,11 +130,6 @@ log10 =
     Tuple.second log10Tuple
 
 
-callUnknown1 : String -> ExpressionX a l -> Expression1 t
-callUnknown1 =
-    call1 << unknownFun1
-
-
 callUnknown2 : String -> ExpressionX a l -> ExpressionX b r -> Expression1 t
 callUnknown2 =
     call2 << unknownFun2
@@ -191,6 +186,36 @@ cpow =
     Tuple.second cpowTuple
 
 
+gnegCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
+gnegCouple =
+    fun1 vec4T "gneg" (vec4T "v") <| \v -> [ return <| negate_ v ]
+
+
+gnegDecl : FunDecl
+gnegDecl =
+    Tuple.first gnegCouple
+
+
+gneg : ExpressionX xa Vec4 -> Expression4
+gneg =
+    Tuple.second gnegCouple
+
+
+gsquareCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
+gsquareCouple =
+    fun1 vec4T "gsquare" (vec4T "z") <| \z -> [ return <| vec4_1_3 (by z.x z.x) z.yzw ]
+
+
+gsquareDecl : FunDecl
+gsquareDecl =
+    Tuple.first gsquareCouple
+
+
+gsquare : ExpressionX xa Vec4 -> Expression4
+gsquare =
+    Tuple.second gsquareCouple
+
+
 intervalOperationToGlsl : GlslOperation -> String
 intervalOperationToGlsl op =
     case op of
@@ -202,11 +227,7 @@ intervalOperationToGlsl op =
             vec2 ineg(vec2 v) {
                 return vec2(-v.y, -v.x);
             }
-
-            vec4 gneg(vec4 v) {
-                return -v;
-            }
-            """
+            """ ++ fileToGlsl [ gnegDecl ]
 
         GlslMultiplication ->
             """
@@ -999,11 +1020,7 @@ intervalFunctionToGlsl name =
                 float mn = min(s.x, s.y);
                 return vec2(mn, mx);
             }
-
-            vec4 gsquare(vec4 z) {
-                return vec4(z.x*z.x, 2.0 * z.x * z.yzw);
-            }
-            """
+            """ ++ ([ gsquareDecl ] |> fileToGlsl)
 
         Tan22 ->
             """
@@ -1637,7 +1654,7 @@ expressionToNormalGlsl { x, y, z } =
                     gnum <| float f
 
                 PNegate expression ->
-                    dotted4 (callUnknown1 "gneg" (go expression)).base
+                    gneg (go expression)
 
                 PAdd l r ->
                     add4 (go l) (go r)
@@ -1659,7 +1676,7 @@ expressionToNormalGlsl { x, y, z } =
                     dotted4 (callUnknown2 "gdiv" (go l) (go r)).base
 
                 PPower l (PInteger 2) ->
-                    dotted4 (callUnknown1 "gsquare" (go l)).base
+                    gsquare (go l)
 
                 PPower l (PInteger ri) ->
                     dotted4 (callUnknown2 "gpow" (go l) (int ri)).base
@@ -1712,7 +1729,7 @@ mainGlsl uniforms rayDifferentials pixel2Def pixel3Def =
                 ( pixel2Decl, pixel2 ) =
                     main2D uniforms pixel2Def
             in
-            Generator.fileToGlsl <|
+            fileToGlsl <|
                 pixel2Decl
                     ++ [ Tuple.first <|
                             fun0 voidT "main" <|
@@ -1727,7 +1744,7 @@ mainGlsl uniforms rayDifferentials pixel2Def pixel3Def =
             in
             pixel3Decl
                 ++ "\n\n"
-                ++ Generator.fileToGlsl
+                ++ fileToGlsl
                     [ Tuple.first <|
                         fun0 voidT "main" <|
                             [ assign gl_FragColor pixel3 ]
@@ -1741,10 +1758,10 @@ mainGlsl uniforms rayDifferentials pixel2Def pixel3Def =
                 ( pixel3Decl, pixel3 ) =
                     main3D rayDifferentials pixel3Def
             in
-            Generator.fileToGlsl pixel2Decl
+            fileToGlsl pixel2Decl
                 ++ "\n\n"
                 ++ pixel3Decl
-                ++ Generator.fileToGlsl
+                ++ fileToGlsl
                     [ Tuple.first <|
                         fun0 voidT "main" <|
                             [ assign gl_FragColor <| max4 pixel2 pixel3 ]

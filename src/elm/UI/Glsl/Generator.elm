@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call0, call1, call2, call3, call4, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, statementToGlsl, subtract, subtract2, subtract4, ternary, ternary2, ternary3, true, uniform, unknown, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call0, call1, call2, call3, call4, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, statementToGlsl, subtract, subtract2, subtract4, ternary, ternary2, ternary3, true, uniform, unknown, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Expression exposing (RelationOperation(..))
 import Set
@@ -683,6 +683,12 @@ vec4 x y z w =
 vec4_3_1 : ExpressionX a Vec3 -> ExpressionX b Float -> Expression4
 vec4_3_1 xyz w =
     call2Internal "vec4" xyz w
+        |> dotted4
+
+
+vec4_1_3 : ExpressionX a Float -> ExpressionX b Vec3 -> Expression4
+vec4_1_3 x yzw =
+    call2Internal "vec4" x yzw
         |> dotted4
 
 
