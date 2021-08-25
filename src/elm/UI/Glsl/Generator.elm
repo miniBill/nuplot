@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call0, call1, call2, call3, call4, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, statementToGlsl, subtract, subtract2, subtract4, ternary, ternary2, ternary3, true, uniform, unknown, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, call2, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, true, uniform, unknown, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Expression exposing (RelationOperation(..))
 import Set
@@ -342,11 +342,6 @@ ternary =
     expr3 Ternary
 
 
-ternary2 : ExpressionX xa Bool -> ExpressionX xb Vec2 -> ExpressionX xc Vec2 -> Expression2
-ternary2 =
-    expr32 Ternary
-
-
 ternary3 : ExpressionX xa Bool -> ExpressionX xb Vec3 -> ExpressionX xc Vec3 -> Expression3
 ternary3 =
     expr33 Ternary
@@ -400,11 +395,6 @@ expr24 f l r =
 expr3 : (Expr -> Expr -> Expr -> Expr) -> ExpressionX a l -> ExpressionX b m -> ExpressionX c r -> Expression1 t
 expr3 f l m r =
     dotted1Internal (f (unwrapExpression l) (unwrapExpression m) (unwrapExpression r))
-
-
-expr32 : (Expr -> Expr -> Expr -> Expr) -> ExpressionX xa a -> ExpressionX xb b -> ExpressionX xc c -> Expression2
-expr32 f l m r =
-    dotted2Internal (f (unwrapExpression l) (unwrapExpression m) (unwrapExpression r))
 
 
 expr33 : (Expr -> Expr -> Expr -> Expr) -> ExpressionX xa a -> ExpressionX xb b -> ExpressionX xc c -> Expression3
@@ -748,28 +738,8 @@ unsafeCall name =
     Expression << Call name << List.map (\(Expression e) -> e)
 
 
-call0 : TypedName t r -> r
-call0 (TypedName _ _ expr) =
-    expr
-
-
-call1 : TypedName t (a -> r) -> a -> r
-call1 (TypedName _ _ expr) =
-    expr
-
-
 call2 : TypedName t (a -> b -> r) -> a -> b -> r
 call2 (TypedName _ _ expr) =
-    expr
-
-
-call3 : TypedName t (a -> b -> c -> r) -> a -> b -> c -> r
-call3 (TypedName _ _ expr) =
-    expr
-
-
-call4 : TypedName t (a -> b -> c -> d -> r) -> a -> b -> c -> d -> r
-call4 (TypedName _ _ expr) =
     expr
 
 
@@ -907,15 +877,6 @@ unknown =
             Debug.todo
     in
     Expression << Unknown
-
-
-unknownFun1 : String -> TypedName (l -> t) (ExpressionX a l -> Expression1 t)
-unknownFun1 n =
-    let
-        _ =
-            Debug.todo
-    in
-    TypedName (Type "") (Name n) (\l -> dotted1 <| call1Internal n l)
 
 
 unknownFun2 : String -> TypedName (l -> r -> t) (ExpressionX a l -> ExpressionX b r -> Expression1 t)
