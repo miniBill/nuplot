@@ -2,21 +2,21 @@ module UI.Glsl.Code exposing (Uniforms, constantToGlsl, deindent, expressionToGl
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression, File, FunDecl, Statement, TypedName, Vec2, Vec3, Vec4, abs_, add, ands, arr, assign, by, byF, call0, call1, call2, call4, ceil_, decl, def, div, dot2, dotted2, dotted3, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, if_, int, log, lt, mat3T, max_, min_, mod, negate_, normalize, one, pow, radians_, return, sign, subtract, ternary, unknown, unknownFunDecl, unknownTypedName, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, TypedName, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, by, by2, by3, byF, call0, call1, call2, call4, ceil_, cos_, cosh, decl, def, div, div2, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, float, floatT, floatToGlsl, fun0, fun1, fun2, fun3, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, unknown, unknownFun0, unknownFun1, unknownFun2, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
 type alias Uniforms =
-    { u_canvasWidth : Expression Float
-    , u_canvasHeight : Expression Float
-    , u_viewportWidth : Expression Float
-    , u_viewportHeight : Expression Float
-    , u_drawAxes : Expression Float
-    , u_zoomCenter : Expression Vec2
+    { u_canvasWidth : Expression1 Float
+    , u_canvasHeight : Expression1 Float
+    , u_viewportWidth : Expression1 Float
+    , u_viewportHeight : Expression1 Float
+    , u_drawAxes : Expression1 Float
+    , u_zoomCenter : Expression2
     }
 
 
-constantToGlsl : GlslConstant -> FunDecl
+constantToGlsl : GlslConstant -> ( FunDecl, Expression2 )
 constantToGlsl c =
     case c of
         I ->
@@ -32,93 +32,79 @@ constantToGlsl c =
                 [ return <| vec2 (exp one) zero ]
 
 
-by2Tuple : ( FunDecl, Expression Vec2 -> Expression Vec2 -> Expression Vec2 )
-by2Tuple =
-    fun2 vec2T "by" (vec2T "a") (vec2T "b") <|
+cbyTuple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+cbyTuple =
+    fun2 vec2T "cby" (vec2T "a") (vec2T "b") <|
         \a b ->
-            let
-                da =
-                    dotted2 a
-
-                db =
-                    dotted2 b
-            in
             [ return <|
                 vec2
                     (subtract
-                        (by da.x db.x)
-                        (by da.y db.y)
+                        (by a.x b.x)
+                        (by a.y b.y)
                     )
                     (add
-                        (by da.x db.y)
-                        (by da.y db.x)
+                        (by a.x b.y)
+                        (by a.y b.x)
                     )
             ]
 
 
-by2Decl : FunDecl
-by2Decl =
-    Tuple.first by2Tuple
+cbyDecl : FunDecl
+cbyDecl =
+    Tuple.first cbyTuple
 
 
-by2 : Expression Vec2 -> Expression Vec2 -> Expression Vec2
-by2 =
-    Tuple.second by2Tuple
+cby : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+cby =
+    Tuple.second cbyTuple
 
 
-by3Tuple : ( FunDecl, Expression Vec2 -> Expression Vec2 -> Expression Vec2 -> Expression Vec2 )
-by3Tuple =
-    fun3 vec2T "by" (vec2T "a") (vec2T "b") (vec2T "c") <|
+cby3Tuple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> ExpressionX xc Vec2 -> Expression2 )
+cby3Tuple =
+    fun3 vec2T "cby" (vec2T "a") (vec2T "b") (vec2T "c") <|
         \a b c ->
-            [ return <| by2 (by2 a b) c ]
+            [ return <| cby (cby a b) c ]
 
 
-by3Decl : FunDecl
-by3Decl =
-    Tuple.first by3Tuple
+cby3Decl : FunDecl
+cby3Decl =
+    Tuple.first cby3Tuple
 
 
-by3 : Expression Vec2 -> Expression Vec2 -> Expression Vec2 -> Expression Vec2
-by3 =
-    Tuple.second by3Tuple
+cby3 : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> ExpressionX xc Vec2 -> Expression2
+cby3 =
+    Tuple.second cby3Tuple
 
 
-div2Tuple : ( FunDecl, Expression Vec2 -> Expression Vec2 -> Expression Vec2 )
-div2Tuple =
-    fun2 vec2T "div" (vec2T "a") (vec2T "b") <|
+cdivTuple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+cdivTuple =
+    fun2 vec2T "cdiv" (vec2T "a") (vec2T "b") <|
         \a b ->
-            let
-                da =
-                    dotted2 a
-
-                db =
-                    dotted2 b
-            in
-            def floatT "k" (div one <| dot2 b b) <|
+            def floatT "k" (div one <| dot b b) <|
                 \k ->
-                    def floatT "r" (by k <| dot2 a b) <|
+                    def floatT "r" (by k <| dot a b) <|
                         \r ->
                             def floatT
                                 "i"
                                 (by k
-                                    (subtract (by da.y db.x) (by da.x db.y))
+                                    (subtract (by a.y b.x) (by a.x b.y))
                                 )
                             <|
                                 \i ->
                                     [ return <| vec2 r i ]
 
 
-div2Decl : FunDecl
-div2Decl =
-    Tuple.first div2Tuple
+cdivDecl : FunDecl
+cdivDecl =
+    Tuple.first cdivTuple
 
 
-div2 : Expression Vec2 -> Expression Vec2 -> Expression Vec2
-div2 =
-    Tuple.second div2Tuple
+cdiv : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+cdiv =
+    Tuple.second cdivTuple
 
 
-log10Tuple : ( FunDecl, Expression Float -> Expression Float )
+log10Tuple : ( FunDecl, ExpressionX xa Float -> Expression1 Float )
 log10Tuple =
     fun1 floatT "log10" (floatT "x") <|
         \x -> [ return <| div (log x) (log <| float 10) ]
@@ -129,9 +115,19 @@ log10Decl =
     Tuple.first log10Tuple
 
 
-log10 : Expression Float -> Expression Float
+log10 : ExpressionX xa Float -> Expression1 Float
 log10 =
     Tuple.second log10Tuple
+
+
+callUnknown1 : String -> ExpressionX a l -> Expression1 t
+callUnknown1 =
+    call1 << unknownFun1
+
+
+callUnknown2 : String -> ExpressionX a l -> ExpressionX b r -> Expression1 t
+callUnknown2 =
+    call2 << unknownFun2
 
 
 straightOperationToGlsl : GlslOperation -> List FunDecl
@@ -141,43 +137,50 @@ straightOperationToGlsl op =
             []
 
         GlslMultiplication ->
-            [ by2Decl
-            , by3Decl
+            [ cbyDecl
+            , cby3Decl
             ]
 
         GlslNegation ->
             []
 
         GlslDivision ->
-            [ div2Decl
+            [ cdivDecl
             ]
 
         GlslPower ->
-            [ Tuple.first <|
-                fun2 vec2T "cpow" (vec2T "w") (vec2T "z") <|
-                    \w z ->
-                        let
-                            dw =
-                                dotted2 w
-
-                            dz =
-                                dotted2 z
-                        in
-                        [ return <|
-                            ternary
-                                (ands
-                                    [ geq dw.x zero
-                                    , eq dw.y zero
-                                    , eq dz.y zero
-                                    ]
-                                )
-                                (vec2 (pow dw.x dz.x) zero)
-                                (call1 (unknownTypedName "cexp") <| by (call1 (unknownTypedName "cln") w) z)
-                        ]
+            [ cpowDecl
             ]
 
         GlslRelations ->
             []
+
+
+cpowTuple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+cpowTuple =
+    fun2 vec2T "cpow" (vec2T "w") (vec2T "z") <|
+        \w z ->
+            [ return <|
+                ternary
+                    (ands
+                        [ geq w.x zero
+                        , eq w.y zero
+                        , eq z.y zero
+                        ]
+                    )
+                    (vec2 (pow w.x z.x) zero)
+                    (callUnknown1 "cexp" <| cby (callUnknown1 "cln" w) z)
+            ]
+
+
+cpowDecl : FunDecl
+cpowDecl =
+    Tuple.first cpowTuple
+
+
+cpow : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+cpow =
+    Tuple.second cpowTuple
 
 
 intervalOperationToGlsl : GlslOperation -> String
@@ -342,19 +345,20 @@ straightFunctionToGlsl name =
             ]
 
         Sin22 ->
-            [ unknownFunDecl
-                { name = "csin"
-                , type_ = "vec2 -> vec2"
-                , body =
-                    """
-            vec2 csin(vec2 z) {
-                if(z.y == 0.0) {
-                    return vec2(sin(z.x), 0);
-                }
-                return vec2(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y));
-            }
-            """
-                }
+            [ Tuple.first <|
+                fun1 vec2T "csin" (vec2T "z") <|
+                    \z ->
+                        def floatT "s" (sin_ z.x) <|
+                            \s ->
+                                [ return <|
+                                    ternary
+                                        (eq z.y (float 0))
+                                        (vec2 s (float 0))
+                                        (vec2
+                                            (by s (cosh z.y))
+                                            (by (cos_ z.x) (sinh z.y))
+                                        )
+                                ]
             ]
 
         Cos22 ->
@@ -383,7 +387,7 @@ straightFunctionToGlsl name =
                 if(z.y == 0.0) {
                     return vec2(tan(z.x), 0);
                 }
-                return div(csin(z), ccos(z));
+                return cdiv(csin(z), ccos(z));
             }
             """
                 }
@@ -396,9 +400,9 @@ straightFunctionToGlsl name =
                 , type_ = "TODO"
                 , body = """
             vec2 casin(vec2 z) {
-                vec2 s = csqrt(vec2(1, 0) - by(z, z));
-                vec2 arg = s - by(vec2(0, 1), z);
-                return by(vec2(0, 1), cln(arg));
+                vec2 s = csqrt(vec2(1, 0) - cby(z, z));
+                vec2 arg = s - cby(vec2(0, 1), z);
+                return cby(vec2(0, 1), cln(arg));
             }
             """
                 }
@@ -428,9 +432,9 @@ straightFunctionToGlsl name =
                     return vec2(atan(z.x), 0);
                 }
                 vec2 o = vec2(1, 0);
-                vec2 iz = by(vec2(0, 1), z);
-                vec2 l = div(o + iz, o - iz);
-                return -0.5 * by(vec2(0, 1), cln(l));
+                vec2 iz = cby(vec2(0, 1), z);
+                vec2 l = cdiv(o + iz, o - iz);
+                return -0.5 * cby(vec2(0, 1), cln(l));
             }
             """
                 }
@@ -469,7 +473,7 @@ straightFunctionToGlsl name =
             vec2 ctanh(vec2 z) {
                 vec2 p = cexp(z);
                 vec2 m = cexp(-z);
-                return div(p - m, p + m);
+                return cdiv(p - m, p + m);
             }
             """ } ]
 
@@ -514,7 +518,7 @@ straightFunctionToGlsl name =
         Square22 ->
             [ unknownFunDecl { name = "csquare", type_ = "TODO", body = """
             vec2 csquare(vec2 z) {
-                return by(z, z);
+                return cby(z, z);
             }
             """ } ]
 
@@ -533,7 +537,7 @@ straightFunctionToGlsl name =
         Log1022 ->
             [ unknownFunDecl { name = "clog10", type_ = "TODO", body = """
             vec2 clog10(vec2 z) {
-                return div(cln(z), vec2(log(10.0), 0));
+                return cdiv(cln(z), vec2(log(10.0), 0));
             }
             """ } ]
 
@@ -1039,7 +1043,7 @@ toSrcImplicit suffix e =
     in
     """
     float f""" ++ suffix ++ """(float x, float y) {
-        vec2 complex = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", unknown "x" ), ( "y", unknown "y" ) ] e) ++ """;
+        vec2 complex = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] e).base ++ """;
         if(abs(complex.y) > """ ++ floatToGlsl epsilon ++ """) {
             return 0.0;
         }
@@ -1077,7 +1081,7 @@ toSrcPolar suffix e =
             if(t < ot) t += radians(360.0);
             else t -= radians(360.0);
         }
-        vec2 complex = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", unknown "x" ), ( "y", unknown "y" ), ( "r", unknown "r" ), ( "t", unknown "t" ) ] e) ++ """;
+        vec2 complex = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ), ( "r", dotted1 <| unknown "r" ), ( "t", dotted1 <| unknown "t" ) ] e).base ++ """;
         if(abs(complex.y) > """ ++ floatToGlsl epsilon ++ """) {
             return -1.0;
         }
@@ -1189,8 +1193,8 @@ toSrcVectorField2D : String -> Expression.Expression -> Expression.Expression ->
 toSrcVectorField2D suffix x y =
     """
     vec2 vector""" ++ suffix ++ """(float x, float y) {
-        vec2 xv = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", unknown "x" ), ( "y", unknown "y" ) ] x) ++ """;
-        vec2 yv = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", unknown "x" ), ( "y", unknown "y" ) ] y) ++ """;
+        vec2 xv = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] x).base ++ """;
+        vec2 yv = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] y).base ++ """;
         return abs(xv.y) + abs(yv.y) < """ ++ floatToGlsl epsilon ++ """ ? vec2(xv.x, yv.x) : vec2(0,0);
     }
 
@@ -1261,7 +1265,7 @@ toSrcContour : String -> Expression.Expression -> String
 toSrcContour suffix e =
     """
     vec3 pixel""" ++ suffix ++ """_o(float deltaX, float deltaY, float x, float y) {
-        vec2 z = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", unknown "x" ), ( "y", unknown "y" ) ] e) ++ """;
+        vec2 z = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] e).base ++ """;
 
         float theta = atan(z.y, z.x) / radians(360.0);
 
@@ -1309,7 +1313,7 @@ toSrcRelation : String -> Expression.Expression -> String
 toSrcRelation suffix e =
     """
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        vec2 complex = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", unknown "x" ), ( "y", unknown "y" ) ] e) ++ """;
+        vec2 complex = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] e).base ++ """;
         return complex.x > 0.0 && abs(complex.y) < """ ++ floatToGlsl epsilon ++ """ ? vec3(0.8,0.5,0.5) : vec3(0,0,0);
     }
     """
@@ -1350,7 +1354,7 @@ expressionToIntervalGlsl expandIntervals =
         >> wordWrap
 
 
-expressionToGlsl : List ( String, Expression Float ) -> Expression.Expression -> Expression Vec2
+expressionToGlsl : List ( String, Expression1 Float ) -> Expression.Expression -> Expression2
 expressionToGlsl context =
     let
         ctx =
@@ -1373,7 +1377,7 @@ expressionToGlsl context =
                             vec2 w zero
 
                         Nothing ->
-                            unknown <| "Variable " ++ v ++ " is undefined"
+                            dotted2 <| unknown <| "Variable " ++ v ++ " is undefined"
 
                 PInteger v ->
                     vec2 (float <| toFloat v) zero
@@ -1382,29 +1386,29 @@ expressionToGlsl context =
                     vec2 (float f) zero
 
                 PNegate expression ->
-                    negate_ <| go expression
+                    negate2 <| go expression
 
                 PAdd l (PNegate r) ->
-                    subtract (go l) (go r)
+                    subtract2 (go l) (go r)
 
                 PAdd l r ->
-                    add (go l) (go r)
+                    add2 (go l) (go r)
 
                 PRel op l r ->
                     if op == "<=" || op == "<" then
-                        subtract (go r) (go l)
+                        subtract2 (go r) (go l)
 
                     else if op == "=" then
-                        abs_ <| subtract (go r) (go l)
+                        abs2 <| subtract (go r) (go l)
 
                     else
-                        subtract (go l) (go r)
+                        subtract2 (go l) (go r)
 
                 PBy l r ->
-                    by2 (go l) (go r)
+                    cby (go l) (go r)
 
                 PDiv l r ->
-                    div2 (go l) (go r)
+                    cdiv (go l) (go r)
 
                 PPower (PVariable v) (PInteger 2) ->
                     case Dict.get v ctx of
@@ -1412,28 +1416,28 @@ expressionToGlsl context =
                             vec2 (by w w) zero
 
                         Nothing ->
-                            unknown <| "Variable " ++ v ++ " is undefined"
+                            dotted2 <| unknown <| "Variable " ++ v ++ " is undefined"
 
                 PPower l r ->
-                    call2 (unknownTypedName "cpow") (go l) (go r)
+                    cpow (go l) (go r)
 
                 PApply (KnownFunction Simplify) [ e ] ->
                     go e
 
                 PApply name ex ->
                     if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
-                        case List.map go ex of
+                        case List.map (go >> .base) ex of
                             [] ->
                                 vec2Zero
 
                             head :: tail ->
-                                List.foldl (\e a -> call2 (unknownTypedName <| "c" ++ Expression.functionNameToString name) a e) head tail
+                                dotted2 (List.foldl (\e a -> unsafeCall ("c" ++ Expression.functionNameToString name) [ a, e ]) head tail)
 
                     else
-                        unsafeCall ("c" ++ Expression.functionNameToString name) (List.map go ex)
+                        dotted2 <| unsafeCall ("c" ++ Expression.functionNameToString name) (List.map (go >> .base) ex)
 
                 PList es ->
-                    unsafeCall ("vec" ++ String.fromInt (List.length es)) (List.map go es)
+                    dotted2 <| unsafeCall ("vec" ++ String.fromInt (List.length es)) (List.map (go >> .base) es)
 
                 PReplace var e ->
                     go (Expression.pfullSubstitute var e)
@@ -1571,12 +1575,12 @@ expressionToIntervalGlslPrec expandIntervals p expr =
             "vec2(0)"
 
 
-expressionToNormalGlsl : { x : Expression Float, y : Expression Float, z : Expression Float } -> Expression.Expression -> Expression Vec4
+expressionToNormalGlsl : { x : Expression1 Float, y : Expression1 Float, z : Expression1 Float } -> Expression.Expression -> Expression4
 expressionToNormalGlsl { x, y, z } =
     let
-        gnum : Expression Float -> Expression Vec4
-        gnum =
-            call1 (unknownTypedName "gnum")
+        gnum : Expression1 Float -> Expression4
+        gnum e =
+            dotted4 (callUnknown1 "gnum" e).base
 
         go expr =
             case expr of
@@ -1602,35 +1606,35 @@ expressionToNormalGlsl { x, y, z } =
                     gnum <| float f
 
                 PNegate expression ->
-                    call1 (unknownTypedName "gneg") (go expression)
+                    dotted4 (callUnknown1 "gneg" (go expression)).base
 
                 PAdd l r ->
-                    add (go l) (go r)
+                    add4 (go l) (go r)
 
                 PRel op l r ->
                     if op == "<=" || op == "<" then
-                        subtract (go r) (go l)
+                        subtract4 (go r) (go l)
 
                     else if op == "=" then
-                        abs_ <| subtract (go r) (go l)
+                        abs4 <| subtract (go r) (go l)
 
                     else
-                        subtract (go l) (go r)
+                        subtract4 (go l) (go r)
 
                 PBy l r ->
-                    call2 (unknownTypedName "gby") (go l) (go r)
+                    dotted4 (callUnknown2 "gby" (go l) (go r)).base
 
                 PDiv l r ->
-                    call2 (unknownTypedName "gdiv") (go l) (go r)
+                    dotted4 (callUnknown2 "gdiv" (go l) (go r)).base
 
                 PPower l (PInteger 2) ->
-                    call1 (unknownTypedName "gsquare") (go l)
+                    dotted4 (callUnknown1 "gsquare" (go l)).base
 
                 PPower l (PInteger ri) ->
-                    call2 (unknownTypedName "gpow") (go l) (int ri)
+                    dotted4 (callUnknown2 "gpow" (go l) (int ri)).base
 
                 PPower l r ->
-                    call2 (unknownTypedName "gpow") (go l) (go r)
+                    dotted4 (callUnknown2 "gpow" (go l) (go r)).base
 
                 PApply name ex ->
                     if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
@@ -1639,13 +1643,13 @@ expressionToNormalGlsl { x, y, z } =
                                 vec4Zero
 
                             head :: tail ->
-                                List.foldl (\e a -> call2 (unknownTypedName <| "g" ++ Expression.functionNameToString name) a e) head tail
+                                List.foldl (\e a -> dotted4 (callUnknown2 ("g" ++ Expression.functionNameToString name) a e).base) head tail
 
                     else
-                        unsafeCall ("g" ++ Expression.functionNameToString name) (List.map go ex)
+                        dotted4 (unsafeCall ("g" ++ Expression.functionNameToString name) (List.map (go >> .base) ex))
 
                 PList es ->
-                    unsafeCall ("vec" ++ String.fromInt (List.length es)) (List.map go es)
+                    dotted4 (unsafeCall ("vec" ++ String.fromInt (List.length es)) (List.map (go >> .base) es))
 
                 PReplace var e ->
                     go (Expression.pfullSubstitute var e)
@@ -1665,35 +1669,54 @@ mainGlsl :
     -> Bool
     ->
         List
-            { name : TypedName (Float -> Float -> Float -> Float -> Vec3)
+            { call : Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression3
             , color : Bool
             }
     -> List String
     -> String
-mainGlsl uniforms rayDifferentials pixel2 pixel3 =
-    case ( pixel2, pixel3 ) of
+mainGlsl uniforms rayDifferentials pixel2Def pixel3Def =
+    case ( pixel2Def, pixel3Def ) of
         ( _, [] ) ->
+            let
+                ( pixel2Decl, pixel2 ) =
+                    main2D uniforms pixel2Def
+            in
             Generator.fileToGlsl <|
-                main2D uniforms pixel2
-                    ++ [ fun0 voidT "main" <|
-                            [ assign gl_FragColor <| call0 (unknownTypedName "pixel2") ]
+                pixel2Decl
+                    ++ [ Tuple.first <|
+                            fun0 voidT "main" <|
+                                [ assign gl_FragColor pixel2
+                                ]
                        ]
 
         ( [], _ ) ->
-            main3D rayDifferentials pixel3
+            let
+                ( pixel3Decl, pixel3 ) =
+                    main3D rayDifferentials pixel3Def
+            in
+            pixel3Decl
                 ++ "\n\n"
                 ++ Generator.fileToGlsl
-                    [ fun0 voidT "main" <|
-                        [ assign gl_FragColor <| call0 (unknownTypedName "pixel3") ]
+                    [ Tuple.first <|
+                        fun0 voidT "main" <|
+                            [ assign gl_FragColor pixel3 ]
                     ]
 
         _ ->
-            Generator.fileToGlsl (main2D uniforms pixel2)
+            let
+                ( pixel2Decl, pixel2 ) =
+                    main2D uniforms pixel2Def
+
+                ( pixel3Decl, pixel3 ) =
+                    main3D rayDifferentials pixel3Def
+            in
+            Generator.fileToGlsl pixel2Decl
                 ++ "\n\n"
-                ++ main3D rayDifferentials pixel3
+                ++ pixel3Decl
                 ++ Generator.fileToGlsl
-                    [ fun0 voidT "main" <|
-                        [ assign gl_FragColor <| max_ (call0 (unknownTypedName "pixel2")) (call0 (unknownTypedName "pixel3")) ]
+                    [ Tuple.first <|
+                        fun0 voidT "main" <|
+                            [ assign gl_FragColor <| max4 pixel2 pixel3 ]
                     ]
 
 
@@ -1701,57 +1724,33 @@ main2D :
     Uniforms
     ->
         List
-            { name : TypedName (Float -> Float -> Float -> Float -> Vec3)
+            { call : Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression3
             , color : Bool
             }
-    -> File
+    -> ( File, Expression4 )
 main2D uniforms pixels =
-    [ log10Decl
-    , axisDecl
-    , pixel2Decl uniforms pixels
-    ]
+    let
+        ( pixel2Decl, pixel2 ) =
+            pixel2Tuple uniforms pixels
+    in
+    ( [ log10Decl
+      , axisDecl
+      , pixel2Decl
+      ]
+    , pixel2
+    )
 
 
-pixel2Decl :
+pixel2Tuple :
     Uniforms
     ->
         List
-            { name : TypedName (Float -> Float -> Float -> Float -> Vec3)
+            { call : Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression3
             , color : Bool
             }
-    -> FunDecl
-pixel2Decl uniforms pixels =
+    -> ( FunDecl, Expression4 )
+pixel2Tuple uniforms pixels =
     let
-        addPixel :
-            Expression Float
-            -> Expression Float
-            -> Expression Float
-            -> Expression Float
-            -> Expression Vec3
-            -> Expression Vec3
-            -> Int
-            ->
-                { name : TypedName (Float -> Float -> Float -> Float -> Vec3)
-                , color : Bool
-                }
-            -> List (Statement f)
-        addPixel deltaX deltaY x y px curr i { name, color } =
-            let
-                k =
-                    if color then
-                        let
-                            h =
-                                float <| (toFloat (i + 2) / pi)
-                        in
-                        by (call2 (unknownTypedName "hl2rgb") h (float 0.5)) (call4 name deltaX deltaY x y)
-
-                    else
-                        call4 name deltaX deltaY x y
-            in
-            [ assign curr k
-            , assign px <| ternary (eq curr vec3Zero) px curr
-            ]
-
         inner deltaX deltaY x y px curr =
             pixels
                 |> List.indexedMap (addPixel deltaX deltaY x y px curr)
@@ -1760,17 +1759,17 @@ pixel2Decl uniforms pixels =
     fun0 vec4T "pixel2" <|
         def vec2T "canvasSize" (vec2 uniforms.u_canvasWidth uniforms.u_canvasHeight) <|
             \canvasSize ->
-                def vec2T "uv_centered" (subtract (dotted4 gl_FragCoord).xy (byF (float 0.5) canvasSize)) <|
+                def vec2T "uv_centered" (subtract2 gl_FragCoord.xy (byF (float 0.5) canvasSize)) <|
                     \uv_centered ->
                         def vec2T "viewportSize" (byF (div uniforms.u_viewportWidth uniforms.u_canvasWidth) canvasSize) <|
                             \viewportSize ->
-                                def vec2T "uv" (by (div uv_centered canvasSize) viewportSize) <|
+                                def vec2T "uv" (by2 (div2 uv_centered canvasSize) viewportSize) <|
                                     \uv ->
                                         def vec2T "c" (add uniforms.u_zoomCenter uv) <|
                                             \c ->
-                                                def floatT "x" (dotted2 c).x <|
+                                                def floatT "x" c.x <|
                                                     \x ->
-                                                        def floatT "y" (dotted2 c).y <|
+                                                        def floatT "y" c.y <|
                                                             \y ->
                                                                 def floatT "deltaX" (div uniforms.u_viewportWidth uniforms.u_canvasWidth) <|
                                                                     \deltaX ->
@@ -1785,7 +1784,7 @@ pixel2Decl uniforms pixels =
                                                                                                             \maxDelta ->
                                                                                                                 def vec3T
                                                                                                                     "yax"
-                                                                                                                    (ternary
+                                                                                                                    (ternary3
                                                                                                                         (eq uniforms.u_drawAxes one)
                                                                                                                         (byF (axis x y maxDelta) (vec3 zero one zero))
                                                                                                                         vec3Zero
@@ -1794,19 +1793,50 @@ pixel2Decl uniforms pixels =
                                                                                                                     \yax ->
                                                                                                                         def vec3T
                                                                                                                             "xax"
-                                                                                                                            (ternary
+                                                                                                                            (ternary3
                                                                                                                                 (eq uniforms.u_drawAxes one)
                                                                                                                                 (byF (axis y x maxDelta) (vec3 one zero zero))
                                                                                                                                 vec3Zero
                                                                                                                             )
                                                                                                                         <|
                                                                                                                             \xax ->
-                                                                                                                                [ return <| vec4_3_1 (max_ px (max_ xax yax)) one
+                                                                                                                                [ return <| vec4_3_1 (max3 px (max3 xax yax)) one
                                                                                                                                 ]
                                                                                                        )
 
 
-axisTuple : ( FunDecl, Expression Float -> Expression Float -> Expression Float -> Expression Float )
+addPixel :
+    Expression1 Float
+    -> Expression1 Float
+    -> Expression1 Float
+    -> Expression1 Float
+    -> Expression3
+    -> Expression3
+    -> Int
+    ->
+        { call : Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression3
+        , color : Bool
+        }
+    -> List (Statement f)
+addPixel deltaX deltaY x y px curr i { call, color } =
+    let
+        k =
+            if color then
+                let
+                    h =
+                        float <| (toFloat (i + 2) / pi)
+                in
+                by3 (hl2rgb h (float 0.5)) (call deltaX deltaY x y)
+
+            else
+                call deltaX deltaY x y
+    in
+    [ assign curr k
+    , assign px <| ternary3 (eq curr vec3Zero) px curr
+    ]
+
+
+axisTuple : ( FunDecl, Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float )
 axisTuple =
     fun3 floatT "axis" (floatT "coord") (floatT "otherCoord") (floatT "maxDelta") <|
         \coord otherCoord maxDelta ->
@@ -1838,7 +1868,7 @@ axisTuple =
                            )
 
 
-axis : Expression Float -> Expression Float -> Expression Float -> Expression Float
+axis : Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float
 axis =
     Tuple.second axisTuple
 
@@ -1853,19 +1883,15 @@ toSrc3D expandIntervals suffix e =
     [ Tuple.first <|
         fun1 vec3T ("normal" ++ suffix) (vec3T "p") <|
             \p ->
-                let
-                    dp =
-                        dotted3 p
-                in
-                def floatT "x" dp.x <|
+                def floatT "x" p.x <|
                     \x ->
-                        def floatT "y" dp.y <|
+                        def floatT "y" p.y <|
                             \y ->
-                                def floatT "z" dp.z <|
+                                def floatT "z" p.z <|
                                     \z ->
                                         def vec4T "gradient" (expressionToNormalGlsl { x = x, y = y, z = z } e) <|
                                             \gradient ->
-                                                [ return <| normalize (dotted4 gradient).yzw ]
+                                                [ return <| normalize gradient.yzw ]
     , Tuple.first <|
         fun2 vec2T ("interval" ++ suffix) (mat3T "f") (mat3T "t") <|
             \f t ->
@@ -1873,24 +1899,17 @@ toSrc3D expandIntervals suffix e =
                     \mn ->
                         def vec3T "mx" (max_ (arr f <| int 1) (arr t <| int 1)) <|
                             \mx ->
-                                let
-                                    dmn =
-                                        dotted3 mn
-
-                                    dmx =
-                                        dotted3 mx
-                                in
-                                def vec2T "x" (vec2 dmn.x dmx.x) <|
+                                def vec2T "x" (vec2 mn.x mx.x) <|
                                     \x ->
-                                        def vec2T "y" (vec2 dmn.y dmx.y) <|
+                                        def vec2T "y" (vec2 mn.y mx.y) <|
                                             \y ->
-                                                def vec2T "z" (vec2 dmn.z dmx.z) <|
+                                                def vec2T "z" (vec2 mn.z mx.z) <|
                                                     \z ->
-                                                        [ return <| unknown <| expressionToIntervalGlsl expandIntervals e ]
+                                                        [ return <| dotted2 <| unknown <| expressionToIntervalGlsl expandIntervals e ]
     ]
 
 
-main3D : Bool -> List String -> String
+main3D : Bool -> List String -> ( String, Expression4 )
 main3D rayDifferentials suffixes =
     let
         k =
@@ -1935,7 +1954,7 @@ main3D rayDifferentials suffixes =
             }
         """
     in
-    deindent 12 <| raytrace suffixes ++ block
+    ( deindent 12 <| raytrace suffixes ++ block, dotted4 <| unknown "pixel3()" )
 
 
 raytrace : List String -> String

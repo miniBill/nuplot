@@ -6,7 +6,7 @@ import Expression.Polynomial exposing (Exponents)
 import Expression.Utils exposing (minus, zero)
 import Maybe.Extra as Maybe
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator as Generator exposing (unknown)
+import UI.Glsl.Generator as Generator exposing (dotted1, unknown)
 
 
 getDegree : Dict (List ( a, number )) b -> number
@@ -77,13 +77,14 @@ getSolutions poly =
             Dict.get d poly
                 |> Maybe.withDefault zero
                 |> UI.Glsl.Code.expressionToGlsl
-                    [ ( "dx", unknown "dx" )
-                    , ( "dy", unknown "dy" )
-                    , ( "dz", unknown "dz" )
-                    , ( "o.x", unknown "o.x" )
-                    , ( "o.y", unknown "o.y" )
-                    , ( "o.z", unknown "o.z" )
+                    [ ( "dx", dotted1 <| unknown "dx" )
+                    , ( "dy", dotted1 <| unknown "dy" )
+                    , ( "dz", dotted1 <| unknown "dz" )
+                    , ( "o.x", dotted1 <| unknown "o.x" )
+                    , ( "o.y", dotted1 <| unknown "o.y" )
+                    , ( "o.z", dotted1 <| unknown "o.z" )
                     ]
+                |> .base
                 |> Generator.expressionToGlsl
 
         tFrom v =
@@ -99,7 +100,7 @@ getSolutions poly =
                     , ( "!dz", "mix(d[0].z, d[1].z, 0.5)" )
                     , ( "a", get 1 )
                     , ( "b", get 0 )
-                    , ( "x", "div(-b, a)" )
+                    , ( "x", "cdiv(-b, a)" )
                     , tFrom "x"
                     ]
 
@@ -111,12 +112,12 @@ getSolutions poly =
                     , ( "a", get 2 )
                     , ( "b", get 1 )
                     , ( "c", get 0 )
-                    , ( "delta", "by(b,b) - 4.0 * by(a,c)" )
+                    , ( "delta", "cby(b,b) - 4.0 * cby(a,c)" )
                     , ( "sqdelta", "csqrt(delta)" )
                     , ( "den", "2.0 * a" )
-                    , ( "pos", "div(- b + sqdelta, den)" )
+                    , ( "pos", "cdiv(- b + sqdelta, den)" )
                     , tFrom "pos"
-                    , ( "neg", "div(- b - sqdelta, den)" )
+                    , ( "neg", "cdiv(- b - sqdelta, den)" )
                     , tFrom "neg"
                     ]
 
@@ -128,22 +129,22 @@ getSolutions poly =
                    , ( "b", get 2 )
                    , ( "c", get 1 )
                    , ( "dd", get 0 )
-                   , ( "deltaZero", "by(b,b) - 3.0 * by(a,c)" )
-                   , ( "deltaOne", "2.0 * by(b,b,b) - 9.0 * by(a,b,c) + 27.0 * by(a,a, dd)" )
-                   , ( "inner", "csqrt(by(deltaOne,deltaOne) - 4.0 * by(deltaZero,deltaZero,deltaZero))" )
+                   , ( "deltaZero", "cby(b,b) - 3.0 * cby(a,c)" )
+                   , ( "deltaOne", "2.0 * cby(b,b,b) - 9.0 * cby(a,b,c) + 27.0 * cby(a,a, dd)" )
+                   , ( "inner", "csqrt(cby(deltaOne,deltaOne) - 4.0 * cby(deltaZero,deltaZero,deltaZero))" )
                    , ( "CargPlus", "deltaOne + inner" )
                    , ( "CargMinus", "deltaOne - inner" )
                    , ( "Carg", "length(CargMinus) > length(CargPlus) ? CargMinus : CargPlus" )
                    , ( "C", "ccbrt(0.5 * Carg)" )
-                   , ( "coeff", "-div(vec2(1,0), 3.0 * a)" )
+                   , ( "coeff", "-cdiv(vec2(1,0), 3.0 * a)" )
                    , ( "xi", "0.5 * vec2(-1,sqrt(3.0))" )
-                   , ( "x", "by(coeff, b + C + div(deltaZero, C))" )
+                   , ( "x", "cby(coeff, b + C + cdiv(deltaZero, C))" )
                    , tFrom "x"
-                   , ( "C", "by(xi,C)" )
-                   , ( "x", "by(coeff, b + C + div(deltaZero, C))" )
+                   , ( "C", "cby(xi,C)" )
+                   , ( "x", "cby(coeff, b + C + cdiv(deltaZero, C))" )
                    , tFrom "x"
-                   , ( "C", "by(xi,C)" )
-                   , ( "x", "by(coeff, b + C + div(deltaZero, C))" )
+                   , ( "C", "cby(xi,C)" )
+                   , ( "x", "cby(coeff, b + C + cdiv(deltaZero, C))" )
                    , tFrom "x"
                    ]
                 -}
