@@ -113,16 +113,18 @@ solveTests =
         , xeq two
         ]
       )
-    , ( simplify <|
-            by
-                [ minus x pi
-                , minus x pi
-                , minus x pi
-                ]
-      , x
-      , [ xeq pi
-        , xeq pi
-        , xeq pi
-        ]
-      )
+
+    {- , ( simplify <|
+             by
+                 [ minus x pi
+                 , minus x pi
+                 , minus x pi
+                 ]
+       , x
+       , [ xeq pi
+         , xeq pi
+         , xeq pi
+         ]
+       )
+    -}
     ]
