@@ -224,7 +224,6 @@ init ({ saved, hasClipboard, hasFullscreen, languages } as flags) url key =
                         |> List.filterMap identity
                         |> List.head
                         |> Maybe.withDefault En
-                , expandIntervals = False
                 , rayDifferentials = True
 
                 -- The other classes have faster processors so should update quicker
@@ -523,23 +522,6 @@ dropdown model =
                     btn (Language lang) [] <|
                         L10N.invariant flag
 
-        expandIntervalsButton expandIntervals =
-            if expandIntervals then
-                btn (ToggleExpandIntervals False)
-                    [ Element.element <| Icons.funnelPlotOutlined Theme.darkIconAttrs
-                    , bigStop
-                    ]
-                    { en = "Do not apply noise reduction"
-                    , it = "Non applicare riduzione rumore"
-                    }
-
-            else
-                simpleBtn (ToggleExpandIntervals True)
-                    Icons.funnelPlotOutlined
-                    { en = "Apply noise reduction"
-                    , it = "Applica riduzione rumore"
-                    }
-
         rayDifferentialsButton rayDifferentials =
             if rayDifferentials then
                 btn (ToggleRayDifferentials False)
@@ -589,7 +571,6 @@ dropdown model =
                             Icons.saveOutlined
                             { en = "Save", it = "Salva" }
                     )
-            , Just <| Element.with .expandIntervals expandIntervalsButton
             , Just <| Element.with .rayDifferentials rayDifferentialsButton
 
             {- , sid
@@ -1115,13 +1096,6 @@ update msg =
                             model.context
                     in
                     ( { model | context = { context | language = language } }, Cmd.none )
-
-                ToggleExpandIntervals expandIntervals ->
-                    let
-                        context =
-                            model.context
-                    in
-                    ( { model | context = { context | expandIntervals = expandIntervals } }, Cmd.none )
 
                 ToggleRayDifferentials rayDifferentials ->
                     let

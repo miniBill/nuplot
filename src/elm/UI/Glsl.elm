@@ -7,16 +7,16 @@ import Expression.Polynomial exposing (asPolynomial)
 import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, square)
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
-import UI.Glsl.Code exposing (constantToGlsl, deindent, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (dotted3, floatT, uniform, unsafeCall, vec2T)
+import UI.Glsl.Code exposing (constantToGlsl, deindent, dupDecl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+import UI.Glsl.Generator as Generator exposing (dotted3, unsafeCall)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
 import UI.Glsl.Sphere as Sphere
 
 
-getGlsl : Bool -> Bool -> Graph -> String
-getGlsl expandIntervals rayDifferentials graph =
+getGlsl : Bool -> Graph -> String
+getGlsl rayDifferentials graph =
     let
         { expr, srcExpr, interval, usesThetaDelta, pixel2D, pixel3D } =
             extract "" graph
@@ -52,7 +52,7 @@ getGlsl expandIntervals rayDifferentials graph =
                                 ]
                     in
                     { expr = e
-                    , srcExpr = toSrcParametric expandIntervals prefix e
+                    , srcExpr = toSrcParametric prefix e
                     , interval = IntervalOnly
                     , usesThetaDelta = False
                     , pixel2D = [ { name = "pixel" ++ prefix, color = True } ]
@@ -74,7 +74,7 @@ getGlsl expandIntervals rayDifferentials graph =
                 Implicit3D e ->
                     let
                         f =
-                            get3DSource expandIntervals prefix e
+                            get3DSource prefix e
                     in
                     { expr = f.expr
                     , srcExpr = f.srcExpr
@@ -149,12 +149,12 @@ getGlsl expandIntervals rayDifferentials graph =
 
 declarations : String
 declarations =
-    [ gnumDecl ]
+    [ gnumDecl, dupDecl ]
         |> Generator.fileToGlsl
 
 
-get3DSource : Bool -> String -> Expression -> { expr : Expression, srcExpr : String }
-get3DSource expandIntervals prefix e =
+get3DSource : String -> Expression -> { expr : Expression, srcExpr : String }
+get3DSource prefix e =
     case Sphere.asSphere e |> Maybe.map (Sphere.toGlsl prefix) of
         Just glsl ->
             { expr = e
@@ -176,7 +176,7 @@ get3DSource expandIntervals prefix e =
                         Nothing ->
                             let
                                 glsl =
-                                    toSrc3D expandIntervals prefix e
+                                    toSrc3D prefix e
                                         |> Generator.fileToGlsl
                             in
                             { expr = e
