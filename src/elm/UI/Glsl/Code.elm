@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (Uniforms, cexpFunction, constantToGlsl, deindent, 
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -380,6 +380,93 @@ gdiv =
     Tuple.second gdivCouple
 
 
+ipowFICouple =
+    fun2 floatT "ipow" (floatT "b") (intT "e") <|
+        \b e ->
+            def floatT "fe" (floatCast e) <|
+                \fe ->
+                    return <|
+                        ternary
+                            (eq (mod fe (float 2.0)) zero)
+                            (pow (abs_ b) fe)
+                            (by b <| pow (abs_ b) (subtract fe one))
+
+
+ipowFIDecl =
+    Tuple.first ipowFICouple
+
+
+ipowFI =
+    Tuple.second ipowFICouple
+
+
+ipowICouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Int -> Expression2 )
+ipowICouple =
+    fun2 vec2T "ipow" (vec2T "b") (intT "e") <|
+        \b e ->
+            if_
+                (eq e (int 0))
+                (return <| vec2 one one)
+                (if_
+                    (eq e (int 1))
+                    (return b)
+                    (def floatT "xe" (ipowFI b.x e) <|
+                        \xe ->
+                            def floatT "ye" (ipowFI b.y e) <|
+                                \ye ->
+                                    def floatT "mn" (min_ xe ye) <|
+                                        \mn ->
+                                            def floatT "mx" (max_ xe ye) <|
+                                                \mx ->
+                                                    return <|
+                                                        ternary
+                                                            (ands
+                                                                [ eq (mod (floatCast e) (float 2)) zero
+                                                                , leq b.x zero
+                                                                , geq b.y zero
+                                                                ]
+                                                            )
+                                                            (vec2 (min_ zero mn) (max_ zero mx))
+                                                            (vec2 mn mx)
+                    )
+                )
+
+
+ipowIDecl : FunDecl
+ipowIDecl =
+    Tuple.first ipowICouple
+
+
+ipowI : ExpressionX xa Vec2 -> ExpressionX xb Int -> Expression2
+ipowI =
+    Tuple.second ipowICouple
+
+
+ipowCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+ipowCouple =
+    fun2 vec2T "ipow" (vec2T "b") (vec2T "e") <|
+        \b e ->
+            return <|
+                ternary
+                    (ands
+                        [ lt (subtract e.y e.x) (float 0.000001)
+                        , lt (abs_ <| subtract e.x (round_ e.x)) (float 0.000001)
+                        ]
+                    )
+                    (ipowI b <| intCast e.x)
+                    (iexp <| iby (iln b) e)
+
+
+ipowDecl : FunDecl
+ipowDecl =
+    Tuple.first ipowCouple
+
+
+ipow : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+ipow =
+    Tuple.second ipowCouple
+
+
 gpowICouple : ( FunDecl, ExpressionX xa Vec4 -> ExpressionX xb Int -> Expression4 )
 gpowICouple =
     fun2 vec4T "gpow" (vec4T "b") (intT "e") <|
@@ -421,6 +508,21 @@ gpow =
     Tuple.second gpowCouple
 
 
+iexpCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+iexpCouple =
+    fun1 vec2T "iexp" (vec2T "z") <| \z -> return <| vec2 (exp z.x) (exp z.y)
+
+
+iexpDecl : FunDecl
+iexpDecl =
+    Tuple.first iexpCouple
+
+
+iexp : ExpressionX xa Vec2 -> Expression2
+iexp =
+    Tuple.second iexpCouple
+
+
 gexpCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
 gexpCouple =
     fun1 vec4T "gexp" (vec4T "z") <| \z -> return <| vec4_1_3 z.x (byF (exp z.x) z.yzw)
@@ -434,6 +536,21 @@ gexpDecl =
 gexp : ExpressionX xa Vec4 -> Expression4
 gexp =
     Tuple.second gexpCouple
+
+
+ilnCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+ilnCouple =
+    fun1 vec2T "iln" (vec2T "z") <| \z -> return <| vec2 (log z.x) (log z.y)
+
+
+ilnDecl : FunDecl
+ilnDecl =
+    Tuple.first ilnCouple
+
+
+iln : ExpressionX xa Vec2 -> Expression2
+iln =
+    Tuple.second ilnCouple
 
 
 glnCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
@@ -519,39 +636,7 @@ intervalOperationToGlsl op =
             fileToGlsl [ iinverseDecl, idivDecl, gdivDecl ]
 
         GlslPower ->
-            """
-            float ipow(float b, int e) {
-                float fe = float(e);
-                if(mod(fe, 2.0) == 0.0)
-                    return pow(abs(b), fe);
-                else
-                    return b * pow(abs(b), fe - 1.0);
-            }
-
-            vec2 ipow(vec2 b, int e) {
-                if(e == 0)
-                    return vec2(1,1);
-                if(e == 1)
-                    return b;
-                float xe = ipow(b.x, e);
-                float ye = ipow(b.y, e);
-                float mn = min(xe, ye);
-                float mx = max(xe, ye);
-                if(mod(float(e), 2.0) == 0.0 && b.x <= 0.0 && b.y >= 0.0) {
-                    return vec2(
-                        min(0.0, mn),
-                        max(0.0, mx)
-                    );
-                }
-                return vec2(mn, mx);
-            }
-
-            vec2 ipow(vec2 b, vec2 e) {
-                if(e.y - e.x < 0.000001 && abs(e.x - round(e.x)) < 0.000001)
-                    return ipow(b, int(e.x));
-                return iexp(iby(iln(b), e));
-            }
-            """ ++ fileToGlsl [ gpowIDecl, gpowDecl ]
+            fileToGlsl [ ipowFIDecl, ipowIDecl, ipowDecl, gpowIDecl, gpowDecl ]
 
         GlslRelations ->
             """
@@ -1071,11 +1156,7 @@ intervalFunctionToGlsl name =
             """
 
         Exp22 ->
-            """
-            vec2 iexp(vec2 z) {
-                return vec2(exp(z.x), exp(z.y));
-            }
-            """ ++ fileToGlsl [ gexpDecl ]
+            fileToGlsl [ iexpDecl, gexpDecl ]
 
         Floor22 ->
             """
@@ -1089,11 +1170,7 @@ intervalFunctionToGlsl name =
             """
 
         Ln22 ->
-            """
-            vec2 iln(vec2 z) {
-                return vec2(log(z.x), log(z.y));
-            }
-            """ ++ fileToGlsl [ glnDecl ]
+            fileToGlsl [ ilnDecl, glnDecl ]
 
         Log1022 ->
             """
@@ -1717,6 +1794,10 @@ expressionToIntervalGlsl : PrintExpression -> Expression2
 expressionToIntervalGlsl expr =
     let
         unsafeApply name ex =
+            let
+                _ =
+                    Debug.todo
+            in
             dotted2 <| unsafeCall name (List.map (go >> .base) ex)
 
         go =
@@ -1785,13 +1866,13 @@ expressionToIntervalGlsl expr =
                 isquare (go l)
 
             else
-                unsafeApply "ipow" [ l, PFloat f ]
+                ipow (go l) (go <| PFloat f)
 
         PPower l (PInteger ri) ->
-            unsafeApply "ipow" [ l, PInteger ri ]
+            ipow (go l) (go <| PInteger ri)
 
         PPower l r ->
-            unsafeApply "ipow" [ l, r ]
+            ipow (go l) (go r)
 
         PApply name ex ->
             if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
