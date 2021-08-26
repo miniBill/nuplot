@@ -131,12 +131,12 @@ draw size id { wdiv, hdiv } { graph, axes } =
             ]
     in
     Element.with identity <|
-        \{ rayDifferentials, expandIntervals } ->
+        \{ rayDifferentials } ->
             el attrs <|
                 Element.html <|
                     Html.node "nu-plot"
                         [ Html.Attributes.id cid
-                        , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl expandIntervals rayDifferentials graph
+                        , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl rayDifferentials graph
                         , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
                         , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
                         , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines

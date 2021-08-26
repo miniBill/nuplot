@@ -52,7 +52,6 @@ type alias Context =
     { language : Language
     , hasClipboard : Bool
     , hasFullscreen : Bool
-    , expandIntervals : Bool
     , rayDifferentials : Bool
     , deviceClass : DeviceClass
     , isFullscreen : Bool
@@ -80,7 +79,6 @@ type Msg
     | Resized Size
     | ToggleMenu Bool
     | ToggleShowPendingActions Bool
-    | ToggleExpandIntervals Bool
     | ToggleRayDifferentials Bool
     | Language Language
     | GoogleAuth

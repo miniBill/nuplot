@@ -1,4 +1,4 @@
-module UI.Glsl.Code exposing (Uniforms, cexpFunction, constantToGlsl, deindent, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+module UI.Glsl.Code exposing (Uniforms, cexpFunction, constantToGlsl, deindent, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
@@ -66,6 +66,21 @@ gnumDecl =
 gnum : ExpressionX xa Float -> Expression4
 gnum =
     Tuple.second gnumTuple
+
+
+dupTuple : ( FunDecl, ExpressionX xa Float -> Expression2 )
+dupTuple =
+    fun1 vec2T "dup" (floatT "x") <| \x -> return <| vec2 x x
+
+
+dupDecl : FunDecl
+dupDecl =
+    Tuple.first dupTuple
+
+
+dup : ExpressionX xa Float -> Expression2
+dup =
+    Tuple.second dupTuple
 
 
 cby : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
@@ -224,6 +239,35 @@ gby =
     Tuple.second gbyCouple
 
 
+ibyCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+ibyCouple =
+    fun2 vec2T "iby" (vec2T "l") (vec2T "r") <|
+        \l r ->
+            def floatT "a" (by l.x r.x) <|
+                \a ->
+                    def floatT "b" (by l.x r.y) <|
+                        \b ->
+                            def floatT "c" (by l.y r.x) <|
+                                \c ->
+                                    def floatT "d" (by l.y r.x) <|
+                                        \d ->
+                                            def floatT "mn" (min_ (min_ a b) (min_ c d)) <|
+                                                \mn ->
+                                                    def floatT "mx" (max_ (max_ a b) (max_ c d)) <|
+                                                        \mx ->
+                                                            return <| vec2 mn mx
+
+
+ibyDecl : FunDecl
+ibyDecl =
+    Tuple.first ibyCouple
+
+
+iby : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+iby =
+    Tuple.second ibyCouple
+
+
 gdivCouple : ( FunDecl, ExpressionX xa Vec4 -> ExpressionX xb Vec4 -> Expression4 )
 gdivCouple =
     fun2 vec4T "gdiv" (vec4T "l") (vec4T "r") <|
@@ -357,17 +401,7 @@ intervalOperationToGlsl op =
             """ ++ fileToGlsl [ gnegDecl ]
 
         GlslMultiplication ->
-            """
-            vec2 iby(vec2 l, vec2 r) {
-                float a = l.x * r.x;
-                float b = l.x * r.y;
-                float c = l.y * r.x;
-                float d = l.y * r.y;
-                float mn = min(min(a,b),min(c,d));
-                float mx = max(max(a,b),max(c,d));
-                return vec2(mn, mx);
-            }
-            """ ++ fileToGlsl [ gbyDecl ]
+            fileToGlsl [ ibyDecl, gbyDecl ]
 
         GlslDivision ->
             """
@@ -1254,14 +1288,14 @@ toSrcPolar suffix e =
     """
 
 
-toSrcParametric : Bool -> String -> Expression.Expression -> String
-toSrcParametric expandIntervals suffix e =
+toSrcParametric : String -> Expression.Expression -> String
+toSrcParametric suffix e =
     """
     vec2 interval""" ++ suffix ++ """(vec2 p, float from, float to) {
         vec2 x = vec2(p.x,p.x);
         vec2 y = vec2(p.y,p.y);
         vec2 t = from < to ? vec2(from, to) : vec2(to, from);
-        return """ ++ expressionToIntervalGlsl expandIntervals e ++ """;
+        return """ ++ Generator.expressionToGlsl (expressionToIntervalGlsl (toPrintExpression e)).base ++ """;
     }
 
     vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
@@ -1508,36 +1542,6 @@ epsilon =
     0.00001
 
 
-wordWrap : String -> String
-wordWrap =
-    let
-        step e ( l, acc ) =
-            if String.length e + String.length l > 40 then
-                ( e, l :: acc )
-
-            else
-                ( l ++ e, acc )
-    in
-    String.split " "
-        >> List.foldl step ( "", [] )
-        >> (\( l, a ) ->
-                if String.isEmpty l then
-                    a
-
-                else
-                    l :: a
-           )
-        >> List.reverse
-        >> String.join "\n            "
-
-
-expressionToIntervalGlsl : Bool -> Expression.Expression -> String
-expressionToIntervalGlsl expandIntervals =
-    toPrintExpression
-        >> expressionToIntervalGlslPrec expandIntervals 0
-        >> wordWrap
-
-
 expressionToGlsl : List ( String, Expression1 Float ) -> Expression.Expression -> Expression2
 expressionToGlsl context =
     let
@@ -1633,52 +1637,33 @@ expressionToGlsl context =
     toPrintExpression >> go
 
 
-paren : Bool -> String -> String
-paren b c =
-    if b then
-        "(" ++ c ++ ")"
-
-    else
-        c
-
-
-expressionToIntervalGlslPrec : Bool -> Int -> PrintExpression -> String
-expressionToIntervalGlslPrec expandIntervals p expr =
+expressionToIntervalGlsl : PrintExpression -> Expression2
+expressionToIntervalGlsl expr =
     let
-        infixl_ n op l r =
-            paren (p > n) <| expressionToIntervalGlslPrec expandIntervals n l ++ op ++ expressionToIntervalGlslPrec expandIntervals (n + 1) r
-
         apply name ex =
-            paren (p > 10) <| name ++ "(" ++ String.join ", " (List.map (expressionToIntervalGlslPrec expandIntervals 0) ex) ++ ")"
-
-        expand e =
-            if expandIntervals then
-                "iexpand(" ++ e ++ ")"
-
-            else
-                e
+            dotted2 <| unsafeCall name (List.map (expressionToIntervalGlsl >> .base) ex)
     in
     case expr of
         PVariable "pi" ->
-            "dup(radians(180.0))"
+            dup <| dotted1 <| unknown "radians(180.0)"
 
         PVariable "e" ->
-            "dup(exp(1.0))"
+            dup <| dotted1 <| unknown "exp(1.0)"
 
         PVariable v ->
-            v
+            dotted2 <| unknown v
 
         PInteger v ->
-            "dup(" ++ String.fromInt v ++ ".0)"
+            dup <| float <| toFloat v
 
         PFloat f ->
-            "dup(" ++ floatToGlsl f ++ ")"
+            dup <| float f
 
         PNegate expression ->
-            "ineg(" ++ expressionToIntervalGlslPrec expandIntervals 10 expression ++ ")"
+            apply "ineg" [ expression ]
 
         PAdd l r ->
-            expand <| infixl_ 6 " + " l r
+            add2 (expressionToIntervalGlsl l) (expressionToIntervalGlsl r)
 
         PRel op l r ->
             let
@@ -1702,61 +1687,57 @@ expressionToIntervalGlslPrec expandIntervals p expr =
                         _ ->
                             "iuknownrelop"
             in
-            expand <| name ++ "(" ++ expressionToIntervalGlslPrec expandIntervals 10 l ++ ", " ++ expressionToIntervalGlslPrec expandIntervals 10 r ++ ")"
+            apply name [ l, r ]
 
         PBy l r ->
-            expand <| apply "iby" [ l, r ]
+            iby (expressionToIntervalGlsl l) (expressionToIntervalGlsl r)
 
         PDiv l r ->
-            expand <| apply "idiv" [ l, r ]
+            apply "idiv" [ l, r ]
 
         PPower (PVariable "i") (PInteger 2) ->
-            "dup(-1.0)"
+            dup <| float -1
 
         PPower l (PInteger 2) ->
-            expand <| "isquare(" ++ expressionToIntervalGlslPrec expandIntervals 0 l ++ ")"
+            apply "isquare" [ l ]
 
         PPower l (PFloat f) ->
             if f == 2.0 then
-                expand <| "isquare(" ++ expressionToIntervalGlslPrec expandIntervals 0 l ++ ")"
+                apply "isquare" [ l ]
 
             else
-                expand <| apply "ipow" [ l, PFloat f ]
+                apply "ipow" [ l, PFloat f ]
 
         PPower l (PInteger ri) ->
-            let
-                ris =
-                    String.fromInt ri
-            in
-            expand <| "ipow(" ++ expressionToIntervalGlslPrec expandIntervals 0 l ++ ", " ++ ris ++ ")"
+            apply "ipow" [ l, PInteger ri ]
 
         PPower l r ->
-            expand <| apply "ipow" [ l, r ]
+            apply "ipow" [ l, r ]
 
         PApply name ex ->
             if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
-                case List.map (expressionToIntervalGlslPrec expandIntervals 0) ex of
+                case List.map expressionToIntervalGlsl ex of
                     [] ->
-                        "vec2(0)"
+                        vec2 zero zero
 
                     head :: tail ->
-                        expand <| List.foldl (\e a -> "i" ++ Expression.functionNameToString name ++ "(" ++ a ++ "," ++ e ++ ")") head tail
+                        dotted2 <| List.foldl (\e a -> unsafeCall ("i" ++ Expression.functionNameToString name) [ a, e.base ]) head.base tail
 
             else if name == KnownFunction Sin || name == KnownFunction Cos then
                 apply ("i" ++ Expression.functionNameToString name) ex
 
             else
-                expand <| apply ("i" ++ Expression.functionNameToString name) ex
+                apply ("i" ++ Expression.functionNameToString name) ex
 
         PList es ->
-            "vec" ++ String.fromInt (List.length es) ++ "(" ++ String.join ", " (List.map (expressionToIntervalGlslPrec expandIntervals 0) es) ++ ")"
+            apply ("vec" ++ String.fromInt (List.length es)) es
 
         PReplace var e ->
-            expressionToIntervalGlslPrec expandIntervals p (Expression.pfullSubstitute var e)
+            expressionToIntervalGlsl (Expression.pfullSubstitute var e)
 
         -- If this happens, it's too late
         PLambda _ _ ->
-            "vec2(0)"
+            vec2 zero zero
 
 
 expressionToNormalGlsl : { x : Expression1 Float, y : Expression1 Float, z : Expression1 Float } -> Expression.Expression -> Expression4
@@ -2053,8 +2034,8 @@ axisDecl =
     Tuple.first axisTuple
 
 
-toSrc3D : Bool -> String -> Expression.Expression -> File
-toSrc3D expandIntervals suffix e =
+toSrc3D : String -> Expression.Expression -> File
+toSrc3D suffix e =
     [ Tuple.first <|
         fun1 vec3T ("normal" ++ suffix) (vec3T "p") <|
             \p ->
@@ -2080,7 +2061,7 @@ toSrc3D expandIntervals suffix e =
                                             \_ ->
                                                 def vec2T "z" (vec2 mn.z mx.z) <|
                                                     \_ ->
-                                                        return <| dotted2 <| unknown <| expressionToIntervalGlsl expandIntervals e
+                                                        return <| expressionToIntervalGlsl <| toPrintExpression e
     ]
 
 
