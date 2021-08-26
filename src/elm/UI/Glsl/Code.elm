@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (Uniforms, cexpFunction, constantToGlsl, deindent, 
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, nop, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -194,6 +194,23 @@ cpow =
     Tuple.second cpowTuple
 
 
+inegCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+inegCouple =
+    fun1 vec2T "ineg" (vec2T "v") <|
+        \v ->
+            return <| vec2 (negate_ v.y) (negate_ v.x)
+
+
+inegDecl : FunDecl
+inegDecl =
+    Tuple.first inegCouple
+
+
+ineg : ExpressionX xa Vec2 -> Expression2
+ineg =
+    Tuple.second inegCouple
+
+
 gnegCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
 gnegCouple =
     fun1 vec4T "gneg" (vec4T "v") <| \v -> return <| negate_ v
@@ -249,7 +266,7 @@ ibyCouple =
                         \b ->
                             def floatT "c" (by l.y r.x) <|
                                 \c ->
-                                    def floatT "d" (by l.y r.x) <|
+                                    def floatT "d" (by l.y r.y) <|
                                         \d ->
                                             def floatT "mn" (min_ (min_ a b) (min_ c d)) <|
                                                 \mn ->
@@ -266,6 +283,52 @@ ibyDecl =
 iby : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
 iby =
     Tuple.second ibyCouple
+
+
+iinverseCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+iinverseCouple =
+    fun1 vec2T "iinverse" (vec2T "y") <|
+        \y ->
+            return <|
+                ternary
+                    (ands [ leq y.x zero, geq y.y zero ])
+                    (vec2 (div minusOne zero) (div one zero))
+                    (ternary
+                        (eq y.y zero)
+                        (vec2 (div minusOne zero) (div one y.x))
+                        (ternary
+                            (eq y.x zero)
+                            (vec2 (div one y.y) (div one zero))
+                            (vec2 (div one y.y) (div one y.x))
+                        )
+                    )
+
+
+iinverseDecl : FunDecl
+iinverseDecl =
+    Tuple.first iinverseCouple
+
+
+iinverse : ExpressionX xa Vec2 -> Expression2
+iinverse =
+    Tuple.second iinverseCouple
+
+
+idivCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+idivCouple =
+    fun2 vec2T "idiv" (vec2T "l") (vec2T "r") <|
+        \l r ->
+            return <| iby l (iinverse r)
+
+
+idivDecl : FunDecl
+idivDecl =
+    Tuple.first idivCouple
+
+
+idiv : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+idiv =
+    Tuple.second idivCouple
 
 
 gdivCouple : ( FunDecl, ExpressionX xa Vec4 -> ExpressionX xb Vec4 -> Expression4 )
@@ -369,8 +432,8 @@ csinCouple =
                 \s ->
                     return <|
                         ternary
-                            (eq z.y (float 0))
-                            (vec2 s (float 0))
+                            (eq z.y zero)
+                            (vec2 s zero)
                             (vec2
                                 (by s (cosh z.y))
                                 (by (cos_ z.x) (sinh z.y))
@@ -387,6 +450,32 @@ csin =
     Tuple.second csinCouple
 
 
+ccosCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+ccosCouple =
+    fun1 vec2T "ccos" (vec2T "z") <|
+        \z ->
+            def floatT "c" (cos_ z.x) <|
+                \c ->
+                    return <|
+                        ternary
+                            (eq z.y zero)
+                            (vec2 c zero)
+                            (vec2
+                                (by c (cosh z.y))
+                                (by (sin_ z.x) (sinh z.y))
+                            )
+
+
+ccosDecl : FunDecl
+ccosDecl =
+    Tuple.first ccosCouple
+
+
+ccos : ExpressionX xa Vec2 -> Expression2
+ccos =
+    Tuple.second ccosCouple
+
+
 intervalOperationToGlsl : GlslOperation -> String
 intervalOperationToGlsl op =
     case op of
@@ -394,31 +483,13 @@ intervalOperationToGlsl op =
             ""
 
         GlslNegation ->
-            """
-            vec2 ineg(vec2 v) {
-                return vec2(-v.y, -v.x);
-            }
-            """ ++ fileToGlsl [ gnegDecl ]
+            fileToGlsl [ inegDecl, gnegDecl ]
 
         GlslMultiplication ->
             fileToGlsl [ ibyDecl, gbyDecl ]
 
         GlslDivision ->
-            """
-            vec2 iinverse(vec2 y) {
-                if(y.x <= 0.0 && y.y >= 0.0)
-                    return vec2(-1.0 / 0.0, 1.0 / 0.0);
-                if(y.y == 0.0)
-                    return vec2(-1.0 / 0.0, 1.0 / y.x);
-                if(y.x == 0.0)
-                    return vec2(1.0 / y.y, 1.0 / 0.0);
-                return vec2(1.0 / y.y, 1.0 / y.x);
-            }
-
-            vec2 idiv(vec2 l, vec2 r) {
-                return iby(l, iinverse(r));
-            }
-            """ ++ fileToGlsl [ gdivDecl ]
+            fileToGlsl [ iinverseDecl, idivDecl, gdivDecl ]
 
         GlslPower ->
             """
@@ -512,20 +583,7 @@ straightFunctionToGlsl name =
             [ csinDecl ]
 
         Cos22 ->
-            [ unknownFunDecl
-                { name =
-                    "ccos"
-                , type_ = "TODO"
-                , body = """
-            vec2 ccos(vec2 z) {
-                if(z.y == 0.0) {
-                    return vec2(cos(z.x), 0);
-                }
-                return vec2(cos(z.x) * cosh(z.y), sin(z.x) * sinh(z.y));
-            }
-            """
-                }
-            ]
+            [ ccosDecl ]
 
         Tan22 ->
             [ unknownFunDecl
@@ -1640,15 +1698,18 @@ expressionToGlsl context =
 expressionToIntervalGlsl : PrintExpression -> Expression2
 expressionToIntervalGlsl expr =
     let
-        apply name ex =
-            dotted2 <| unsafeCall name (List.map (expressionToIntervalGlsl >> .base) ex)
+        unsafeApply name ex =
+            dotted2 <| unsafeCall name (List.map (go >> .base) ex)
+
+        go =
+            expressionToIntervalGlsl
     in
     case expr of
         PVariable "pi" ->
-            dup <| dotted1 <| unknown "radians(180.0)"
+            dup <| radians_ (float 180)
 
         PVariable "e" ->
-            dup <| dotted1 <| unknown "exp(1.0)"
+            dup <| exp one
 
         PVariable v ->
             dotted2 <| unknown v
@@ -1660,10 +1721,10 @@ expressionToIntervalGlsl expr =
             dup <| float f
 
         PNegate expression ->
-            apply "ineg" [ expression ]
+            ineg <| go expression
 
         PAdd l r ->
-            add2 (expressionToIntervalGlsl l) (expressionToIntervalGlsl r)
+            add2 (go l) (go r)
 
         PRel op l r ->
             let
@@ -1687,36 +1748,36 @@ expressionToIntervalGlsl expr =
                         _ ->
                             "iuknownrelop"
             in
-            apply name [ l, r ]
+            unsafeApply name [ l, r ]
 
         PBy l r ->
-            iby (expressionToIntervalGlsl l) (expressionToIntervalGlsl r)
+            iby (go l) (go r)
 
         PDiv l r ->
-            apply "idiv" [ l, r ]
+            idiv (go l) (go r)
 
         PPower (PVariable "i") (PInteger 2) ->
             dup <| float -1
 
         PPower l (PInteger 2) ->
-            apply "isquare" [ l ]
+            unsafeApply "isquare" [ l ]
 
         PPower l (PFloat f) ->
             if f == 2.0 then
-                apply "isquare" [ l ]
+                unsafeApply "isquare" [ l ]
 
             else
-                apply "ipow" [ l, PFloat f ]
+                unsafeApply "ipow" [ l, PFloat f ]
 
         PPower l (PInteger ri) ->
-            apply "ipow" [ l, PInteger ri ]
+            unsafeApply "ipow" [ l, PInteger ri ]
 
         PPower l r ->
-            apply "ipow" [ l, r ]
+            unsafeApply "ipow" [ l, r ]
 
         PApply name ex ->
             if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
-                case List.map expressionToIntervalGlsl ex of
+                case List.map go ex of
                     [] ->
                         vec2 zero zero
 
@@ -1724,16 +1785,16 @@ expressionToIntervalGlsl expr =
                         dotted2 <| List.foldl (\e a -> unsafeCall ("i" ++ Expression.functionNameToString name) [ a, e.base ]) head.base tail
 
             else if name == KnownFunction Sin || name == KnownFunction Cos then
-                apply ("i" ++ Expression.functionNameToString name) ex
+                unsafeApply ("i" ++ Expression.functionNameToString name) ex
 
             else
-                apply ("i" ++ Expression.functionNameToString name) ex
+                unsafeApply ("i" ++ Expression.functionNameToString name) ex
 
         PList es ->
-            apply ("vec" ++ String.fromInt (List.length es)) es
+            unsafeApply ("vec" ++ String.fromInt (List.length es)) es
 
         PReplace var e ->
-            expressionToIntervalGlsl (Expression.pfullSubstitute var e)
+            go (Expression.pfullSubstitute var e)
 
         -- If this happens, it's too late
         PLambda _ _ ->

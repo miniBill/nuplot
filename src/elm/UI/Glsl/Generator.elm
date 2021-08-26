@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Name, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, nop, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, true, uniform, unknown, unknownFunDecl, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Name, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, lt, mat3T, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, true, uniform, unknown, unknownFunDecl, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
@@ -783,6 +783,11 @@ zero =
 one : Expression1 Float
 one =
     float 1
+
+
+minusOne : Expression1 Float
+minusOne =
+    float -1
 
 
 float : Float -> Expression1 Float
