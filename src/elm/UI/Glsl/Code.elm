@@ -226,6 +226,33 @@ gneg =
     Tuple.second gnegCouple
 
 
+isquareCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+isquareCouple =
+    fun1 vec2T "isquare" (vec2T "z") <|
+        \z ->
+            def vec2T "s" (by z z) <|
+                \s ->
+                    def floatT "mx" (max_ s.x s.y) <|
+                        \mx ->
+                            if_
+                                (ands [ leq z.x zero, geq z.y zero ])
+                                (return <| vec2 zero mx)
+                                (def floatT "mn" (min_ s.x s.y) <|
+                                    \mn ->
+                                        return <| vec2 mn mx
+                                )
+
+
+isquareDecl : FunDecl
+isquareDecl =
+    Tuple.first isquareCouple
+
+
+isquare : ExpressionX xa Vec2 -> Expression2
+isquare =
+    Tuple.second isquareCouple
+
+
 gsquareCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
 gsquareCouple =
     fun1 vec4T "gsquare" (vec4T "z") <| \z -> return <| vec4_1_3 (by z.x z.x) z.yzw
@@ -1194,16 +1221,7 @@ intervalFunctionToGlsl name =
             """
 
         Square22 ->
-            """
-            vec2 isquare(vec2 z) {
-                vec2 s = z * z;
-                float mx = max(s.x, s.y);
-                if(z.x <= 0.0 && z.y >= 0.0)
-                    return vec2(0.0, mx);
-                float mn = min(s.x, s.y);
-                return vec2(mn, mx);
-            }
-            """ ++ fileToGlsl [ gsquareDecl ]
+            fileToGlsl [ isquareDecl, gsquareDecl ]
 
         Tan22 ->
             """
@@ -1760,11 +1778,11 @@ expressionToIntervalGlsl expr =
             dup <| float -1
 
         PPower l (PInteger 2) ->
-            unsafeApply "isquare" [ l ]
+            isquare (go l)
 
         PPower l (PFloat f) ->
             if f == 2.0 then
-                unsafeApply "isquare" [ l ]
+                isquare (go l)
 
             else
                 unsafeApply "ipow" [ l, PFloat f ]
