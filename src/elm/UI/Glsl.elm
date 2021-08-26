@@ -18,15 +18,6 @@ import UI.Glsl.Sphere as Sphere
 getGlsl : Bool -> Bool -> Graph -> String
 getGlsl expandIntervals rayDifferentials graph =
     let
-        uniforms =
-            { u_canvasWidth = uniform floatT "u_canvasWidth"
-            , u_canvasHeight = uniform floatT "u_canvasHeight"
-            , u_viewportWidth = uniform floatT "u_viewportWidth"
-            , u_viewportHeight = uniform floatT "u_viewportHeight"
-            , u_zoomCenter = uniform vec2T "u_zoomCenter"
-            , u_drawAxes = uniform floatT "u_drawAxes"
-            }
-
         { expr, srcExpr, interval, usesThetaDelta, pixel2D, pixel3D } =
             extract "" graph
 
@@ -125,7 +116,7 @@ getGlsl expandIntervals rayDifferentials graph =
 
         thetaDeltaCode =
             if usesThetaDelta then
-                deindent 4 <| UI.Glsl.Code.thetaDelta
+                Generator.fileToGlsl [ UI.Glsl.Code.thetaDeltaDecl ]
 
             else
                 ""
@@ -144,7 +135,6 @@ getGlsl expandIntervals rayDifferentials graph =
         ++ "\n/* Expression */\n"
         ++ deindent 4 srcExpr
         ++ mainGlsl
-            uniforms
             rayDifferentials
             (List.map
                 (\p ->

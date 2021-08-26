@@ -1,5 +1,6 @@
-module UI.Glsl.Generator exposing (Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Mat3, Name, Statement(..), TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, fun0, fun1, fun2, fun3, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, true, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Name, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, lt, mat3T, max3, max4, max_, min_, mod, negate2, negate_, nop, normalize, one, pow, radians_, return, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, true, uniform, unknown, unknownFunDecl, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
+import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
 import Set
 
@@ -12,12 +13,17 @@ type FunDecl
     = FunDecl { name : String, type_ : String, body : String }
 
 
+type Stat
+    = If Expr Stat Stat
+    | Line String Stat
+    | Return Expr
+    | ExpressionStatement Expr Stat
+    | Decl String Name (Maybe Expr) Stat
+    | Nop
+
+
 type Statement r
-    = Block String (List (Statement r))
-    | Line String
-    | Return (Expression r)
-    | ExpressionStatement Expr
-    | Decl String Name (Maybe Expr)
+    = Statement Stat
 
 
 type Expr
@@ -123,32 +129,43 @@ funDeclToGlsl (FunDecl { body }) =
 
 
 statementToGlsl : Statement s -> String
-statementToGlsl =
+statementToGlsl (Statement r) =
     let
         go i c =
             case c of
-                Block h b ->
-                    String.join "\n" <|
-                        (indent i h ++ " {")
-                            :: List.map (go (i + 1)) b
-                            ++ [ indent i "}" ]
+                If cond t f ->
+                    [ indent i ("if(" ++ expressionToGlsl (Expression cond) ++ ") {")
+                    , go (i + 1) t
+                    , indent i "}"
+                    , ""
+                    , go i f
+                    ]
+                        |> String.join "\n"
 
-                Line l ->
-                    indent i l ++ ";"
+                Line l next ->
+                    indent i l ++ ";\n" ++ go i next
 
                 Return e ->
-                    indent i <| "return " ++ expressionToGlsl e ++ ";"
+                    indent i <| "return " ++ expressionToGlsl (Expression e) ++ ";"
 
-                ExpressionStatement e ->
-                    indent i <| expressionToGlsl (Expression e) ++ ";"
+                ExpressionStatement e next ->
+                    indent i (expressionToGlsl (Expression e) ++ ";\n") ++ go i next
 
-                Decl t (Name n) (Just e) ->
-                    indent i <| t ++ " " ++ n ++ " = " ++ expressionToGlsl (Expression e) ++ ";"
+                Decl t (Name n) (Just e) next ->
+                    indent i (t ++ " " ++ n ++ " = " ++ expressionToGlsl (Expression e) ++ ";\n") ++ go i next
 
-                Decl t (Name n) Nothing ->
-                    indent i <| t ++ " " ++ n ++ ";"
+                Decl t (Name n) Nothing next ->
+                    indent i (t ++ " " ++ n ++ ";\n") ++ go i next
+
+                Nop ->
+                    ""
     in
-    go 1
+    go 1 r
+
+
+nop : Statement ()
+nop =
+    Statement Nop
 
 
 expressionToGlsl : Expression t -> String
@@ -637,6 +654,11 @@ floatCast =
     dotted1 << call1Internal "float"
 
 
+fract : ExpressionX a Float -> Expression1 Float
+fract =
+    dotted1 << call1Internal "fract"
+
+
 arr : ExpressionX a Mat3 -> ExpressionX b Int -> Expression1 Vec3
 arr =
     expr2 Array
@@ -893,7 +915,7 @@ unknown =
 -- STATEMENTS
 
 
-funInternal : TypedName t c -> List ( String, String ) -> List (Statement t) -> FunDecl
+funInternal : TypedName t c -> List ( String, String ) -> Statement t -> FunDecl
 funInternal (TypedName (Type rt) (Name name) _) args body =
     let
         argsList =
@@ -907,9 +929,10 @@ funInternal (TypedName (Type rt) (Name name) _) args body =
                 |> String.join " -> "
         , body =
             String.join "\n" <|
-                (rt ++ " " ++ name ++ "(" ++ argsList ++ ") {")
-                    :: List.map statementToGlsl body
-                    ++ [ "}" ]
+                [ rt ++ " " ++ name ++ "(" ++ argsList ++ ") {"
+                , statementToGlsl body
+                , "}"
+                ]
         }
 
 
@@ -926,15 +949,14 @@ toVar (TypedName _ _ expr) =
 fun0 :
     TypingFunction t c
     -> String
-    -> List (Statement t)
+    -> Statement t
     -> ( FunDecl, c )
 fun0 typeF name body =
     let
         ( typed, dotter ) =
             typeF name
     in
-    ( funInternal typed [] <|
-        body
+    ( funInternal typed [] body
     , dotter <| call0Internal name
     )
 
@@ -943,7 +965,7 @@ fun1 :
     TypingFunction tr r
     -> String
     -> ( TypedName ta a, Expression ta -> a )
-    -> (a -> List (Statement tr))
+    -> (a -> Statement tr)
     ->
         ( FunDecl
         , ExpressionX xa ta -> r
@@ -964,7 +986,7 @@ fun2 :
     -> String
     -> ( TypedName ta a, Expression ta -> a )
     -> ( TypedName tb b, Expression tb -> b )
-    -> (a -> b -> List (Statement tr))
+    -> (a -> b -> Statement tr)
     ->
         ( FunDecl
         , ExpressionX xa ta -> ExpressionX xb tb -> r
@@ -986,7 +1008,7 @@ fun3 :
     -> ( TypedName ta a, Expression ta -> a )
     -> ( TypedName tb b, Expression tb -> b )
     -> ( TypedName tc c, Expression tc -> c )
-    -> (a -> b -> c -> List (Statement tr))
+    -> (a -> b -> c -> Statement tr)
     ->
         ( FunDecl
         , ExpressionX xa ta -> ExpressionX xb tb -> ExpressionX xc tc -> r
@@ -1002,43 +1024,66 @@ fun3 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) body =
     )
 
 
-if_ : Expression1 Bool -> Statement r -> Statement r
-if_ cond ifTrue =
-    Block ("if(" ++ expressionToGlsl cond.base ++ ")") [ ifTrue ]
+fun4 :
+    TypingFunction tr r
+    -> String
+    -> ( TypedName ta a, Expression ta -> a )
+    -> ( TypedName tb b, Expression tb -> b )
+    -> ( TypedName tc c, Expression tc -> c )
+    -> ( TypedName td d, Expression td -> d )
+    -> (a -> b -> c -> d -> Statement tr)
+    ->
+        ( FunDecl
+        , ExpressionX xa ta -> ExpressionX xb tb -> ExpressionX xc tc -> ExpressionX xd td -> r
+        )
+fun4 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) body =
+    let
+        ( typed, dotter ) =
+            typeF name
+    in
+    ( funInternal typed [ argToString arg0, argToString arg1, argToString arg2, argToString arg3 ] <|
+        body (toVar arg0) (toVar arg1) (toVar arg2) (toVar arg3)
+    , \l m n r -> dotter (call4Internal name l m n r)
+    )
+
+
+if_ : Expression1 Bool -> Statement r -> Statement r -> Statement r
+if_ cond (Statement ifTrue) (Statement ifFalse) =
+    Statement <| If (unwrapExpression cond) ifTrue ifFalse
 
 
 return : ExpressionX a r -> Statement r
-return { base } =
-    Return base
+return e =
+    Statement <| Return <| unwrapExpression e
 
 
-decl : TypingFunction tv v -> String -> (v -> List (Statement tr)) -> List (Statement tr)
+decl : TypingFunction tv v -> String -> (v -> Statement tr) -> Statement tr
 decl typeF name k =
     let
         ( TypedName (Type t) n e, _ ) =
             typeF name
 
-        go =
-            Decl t n Nothing
+        (Statement ks) =
+            k e
     in
-    go :: k e
+    Statement <| Decl t n Nothing ks
 
 
-def : TypingFunction tv v -> String -> ExpressionX xv tv -> (v -> List (Statement tr)) -> List (Statement tr)
-def typeF name value k =
+def : TypingFunction tv v -> String -> ExpressionX xv tv -> (v -> Statement tr) -> Statement tr
+def typeF name v k =
     let
         ( TypedName (Type t) n e, _ ) =
             typeF name
 
-        go =
-            Decl t n (Just <| unwrapExpression value)
+        (Statement ks) =
+            k e
     in
-    go :: k e
+    Statement <| Decl t n (Just <| unwrapExpression v) ks
 
 
-assign : ExpressionX a t -> ExpressionX a t -> Statement q
-assign name e =
-    ExpressionStatement (Assign (unwrapExpression name) (unwrapExpression e))
+assign : ExpressionX a t -> ExpressionX a t -> Statement q -> Statement q
+assign name e (Statement next) =
+    Statement <| ExpressionStatement (Assign (unwrapExpression name) (unwrapExpression e)) next
 
 
 unknownFunDecl : { name : String, type_ : String, body : String } -> FunDecl
@@ -1070,7 +1115,7 @@ type Mat3
     = Mat3 Mat3
 
 
-voidT : TypingFunction (Never -> a) (Never -> a)
+voidT : TypingFunction () (Never -> a)
 voidT n =
     ( TypedName (Type "void") (Name n) never, always never )
 
@@ -1103,3 +1148,272 @@ vec4T n =
 mat3T : TypingFunction Mat3 (Expression1 Mat3)
 mat3T n =
     ( TypedName (Type "mat3") (Name n) (dotted1Internal (Variable n)), dotted1 )
+
+
+
+--------------------
+-- TESTING HELPER --
+--------------------
+
+
+type GlslValue
+    = VFloat Float
+    | VBool Bool
+    | VInt Int
+    | VVec2 Float Float
+    | VVec3 Float Float Float
+    | VMat3 ( Float, Float, Float ) ( Float, Float, Float ) ( Float, Float, Float )
+    | VVoid -- Used for void return
+
+
+type ErrorValue
+    = MissingVariable String
+    | InvalidTypes String
+    | MissingReturn
+
+
+type alias Context =
+    Dict String GlslValue
+
+
+valueToString : GlslValue -> String
+valueToString v =
+    case v of
+        VFloat f ->
+            String.fromFloat f
+
+        VBool b ->
+            if b then
+                "true"
+
+            else
+                "false"
+
+        VInt i ->
+            String.fromInt i
+
+        VVoid ->
+            "void"
+
+        VVec2 x y ->
+            "vec2(" ++ String.fromFloat x ++ "," ++ String.fromFloat y ++ ")"
+
+        VVec3 x y z ->
+            "vec3(" ++ String.fromFloat x ++ "," ++ String.fromFloat y ++ "," ++ String.fromFloat z ++ ")"
+
+        VMat3 _ _ _ ->
+            Debug.todo "branch 'VMat3 _ _ _' not implemented"
+
+
+value : Context -> Expression t -> Result ErrorValue ( Context, GlslValue )
+value initialContext (Expression input) =
+    innerValue initialContext input
+
+
+innerValue : Context -> Expr -> Result ErrorValue ( Context, GlslValue )
+innerValue ctx e =
+    case e of
+        Float f ->
+            Ok ( ctx, VFloat f )
+
+        Bool b ->
+            Ok ( ctx, VBool b )
+
+        Int i ->
+            Ok ( ctx, VInt i )
+
+        Variable v ->
+            case Dict.get v ctx of
+                Just f ->
+                    Ok ( ctx, f )
+
+                Nothing ->
+                    Err <| MissingVariable v
+
+        And l r ->
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VBool bl, VBool br ) ->
+                            Ok ( ctx2, VBool <| bl && br )
+
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `and` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+
+        Or l r ->
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VBool bl, VBool br ) ->
+                            Ok ( ctx2, VBool <| bl || br )
+
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `or` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+
+        Comparison k l r ->
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr, k ) of
+                        ( VFloat fl, VFloat fr, LessThan ) ->
+                            Ok ( ctx2, VBool (fl < fr) )
+
+                        ( VFloat fl, VFloat fr, LessThanOrEquals ) ->
+                            Ok ( ctx2, VBool (fl <= fr) )
+
+                        ( VFloat fl, VFloat fr, Equals ) ->
+                            Ok ( ctx2, VBool (fl == fr) )
+
+                        ( VFloat fl, VFloat fr, GreaterThanOrEquals ) ->
+                            Ok ( ctx2, VBool (fl >= fr) )
+
+                        ( VFloat fl, VFloat fr, GreaterThan ) ->
+                            Ok ( ctx2, VBool (fl > fr) )
+
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot compare " ++ valueToString vl ++ " and " ++ valueToString vr)
+
+        Ternary _ _ _ ->
+            Debug.todo "branch 'Ternary _ _ _' not implemented"
+
+        Add _ _ ->
+            Debug.todo "branch 'Add _ _' not implemented"
+
+        Subtract _ _ ->
+            Debug.todo "branch 'Subtract _ _' not implemented"
+
+        By l r ->
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VFloat fl, VFloat fr ) ->
+                            Ok ( ctx2, VFloat <| fl * fr )
+
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `*` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+
+        Div _ _ ->
+            Debug.todo "branch 'Div _ _' not implemented"
+
+        Call "vec2" [ l, r ] ->
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VFloat fl, VFloat fr ) ->
+                            Ok ( ctx2, VVec2 fl fr )
+
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `vec2` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+
+        Call "exp" [ l ] ->
+            autovectorizingFloatOp ctx "exp" (\fv -> Basics.e ^ fv) l
+
+        Call "cos" [ l ] ->
+            autovectorizingFloatOp ctx "cos" Basics.cos l
+
+        Call "sin" [ l ] ->
+            autovectorizingFloatOp ctx "sin" Basics.sin l
+
+        Call name args ->
+            Debug.todo <| "branch 'Call \"" ++ name ++ "\" [" ++ String.join ", " (List.map (Debug.toString >> (++) " ") args) ++ " ]' not implemented"
+
+        Negate _ ->
+            Debug.todo "branch 'Negate _' not implemented"
+
+        Unknown _ ->
+            Debug.todo "branch 'Unknown _' not implemented"
+
+        Dot _ _ ->
+            Debug.todo "branch 'Dot _ _' not implemented"
+
+        Array _ _ ->
+            Debug.todo "branch 'Array _ _' not implemented"
+
+        Assign _ _ ->
+            Debug.todo "branch 'Assign _ _' not implemented"
+
+
+innerValue2 :
+    Context
+    -> Expr
+    -> Expr
+    -> (Context -> GlslValue -> GlslValue -> Result ErrorValue ( Context, GlslValue ))
+    -> Result ErrorValue ( Context, GlslValue )
+innerValue2 ctx l r k =
+    innerValue ctx l
+        |> Result.andThen
+            (\( ctx2, vl ) ->
+                innerValue ctx2 r
+                    |> Result.andThen
+                        (\( ctx3, vr ) ->
+                            k ctx3 vl vr
+                        )
+            )
+
+
+autovectorizingFloatOp : Context -> String -> (Float -> Float) -> Expr -> Result ErrorValue ( Dict String GlslValue, GlslValue )
+autovectorizingFloatOp ctx name inner expr =
+    innerValue ctx expr
+        |> Result.andThen
+            (\( ctx2, v ) ->
+                case v of
+                    VFloat fv ->
+                        Ok ( ctx2, VFloat <| inner fv )
+
+                    VVec2 x y ->
+                        Ok ( ctx2, VVec2 (inner x) (inner y) )
+
+                    VVec3 x y z ->
+                        Ok ( ctx2, VVec3 (inner x) (inner y) (inner z) )
+
+                    _ ->
+                        Err <|
+                            InvalidTypes
+                                ("Cannot calculate `" ++ name ++ "` for " ++ valueToString v)
+            )
+
+
+interpret : Context -> Statement a -> Result ErrorValue ( Context, GlslValue )
+interpret ctx (Statement s) =
+    case s of
+        Return e ->
+            Expression e
+                |> value ctx
+                |> Result.map (\( ctx2, val ) -> ( ctx2, val ))
+
+        If c t f ->
+            Expression c
+                |> value ctx
+                |> Result.andThen
+                    (\( ctx2, cval ) ->
+                        case cval of
+                            VBool True ->
+                                interpret ctx2 <| Statement t
+
+                            VBool False ->
+                                interpret ctx2 <| Statement f
+
+                            _ ->
+                                Err <| InvalidTypes <| "Condition of if evaluated to " ++ Debug.toString cval
+                    )
+
+        Line _ _ ->
+            Debug.todo "branch 'Line _' not implemented"
+
+        ExpressionStatement _ _ ->
+            Debug.todo "branch 'ExpressionStatement _' not implemented"
+
+        Decl _ _ _ _ ->
+            Debug.todo "branch 'Decl _ _ _' not implemented"
+
+        Nop ->
+            Ok ( ctx, VVoid )
