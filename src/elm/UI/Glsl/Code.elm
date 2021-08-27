@@ -380,6 +380,7 @@ gdiv =
     Tuple.second gdivCouple
 
 
+ipowFICouple : ( FunDecl, ExpressionX xa Float -> ExpressionX xb Int -> Expression1 Float )
 ipowFICouple =
     fun2 floatT "ipow" (floatT "b") (intT "e") <|
         \b e ->
@@ -392,10 +393,12 @@ ipowFICouple =
                             (by b <| pow (abs_ b) (subtract fe one))
 
 
+ipowFIDecl : FunDecl
 ipowFIDecl =
     Tuple.first ipowFICouple
 
 
+ipowFI : ExpressionX xa Float -> ExpressionX xb Int -> Expression1 Float
 ipowFI =
     Tuple.second ipowFICouple
 
@@ -2092,34 +2095,14 @@ pixel2Tuple pixels =
                                                                                     \px ->
                                                                                         decl vec3T "curr" <|
                                                                                             \curr ->
-                                                                                                inner deltaX
-                                                                                                    deltaY
-                                                                                                    x
-                                                                                                    y
-                                                                                                    px
-                                                                                                    curr
-                                                                                                    (def floatT "maxDelta" (max_ deltaX deltaY) <|
+                                                                                                inner deltaX deltaY x y px curr <|
+                                                                                                    def floatT "maxDelta" (max_ deltaX deltaY) <|
                                                                                                         \maxDelta ->
-                                                                                                            def vec3T
-                                                                                                                "yax"
-                                                                                                                (ternary3
-                                                                                                                    (eq uniforms.u_drawAxes one)
-                                                                                                                    (byF (axis x y maxDelta) (vec3 zero one zero))
-                                                                                                                    vec3Zero
-                                                                                                                )
-                                                                                                            <|
+                                                                                                            def vec3T "yax" (ternary3 (eq uniforms.u_drawAxes one) (byF (axis x y maxDelta) (vec3 zero one zero)) vec3Zero) <|
                                                                                                                 \yax ->
-                                                                                                                    def vec3T
-                                                                                                                        "xax"
-                                                                                                                        (ternary3
-                                                                                                                            (eq uniforms.u_drawAxes one)
-                                                                                                                            (byF (axis y x maxDelta) (vec3 one zero zero))
-                                                                                                                            vec3Zero
-                                                                                                                        )
-                                                                                                                    <|
+                                                                                                                    def vec3T "xax" (ternary3 (eq uniforms.u_drawAxes one) (byF (axis y x maxDelta) (vec3 one zero zero)) vec3Zero) <|
                                                                                                                         \xax ->
                                                                                                                             return <| vec4_3_1 (max3 px (max3 xax yax)) one
-                                                                                                    )
 
 
 addPixel :
