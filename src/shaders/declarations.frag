@@ -19,10 +19,6 @@ vec3 hl2rgb(float h, float l)
     return l + (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
 }
 
-float atanPlus(float y, float x) {
-    return mod(radians(360.0) + atan(y, x), radians(360.0));
-}
-
 vec2 iexpand(vec2 v) {
     return v * (vec2(1.0, 1.0) + sign(v) * vec2(-0.000001, 0.000001));
 }

@@ -1432,19 +1432,7 @@ polyDegree var expr =
                 BinaryOperation Power _ _ ->
                     Nothing
 
-                RelationOperation LessThan _ _ ->
-                    Nothing
-
-                RelationOperation LessThanOrEquals _ _ ->
-                    Nothing
-
-                RelationOperation Equals _ _ ->
-                    Nothing
-
-                RelationOperation GreaterThan _ _ ->
-                    Nothing
-
-                RelationOperation GreaterThanOrEquals _ _ ->
+                RelationOperation _ _ _ ->
                     Nothing
 
                 AssociativeOperation Addition l r o ->

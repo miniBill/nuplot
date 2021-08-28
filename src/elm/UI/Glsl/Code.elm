@@ -1,8 +1,8 @@
-module UI.Glsl.Code exposing (cexpFunction, constantToGlsl, deindent, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deindent, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -28,7 +28,7 @@ constantToGlsl c =
 
         Pi ->
             fun0 vec2T "pi" <|
-                return (vec2 (radians_ <| float 180) zero)
+                return (vec2 constants.pi zero)
 
         E ->
             fun0 vec2T "e" <|
@@ -54,6 +54,23 @@ cbyTuple =
 cbyDecl : FunDecl
 cbyDecl =
     Tuple.first cbyTuple
+
+
+atanPlusTuple : ( FunDecl, ExpressionX xa Float -> ExpressionX xb Float -> Expression1 Float )
+atanPlusTuple =
+    fun2 floatT "atanPlus" (floatT "y") (floatT "x") <|
+        \x y ->
+            return <| mod (add constants.twopi (dotted1 <| unsafeCall "atan" [ y.base, x.base ])) constants.twopi
+
+
+atanPlusDecl : FunDecl
+atanPlusDecl =
+    Tuple.first atanPlusTuple
+
+
+atanPlus : ExpressionX xa Float -> ExpressionX xb Float -> Expression1 Float
+atanPlus =
+    Tuple.second atanPlusTuple
 
 
 gnumTuple : ( FunDecl, ExpressionX xa Float -> Expression4 )
@@ -1070,14 +1087,14 @@ intervalFunctionToGlsl name =
             """
             vec2 iarg(vec2 z) {
                 if(z.y < 0.0)
-                    return dup(radians(180.0));
+                    return dup(PI);
                 if(z.x >= 0.0)
                     return vec2(0);
-                return vec2(0.0, radians(180.0));
+                return vec2(0.0, PI);
             }
 
             vec4 garg(vec4 z) {
-                return gnum(z.x >= 0.0 ? 0.0 : radians(180.0));
+                return gnum(z.x >= 0.0 ? 0.0 : PI);
             }
             """
 
@@ -1259,10 +1276,10 @@ intervalFunctionToGlsl name =
             }
 
             vec2 isin(vec2 v) {
-                if(v.y - v.x > radians(360.0)) {
+                if(v.y - v.x > TWOPI) {
                     return vec2(-1.0, 1.0);
                 }
-                float from = mod(v.x, radians(360.0)); // [0, 360°]
+                float from = mod(v.x, TWOPI); // [0, 360°]
                 float to = from + v.y - v.x; // [0, 720°]
                 vec2 s = sin(vec2(from, to));
                 vec2 res = vec2(min(s.x, s.y), max(s.x, s.y));
@@ -1458,11 +1475,11 @@ toSrcPolar suffix e =
                 \x y deltaT ot ->
                     def floatT "r" (length <| vec2 x y) <|
                         \r ->
-                            def floatT "t" (add (dotted1 <| unknown "atanPlus(y,x)") deltaT) <|
+                            def floatT "t" (add (atanPlus y x) deltaT) <|
                                 \t ->
                                     -- Avoid the branch cut at {x > 0, y = 0}
-                                    if_ (gt (abs_ <| subtract t ot) (radians_ <| float 180))
-                                        (assignAdd t (radians_ <| ternary (lt t ot) (float 360) (float -360)) unsafeNop)
+                                    if_ (gt (abs_ <| subtract t ot) constants.pi)
+                                        (assignAdd t (ternary (lt t ot) constants.twopi (negate_ constants.twopi)) unsafeNop)
                                         (def vec2T "complex" (expressionToGlsl [ ( "x", x ), ( "y", y ), ( "r", r ), ( "t", t ) ] e) <|
                                             \complex ->
                                                 return <|
@@ -1481,30 +1498,43 @@ toSrcPolar suffix e =
                         \t ->
                             assignAdd x (div deltaX <| float 2) <|
                                 assignAdd y (div deltaY <| float 2) <|
-                                    def floatT "ot" (dotted1 <| unknown "atanPlus(y, x)") <|
+                                    def floatT "ot" (atanPlus y x) <|
                                         \ot ->
                                             for ( "i", int 0, divConst constants.maxIterations (int 10) )
                                                 (\i ->
-                                                    unknownStatement ("""
-                            float h = f""" ++ suffix ++ """(x, y, t, ot);
-                            float l = f""" ++ suffix ++ """(x - deltaX, y, t, ot);
-                            float u = f""" ++ suffix ++ """(x, y - deltaY, t, ot);
-                            float ul = f""" ++ suffix ++ """(x - deltaX, y - deltaY, t, ot);
-                            if(h < 0.0 || l < 0.0 || u < 0.0 || ul < 0.0)
-                                break;
-                            if(h != l || h != u || h != ul)
-                                return vec3(1,1,1);
-                            t += radians(360.0);
-                            ot += radians(360.0);""")
+                                                    def floatT "h" (f x y t ot) <|
+                                                        \h ->
+                                                            def floatT "l" (f (subtract x deltaX) y t ot) <|
+                                                                \l ->
+                                                                    def floatT "u" (f x (subtract y deltaY) t ot) <|
+                                                                        \u ->
+                                                                            def floatT "ul" (f (subtract x deltaX) (subtract y deltaY) t ot) <|
+                                                                                \ul ->
+                                                                                    if_ (ors [ lt h zero, lt l zero, lt u zero, lt ul zero ])
+                                                                                        unsafeBreak
+                                                                                        (if_ (ors [ neq h l, neq h u, neq h ul ])
+                                                                                            (return <| vec3 one one one)
+                                                                                            (assignAdd t constants.twopi <|
+                                                                                                assignAdd ot constants.twopi <|
+                                                                                                    unsafeNop
+                                                                                            )
+                                                                                        )
                                                 )
                                                 (return vec3Zero)
     in
     ( fileToGlsl [ fDecl, pixelDecl ], pixel )
 
 
-constants : { maxIterations : ExpressionX { isConstant : Constant } Int }
+constants :
+    { maxIterations : ExpressionX { isConstant : Constant } Int
+    , pi : ExpressionX { isConstant : Constant } Float
+    , twopi : ExpressionX { isConstant : Constant } Float
+    }
 constants =
-    { maxIterations = constant intT "MAX_ITERATIONS" }
+    { maxIterations = constant intT "MAX_ITERATIONS"
+    , pi = constant floatT "PI"
+    , twopi = constant floatT "TWOPI"
+    }
 
 
 toSrcParametric : String -> Expression.Expression -> String
@@ -1622,7 +1652,7 @@ toSrcVectorField2D suffix x y =
     bool near(vec2 o, vec2 corner, vec2 vector, float deltaX, float mx) {
         float angleCorner = arg(o - corner);
         float angleVector = arg(vector);
-        float delta = mod(angleCorner - angleVector, radians(360.0));
+        float delta = mod(angleCorner - angleVector, TWOPI);
         float l = length(vector) / mx;
         float maxLength = deltaX * VECTOR_SPACING * (l < """ ++ floatToGlsl epsilon ++ """ ? 0.0 : l / 2.0 + 0.5);
         float wantedLength = length(o - corner);
@@ -1688,7 +1718,7 @@ toSrcContour suffix e =
     vec3 pixel""" ++ suffix ++ """_o(float deltaX, float deltaY, float x, float y) {
         vec2 z = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] e).base ++ """;
 
-        float theta = atan(z.y, z.x) / radians(360.0);
+        float theta = atan(z.y, z.x) / TWOPI;
 
         float logRadius = log2(length(z));
         float powerRemainder = fract(logRadius);
@@ -1767,7 +1797,7 @@ expressionToGlsl context =
                     vec2 zero one
 
                 PVariable "pi" ->
-                    vec2 (radians_ <| float 180) zero
+                    vec2 constants.pi zero
 
                 PVariable "e" ->
                     vec2 (exp one) zero
@@ -1865,7 +1895,7 @@ expressionToIntervalGlsl expr =
     in
     case expr of
         PVariable "pi" ->
-            dup <| radians_ (float 180)
+            dup constants.pi
 
         PVariable "e" ->
             dup <| exp one
@@ -1966,7 +1996,7 @@ expressionToNormalGlsl { x, y, z } =
         go expr =
             case expr of
                 PVariable "pi" ->
-                    gnum (radians_ <| float 180)
+                    gnum constants.pi
 
                 PVariable "e" ->
                     gnum <| exp one
