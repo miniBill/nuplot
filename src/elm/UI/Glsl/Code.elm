@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (cexpFunction, constantToGlsl, deindent, dupDecl, e
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, cross, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1417,9 +1417,9 @@ toSrcImplicit suffix e =
                                             "coeff"
                                             (float 0.0875)
                                             (\coeff ->
-                                                forLeq ( "w", -antialiasingSamples, antialiasingSamples )
+                                                forLeq ( "w", int <| -antialiasingSamples, int antialiasingSamples )
                                                     (\w ->
-                                                        forLeq ( "h", -antialiasingSamples, antialiasingSamples )
+                                                        forLeq ( "h", int <| -antialiasingSamples, int antialiasingSamples )
                                                             (\h ->
                                                                 def floatT
                                                                     "piece"
@@ -1475,13 +1475,17 @@ toSrcPolar suffix e =
                                         )
 
         ( pixelDecl, pixel ) =
-            fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <| \deltaX deltaY x y -> unknownStatement ("""
-                        float t = 0.0;
-                        x += deltaX / 2.0;
-                        y += deltaY / 2.0;
-                        float ot = atanPlus(y, x);
-
-                        for(int i = 0; i < MAX_ITERATIONS / 10; i++) {
+            fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
+                \deltaX deltaY x y ->
+                    def floatT "t" zero <|
+                        \t ->
+                            assignAdd x (div deltaX <| float 2) <|
+                                assignAdd y (div deltaY <| float 2) <|
+                                    def floatT "ot" (dotted1 <| unknown "atanPlus(y, x)") <|
+                                        \ot ->
+                                            for ( "i", int 0, divConst constants.maxIterations (int 10) )
+                                                (\i ->
+                                                    unknownStatement ("""
                             float h = f""" ++ suffix ++ """(x, y, t, ot);
                             float l = f""" ++ suffix ++ """(x - deltaX, y, t, ot);
                             float u = f""" ++ suffix ++ """(x, y - deltaY, t, ot);
@@ -1491,13 +1495,16 @@ toSrcPolar suffix e =
                             if(h != l || h != u || h != ul)
                                 return vec3(1,1,1);
                             t += radians(360.0);
-                            ot += radians(360.0);
-                        }
-                        return vec3(0,0,0);
-                    
-                    """)
+                            ot += radians(360.0);""")
+                                                )
+                                                (return vec3Zero)
     in
     ( fileToGlsl [ fDecl, pixelDecl ], pixel )
+
+
+constants : { maxIterations : ExpressionX { isConstant : Constant } Int }
+constants =
+    { maxIterations = constant intT "MAX_ITERATIONS" }
 
 
 toSrcParametric : String -> Expression.Expression -> String
