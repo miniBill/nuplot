@@ -1,11 +1,11 @@
-module GlslFuzzer exposing (..)
+module GlslFuzzer exposing (suite)
 
 import Complex exposing (Complex(..))
 import Dict
 import Expect exposing (Expectation)
 import Test exposing (Test)
 import UI.Glsl.Code exposing (cexpFunction)
-import UI.Glsl.Generator as Generator exposing (Context, ErrorValue, Expression2, GlslValue(..), Statement, Vec2, float, one, vec2, zero)
+import UI.Glsl.Generator as Generator exposing (Context, ErrorValue, Expression2, GlslValue, Statement, Vec2, float, one, vec2, zero)
 
 
 suite : Test
