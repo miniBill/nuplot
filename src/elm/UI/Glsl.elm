@@ -53,7 +53,7 @@ getGlsl rayDifferentials graph =
                         minus l r
 
                 Polar2D e ->
-                    build2d (\q -> ( toSrcPolar prefix q, unsafeCallPixel prefix )) e
+                    build2d (toSrcPolar prefix) e
 
                 Parametric2D x y ->
                     let
@@ -146,10 +146,7 @@ getGlsl rayDifferentials graph =
         ++ reqs
         ++ "\n/* Expression */\n"
         ++ deindent 4 srcExpr
-        ++ mainGlsl
-            rayDifferentials
-            pixel2D
-            pixel3D
+        ++ mainGlsl rayDifferentials pixel2D pixel3D
 
 
 declarations : String

@@ -1447,10 +1447,16 @@ toSrcImplicit suffix e =
     ( fileToGlsl [ fDecl, pixelDecl ], pixel )
 
 
-toSrcPolar : String -> Expression.Expression -> String
+toSrcPolar :
+    String
+    -> Expression.Expression
+    -> ( String, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
 toSrcPolar suffix e =
-    """
-    float f""" ++ suffix ++ """(float x, float y, float deltaT, float ot) {
+    let
+        ( fDecl, f ) =
+            fun4 floatT ("f" ++ suffix) (floatT "x") (floatT "y") (floatT "deltaT") (floatT "ot") <|
+                \x y deltaT ot ->
+                    def floatT "r" (length <| vec2 x y) <| \r -> unknownStatement ("""
         float r = sqrt(x*x + y*y);
         float t = atanPlus(y, x) + deltaT;
         // Avoid the branch cut at {x > 0, y = 0}
@@ -1463,29 +1469,34 @@ toSrcPolar suffix e =
             return -1.0;
         }
         return complex.x > 0.0 ? 1.0 : 0.0;
-    }
+    
 
-    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        float t = 0.0;
-        x += deltaX / 2.0;
-        y += deltaY / 2.0;
-        float ot = atanPlus(y, x);
+           """)
 
-        for(int i = 0; i < MAX_ITERATIONS / 10; i++) {
-            float h = f""" ++ suffix ++ """(x, y, t, ot);
-            float l = f""" ++ suffix ++ """(x - deltaX, y, t, ot);
-            float u = f""" ++ suffix ++ """(x, y - deltaY, t, ot);
-            float ul = f""" ++ suffix ++ """(x - deltaX, y - deltaY, t, ot);
-            if(h < 0.0 || l < 0.0 || u < 0.0 || ul < 0.0)
-                break;
-            if(h != l || h != u || h != ul)
-                return vec3(1,1,1);
-            t += radians(360.0);
-            ot += radians(360.0);
-        }
-        return vec3(0,0,0);
-    }
-    """
+        ( pixelDecl, pixel ) =
+            fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <| \deltaX deltaY x y -> unknownStatement ("""
+                        float t = 0.0;
+                        x += deltaX / 2.0;
+                        y += deltaY / 2.0;
+                        float ot = atanPlus(y, x);
+
+                        for(int i = 0; i < MAX_ITERATIONS / 10; i++) {
+                            float h = f""" ++ suffix ++ """(x, y, t, ot);
+                            float l = f""" ++ suffix ++ """(x - deltaX, y, t, ot);
+                            float u = f""" ++ suffix ++ """(x, y - deltaY, t, ot);
+                            float ul = f""" ++ suffix ++ """(x - deltaX, y - deltaY, t, ot);
+                            if(h < 0.0 || l < 0.0 || u < 0.0 || ul < 0.0)
+                                break;
+                            if(h != l || h != u || h != ul)
+                                return vec3(1,1,1);
+                            t += radians(360.0);
+                            ot += radians(360.0);
+                        }
+                        return vec3(0,0,0);
+                    }
+                    """)
+    in
+    ( fileToGlsl [ fDecl, pixelDecl ], pixel )
 
 
 toSrcParametric : String -> Expression.Expression -> String

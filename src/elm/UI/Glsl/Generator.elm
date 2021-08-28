@@ -16,7 +16,7 @@ type FunDecl
 type Stat
     = If Expr Stat Stat
     | For String Int RelationOperation Int Stat Stat
-    | Line String Stat
+    | Line String
     | Return Expr
     | ExpressionStatement Expr Stat
     | Decl String Name (Maybe Expr) Stat
@@ -164,8 +164,8 @@ statementToGlsl (Statement r) =
                     ]
                         |> String.join "\n"
 
-                Line l next ->
-                    indent i l ++ ";\n" ++ go i next
+                Line l ->
+                    indent i l ++ ";"
 
                 Return e ->
                     indent i <| "return " ++ expressionToGlsl (Expression e) ++ ";"
@@ -1030,9 +1030,9 @@ unknown =
     Expression << Unknown
 
 
-unknownStatement : String -> Statement t -> Statement t
-unknownStatement line (Statement next) =
-    Statement <| Line line next
+unknownStatement : String -> Statement t
+unknownStatement line =
+    Statement <| Line line
 
 
 
@@ -1555,7 +1555,7 @@ interpret ctx (Statement s) =
         Nop ->
             Ok ( ctx, VVoid )
 
-        Line _ _ ->
+        Line _ ->
             Debug.todo "branch 'Line _' not implemented"
 
         ExpressionStatement _ _ ->
