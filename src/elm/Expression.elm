@@ -132,6 +132,7 @@ type RelationOperation
     = LessThan
     | LessThanOrEquals
     | Equals
+    | NotEquals
     | GreaterThanOrEquals
     | GreaterThan
 
@@ -147,6 +148,9 @@ relationToString rop =
 
         Equals ->
             "="
+
+        NotEquals ->
+            "≠"
 
         GreaterThanOrEquals ->
             "⩾"

@@ -7,14 +7,21 @@ import Expression.Polynomial exposing (asPolynomial)
 import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, square)
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
-import UI.Glsl.Code exposing (constantToGlsl, deindent, dupDecl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (dotted3, unsafeCall)
+import UI.Glsl.Code exposing (atanPlusDecl, constantToGlsl, deindent, dupDecl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+import UI.Glsl.Generator as Generator exposing (Expression3, ExpressionX, FunDecl, dotted3, unknownFunDecl, unsafeCall)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
 import UI.Glsl.Sphere as Sphere
 
 
+unsafeCallPixel :
+    String
+    -> ExpressionX a t
+    -> ExpressionX b t
+    -> ExpressionX c t
+    -> ExpressionX d t
+    -> Expression3
 unsafeCallPixel name arg0 arg1 arg2 arg3 =
     let
         _ =
@@ -149,9 +156,20 @@ getGlsl rayDifferentials graph =
         ++ mainGlsl rayDifferentials pixel2D pixel3D
 
 
+piDecl : FunDecl
+piDecl =
+    unknownFunDecl
+        { name = "PI"
+        , type_ = "float"
+        , body =
+            """#define PI """ ++ String.fromFloat pi ++ """
+        #define TWOPI """ ++ String.fromFloat (pi * 2)
+        }
+
+
 declarations : String
 declarations =
-    [ gnumDecl, dupDecl ]
+    [ piDecl, atanPlusDecl, gnumDecl, dupDecl ]
         |> Generator.fileToGlsl
 
 

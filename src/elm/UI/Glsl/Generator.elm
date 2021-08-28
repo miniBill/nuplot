@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unknownStatement, unsafeCall, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
@@ -18,6 +18,8 @@ type Stat
     | For String Expr RelationOperation Expr Stat Stat
     | Line String
     | Return Expr
+    | Break
+    | Continue
     | ExpressionStatement Expr Stat
     | Decl String Name (Maybe Expr) Stat
     | Nop
@@ -170,6 +172,12 @@ statementToGlsl (Statement r) =
                 Return e ->
                     indent i <| "return " ++ expressionToGlsl (Expression e) ++ ";"
 
+                Break ->
+                    indent i "break;"
+
+                Continue ->
+                    indent i "continue;"
+
                 ExpressionStatement e next ->
                     indent i (expressionToGlsl (Expression e) ++ ";\n") ++ go i next
 
@@ -196,6 +204,9 @@ relationToString rel =
 
         Equals ->
             "=="
+
+        NotEquals ->
+            "!="
 
         GreaterThanOrEquals ->
             ">="
@@ -286,6 +297,9 @@ expressionToGlsl (Expression tree) =
             case e of
                 Comparison Equals l r ->
                     go7 False l ++ " == " ++ go7 False r
+
+                Comparison NotEquals l r ->
+                    go7 False l ++ " != " ++ go7 False r
 
                 _ ->
                     go7 rec e
@@ -432,6 +446,16 @@ ands es =
 
         h :: t ->
             List.foldl (\e a -> expr2 And a e) h t
+
+
+ors : List (Expression1 Bool) -> Expression1 Bool
+ors es =
+    case es of
+        [] ->
+            false
+
+        h :: t ->
+            List.foldl (\e a -> expr2 Or a e) h t
 
 
 true : Expression1 Bool
@@ -594,6 +618,11 @@ leq =
 eq : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
 eq =
     expr2 (Comparison Equals)
+
+
+neq : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
+neq =
+    expr2 (Comparison NotEquals)
 
 
 geq : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
@@ -1199,6 +1228,24 @@ return e =
     Statement <| Return <| unwrapExpression e
 
 
+unsafeBreak : Statement a
+unsafeBreak =
+    let
+        _ =
+            Debug.todo
+    in
+    Statement Break
+
+
+unsafeContinue : Statement ()
+unsafeContinue =
+    let
+        _ =
+            Debug.todo
+    in
+    Statement Continue
+
+
 decl : TypingFunction tv v -> String -> (v -> Statement tr) -> Statement tr
 decl typeF name k =
     let
@@ -1223,17 +1270,17 @@ def typeF name v k =
     Statement <| Decl t n (Just <| unwrapExpression v) ks
 
 
-assign : ExpressionX a t -> ExpressionX a t -> Statement q -> Statement q
+assign : ExpressionX a t -> ExpressionX b t -> Statement q -> Statement q
 assign name e (Statement next) =
     Statement <| ExpressionStatement (Assign (unwrapExpression name) (unwrapExpression e)) next
 
 
-assignAdd : ExpressionX a t -> ExpressionX a t -> Statement q -> Statement q
+assignAdd : ExpressionX a t -> ExpressionX b t -> Statement q -> Statement q
 assignAdd name e (Statement next) =
     Statement <| ExpressionStatement (AssignCombo ComboAdd (unwrapExpression name) (unwrapExpression e)) next
 
 
-assignBy : ExpressionX a t -> ExpressionX a t -> Statement q -> Statement q
+assignBy : ExpressionX a t -> ExpressionX b t -> Statement q -> Statement q
 assignBy name e (Statement next) =
     Statement <| ExpressionStatement (AssignCombo ComboBy (unwrapExpression name) (unwrapExpression e)) next
 
@@ -1574,3 +1621,9 @@ interpret ctx (Statement s) =
 
         For _ _ _ _ _ _ ->
             Debug.todo "branch 'For _ _ _ _ _ _' not implemented"
+
+        Break ->
+            Debug.todo "branch 'Break' not implemented"
+
+        Continue ->
+            Debug.todo "branch 'Continue' not implemented"

@@ -645,6 +645,9 @@ relationValue o ((Complex lv _) as lc) ((Complex rv _) as rc) =
         Equals ->
             Complex.minus lc rc
 
+        NotEquals ->
+            toComplex <| lc /= rc
+
         GreaterThanOrEquals ->
             toComplex <| lv >= rv
 
