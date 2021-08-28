@@ -1,4 +1,4 @@
-module UI.Glsl.Code exposing (Uniforms, cexpFunction, constantToGlsl, deindent, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+module UI.Glsl.Code exposing (cexpFunction, constantToGlsl, deindent, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
@@ -7,11 +7,12 @@ import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation
 
 
 type alias Uniforms =
-    { u_canvasWidth : Expression1 Float
-    , u_canvasHeight : Expression1 Float
-    , u_viewportWidth : Expression1 Float
-    , u_viewportHeight : Expression1 Float
+    { u_canvasHeight : Expression1 Float
+    , u_canvasWidth : Expression1 Float
     , u_drawAxes : Expression1 Float
+    , u_viewportHeight : Expression1 Float
+    , u_viewportWidth : Expression1 Float
+    , u_whiteLines : Expression1 Float
     , u_zoomCenter : Expression2
     }
 
@@ -1509,15 +1510,7 @@ toSrcParametric suffix e =
     """
 
 
-uniforms :
-    { u_canvasHeight : Expression1 Float
-    , u_canvasWidth : Expression1 Float
-    , u_drawAxes : Expression1 Float
-    , u_viewportHeight : Expression1 Float
-    , u_viewportWidth : Expression1 Float
-    , u_whiteLines : Expression1 Float
-    , u_zoomCenter : Expression2
-    }
+uniforms : Uniforms
 uniforms =
     { u_canvasHeight = uniform floatT "u_canvasHeight"
     , u_canvasWidth = uniform floatT "u_canvasWidth"
@@ -2249,8 +2242,8 @@ main3D rayDifferentials suffixes =
                 mat3 d = mat3(ray_direction - k * diffs, ray_direction + k * diffs, vec3(0));
 
                 float max_distance = 100.0 * eye_dist;
-                return raytrace(canvas_point, d, max_distance);
-            }
+                return """ ++ Generator.expressionToGlsl (unsafeCall "raytrace" [ unknown "canvas_point", unknown "d", unknown "max_distance" ]) ++ """;
+            """ ++ """}
         """
     in
     ( deindent 12 <| raytrace suffixes ++ block, dotted4 <| unknown "pixel3()" )
