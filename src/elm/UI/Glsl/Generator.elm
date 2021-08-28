@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, funDeclToGlsl, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, lt, mat3T, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, true, uniform, unknown, unknownFunDecl, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, cross, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, statementToGlsl, subtract, subtract2, subtract3, subtract4, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
@@ -84,6 +84,10 @@ type alias Expression4 =
     , xy : Expression2
     , yzw : Expression3
     }
+
+
+type alias Expression33 =
+    { base : Expression Mat3 }
 
 
 type alias TypingFunction t r =
@@ -305,7 +309,7 @@ expressionToGlsl (Expression tree) =
         go2 rec e =
             case e of
                 Call name args ->
-                    name ++ "(" ++ String.join "," (List.map (go False) args) ++ ")"
+                    name ++ "(" ++ String.join ", " (List.map (go False) args) ++ ")"
 
                 Dot l r ->
                     go2 False l ++ "." ++ r
@@ -434,7 +438,7 @@ unwrapExpression { base } =
 ------------------------------
 
 
-add : ExpressionX a t -> ExpressionX a t -> Expression1 t
+add : ExpressionX a t -> ExpressionX b t -> Expression1 t
 add =
     expr2 Add
 
@@ -449,7 +453,7 @@ add4 =
     expr24 Add
 
 
-subtract : ExpressionX a t -> ExpressionX a t -> Expression1 t
+subtract : ExpressionX a t -> ExpressionX b t -> Expression1 t
 subtract =
     expr2 Subtract
 
@@ -457,6 +461,11 @@ subtract =
 subtract2 : ExpressionX a Vec2 -> ExpressionX b Vec2 -> Expression2
 subtract2 =
     expr22 Subtract
+
+
+subtract3 : ExpressionX a Vec3 -> ExpressionX b Vec3 -> Expression3
+subtract3 =
+    expr23 Subtract
 
 
 subtract4 : ExpressionX a Vec4 -> ExpressionX b Vec4 -> Expression4
@@ -639,9 +648,24 @@ normalize =
     dotted1 << call1Internal "normalize"
 
 
+normalize3 : ExpressionX a Vec3 -> Expression3
+normalize3 =
+    dotted3 << call1Internal "normalize"
+
+
 length : ExpressionX a t -> Expression1 Float
 length =
     dotted1 << call1Internal "length"
+
+
+fwidth : ExpressionX a t -> Expression1 t
+fwidth =
+    dotted1 << call1Internal "fwidth"
+
+
+cross : ExpressionX a Vec3 -> ExpressionX b Vec3 -> Expression3
+cross l r =
+    dotted3 <| call2Internal "cross" l r
 
 
 atan2_ : ExpressionX a Float -> ExpressionX a Float -> Expression1 Float
@@ -724,6 +748,11 @@ vec4_1_3 x yzw =
         |> dotted4
 
 
+mat3_3_3_3 : ExpressionX a Vec3 -> ExpressionX b Vec3 -> ExpressionX c Vec3 -> Expression33
+mat3_3_3_3 c0 c1 c2 =
+    call3Internal "mat3" c0 c1 c2 |> dotted33
+
+
 
 ---------------
 -- CONSTANTS --
@@ -773,6 +802,15 @@ gl_FragCoord =
 ----------------
 -- CALL UTILS --
 ----------------
+
+
+uNsAfEtYpEcAsT : Expression t -> Expression a
+uNsAfEtYpEcAsT (Expression i) =
+    let
+        _ =
+            Debug.todo
+    in
+    Expression i
 
 
 unsafeCall : String -> List (Expression t) -> Expression r
@@ -901,6 +939,16 @@ dotted4Internal e =
     , xy = dotted2 (Expression (Dot e "xy"))
     , yzw = dotted3 (Expression (Dot e "yzw"))
     }
+
+
+dotted33 : Expression Mat3 -> Expression33
+dotted33 (Expression e) =
+    dotted33Internal e
+
+
+dotted33Internal : Expr -> Expression33
+dotted33Internal e =
+    { base = Expression e }
 
 
 uniform : TypingFunction t c -> String -> c

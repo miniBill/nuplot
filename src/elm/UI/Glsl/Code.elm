@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (cexpFunction, constantToGlsl, deindent, dupDecl, e
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression4, ExpressionX, File, FunDecl, Statement, Vec2, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract4, ternary, ternary3, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, cross, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, ternary, ternary3, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -14,6 +14,8 @@ type alias Uniforms =
     , u_viewportWidth : Expression1 Float
     , u_whiteLines : Expression1 Float
     , u_zoomCenter : Expression2
+    , u_phi : Expression1 Float
+    , u_theta : Expression1 Float
     }
 
 
@@ -1519,6 +1521,8 @@ uniforms =
     , u_viewportWidth = uniform floatT "u_viewportWidth"
     , u_whiteLines = uniform floatT "u_whiteLines"
     , u_zoomCenter = uniform vec2T "u_zoomCenter"
+    , u_phi = uniform floatT "u_phi"
+    , u_theta = uniform floatT "u_theta"
     }
 
 
@@ -2204,52 +2208,76 @@ toSrc3D suffix e =
 main3D : Bool -> List String -> ( String, Expression4 )
 main3D rayDifferentials suffixes =
     let
-        k =
+        kValue =
             if rayDifferentials then
-                "0.001"
+                0.001
 
             else
-                "0.0"
+                0.0
 
-        block =
-            """
-            vec4 pixel3 () {
-                float eye_dist = 2.0 * u_viewportWidth;
-                vec2 canvasSize = vec2(u_canvasWidth, u_canvasHeight);
-                vec2 uv_centered = gl_FragCoord.xy - 0.5 * canvasSize;
-                vec2 uv_normalized = 1.0 / u_canvasHeight * uv_centered;
+        ( block, pixel3 ) =
+            fun0 vec4T "pixel3" <|
+                (def floatT "eye_dist" (byF (float 2) uniforms.u_viewportWidth) <|
+                    \eyeDist ->
+                        def vec2T "canvas_size" (vec2 uniforms.u_canvasWidth uniforms.u_canvasHeight) <|
+                            \canvasSize ->
+                                def vec2T "uv_centered" (subtract gl_FragCoord.xy <| byF (float 0.5) canvasSize) <|
+                                    \uvCentered ->
+                                        def vec2T "uv_normalized" (byF (div one uniforms.u_canvasHeight) uvCentered) <|
+                                            \uvNormalized ->
+                                                def floatT "t" (add uniforms.u_theta <| float 0.58) <|
+                                                    \t ->
+                                                        def floatT "p" (by (float -2.0) uniforms.u_phi) <|
+                                                            \p ->
+                                                                def vec3T "eye" (eyePosition t p) <|
+                                                                    \eye ->
+                                                                        def vec3T "target" vec3Zero <|
+                                                                            \target ->
+                                                                                def vec3T "to_target" (normalize <| subtract target eye) <|
+                                                                                    \toTarget ->
+                                                                                        def vec3T "across" (normalize <| cross toTarget <| vec3 zero zero one) <|
+                                                                                            \across ->
+                                                                                                def vec3T "up" (normalize <| cross across toTarget) <|
+                                                                                                    \up ->
+                                                                                                        def vec3T "canvas_center" (add eye toTarget) <|
+                                                                                                            \canvasCenter ->
+                                                                                                                def vec3T "canvas_point" (add (add canvasCenter <| byF uvNormalized.x across) <| byF uvNormalized.y up) <|
+                                                                                                                    \canvasPoint ->
+                                                                                                                        def vec3T "ray_direction" (normalize3 <| subtract canvasPoint eye) <|
+                                                                                                                            \rayDirection ->
+                                                                                                                                def vec3T "diffs" (abs_ <| fwidth rayDirection) <|
+                                                                                                                                    \diffs ->
+                                                                                                                                        def floatT "k" (float kValue) <|
+                                                                                                                                            \k ->
+                                                                                                                                                def mat3T "d" (dValue rayDirection k diffs) <|
+                                                                                                                                                    \d ->
+                                                                                                                                                        def floatT "max_distance" (by (float 100) eyeDist) <|
+                                                                                                                                                            \maxDistance ->
+                                                                                                                                                                return <| raytraceF canvasPoint d maxDistance
+                )
 
-                float t = u_theta + 0.58;
-                float p = -2.0 * u_phi;
-                vec3 eye = eye_dist * normalize(vec3(
-                    cos(t) * sin(p),
-                    cos(t) * -cos(p),
-                    sin(t)
-                ));
+        dValue : ExpressionX a Vec3 -> ExpressionX b Float -> ExpressionX c Vec3 -> Expression33
+        dValue rayDirection k diffs =
+            mat3_3_3_3
+                (subtract3 rayDirection <| byF k diffs)
+                (add rayDirection <| byF k diffs)
+                vec3Zero
 
-                vec3 target = vec3(0);
-                vec3 to_target = normalize(target-eye);
-                vec3 across = normalize(cross(to_target, vec3(0,0,1)));
-                vec3 up = normalize(cross(across, to_target));
+        ( raytraceSrc, raytraceF ) =
+            raytrace suffixes
 
-                vec3 canvas_center = eye + to_target;
-                vec3 canvas_point = canvas_center + uv_normalized.x * across + uv_normalized.y * up;
-
-                vec3 ray_direction = normalize(canvas_point - eye);
-
-                vec3 diffs = abs(fwidth(ray_direction));
-                float k = """ ++ k ++ """;
-                mat3 d = mat3(ray_direction - k * diffs, ray_direction + k * diffs, vec3(0));
-
-                float max_distance = 100.0 * eye_dist;
-                return """ ++ Generator.expressionToGlsl (unsafeCall "raytrace" [ unknown "canvas_point", unknown "d", unknown "max_distance" ]) ++ """;
-            """ ++ """}
-        """
+        eyePosition t p =
+            byF (dotted1 <| unknown "eye_dist") <|
+                normalize <|
+                    vec3
+                        (by (cos_ t) (sin_ p))
+                        (by (cos_ t) (negate_ <| cos_ p))
+                        (sin_ t)
     in
-    ( deindent 12 <| raytrace suffixes ++ block, dotted4 <| unknown "pixel3()" )
+    ( deindent 12 <| raytraceSrc ++ fileToGlsl [ block ], pixel3 )
 
 
-raytrace : List String -> String
+raytrace : List String -> ( String, ExpressionX a Vec3 -> ExpressionX b Mat3 -> Expression1 Float -> Expression4 )
 raytrace suffixes =
     let
         colorCoeff =
@@ -2276,8 +2304,9 @@ raytrace suffixes =
                         light_coeff = 0.2;
                     }
             """
-    in
-    """
+
+        src =
+            """
             vec4 raytrace(vec3 o, mat3 d, float max_distance) {
                 vec3 found = vec3(0);
                 float curr_distance = max_distance;
@@ -2308,6 +2337,16 @@ raytrace suffixes =
                 }
             }
     """
+    in
+    ( src
+    , \o d maxDistance ->
+        dotted4 <|
+            unsafeCall "raytrace"
+                [ Generator.uNsAfEtYpEcAsT o.base
+                , Generator.uNsAfEtYpEcAsT d.base
+                , Generator.uNsAfEtYpEcAsT maxDistance.base
+                ]
+    )
 
 
 threshold : String
