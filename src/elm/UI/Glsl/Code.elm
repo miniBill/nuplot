@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (cexpFunction, constantToGlsl, deindent, dupDecl, e
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, cross, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, cross, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1456,22 +1456,23 @@ toSrcPolar suffix e =
         ( fDecl, f ) =
             fun4 floatT ("f" ++ suffix) (floatT "x") (floatT "y") (floatT "deltaT") (floatT "ot") <|
                 \x y deltaT ot ->
-                    def floatT "r" (length <| vec2 x y) <| \r -> unknownStatement ("""
-        float r = sqrt(x*x + y*y);
-        float t = atanPlus(y, x) + deltaT;
-        // Avoid the branch cut at {x > 0, y = 0}
-        if(abs(t - ot) > radians(180.0)) {
-            if(t < ot) t += radians(360.0);
-            else t -= radians(360.0);
-        }
-        vec2 complex = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ), ( "r", dotted1 <| unknown "r" ), ( "t", dotted1 <| unknown "t" ) ] e).base ++ """;
-        if(abs(complex.y) > """ ++ floatToGlsl epsilon ++ """) {
-            return -1.0;
-        }
-        return complex.x > 0.0 ? 1.0 : 0.0;
-    
-
-           """)
+                    def floatT "r" (length <| vec2 x y) <|
+                        \r ->
+                            def floatT "t" (add (dotted1 <| unknown "atanPlus(y,x)") deltaT) <|
+                                \t ->
+                                    -- Avoid the branch cut at {x > 0, y = 0}
+                                    if_ (gt (abs_ <| subtract t ot) (radians_ <| float 180))
+                                        (assignAdd t (radians_ <| ternary (lt t ot) (float 360) (float -360)) unsafeNop)
+                                        (def vec2T "complex" (expressionToGlsl [ ( "x", x ), ( "y", y ), ( "r", r ), ( "t", t ) ] e) <|
+                                            \complex ->
+                                                return <|
+                                                    ternary (gt (abs_ complex.y) (float epsilon))
+                                                        minusOne
+                                                        (ternary (gt complex.x zero)
+                                                            one
+                                                            zero
+                                                        )
+                                        )
 
         ( pixelDecl, pixel ) =
             fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <| \deltaX deltaY x y -> unknownStatement ("""
@@ -1493,7 +1494,7 @@ toSrcPolar suffix e =
                             ot += radians(360.0);
                         }
                         return vec3(0,0,0);
-                    }
+                    
                     """)
     in
     ( fileToGlsl [ fDecl, pixelDecl ], pixel )
