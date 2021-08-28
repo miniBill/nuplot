@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, cross, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unknownStatement, unsafeCall, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unknownStatement, unsafeCall, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
@@ -15,7 +15,7 @@ type FunDecl
 
 type Stat
     = If Expr Stat Stat
-    | For String Int RelationOperation Int Stat Stat
+    | For String Expr RelationOperation Expr Stat Stat
     | Line String
     | Return Expr
     | ExpressionStatement Expr Stat
@@ -156,7 +156,7 @@ statementToGlsl (Statement r) =
                         |> String.join "\n"
 
                 For var from rel to loop next ->
-                    [ indent i ("for (int " ++ var ++ " = " ++ String.fromInt from ++ "; " ++ var ++ " " ++ relationToString rel ++ " " ++ String.fromInt to ++ "; " ++ var ++ "++) {")
+                    [ indent i ("for (int " ++ var ++ " = " ++ expressionToGlsl (Expression from) ++ "; " ++ var ++ " " ++ relationToString rel ++ " " ++ expressionToGlsl (Expression to) ++ "; " ++ var ++ "++) {")
                     , go (i + 1) loop
                     , indent i "}"
                     , ""
@@ -539,17 +539,17 @@ negate2 e =
     dotted2Internal (Negate <| unwrapExpression e)
 
 
-by : ExpressionX a t -> ExpressionX a t -> Expression1 t
+by : ExpressionX a t -> ExpressionX b t -> Expression1 t
 by =
     expr2 By
 
 
-by2 : ExpressionX a Vec2 -> ExpressionX a Vec2 -> Expression2
+by2 : ExpressionX a Vec2 -> ExpressionX b Vec2 -> Expression2
 by2 =
     expr22 By
 
 
-by3 : ExpressionX a Vec3 -> ExpressionX a Vec3 -> Expression3
+by3 : ExpressionX a Vec3 -> ExpressionX b Vec3 -> Expression3
 by3 =
     expr23 By
 
@@ -564,7 +564,7 @@ divF =
     expr2 Div
 
 
-div : ExpressionX a t -> ExpressionX a t -> Expression1 t
+div : ExpressionX a t -> ExpressionX b t -> Expression1 t
 div =
     expr2 Div
 
@@ -574,27 +574,34 @@ div2 =
     expr22 Div
 
 
-lt : ExpressionX a t -> ExpressionX a t -> Expression1 Bool
+divConst : ExpressionX { a | isConstant : Constant } t -> ExpressionX { b | isConstant : Constant } t -> ExpressionX { isConstant : Constant } t
+divConst l r =
+    { base = (expr2 Div l r).base
+    , isConstant = Constant
+    }
+
+
+lt : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
 lt =
     expr2 (Comparison LessThan)
 
 
-leq : ExpressionX a t -> ExpressionX a t -> Expression1 Bool
+leq : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
 leq =
     expr2 (Comparison LessThanOrEquals)
 
 
-eq : ExpressionX a t -> ExpressionX a t -> Expression1 Bool
+eq : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
 eq =
     expr2 (Comparison Equals)
 
 
-geq : ExpressionX a t -> ExpressionX a t -> Expression1 Bool
+geq : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
 geq =
     expr2 (Comparison GreaterThanOrEquals)
 
 
-gt : ExpressionX a t -> ExpressionX a t -> Expression1 Bool
+gt : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
 gt =
     expr2 (Comparison GreaterThan)
 
@@ -649,37 +656,37 @@ log =
     dotted1 << call1Internal "log"
 
 
-mod : ExpressionX a t -> ExpressionX a t -> Expression1 t
+mod : ExpressionX a t -> ExpressionX b t -> Expression1 t
 mod l r =
     dotted1 (call2Internal "mod" l r)
 
 
-min_ : ExpressionX a t -> ExpressionX a t -> Expression1 t
+min_ : ExpressionX a t -> ExpressionX b t -> Expression1 t
 min_ l r =
     dotted1 (call2Internal "min" l r)
 
 
-max_ : ExpressionX a t -> ExpressionX a t -> Expression1 t
+max_ : ExpressionX a t -> ExpressionX b t -> Expression1 t
 max_ l r =
     dotted1 (call2Internal "max" l r)
 
 
-max3 : ExpressionX a Vec3 -> ExpressionX a Vec3 -> Expression3
+max3 : ExpressionX a Vec3 -> ExpressionX b Vec3 -> Expression3
 max3 l r =
     dotted3 (call2Internal "max" l r)
 
 
-max4 : ExpressionX a Vec4 -> ExpressionX a Vec4 -> Expression4
+max4 : ExpressionX a Vec4 -> ExpressionX b Vec4 -> Expression4
 max4 l r =
     dotted4 (call2Internal "max" l r)
 
 
-hl2rgb : Expression1 Float -> Expression1 Float -> Expression3
+hl2rgb : ExpressionX a Float -> ExpressionX b Float -> Expression3
 hl2rgb h l =
     dotted3 (call2Internal "hl2rgb" h l)
 
 
-pow : Expression1 Float -> Expression1 Float -> Expression1 Float
+pow : ExpressionX a Float -> ExpressionX b Float -> Expression1 Float
 pow l r =
     dotted1 (call2Internal "pow" l r)
 
@@ -754,44 +761,44 @@ arr =
     expr2 Array
 
 
-dot : ExpressionX a t -> ExpressionX a t -> Expression1 Float
+dot : ExpressionX a t -> ExpressionX b t -> Expression1 Float
 dot l r =
     dotted1 (call2Internal "dot" l r)
 
 
-vec2 : Expression1 Float -> Expression1 Float -> Expression2
+vec2 : ExpressionX a Float -> ExpressionX b Float -> Expression2
 vec2 x y =
     { base = call2Internal "vec2" x y
-    , x = x
-    , y = y
+    , x = { base = x.base }
+    , y = { base = y.base }
     }
 
 
 vec3 :
-    Expression1 Float
-    -> Expression1 Float
-    -> Expression1 Float
+    ExpressionX a Float
+    -> ExpressionX b Float
+    -> ExpressionX c Float
     -> Expression3
 vec3 x y z =
     { base = call3Internal "vec3" x y z
-    , x = x
-    , y = y
-    , z = z
+    , x = { base = x.base }
+    , y = { base = y.base }
+    , z = { base = z.base }
     }
 
 
 vec4 :
-    Expression1 Float
-    -> Expression1 Float
-    -> Expression1 Float
-    -> Expression1 Float
+    ExpressionX a Float
+    -> ExpressionX b Float
+    -> ExpressionX c Float
+    -> ExpressionX d Float
     -> Expression4
 vec4 x y z w =
     { base = call4Internal "vec4" x y z w
-    , x = x
-    , y = y
-    , z = z
-    , w = w
+    , x = { base = x.base }
+    , y = { base = y.base }
+    , z = { base = z.base }
+    , w = { base = w.base }
     , xy = dotted2 <| call2Internal "vec2" x y
     , yzw = dotted3 <| call3Internal "vec3" y z w
     }
@@ -822,31 +829,17 @@ mat3_3_3_3 c0 c1 c2 =
 
 vec2Zero : Expression2
 vec2Zero =
-    { base = call2Internal "vec2" (int 0) (int 0)
-    , x = zero
-    , y = zero
-    }
+    vec2 zero zero
 
 
 vec3Zero : Expression3
 vec3Zero =
-    { base = call3Internal "vec3" (int 0) (int 0) (int 0)
-    , x = zero
-    , y = zero
-    , z = zero
-    }
+    vec3 zero zero zero
 
 
 vec4Zero : Expression4
 vec4Zero =
-    { base = call4Internal "vec4" (int 0) (int 0) (int 0) (int 0)
-    , x = zero
-    , y = zero
-    , z = zero
-    , w = zero
-    , xy = dotted2 <| call2Internal "vec2" zero zero
-    , yzw = dotted3 <| call3Internal "vec3" zero zero zero
-    }
+    vec4 zero zero zero zero
 
 
 gl_FragColor : Expression4
@@ -879,29 +872,44 @@ unsafeCall name =
     Expression << Call name << List.map (\(Expression e) -> e)
 
 
-zero : Expression1 Float
+type Constant
+    = Constant
+
+
+zero : ExpressionX { isConstant : Constant } Float
 zero =
     float 0
 
 
-one : Expression1 Float
+one : ExpressionX { isConstant : Constant } Float
 one =
     float 1
 
 
-minusOne : Expression1 Float
+minusOne : ExpressionX { isConstant : Constant } Float
 minusOne =
     float -1
 
 
-float : Float -> Expression1 Float
+float : Float -> ExpressionX { isConstant : Constant } Float
 float f =
-    dotted1Internal (Float f)
+    { base = Expression (Float f)
+    , isConstant = Constant
+    }
 
 
-int : Int -> Expression1 Int
+int : Int -> ExpressionX { isConstant : Constant } Int
 int i =
-    dotted1Internal (Int i)
+    { base = Expression <| Int i
+    , isConstant = Constant
+    }
+
+
+constant : TypingFunction t r -> String -> ExpressionX { isConstant : Constant } t
+constant _ name =
+    { base = Expression <| Variable name
+    , isConstant = Constant
+    }
 
 
 floatToGlsl : Float -> String
@@ -1176,14 +1184,14 @@ if_ cond (Statement ifTrue) (Statement ifFalse) =
     Statement <| If (unwrapExpression cond) ifTrue ifFalse
 
 
-for : ( String, Int, Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
+for : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
 for ( var, from, to ) loop (Statement next) =
-    Statement <| For var from LessThan to ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
+    Statement <| For var (unwrapExpression from) LessThan (unwrapExpression to) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
 
 
-forLeq : ( String, Int, Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
+forLeq : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
 forLeq ( var, from, to ) loop (Statement next) =
-    Statement <| For var from LessThanOrEquals to ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
+    Statement <| For var (unwrapExpression from) LessThanOrEquals (unwrapExpression to) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
 
 
 return : ExpressionX a r -> Statement r
