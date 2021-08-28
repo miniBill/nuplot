@@ -1973,9 +1973,6 @@ expressionToIntervalGlsl expr =
                     head :: tail ->
                         dotted2 <| List.foldl (\e a -> unsafeCall ("i" ++ Expression.functionNameToString name) [ a, e.base ]) head.base tail
 
-            else if name == KnownFunction Sin || name == KnownFunction Cos then
-                unsafeApply ("i" ++ Expression.functionNameToString name) ex
-
             else
                 unsafeApply ("i" ++ Expression.functionNameToString name) ex
 
