@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (cexpFunction, constantToGlsl, deindent, dupDecl, e
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, cross, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, ternary, ternary3, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, cross, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -626,6 +626,23 @@ ccos =
     Tuple.second ccosCouple
 
 
+ctanCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+ctanCouple =
+    fun1 vec2T "ctan" (vec2T "z") <|
+        \z ->
+            return <| ternary (eq z.y zero) (vec2 (tan_ z.x) zero) (cdiv (csin z) (ccos z))
+
+
+ctanDecl : FunDecl
+ctanDecl =
+    Tuple.first ctanCouple
+
+
+ctan : ExpressionX xa Vec2 -> Expression2
+ctan =
+    Tuple.second ctanCouple
+
+
 intervalOperationToGlsl : GlslOperation -> String
 intervalOperationToGlsl op =
     case op of
@@ -704,20 +721,7 @@ straightFunctionToGlsl name =
             [ ccosDecl ]
 
         Tan22 ->
-            [ unknownFunDecl
-                { name =
-                    "ctan"
-                , type_ = "TODO"
-                , body = """
-            vec2 ctan(vec2 z) {
-                if(z.y == 0.0) {
-                    return vec2(tan(z.x), 0);
-                }
-                return cdiv(csin(z), ccos(z));
-            }
-            """
-                }
-            ]
+            [ ctanDecl ]
 
         Asin22 ->
             [ unknownFunDecl
@@ -842,11 +846,7 @@ straightFunctionToGlsl name =
             """ } ]
 
         Square22 ->
-            [ unknownFunDecl { name = "csquare", type_ = "TODO", body = """
-            vec2 csquare(vec2 z) {
-                return cby(z, z);
-            }
-            """ } ]
+            [ csquareDecl ]
 
         Ln22 ->
             [ clnDecl ]
@@ -977,21 +977,6 @@ cexp =
     Tuple.second cexpTuple
 
 
-clnTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
-clnTuple =
-    fun1 vec2T "cln" (vec2T "z") <|
-        \z ->
-            if_
-                (ands [ eq z.y zero, geq z.x zero ])
-                (return <| vec2 (log z.x) zero)
-                (def floatT "px" (length z) <|
-                    \px ->
-                        def floatT "py" (atan2_ z.y z.x) <|
-                            \py ->
-                                return <| vec2 (log px) py
-                )
-
-
 creTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 creTuple =
     fun1 vec2T "cre" (vec2T "z") <| \z -> return <| vec2 z.x zero
@@ -1005,6 +990,36 @@ creDecl =
 cre : ExpressionX xa Vec2 -> Expression2
 cre =
     Tuple.second creTuple
+
+
+csquareTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+csquareTuple =
+    fun1 vec2T "csquare" (vec2T "z") <| \z -> return <| cby z z
+
+
+csquareDecl : FunDecl
+csquareDecl =
+    Tuple.first csquareTuple
+
+
+csquare : ExpressionX xa Vec2 -> Expression2
+csquare =
+    Tuple.second csquareTuple
+
+
+clnTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+clnTuple =
+    fun1 vec2T "cln" (vec2T "z") <|
+        \z ->
+            if_
+                (ands [ eq z.y zero, geq z.x zero ])
+                (return <| vec2 (log z.x) zero)
+                (def floatT "px" (length z) <|
+                    \px ->
+                        def floatT "py" (atan2_ z.y z.x) <|
+                            \py ->
+                                return <| vec2 (log px) py
+                )
 
 
 clnDecl : FunDecl
@@ -2314,27 +2329,26 @@ raytrace suffixes =
                 vec3 f = vec3(0);
                 vec3 n = vec3(0);
                 """ ++ innerTrace ++ """
-                if(found_index >= 0) {
-                    float hue_based_on_index = (float(found_index))*radians(360.0 / 1.1);
+                if(found_index < 0)
+                    return vec4(0,0,0,1);
 
-                    vec3 ld = normalize(vec3(-0.3, 0.0, 1.0));
-                    vec3 diffs = d[1] - d[0];
-                    mat3 light_direction = mat3(ld - 0.5 * diffs, ld + 0.5 * diffs, vec3(0));
-                    float light_distance = max_distance;
-                    float light_coeff = 0.45;
-                    vec3 offseted = found + 0.0001 * max_distance * normalize(o - found);
-                    if(0 == 1) { }
-                    """ ++ innerLightTrace ++ """
+                float hue_based_on_index = (float(found_index))*radians(360.0 / 1.1);
 
-                    vec3 px = mix(
-                        hl2rgb(hue_based_on_index, light_coeff),
-                        hl2rgb(found.z * 0.5, light_coeff),
-                        max(0.2, """ ++ colorCoeff ++ """)
-                    );
-                    return vec4(px, 1.0);
-                } else {
-                    return vec4(0.0, 0.0, 0.0, 1.0);
-                }
+                vec3 ld = normalize(vec3(-0.3, 0.0, 1.0));
+                vec3 diffs = d[1] - d[0];
+                mat3 light_direction = mat3(ld - 0.5 * diffs, ld + 0.5 * diffs, vec3(0));
+                float light_distance = max_distance;
+                float light_coeff = 0.45;
+                vec3 offseted = found + 0.0001 * max_distance * normalize(o - found);
+                if(0 == 1) { }
+                """ ++ innerLightTrace ++ """
+
+                vec3 px = mix(
+                    hl2rgb(hue_based_on_index, light_coeff),
+                    hl2rgb(found.z * 0.5, light_coeff),
+                    max(0.2, """ ++ colorCoeff ++ """)
+                );
+                return vec4(px, 1.0);
             }
     """
     in
