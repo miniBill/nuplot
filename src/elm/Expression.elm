@@ -24,6 +24,7 @@ module Expression exposing
     , getFreeVariables
     , partialSubstitute
     , pfullSubstitute
+    , relationToString
     , solutionTreeToString
     , toDebugTree
     , toPrintExpression

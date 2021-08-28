@@ -15,33 +15,45 @@ import UI.Glsl.Polynomial
 import UI.Glsl.Sphere as Sphere
 
 
+unsafeCallPixel name arg0 arg1 arg2 arg3 =
+    let
+        _ =
+            Debug.todo
+    in
+    dotted3 <| unsafeCall ("pixel" ++ name) [ arg0.base, arg1.base, arg2.base, arg3.base ]
+
+
 getGlsl : Bool -> Graph -> String
 getGlsl rayDifferentials graph =
     let
         { expr, srcExpr, interval, usesThetaDelta, pixel2D, pixel3D } =
             extract "" graph
 
-        build2d toSrc prefix e =
+        build2d toSrc e =
+            let
+                ( decl, call ) =
+                    toSrc e
+            in
             { expr = e
-            , srcExpr = toSrc prefix e
+            , srcExpr = decl
             , interval = StraightOnly
             , usesThetaDelta = False
-            , pixel2D = [ { name = "pixel" ++ prefix, color = True } ]
+            , pixel2D = [ { call = call, color = True } ]
             , pixel3D = []
             }
 
         extract prefix g =
             case g of
                 Explicit2D c ->
-                    build2d toSrcImplicit prefix <|
+                    build2d (toSrcImplicit prefix) <|
                         minus Expression.Utils.y c
 
                 Implicit2D l r ->
-                    build2d toSrcImplicit prefix <|
+                    build2d (toSrcImplicit prefix) <|
                         minus l r
 
                 Polar2D e ->
-                    build2d toSrcPolar prefix e
+                    build2d (\q -> ( toSrcPolar prefix q, unsafeCallPixel prefix )) e
 
                 Parametric2D x y ->
                     let
@@ -55,19 +67,19 @@ getGlsl rayDifferentials graph =
                     , srcExpr = toSrcParametric prefix e
                     , interval = IntervalOnly
                     , usesThetaDelta = False
-                    , pixel2D = [ { name = "pixel" ++ prefix, color = True } ]
+                    , pixel2D = [ { call = unsafeCallPixel prefix, color = True } ]
                     , pixel3D = []
                     }
 
                 Relation2D e ->
-                    build2d toSrcRelation prefix e
+                    build2d (\q -> ( toSrcRelation prefix q, unsafeCallPixel prefix )) e
 
                 Contour e ->
                     { expr = e
                     , srcExpr = toSrcContour prefix e
                     , interval = StraightOnly
                     , usesThetaDelta = True
-                    , pixel2D = [ { name = "pixel" ++ prefix, color = False } ]
+                    , pixel2D = [ { call = unsafeCallPixel prefix, color = False } ]
                     , pixel3D = []
                     }
 
@@ -110,7 +122,7 @@ getGlsl rayDifferentials graph =
                     , srcExpr = toSrcVectorField2D prefix x y
                     , interval = StraightOnly
                     , usesThetaDelta = True
-                    , pixel2D = [ { name = "pixel" ++ prefix, color = False } ]
+                    , pixel2D = [ { call = unsafeCallPixel prefix, color = False } ]
                     , pixel3D = []
                     }
 
@@ -136,14 +148,7 @@ getGlsl rayDifferentials graph =
         ++ deindent 4 srcExpr
         ++ mainGlsl
             rayDifferentials
-            (List.map
-                (\p ->
-                    { call = \arg0 arg1 arg2 arg3 -> dotted3 <| unsafeCall p.name [ arg0.base, arg1.base, arg2.base, arg3.base ]
-                    , color = p.color
-                    }
-                )
-                pixel2D
-            )
+            pixel2D
             pixel3D
 
 
