@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (cexpFunction, constantToGlsl, deindent, dupDecl, e
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, cross, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, nop, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, cos_, cosh, cross, decl, def, div, div2, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, normalize, normalize3, one, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1386,39 +1386,65 @@ intervalFunctionToGlsl name =
             """TODO"""
 
 
-toSrcImplicit : String -> Expression.Expression -> String
+toSrcImplicit :
+    String
+    -> Expression.Expression
+    -> ( String, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
 toSrcImplicit suffix e =
     let
         antialiasingSamples =
             7
+
+        ( fDecl, f ) =
+            fun2 floatT ("f" ++ suffix) (floatT "x") (floatT "y") <|
+                \x y ->
+                    def vec2T "complex" (expressionToGlsl [ ( "x", x ), ( "y", y ) ] e) <|
+                        \complex ->
+                            return <|
+                                ternary (gt (abs_ complex.y) (float epsilon))
+                                    zero
+                                    (ternary (gt complex.x zero) one minusOne)
+
+        ( pixelDecl, pixel ) =
+            fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
+                \deltaX _ x y ->
+                    def floatT "sum" zero <|
+                        \sum ->
+                            def floatT "samples" (float <| antialiasingSamples * 2 + 1) <|
+                                \samples ->
+                                    assignBy samples samples <|
+                                        def floatT
+                                            "coeff"
+                                            (float 0.0875)
+                                            (\coeff ->
+                                                forLeq ( "w", -antialiasingSamples, antialiasingSamples )
+                                                    (\w ->
+                                                        forLeq ( "h", -antialiasingSamples, antialiasingSamples )
+                                                            (\h ->
+                                                                def floatT
+                                                                    "piece"
+                                                                    (f
+                                                                        (add x <| by (by deltaX coeff) <| floatCast w)
+                                                                        (add y <| by (by deltaX coeff) <| floatCast h)
+                                                                    )
+                                                                <|
+                                                                    \piece ->
+                                                                        if_
+                                                                            (eq piece zero)
+                                                                            (return vec3Zero)
+                                                                            (assignAdd sum piece unsafeNop)
+                                                            )
+                                                            unsafeNop
+                                                    )
+                                                    (def floatT "perc" (div (subtract samples <| abs_ sum) samples) <|
+                                                        \perc ->
+                                                            assign perc
+                                                                (pow perc <| float 0.2)
+                                                                (return <| byF perc (vec3 one one one))
+                                                    )
+                                            )
     in
-    """
-    float f""" ++ suffix ++ """(float x, float y) {
-        vec2 complex = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] e).base ++ """;
-        if(abs(complex.y) > """ ++ floatToGlsl epsilon ++ """) {
-            return 0.0;
-        }
-        return complex.x > 0.0 ? 1.0 : -1.0;
-    }
-
-    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        float sum = 0.0;
-        float samples = """ ++ floatToGlsl antialiasingSamples ++ """ * 2.0 + 1.0;
-        samples *= samples;
-        float coeff = 0.0875;
-        for(int w = -""" ++ String.fromInt antialiasingSamples ++ """; w <= """ ++ String.fromInt antialiasingSamples ++ """; w++)
-            for(int h = -""" ++ String.fromInt antialiasingSamples ++ """; h <= """ ++ String.fromInt antialiasingSamples ++ """; h++) {
-                float piece = f""" ++ suffix ++ """(x + deltaX * coeff * float(w), y + deltaX * coeff * float(h));
-                if(piece == 0.0)
-                    return vec3(0);
-                sum += piece;
-            }
-
-        float perc = (samples - abs(sum)) / samples;
-        perc = pow(perc, 0.2);
-        return perc * vec3(1,1,1);
-    }
-    """
+    ( fileToGlsl [ fDecl, pixelDecl ], pixel )
 
 
 toSrcPolar : String -> Expression.Expression -> String
@@ -2020,7 +2046,7 @@ mainGlsl rayDifferentials pixel2Def pixel3Def =
                 pixel2Decl
                     ++ [ Tuple.first <|
                             fun0 voidT "main" <|
-                                assign gl_FragColor pixel2 nop
+                                assign gl_FragColor pixel2 unsafeNop
                        ]
 
         ( [], _ ) ->
@@ -2033,7 +2059,7 @@ mainGlsl rayDifferentials pixel2Def pixel3Def =
                 ++ fileToGlsl
                     [ Tuple.first <|
                         fun0 voidT "main" <|
-                            assign gl_FragColor pixel3 nop
+                            assign gl_FragColor pixel3 unsafeNop
                     ]
 
         _ ->
@@ -2050,7 +2076,7 @@ mainGlsl rayDifferentials pixel2Def pixel3Def =
                 ++ fileToGlsl
                     [ Tuple.first <|
                         fun0 voidT "main" <|
-                            assign gl_FragColor (max4 pixel2 pixel3) nop
+                            assign gl_FragColor (max4 pixel2 pixel3) unsafeNop
                     ]
 
 
