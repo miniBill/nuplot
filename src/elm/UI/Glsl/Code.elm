@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1624,11 +1624,12 @@ thetaDeltaCouple =
         \theta ->
             if_ (lt uniforms.u_whiteLines one)
                 (return <| float 100)
-                (def floatT "thetaSix" (add (by theta uniforms.u_whiteLines) (float 0.5)) <|
-                    \thetaSix ->
-                        def floatT "thetaNeigh" (float 0.05) <|
-                            \thetaNeigh ->
-                                return <| divF (abs_ (subtract (fract thetaSix) (float 0.5))) thetaNeigh
+                (def2
+                    ( floatT, "thetaSix", add (by theta uniforms.u_whiteLines) (float 0.5) )
+                    ( floatT, "thetaNeigh", float 0.05 )
+                 <|
+                    \thetaSix thetaNeigh ->
+                        return <| divF (abs_ (subtract (fract thetaSix) (float 0.5))) thetaNeigh
                 )
 
 
@@ -1722,42 +1723,52 @@ toSrcContour suffix e =
                 \_ _ x y ->
                     def vec2T "z" (expressionToGlsl [ ( "x", x ), ( "y", y ) ] e) <|
                         \z ->
-                            def floatT "theta" (div (atan2_ z.y z.x) constants.twopi) <|
-                                \theta ->
-                                    def floatT "logRadius" (log2 <| length z) <|
-                                        \logRadius ->
-                                            def floatT "powerRemainder" (fract logRadius) <|
-                                                \powerRemainder ->
-                                                    def floatT "squished" (subtract (float 0.7) (by powerRemainder <| float 0.4)) <|
-                                                        \squished ->
-                                                            if_ (gt uniforms.u_completelyReal zero)
-                                                                (def floatT "haf" (div powerRemainder <| float 6.0) <|
-                                                                    \haf ->
-                                                                        return <|
-                                                                            ternary (gt z.x zero)
-                                                                                (hl2rgb (add haf <| float 0.3) squished)
-                                                                                (hl2rgb (subtract haf <| float 0.2) (subtract one squished))
-                                                                )
-                                                                (def floatT "td" (thetaDelta theta) <|
-                                                                    \td ->
-                                                                        def floatT "l" (mix one squished <| smoothstep zero one td) <|
-                                                                            \l ->
-                                                                                return <| hl2rgb theta l
-                                                                )
+                            def2
+                                ( floatT, "theta", div (atan2_ z.y z.x) constants.twopi )
+                                ( floatT, "logRadius", log2 <| length z )
+                            <|
+                                \theta logRadius ->
+                                    def floatT "powerRemainder" (fract logRadius) <|
+                                        \powerRemainder ->
+                                            def floatT "squished" (subtract (float 0.7) (by powerRemainder <| float 0.4)) <|
+                                                \squished ->
+                                                    if_ (gt uniforms.u_completelyReal zero)
+                                                        (def floatT "haf" (div powerRemainder <| float 6.0) <|
+                                                            \haf ->
+                                                                return <|
+                                                                    ternary (gt z.x zero)
+                                                                        (hl2rgb (add haf <| float 0.3) squished)
+                                                                        (hl2rgb (subtract haf <| float 0.2) (subtract one squished))
+                                                        )
+                                                        (def floatT "td" (thetaDelta theta) <|
+                                                            \td ->
+                                                                def floatT "l" (mix one squished <| smoothstep zero one td) <|
+                                                                    \l ->
+                                                                        return <| hl2rgb theta l
+                                                        )
 
         ( pixelDecl, pixel ) =
             fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
                 \deltaX deltaY x y ->
                     -- Antialiasing
-                    unknownStatement
-                        ("""
-        float dist = 1.0 / 3.0;
-        vec3 a = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x + dist * deltaX, y + dist * deltaY);
-        vec3 b = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x - dist * deltaX, y - dist * deltaY);
-        vec3 c = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x + dist * deltaX, y - dist * deltaY);
-        vec3 d = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x - dist * deltaX, y + dist * deltaY);
-
-        vec3 diff = abs(max(a, max(b, max(c, d))) - min(a, min(b, min(c, d))));
+                    def floatT "dist" (float <| 1 / 3) <|
+                        \dist ->
+                            def4
+                                ( vec3T, "a", pixelO deltaX deltaY (add x <| by dist deltaX) (add y <| by dist deltaY) )
+                                ( vec3T, "b", pixelO deltaX deltaY (subtract x <| by dist deltaX) (subtract y <| by dist deltaY) )
+                                ( vec3T, "c", pixelO deltaX deltaY (add x <| by dist deltaX) (subtract y <| by dist deltaY) )
+                                ( vec3T, "d", pixelO deltaX deltaY (subtract x <| by dist deltaX) (add y <| by dist deltaY) )
+                            <|
+                                \a b c d ->
+                                    def2
+                                        ( vec3T, "mn", min_ a <| min_ b <| min_ c d )
+                                        ( vec3T, "mx", max_ a <| max_ b <| max_ c d )
+                                    <|
+                                        \mn mx ->
+                                            def vec3T "diff" (abs_ (subtract mx mn)) <|
+                                                \diff ->
+                                                    unknownStatement
+                                                        ("""
         if (diff.x < dist && diff.y < dist && diff.z < dist)
             return (a + b + c + d) / 4.0;
 
