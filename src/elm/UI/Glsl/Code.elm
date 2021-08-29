@@ -1,8 +1,8 @@
 module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deindent, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Dict
-import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, return, round_, sign, sin_, sinh, smoothstep, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -791,6 +791,122 @@ ctan =
     Tuple.second ctanCouple
 
 
+casinTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+casinTuple =
+    fun1 vec2T "casin" (vec2T "z") <|
+        \z ->
+            def vec2T "s" (csqrt <| subtract (vec2 one zero) (cby z z)) <|
+                \s ->
+                    def vec2T "arg" (subtract s <| cby (vec2 zero one) z) <|
+                        \arg ->
+                            return <| cby (vec2 zero one) (cln arg)
+
+
+casinDecl : FunDecl
+casinDecl =
+    Tuple.first casinTuple
+
+
+casin : ExpressionX xa Vec2 -> Expression2
+casin =
+    Tuple.second casinTuple
+
+
+cacosTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+cacosTuple =
+    fun1 vec2T "cacos" (vec2T "z") <| \z -> return <| subtract (vec2 constants.pihalf zero) (casin z)
+
+
+cacosDecl : FunDecl
+cacosDecl =
+    Tuple.first cacosTuple
+
+
+cacos : ExpressionX xa Vec2 -> Expression2
+cacos =
+    Tuple.second cacosTuple
+
+
+catanTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+catanTuple =
+    fun1 vec2T "catan" (vec2T "z") <|
+        \z ->
+            if_ (eq z.y zero)
+                (return <| vec2 (atan_ z.x) zero)
+                (def2
+                    ( vec2T, "o", vec2 one zero )
+                    ( vec2T, "iz", cby (vec2 zero one) z )
+                 <|
+                    \o iz ->
+                        def vec2T "l" (cdiv (add o iz) (subtract o iz)) <|
+                            \l ->
+                                return <| byF (float -0.5) <| cby (vec2 zero one) (cln l)
+                )
+
+
+catanDecl : FunDecl
+catanDecl =
+    Tuple.first catanTuple
+
+
+catan : ExpressionX xa Vec2 -> Expression2
+catan =
+    Tuple.second catanTuple
+
+
+catan2Tuple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+catan2Tuple =
+    fun2 vec2T "catan2" (vec2T "y") (vec2T "x") <|
+        \y x ->
+            def vec2T "z" (vec2 (subtract x.x y.y) (add x.y y.x)) <|
+                \z ->
+                    return <| vec2 (atan2_ z.y z.x) zero
+
+
+catan2Decl : FunDecl
+catan2Decl =
+    Tuple.first catan2Tuple
+
+
+catan2 : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+catan2 =
+    Tuple.second catan2Tuple
+
+
+csinhTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+csinhTuple =
+    fun1 vec2T "csinh" (vec2T "z") <|
+        \z ->
+            return <| byF (float 0.5) (subtract (cexp z) (cexp <| negate_ z))
+
+
+csinhDecl : FunDecl
+csinhDecl =
+    Tuple.first csinhTuple
+
+
+csinh : ExpressionX xa Vec2 -> Expression2
+csinh =
+    Tuple.second csinhTuple
+
+
+ccoshTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+ccoshTuple =
+    fun1 vec2T "ccosh" (vec2T "z") <|
+        \z ->
+            return <| byF (float 0.5) (add (cexp z) (cexp <| negate_ z))
+
+
+ccoshDecl : FunDecl
+ccoshDecl =
+    Tuple.first ccoshTuple
+
+
+ccosh : ExpressionX xa Vec2 -> Expression2
+ccosh =
+    Tuple.second ccoshTuple
+
+
 intervalOperationToGlsl : GlslOperation -> List FunDecl
 intervalOperationToGlsl op =
     case op of
@@ -852,79 +968,22 @@ straightFunctionToGlsl name =
             [ ctanDecl ]
 
         Asin22 ->
-            [ unknownFunDecl
-                { name =
-                    "casin"
-                , type_ = "TODO"
-                , body = """
-            vec2 casin(vec2 z) {
-                vec2 s = csqrt(vec2(1, 0) - cby(z, z));
-                vec2 arg = s - cby(vec2(0, 1), z);
-                return cby(vec2(0, 1), cln(arg));
-            }
-            """
-                }
-            ]
+            [ casinDecl ]
 
         Acos22 ->
-            [ unknownFunDecl
-                { name =
-                    "cacos"
-                , type_ = "TODO"
-                , body = """
-            vec2 cacos(vec2 z) {
-                return pi() * 0.5 - casin(z);
-            }
-            """
-                }
-            ]
+            [ cacosDecl ]
 
         Atan22 ->
-            [ unknownFunDecl
-                { name =
-                    "catan"
-                , type_ = "TODO"
-                , body = """
-            vec2 catan(vec2 z) {
-                if(z.y == 0.0) {
-                    return vec2(atan(z.x), 0);
-                }
-                vec2 o = vec2(1, 0);
-                vec2 iz = cby(vec2(0, 1), z);
-                vec2 l = cdiv(o + iz, o - iz);
-                return -0.5 * cby(vec2(0, 1), cln(l));
-            }
-            """
-                }
-            ]
+            [ catanDecl ]
 
         Atan222 ->
-            [ unknownFunDecl
-                { name =
-                    "catan2"
-                , type_ = "TODO"
-                , body = """
-            vec2 catan2(vec2 y, vec2 x) {
-                vec2 z = vec2(x.x - y.y, x.y + y.x);
-                return vec2(atan(z.y, z.x), 0.0);
-            }
-            """
-                }
-            ]
+            [ catan2Decl ]
 
         Sinh22 ->
-            [ unknownFunDecl { name = "csinh", type_ = "TODO", body = """
-            vec2 csinh(vec2 z) {
-                return 0.5 * (cexp(z) - cexp(-z));
-            }
-            """ } ]
+            [ csinhDecl ]
 
         Cosh22 ->
-            [ unknownFunDecl { name = "ccosh", type_ = "TODO", body = """
-            vec2 ccosh(vec2 z) {
-                return 0.5 * (cexp(z) + cexp(-z));
-            }
-            """ } ]
+            [ ccoshDecl ]
 
         Tanh22 ->
             [ unknownFunDecl { name = "ctanh", type_ = "TODO", body = """
@@ -950,16 +1009,7 @@ straightFunctionToGlsl name =
             """ } ]
 
         Sqrt22 ->
-            [ unknownFunDecl { name = "csqrt", type_ = "TODO", body = """
-            vec2 csqrt(vec2 z) {
-                if(z.y == 0.0 && z.x >= 0.0) {
-                    return vec2(sqrt(z.x), 0);
-                }
-                float r = pow(dot(z, z), 0.25);
-                float t = atan(z.y, z.x) * 0.5;
-                return r * vec2(cos(t), sin(t));
-            }
-            """ } ]
+            [ csqrtDecl ]
 
         Cbrt22 ->
             [ unknownFunDecl { name = "ccbrt", type_ = "TODO", body = """
@@ -1039,18 +1089,10 @@ straightFunctionToGlsl name =
             """ } ]
 
         Min222 ->
-            [ unknownFunDecl { name = "cmin", type_ = "TODO", body = """
-            vec2 cmin(vec2 l, vec2 r) {
-                return l.x < r.x ? l : r;
-            }
-            """ } ]
+            [ cminDecl ]
 
         Max222 ->
-            [ unknownFunDecl { name = "cmax", type_ = "TODO", body = """
-            vec2 cmax(vec2 l, vec2 r) {
-                return l.x > r.x ? l : r;
-            }
-            """ } ]
+            [ cmaxDecl ]
 
         Mod22 ->
             [ unknownFunDecl { name = "cmod", type_ = "TODO", body = """
@@ -1118,6 +1160,61 @@ creDecl =
 cre : ExpressionX xa Vec2 -> Expression2
 cre =
     Tuple.second creTuple
+
+
+cminTuple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+cminTuple =
+    fun2 vec2T "cmin" (vec2T "l") (vec2T "r") <| \l r -> return <| ternary (lt l.x r.x) l r
+
+
+cminDecl : FunDecl
+cminDecl =
+    Tuple.first cminTuple
+
+
+cmin : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+cmin =
+    Tuple.second cminTuple
+
+
+cmaxTuple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+cmaxTuple =
+    fun2 vec2T "cmax" (vec2T "l") (vec2T "r") <| \l r -> return <| ternary (gt l.x r.x) l r
+
+
+cmaxDecl : FunDecl
+cmaxDecl =
+    Tuple.first cmaxTuple
+
+
+cmax : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+cmax =
+    Tuple.second cmaxTuple
+
+
+csqrtTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+csqrtTuple =
+    fun1 vec2T "csqrt" (vec2T "z") <|
+        \z ->
+            if_ (ands [ eq z.y zero, geq z.x zero ])
+                (return <| vec2 (sqrt_ z.x) zero)
+                (def2
+                    ( floatT, "r", pow (dot z z) (float 0.25) )
+                    ( floatT, "t", byF (float 0.5) (atan2_ z.y z.x) )
+                 <|
+                    \r t ->
+                        return <| byF r <| vec2 (cos_ t) (sin_ t)
+                )
+
+
+csqrtDecl : FunDecl
+csqrtDecl =
+    Tuple.first csqrtTuple
+
+
+csqrt : ExpressionX xa Vec2 -> Expression2
+csqrt =
+    Tuple.second csqrtTuple
 
 
 csquareTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
@@ -1602,7 +1699,7 @@ toSrcPolar suffix e =
                             <|
                                 \t ot ->
                                     for ( "i", int 0, divConst constants.maxIterations (int 10) )
-                                        (\i ->
+                                        (\_ ->
                                             def4
                                                 ( floatT, "h", f x y t ot )
                                                 ( floatT, "l", f (subtract x deltaX) y t ot )
@@ -1627,11 +1724,13 @@ toSrcPolar suffix e =
 
 constants :
     { maxIterations : ExpressionX { isConstant : Constant } Int
+    , pihalf : ExpressionX { isConstant : Constant } Float
     , pi : ExpressionX { isConstant : Constant } Float
     , twopi : ExpressionX { isConstant : Constant } Float
     }
 constants =
     { maxIterations = constant intT "MAX_ITERATIONS"
+    , pihalf = constant floatT "PIHALF"
     , pi = constant floatT "PI"
     , twopi = constant floatT "TWOPI"
     }
@@ -1939,6 +2038,14 @@ expressionToGlsl context =
         ctx =
             Dict.fromList context
 
+        variadic f es =
+            case List.map go es of
+                [] ->
+                    vec2Zero
+
+                head :: tail ->
+                    List.foldl (\e a -> f a e) head tail
+
         go expr =
             case expr of
                 PVariable "i" ->
@@ -2013,17 +2120,97 @@ expressionToGlsl context =
                 PApply (KnownFunction Simplify) [ e ] ->
                     go e
 
+                PApply (KnownFunction Sin) [ e ] ->
+                    csin (go e)
+
+                PApply (KnownFunction Cos) [ e ] ->
+                    ccos (go e)
+
+                PApply (KnownFunction Tan) [ e ] ->
+                    ctan (go e)
+
+                PApply (KnownFunction Asin) [ e ] ->
+                    casin (go e)
+
+                PApply (KnownFunction Acos) [ e ] ->
+                    cacos (go e)
+
+                PApply (KnownFunction Atan) [ e ] ->
+                    catan (go e)
+
+                PApply (KnownFunction Atan2) [ l, r ] ->
+                    catan2 (go l) (go r)
+
+                PApply (KnownFunction Sinh) [ e ] ->
+                    csinh (go e)
+
+                PApply (KnownFunction Cosh) [ e ] ->
+                    ccosh (go e)
+
+                -- PApply (KnownFunction Tanh) [ e ] ->
+                --     ctanh (go e)
+                -- PApply (KnownFunction Abs) [ e ] ->
+                --     cabs (go e)
+                -- PApply (KnownFunction (Root r)) [ e ] ->
+                --     croot r (go e)
+                PApply (KnownFunction Ln) [ e ] ->
+                    cln (go e)
+
+                -- PApply (KnownFunction Log10) [ e ] ->
+                --     clog10 (go e)
+                PApply (KnownFunction Exp) [ e ] ->
+                    cexp (go e)
+
+                -- PApply (KnownFunction Sign) [ e ] ->
+                --     csign (go e)
+                PApply (KnownFunction Re) [ e ] ->
+                    cre (go e)
+
+                -- PApply (KnownFunction Im) [ e ] ->
+                --     cim (go e)
+                -- PApply (KnownFunction Arg) [ e ] ->
+                --     carg (go e)
+                -- PApply (KnownFunction Gra) [ e ] ->
+                --     cgra (go e)
+                -- PApply (KnownFunction Det) [ e ] ->
+                --     cdet (go e)
+                -- PApply (KnownFunction Dd) [ e ] ->
+                --     cdd (go e)
+                -- PApply (KnownFunction Ii) [ e ] ->
+                --     cii (go e)
+                -- PApply (KnownFunction Round) [ e ] ->
+                --     cround (go e)
+                -- PApply (KnownFunction Floor) [ e ] ->
+                --     cfloor (go e)
+                -- PApply (KnownFunction Ceiling) [ e ] ->
+                --     cceiling (go e)
+                -- PApply (KnownFunction Pw) [ e ] ->
+                --     cpw (go e)
+                -- PApply (KnownFunction Plot) [ e ] ->
+                --     cplot (go e)
+                -- PApply (KnownFunction APlot) [ e ] ->
+                --     caPlot (go e)
+                -- PApply (KnownFunction StepSimplify) [ e ] ->
+                --     cstepSimplify (go e)
+                -- PApply (KnownFunction Solve) [ e ] ->
+                --     csolve (go e)
+                -- PApply (KnownFunction Mod) [ e ] ->
+                --     cmod (go e)
+                -- PApply (KnownFunction Mbrot) [ e ] ->
+                --     cmbrot (go e)
+                -- PApply (KnownFunction For) [ e ] ->
+                --     cfor (go e)
+                PApply (KnownFunction Min) es ->
+                    variadic cmin es
+
+                PApply (KnownFunction Max) es ->
+                    variadic cmax es
+
+                PApply (UserFunction name) ex ->
+                    dotted2 <| unsafeCall ("c" ++ name) (List.map (go >> .base) ex)
+
                 PApply name ex ->
-                    if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
-                        case List.map (go >> .base) ex of
-                            [] ->
-                                vec2Zero
-
-                            head :: tail ->
-                                dotted2 (List.foldl (\e a -> unsafeCall ("c" ++ Expression.functionNameToString name) [ a, e ]) head tail)
-
-                    else
-                        dotted2 <| unsafeCall ("c" ++ Expression.functionNameToString name) (List.map (go >> .base) ex)
+                    dotted2 <| unsafeCall ("c" ++ functionNameToString name) (List.map (go >> .base) ex)
 
                 PList es ->
                     dotted2 <| unsafeCall ("vec" ++ String.fromInt (List.length es)) (List.map (go >> .base) es)

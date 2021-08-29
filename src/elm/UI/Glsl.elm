@@ -163,8 +163,9 @@ piDecl =
         { name = "PI"
         , type_ = "float"
         , body =
-            """#define PI """ ++ String.fromFloat pi ++ """
-        #define TWOPI """ ++ String.fromFloat (pi * 2)
+            """#define PIHALF """ ++ String.fromFloat (pi / 2) ++ """
+            #define PI """ ++ String.fromFloat pi ++ """
+            #define TWOPI """ ++ String.fromFloat (pi * 2)
         }
 
 
