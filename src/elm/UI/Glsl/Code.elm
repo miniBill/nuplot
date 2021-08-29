@@ -1,8 +1,8 @@
 module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deindent, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Dict
-import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), toPrintExpression)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, return, round_, sign, sin_, sinh, smoothstep, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -562,6 +562,21 @@ ileq =
     Tuple.second ileqCouple
 
 
+ineqCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+ineqCouple =
+    fun2 vec2T "ineq" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract r.x l.y) (subtract r.y l.x)
+
+
+ineqDecl : FunDecl
+ineqDecl =
+    Tuple.first ineqCouple
+
+
+ineq : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+ineq =
+    Tuple.second ineqCouple
+
+
 ieqCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
 ieqCouple =
     fun2 vec2T "ieq" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract l.x r.y) (subtract l.y r.x)
@@ -605,6 +620,46 @@ igtDecl =
 igt : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
 igt =
     Tuple.second igtCouple
+
+
+iabsCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+iabsCouple =
+    fun1 vec2T "iabs" (vec2T "z") <|
+        \z ->
+            return <|
+                ternary
+                    (ands [ leq z.x zero, geq z.y zero ])
+                    (vec2 zero <| max_ z.y <| abs_ z.x)
+                    (ternary
+                        (leq z.x zero)
+                        (vec2 (negate_ z.y) (negate_ z.x))
+                        z
+                    )
+
+
+iabsDecl : FunDecl
+iabsDecl =
+    Tuple.first iabsCouple
+
+
+iabs : ExpressionX xa Vec2 -> Expression2
+iabs =
+    Tuple.second iabsCouple
+
+
+gabsCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
+gabsCouple =
+    fun1 vec4T "gabs" (vec4T "v") <| \v -> return <| vec4_1_3 (abs_ v.x) (byF (sign v.x) v.yzw)
+
+
+gabsDecl : FunDecl
+gabsDecl =
+    Tuple.first gabsCouple
+
+
+gabs : ExpressionX xa Vec4 -> Expression4
+gabs =
+    Tuple.second gabsCouple
 
 
 iexpCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
@@ -755,7 +810,7 @@ intervalOperationToGlsl op =
             [ ipowFIDecl, ipowIDecl, ipowDecl, gpowIDecl, gpowDecl ]
 
         GlslRelations ->
-            [ iltDecl, ileqDecl, ieqDecl, igeqDecl, igtDecl ]
+            [ iltDecl, ileqDecl, ineqDecl, ieqDecl, igeqDecl, igtDecl ]
 
 
 straightFunctionToGlsl : GlslFunction -> List FunDecl
@@ -1109,19 +1164,7 @@ intervalFunctionToGlsl : GlslFunction -> String
 intervalFunctionToGlsl name =
     case name of
         Abs22 ->
-            """
-            vec2 iabs(vec2 z) {
-                if(z.x <= 0.0 && z.y >= 0.0)
-                    return vec2(0.0, max(z.y, abs(z.x)));
-                if(z.x <= 0.0)
-                    return vec2(-z.y, -z.x);
-                return z;
-            }
-
-            vec4 gabs(vec4 v) {
-                return vec4(abs(v.x), sign(v.x) * v.yzw);
-            }
-            """
+            fileToGlsl [ iabsDecl, gabsDecl ]
 
         Acos22 ->
             """
@@ -1799,12 +1842,12 @@ toSrcVectorField2D suffix xexpr yexpr =
 
 
 toSrcContour : String -> Expression.Expression -> ( List FunDecl, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
-toSrcContour suffix e =
+toSrcContour suffix expr =
     let
         ( pixelODecl, pixelO ) =
             fun4 vec3T ("pixel" ++ suffix ++ "_o") (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
                 \_ _ x y ->
-                    def vec2T "z" (expressionToGlsl [ ( "x", x ), ( "y", y ) ] e) <|
+                    def vec2T "z" (expressionToGlsl [ ( "x", x ), ( "y", y ) ] expr) <|
                         \z ->
                             def2
                                 ( floatT, "theta", div (atan2_ z.y z.x) constants.twopi )
@@ -1850,18 +1893,19 @@ toSrcContour suffix e =
                                         \mn mx ->
                                             def vec3T "diff" (abs_ (subtract mx mn)) <|
                                                 \diff ->
-                                                    unknownStatement
-                                                        ("""
-        if (diff.x < dist && diff.y < dist && diff.z < dist)
-            return (a + b + c + d) / 4.0;
-
-        vec3 e = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x + 2.0 * dist * deltaX, y);
-        vec3 f = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x - 2.0 * dist * deltaX, y);
-        vec3 g = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y - 2.0 * dist * deltaY);
-        vec3 h = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y + 2.0 * dist * deltaY);
-
-        return (a + b + c + d + e + f + g + h) / 8.0;
-                    """)
+                                                    if_ (ands [ lt diff.x dist, lt diff.y dist, lt diff.z dist ])
+                                                        (return <| divF (adds3 [ a, b, c, d ]) (float 4))
+                                                        (def floatT "dist2" (by (float 2) dist) <|
+                                                            \dist2 ->
+                                                                def4
+                                                                    ( vec3T, "e", pixelO deltaX deltaY (add x <| byF dist2 deltaX) y )
+                                                                    ( vec3T, "f", pixelO deltaX deltaY (subtract x <| byF dist2 deltaX) y )
+                                                                    ( vec3T, "g", pixelO deltaX deltaY x (subtract y <| byF dist2 deltaY) )
+                                                                    ( vec3T, "h", pixelO deltaX deltaY x (add y <| byF dist2 deltaY) )
+                                                                <|
+                                                                    \e f g h ->
+                                                                        return <| divF (adds3 [ a, b, c, d, e, f, g, h ]) (float 8)
+                                                        )
     in
     ( [ pixelODecl, pixelDecl ], pixel )
 
@@ -1930,14 +1974,24 @@ expressionToGlsl context =
                     add2 (go l) (go r)
 
                 PRel op l r ->
-                    if op == "<=" || op == "<" then
-                        subtract2 (go r) (go l)
+                    case op of
+                        LessThan ->
+                            subtract2 (go r) (go l)
 
-                    else if op == "=" then
-                        abs2 <| subtract (go r) (go l)
+                        LessThanOrEquals ->
+                            subtract2 (go r) (go l)
 
-                    else
-                        subtract2 (go l) (go r)
+                        NotEquals ->
+                            abs2 <| subtract (go r) (go l)
+
+                        Equals ->
+                            abs2 <| subtract (go r) (go l)
+
+                        GreaterThanOrEquals ->
+                            subtract2 (go l) (go r)
+
+                        GreaterThan ->
+                            subtract2 (go l) (go r)
 
                 PBy l r ->
                     cby (go l) (go r)
@@ -2020,28 +2074,24 @@ expressionToIntervalGlsl expr =
             add2 (go l) (go r)
 
         PRel op l r ->
-            let
-                name =
-                    case op of
-                        "<" ->
-                            "ilt"
+            case op of
+                LessThan ->
+                    ilt (go l) (go r)
 
-                        "<=" ->
-                            "ileq"
+                LessThanOrEquals ->
+                    ileq (go l) (go r)
 
-                        "=" ->
-                            "ieq"
+                Equals ->
+                    ieq (go l) (go r)
 
-                        ">=" ->
-                            "igeq"
+                NotEquals ->
+                    ineq (go l) (go r)
 
-                        ">" ->
-                            "igt"
+                GreaterThanOrEquals ->
+                    igeq (go l) (go r)
 
-                        _ ->
-                            "iuknownrelop"
-            in
-            unsafeApply name [ l, r ]
+                GreaterThan ->
+                    igt (go l) (go r)
 
         PBy l r ->
             iby (go l) (go r)
@@ -2124,14 +2174,24 @@ expressionToNormalGlsl { x, y, z } =
                     add4 (go l) (go r)
 
                 PRel op l r ->
-                    if op == "<=" || op == "<" then
-                        subtract4 (go r) (go l)
+                    case op of
+                        LessThan ->
+                            subtract4 (go r) (go l)
 
-                    else if op == "=" then
-                        abs4 <| subtract (go r) (go l)
+                        LessThanOrEquals ->
+                            subtract4 (go r) (go l)
 
-                    else
-                        subtract4 (go l) (go r)
+                        NotEquals ->
+                            abs4 <| subtract (go r) (go l)
+
+                        Equals ->
+                            abs4 <| subtract (go r) (go l)
+
+                        GreaterThanOrEquals ->
+                            subtract4 (go l) (go r)
+
+                        GreaterThan ->
+                            subtract4 (go l) (go r)
 
                 PBy l r ->
                     gby (go l) (go r)
@@ -2432,7 +2492,7 @@ main3D rayDifferentials suffixes =
                                                                                                     \up ->
                                                                                                         def vec3T "canvas_center" (add eye toTarget) <|
                                                                                                             \canvasCenter ->
-                                                                                                                def vec3T "canvas_point" (add (add canvasCenter <| byF uvNormalized.x across) <| byF uvNormalized.y up) <|
+                                                                                                                def vec3T "canvas_point" (add (add canvasCenter <| byF uvNormalized.x across) (byF uvNormalized.y up)) <|
                                                                                                                     \canvasPoint ->
                                                                                                                         def vec3T "ray_direction" (normalize3 <| subtract canvasPoint eye) <|
                                                                                                                             \rayDirection ->
