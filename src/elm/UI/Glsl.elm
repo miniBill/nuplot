@@ -8,32 +8,17 @@ import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, 
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (atanPlusDecl, constantToGlsl, deindent, dupDecl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (Expression3, ExpressionX, FunDecl, dotted3, unknownFunDecl, unsafeCall)
+import UI.Glsl.Generator as Generator exposing (FunDecl, unknownFunDecl)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
 import UI.Glsl.Sphere as Sphere
 
 
-unsafeCallPixel :
-    String
-    -> ExpressionX a t
-    -> ExpressionX b t
-    -> ExpressionX c t
-    -> ExpressionX d t
-    -> Expression3
-unsafeCallPixel name arg0 arg1 arg2 arg3 =
-    let
-        _ =
-            Debug.todo
-    in
-    dotted3 <| unsafeCall ("pixel" ++ name) [ arg0.base, arg1.base, arg2.base, arg3.base ]
-
-
 getGlsl : Bool -> Graph -> String
 getGlsl rayDifferentials graph =
     let
-        { expr, srcExpr, interval, usesThetaDelta, pixel2D, pixel3D } =
+        { expr, funDecls, interval, usesThetaDelta, pixel2D, pixel3D } =
             extract "" graph
 
         build2d toSrc e =
@@ -42,7 +27,7 @@ getGlsl rayDifferentials graph =
                     toSrc e
             in
             { expr = e
-            , srcExpr = decl
+            , funDecls = decl
             , interval = StraightOnly
             , usesThetaDelta = False
             , pixel2D = [ { call = call, color = True } ]
@@ -64,6 +49,9 @@ getGlsl rayDifferentials graph =
 
                 Parametric2D x y ->
                     let
+                        ( src, call ) =
+                            toSrcParametric prefix e
+
                         e =
                             plus
                                 [ square (minus (Variable "x") x)
@@ -71,15 +59,15 @@ getGlsl rayDifferentials graph =
                                 ]
                     in
                     { expr = e
-                    , srcExpr = toSrcParametric prefix e
+                    , funDecls = src
                     , interval = IntervalOnly
                     , usesThetaDelta = False
-                    , pixel2D = [ { call = unsafeCallPixel prefix, color = True } ]
+                    , pixel2D = [ { call = call, color = True } ]
                     , pixel3D = []
                     }
 
                 Relation2D e ->
-                    build2d (\q -> ( toSrcRelation prefix q, unsafeCallPixel prefix )) e
+                    build2d (toSrcRelation prefix) e
 
                 Contour e ->
                     let
@@ -87,7 +75,7 @@ getGlsl rayDifferentials graph =
                             toSrcContour prefix e
                     in
                     { expr = e
-                    , srcExpr = src
+                    , funDecls = src
                     , interval = StraightOnly
                     , usesThetaDelta = True
                     , pixel2D = [ { call = pixel, color = False } ]
@@ -100,7 +88,7 @@ getGlsl rayDifferentials graph =
                             get3DSource prefix e
                     in
                     { expr = f.expr
-                    , srcExpr = f.srcExpr
+                    , funDecls = f.funDecls
                     , interval = IntervalAndStraight
                     , usesThetaDelta = True
                     , pixel2D = []
@@ -116,7 +104,7 @@ getGlsl rayDifferentials graph =
                             List.indexedMap (extract << prefix_) children
                     in
                     { expr = List <| List.map .expr extracted
-                    , srcExpr = String.join "\n" (List.map .srcExpr extracted)
+                    , funDecls = List.concatMap .funDecls extracted
                     , interval =
                         if List.any (\c -> c.interval /= StraightOnly) extracted then
                             IntervalAndStraight
@@ -129,11 +117,15 @@ getGlsl rayDifferentials graph =
                     }
 
                 VectorField2D x y ->
+                    let
+                        ( src, pixel ) =
+                            toSrcVectorField2D prefix x y
+                    in
                     { expr = Apply (KnownFunction Arg) [ x, y ]
-                    , srcExpr = toSrcVectorField2D prefix x y
+                    , funDecls = src
                     , interval = StraightOnly
                     , usesThetaDelta = True
-                    , pixel2D = [ { call = unsafeCallPixel prefix, color = False } ]
+                    , pixel2D = [ { call = pixel, color = False } ]
                     , pixel3D = []
                     }
 
@@ -145,6 +137,11 @@ getGlsl rayDifferentials graph =
                 ""
 
         reqs =
+            let
+                _ =
+                    -- Can remove in the future
+                    Debug.todo
+            in
             expr
                 |> expressionToRequirements
                 |> transitiveClosure
@@ -156,7 +153,7 @@ getGlsl rayDifferentials graph =
         ++ thetaDeltaCode
         ++ reqs
         ++ "\n/* Expression */\n"
-        ++ deindent 4 srcExpr
+        ++ deindent 4 (Generator.fileToGlsl funDecls)
         ++ mainGlsl rayDifferentials pixel2D pixel3D
 
 
@@ -177,19 +174,19 @@ declarations =
         |> Generator.fileToGlsl
 
 
-get3DSource : String -> Expression -> { expr : Expression, srcExpr : String }
+get3DSource : String -> Expression -> { expr : Expression, funDecls : List FunDecl }
 get3DSource prefix e =
     case Sphere.asSphere e |> Maybe.map (Sphere.toGlsl prefix) of
         Just glsl ->
             { expr = e
-            , srcExpr = glsl
+            , funDecls = [ glsl ]
             }
 
         Nothing ->
             case Plane.asPlane e |> Maybe.map (Plane.toGlsl prefix) of
                 Just glsl ->
                     { expr = e
-                    , srcExpr = glsl
+                    , funDecls = [ glsl ]
                     }
 
                 Nothing ->
@@ -201,14 +198,13 @@ get3DSource prefix e =
                             let
                                 glsl =
                                     toSrc3D prefix e
-                                        |> Generator.fileToGlsl
                             in
                             { expr = e
-                            , srcExpr = glsl ++ UI.Glsl.Code.suffixToBisect prefix
+                            , funDecls = glsl ++ [ UI.Glsl.Code.suffixToBisect prefix ]
                             }
 
 
-tryGlslFromPolynomial : String -> Expression -> Maybe { expr : Expression, srcExpr : String }
+tryGlslFromPolynomial : String -> Expression -> Maybe { expr : Expression, funDecls : List FunDecl }
 tryGlslFromPolynomial prefix e =
     let
         t =
@@ -283,8 +279,12 @@ tryGlslFromPolynomial prefix e =
                         |> List.reverse
                         |> String.join "\n                        "
 
-                srcExpr =
-                    """
+                funDecl =
+                    unknownFunDecl
+                        { name = "bisect" ++ prefix
+                        , type_ = "TODO"
+                        , body =
+                            """
                     bool bisect""" ++ prefix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
                         float t = max_distance * 2.0;
                         """ ++ checks ++ """
@@ -292,9 +292,10 @@ tryGlslFromPolynomial prefix e =
                         return t < max_distance && t > 0.0;
                     }
                     """
+                        }
             in
             { expr = div one <| sqrt_ <| cbrt <| ipow e 3
-            , srcExpr = deindent 16 srcExpr
+            , funDecls = [ funDecl ]
             }
     in
     UI.Glsl.Polynomial.getSolutions poly |> Maybe.map (\( _, sols ) -> fromSols sols)

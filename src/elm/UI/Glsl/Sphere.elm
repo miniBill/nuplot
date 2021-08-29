@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 import Expression exposing (Expression)
 import Expression.Polynomial exposing (Exponents)
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator exposing (floatToGlsl)
+import UI.Glsl.Generator exposing (FunDecl, floatToGlsl, unknownFunDecl)
 import UI.Glsl.Polynomial as Polynomial
 
 
@@ -73,22 +73,27 @@ reduce poly =
             )
 
 
-toGlsl : String -> Sphere -> String
+toGlsl : String -> Sphere -> FunDecl
 toGlsl suffix (Sphere { center, radius }) =
-    """
-    bool bisect""" ++ suffix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
-        vec3 center = vec3(""" ++ floatToGlsl center.x ++ """,""" ++ floatToGlsl center.y ++ """,""" ++ floatToGlsl center.z ++ """);
+    unknownFunDecl
+        { name = "bisect" ++ suffix
+        , type_ = "TODO"
+        , body =
+            """
+            bool bisect""" ++ suffix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
+                vec3 center = vec3(""" ++ floatToGlsl center.x ++ """,""" ++ floatToGlsl center.y ++ """,""" ++ floatToGlsl center.z ++ """);
 
-        vec3 to_center = o - center;
-        float b = dot(to_center, mix(d[0], d[1], 0.5));
-        float c = dot(to_center, to_center) - """ ++ floatToGlsl (radius * radius) ++ """;
-        float delta = b*b - c;
-        if(delta < 0.)
-            return false;
-        float x = -b - sqrt(delta);
-        if(x < """ ++ threshold ++ """)
-            return false;
-        found = o + x * mix(d[0], d[1], 0.5);
-        return true;
-    }
-    """
+                vec3 to_center = o - center;
+                float b = dot(to_center, mix(d[0], d[1], 0.5));
+                float c = dot(to_center, to_center) - """ ++ floatToGlsl (radius * radius) ++ """;
+                float delta = b*b - c;
+                if(delta < 0.)
+                    return false;
+                float x = -b - sqrt(delta);
+                if(x < """ ++ threshold ++ """)
+                    return false;
+                found = o + x * mix(d[0], d[1], 0.5);
+                return true;
+            }
+            """
+        }

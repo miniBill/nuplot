@@ -1407,7 +1407,7 @@ intervalFunctionToGlsl name =
 toSrcImplicit :
     String
     -> Expression.Expression
-    -> ( String, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
+    -> ( List FunDecl, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
 toSrcImplicit suffix e =
     let
         antialiasingSamples =
@@ -1463,13 +1463,13 @@ toSrcImplicit suffix e =
                                             )
                                     )
     in
-    ( fileToGlsl [ fDecl, pixelDecl ], pixel )
+    ( [ fDecl, pixelDecl ], pixel )
 
 
 toSrcPolar :
     String
     -> Expression.Expression
-    -> ( String, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
+    -> ( List FunDecl, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
 toSrcPolar suffix e =
     let
         ( fDecl, f ) =
@@ -1524,7 +1524,7 @@ toSrcPolar suffix e =
                                         )
                                         (return vec3Zero)
     in
-    ( fileToGlsl [ fDecl, pixelDecl ], pixel )
+    ( [ fDecl, pixelDecl ], pixel )
 
 
 constants :
@@ -1539,69 +1539,78 @@ constants =
     }
 
 
-toSrcParametric : String -> Expression.Expression -> String
+toSrcParametric : String -> Expression.Expression -> ( List FunDecl, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
 toSrcParametric suffix e =
-    """
-    vec2 interval""" ++ suffix ++ """(vec2 p, float from, float to) {
-        vec2 x = vec2(p.x,p.x);
-        vec2 y = vec2(p.y,p.y);
-        vec2 t = from < to ? vec2(from, to) : vec2(to, from);
-        return """ ++ Generator.expressionToGlsl (expressionToIntervalGlsl (toPrintExpression e)).base ++ """;
-    }
+    let
+        ( intervalDecl, interval ) =
+            fun3 vec2T ("interval" ++ suffix) (vec2T "p") (floatT "from") (floatT "to") <|
+                \p from to ->
+                    def3
+                        ( vec2T, "x", vec2 p.x p.x )
+                        ( vec2T, "y", vec2 p.y p.y )
+                        ( vec2T, "t", ternary (lt from to) (vec2 from to) (vec2 to from) )
+                    <|
+                        \x y t ->
+                            return <| expressionToIntervalGlsl (toPrintExpression e)
 
-    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        float max_distance = pow(2.0, 10.0);
-        float from = -max_distance / 2.0;
-        float to = max_distance / 2.0;
-        vec2 p = vec2(x, y);
-        int depth = 0;
-        int choices = 0;
-        float ithreshold = 10.0 * deltaX * deltaX;
-        for(int it = 0; it < MAX_ITERATIONS; it++) {
-            float midpoint = mix(from, to, 0.5);
-            vec2 front = interval""" ++ suffix ++ """(p, from, midpoint);
-            vec2 back = interval""" ++ suffix ++ """(p, midpoint, to);
-            if(depth >= MAX_DEPTH
-                || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
-                || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
-                )
-                    return vec3(1,1,1);
-            if(front.x <= 0.0 && front.y >= 0.0) {
-                to = midpoint;
-                depth++;
-                choices *= 2;
-            } else if(back.x <= 0.0 && back.y >= 0.0) {
-                from = midpoint;
-                depth++;
-                choices = choices * 2 + 1;
-            } else {
-                // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
-                for(int j = MAX_DEPTH - 1; j > 0; j--) {
-                    if(j > depth)
-                        continue;
-                    depth--;
-                    choices /= 2;
-                    if(choices / 2 * 2 == choices) {
-                        midpoint = to;
-                        to = to + (to - from);
-                        vec2 back = interval""" ++ suffix ++ """(p, midpoint, to);
-                        if(back.x <= 0.0 && back.y >= 0.0) {
-                            from = midpoint;
-                            depth++;
-                            choices = choices * 2 + 1;
-                            break;
-                        }
-                    } else {
-                        from = from - (to - from);
-                    }
-                }
-                if(depth == 0)
-                    return vec3(0,0,0);
-            }
-        }
-        return vec3(0,0,0);
-    }
-    """
+        ( pixelDecl, pixel ) =
+            fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
+                \deltaX deltaY x y ->
+                    unknownStatement
+                        ("""
+                            float max_distance = pow(2.0, 10.0);
+                            float from = -max_distance / 2.0;
+                            float to = max_distance / 2.0;
+                            vec2 p = vec2(x, y);
+                            int depth = 0;
+                            int choices = 0;
+                            float ithreshold = 10.0 * deltaX * deltaX;
+                            for(int it = 0; it < MAX_ITERATIONS; it++) {
+                                float midpoint = mix(from, to, 0.5);
+                                vec2 front = interval""" ++ suffix ++ """(p, from, midpoint);
+                                vec2 back = interval""" ++ suffix ++ """(p, midpoint, to);
+                                if(depth >= MAX_DEPTH
+                                    || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
+                                    || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
+                                    )
+                                        return vec3(1,1,1);
+                                if(front.x <= 0.0 && front.y >= 0.0) {
+                                    to = midpoint;
+                                    depth++;
+                                    choices *= 2;
+                                } else if(back.x <= 0.0 && back.y >= 0.0) {
+                                    from = midpoint;
+                                    depth++;
+                                    choices = choices * 2 + 1;
+                                } else {
+                                    // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
+                                    for(int j = MAX_DEPTH - 1; j > 0; j--) {
+                                        if(j > depth)
+                                            continue;
+                                        depth--;
+                                        choices /= 2;
+                                        if(choices / 2 * 2 == choices) {
+                                            midpoint = to;
+                                            to = to + (to - from);
+                                            vec2 back = interval""" ++ suffix ++ """(p, midpoint, to);
+                                            if(back.x <= 0.0 && back.y >= 0.0) {
+                                                from = midpoint;
+                                                depth++;
+                                                choices = choices * 2 + 1;
+                                                break;
+                                            }
+                                        } else {
+                                            from = from - (to - from);
+                                        }
+                                    }
+                                    if(depth == 0)
+                                        return vec3(0,0,0);
+                                }
+                            }
+                            return vec3(0,0,0);
+                        """)
+    in
+    ( [ intervalDecl, pixelDecl ], pixel )
 
 
 uniforms : Uniforms
@@ -1644,79 +1653,97 @@ thetaDelta =
     Tuple.second thetaDeltaCouple
 
 
-toSrcVectorField2D : String -> Expression.Expression -> Expression.Expression -> String
-toSrcVectorField2D suffix x y =
-    """
-    vec2 vector""" ++ suffix ++ """(float x, float y) {
-        vec2 xv = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] x).base ++ """;
-        vec2 yv = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] y).base ++ """;
-        return abs(xv.y) + abs(yv.y) < """ ++ floatToGlsl epsilon ++ """ ? vec2(xv.x, yv.x) : vec2(0,0);
-    }
+toSrcVectorField2D :
+    String
+    -> Expression.Expression
+    -> Expression.Expression
+    -> ( List FunDecl, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
+toSrcVectorField2D suffix xexpr yexpr =
+    let
+        ( vectorDecl, vector ) =
+            fun2 vec2T ("vector" ++ suffix) (floatT "x") (floatT "y") <|
+                \x y ->
+                    def2
+                        ( vec2T, "xv", expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] xexpr )
+                        ( vec2T, "yv", expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] yexpr )
+                    <|
+                        \xv yv -> return <| ternary (lt (add (abs_ xv.y) (abs_ yv.y)) (float epsilon)) (vec2 xv.x yv.x) vec2Zero
 
-    bool near(vec2 o, vec2 corner, vec2 vector, float deltaX, float mx) {
-        float angleCorner = arg(o - corner);
-        float angleVector = arg(vector);
-        float delta = mod(angleCorner - angleVector, TWOPI);
-        float l = length(vector) / mx;
-        float maxLength = deltaX * VECTOR_SPACING * (l < """ ++ floatToGlsl epsilon ++ """ ? 0.0 : l / 2.0 + 0.5);
-        float wantedLength = length(o - corner);
-        float angularDistance = mix(180.0, 0.0, pow(wantedLength / maxLength, 0.3));
-        return (delta < radians(angularDistance) || delta > radians(360.0 - angularDistance)) && wantedLength < maxLength;
-    }
+        nearDecl =
+            unknownFunDecl
+                { name = "near"
+                , type_ = "TODO"
+                , body = """
+                    bool near(vec2 o, vec2 corner, vec2 vector, float deltaX, float mx) {
+                        float angleCorner = arg(o - corner);
+                        float angleVector = arg(vector);
+                        float delta = mod(angleCorner - angleVector, TWOPI);
+                        float l = length(vector) / mx;
+                        float maxLength = deltaX * VECTOR_SPACING * (l < """ ++ floatToGlsl epsilon ++ """ ? 0.0 : l / 2.0 + 0.5);
+                        float wantedLength = length(o - corner);
+                        float angularDistance = mix(180.0, 0.0, pow(wantedLength / maxLength, 0.3));
+                        return (delta < radians(angularDistance) || delta > radians(360.0 - angularDistance)) && wantedLength < maxLength;
+                    }"""
+                }
 
-    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        vec2 o = vec2(x, y);
+        ( pixelDecl, pixel ) =
+            fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
+                \deltaX deltaY x y ->
+                    unknownStatement ("""
+                    vec2 o = vec2(x, y);
 
-        float mx = 0.0;
-        for(int xi = -X_POINTS; xi <= X_POINTS; xi++) {
-            for(int yi = -Y_POINTS; yi <= Y_POINTS; yi++) {
-                vec2 p = u_zoomCenter + vec2(deltaX * VECTOR_SPACING * float(xi), deltaX * VECTOR_SPACING * float(yi));
-                vec2 v = vector""" ++ suffix ++ """(p.x, p.y);
-                mx = max(mx, length(v));
-            }
-        }
+                    float mx = 0.0;
+                    for(int xi = -X_POINTS; xi <= X_POINTS; xi++) {
+                        for(int yi = -Y_POINTS; yi <= Y_POINTS; yi++) {
+                            vec2 p = u_zoomCenter + vec2(deltaX * VECTOR_SPACING * float(xi), deltaX * VECTOR_SPACING * float(yi));
+                            vec2 v = vector""" ++ suffix ++ """(p.x, p.y);
+                            mx = max(mx, length(v));
+                        }
+                    }
 
-        vec3 colorA = vec3(0.0, 1.0, 0.0);
-        vec3 colorB = vec3(0.0, 0.0, 1.0);
+                    vec3 colorA = vec3(0.0, 1.0, 0.0);
+                    vec3 colorB = vec3(0.0, 0.0, 1.0);
 
-        x = o.x - mod(o.x, deltaX * VECTOR_SPACING);
-        y = o.y - mod(o.y, deltaX * VECTOR_SPACING);
+                    x = o.x - mod(o.x, deltaX * VECTOR_SPACING);
+                    y = o.y - mod(o.y, deltaX * VECTOR_SPACING);
 
-        vec2 bl = vector""" ++ suffix ++ """(x, y);
-        vec2 br = vector""" ++ suffix ++ """(x + deltaX * VECTOR_SPACING, y);
-        vec2 ul = vector""" ++ suffix ++ """(x, y + deltaX * VECTOR_SPACING);
-        vec2 ur = vector""" ++ suffix ++ """(x + deltaX * VECTOR_SPACING, y + deltaX * VECTOR_SPACING);
+                    vec2 bl = vector""" ++ suffix ++ """(x, y);
+                    vec2 br = vector""" ++ suffix ++ """(x + deltaX * VECTOR_SPACING, y);
+                    vec2 ul = vector""" ++ suffix ++ """(x, y + deltaX * VECTOR_SPACING);
+                    vec2 ur = vector""" ++ suffix ++ """(x + deltaX * VECTOR_SPACING, y + deltaX * VECTOR_SPACING);
 
-        float angleO;
-        vec2 corner;
-        float l;
+                    float angleO;
+                    vec2 corner;
+                    float l;
 
-        corner = vec2(x, y);
-        l = length(bl) / mx;
-        if(near(o, corner, bl, deltaX, mx))
-            return mix(colorA, colorB, l);
+                    corner = vec2(x, y);
+                    l = length(bl) / mx;
+                    if(near(o, corner, bl, deltaX, mx))
+                        return mix(colorA, colorB, l);
 
-        corner = vec2(x + deltaX * VECTOR_SPACING, y);
-        l = length(br) / mx;
-        if(near(o, corner, br, deltaX, mx))
-            return mix(colorA, colorB, l);
+                    corner = vec2(x + deltaX * VECTOR_SPACING, y);
+                    l = length(br) / mx;
+                    if(near(o, corner, br, deltaX, mx))
+                        return mix(colorA, colorB, l);
 
-        corner = vec2(x, y + deltaX * VECTOR_SPACING);
-        l = length(ul) / mx;
-        if(near(o, corner, ul, deltaX, mx))
-            return mix(colorA, colorB, l);
+                    corner = vec2(x, y + deltaX * VECTOR_SPACING);
+                    l = length(ul) / mx;
+                    if(near(o, corner, ul, deltaX, mx))
+                        return mix(colorA, colorB, l);
 
-        corner = vec2(x + deltaX * VECTOR_SPACING, y + deltaX * VECTOR_SPACING);
-        l = length(ur) / mx;
-        if(near(o, corner, ur, deltaX, mx))
-            return mix(colorA, colorB, l);
+                    corner = vec2(x + deltaX * VECTOR_SPACING, y + deltaX * VECTOR_SPACING);
+                    l = length(ur) / mx;
+                    if(near(o, corner, ur, deltaX, mx))
+                        return mix(colorA, colorB, l);
 
-        return vec3(0,0,0);
-    }
-    """
+                    return vec3(0,0,0);
+                
+                """)
+    in
+    ( [ vectorDecl, nearDecl, pixelDecl ], pixel )
 
 
-toSrcContour : String -> Expression.Expression -> ( String, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
+toSrcContour : String -> Expression.Expression -> ( List FunDecl, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
 toSrcContour suffix e =
     let
         ( pixelODecl, pixelO ) =
@@ -1781,27 +1808,25 @@ toSrcContour suffix e =
         return (a + b + c + d + e + f + g + h) / 8.0;
                     """)
     in
-    ( fileToGlsl [ pixelODecl, pixelDecl ], pixel )
+    ( [ pixelODecl, pixelDecl ], pixel )
 
 
-toSrcRelation : String -> Expression.Expression -> String
+toSrcRelation : String -> Expression.Expression -> ( List FunDecl, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
 toSrcRelation suffix e =
-    fileToGlsl
-        [ Tuple.first <|
-            fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
-                \_ _ x y ->
-                    def vec2T "complex" (expressionToGlsl [ ( "x", x ), ( "y", y ) ] e) <|
-                        \complex ->
-                            return <|
-                                ternary
-                                    (ands
-                                        [ gt complex.x zero
-                                        , lt (abs_ complex.y) (float epsilon)
-                                        ]
-                                    )
-                                    (vec3 (float 0.8) (float 0.5) (float 0.5))
-                                    vec3Zero
-        ]
+    Tuple.mapFirst (\d -> [ d ]) <|
+        fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
+            \_ _ x y ->
+                def vec2T "complex" (expressionToGlsl [ ( "x", x ), ( "y", y ) ] e) <|
+                    \complex ->
+                        return <|
+                            ternary
+                                (ands
+                                    [ gt complex.x zero
+                                    , lt (abs_ complex.y) (float epsilon)
+                                    ]
+                                )
+                                (vec3 (float 0.8) (float 0.5) (float 0.5))
+                                vec3Zero
 
 
 epsilon : Float
@@ -2464,9 +2489,13 @@ threshold =
     "0.000001 * max_distance"
 
 
-suffixToBisect : String -> String
+suffixToBisect : String -> FunDecl
 suffixToBisect suffix =
-    """
+    unknownFunDecl
+        { name = "bisect" ++ suffix
+        , type_ = "TODO"
+        , body =
+            """
             bool bisect""" ++ suffix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
                 mat3 from = mat3(o, o, vec3(0));
                 mat3 to = from + max_distance * d;
@@ -2520,6 +2549,7 @@ suffixToBisect suffix =
                 return false;
             }
     """
+        }
 
 
 deindent : Int -> String -> String
