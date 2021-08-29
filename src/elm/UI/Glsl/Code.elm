@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1426,41 +1426,42 @@ toSrcImplicit suffix e =
         ( pixelDecl, pixel ) =
             fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
                 \deltaX _ x y ->
-                    def floatT "sum" zero <|
-                        \sum ->
-                            def floatT "samples" (float <| antialiasingSamples * 2 + 1) <|
-                                \samples ->
-                                    assignBy samples samples <|
-                                        def floatT
-                                            "coeff"
-                                            (float 0.0875)
-                                            (\coeff ->
-                                                forLeq ( "w", int <| -antialiasingSamples, int antialiasingSamples )
-                                                    (\w ->
-                                                        forLeq ( "h", int <| -antialiasingSamples, int antialiasingSamples )
-                                                            (\h ->
-                                                                def floatT
-                                                                    "piece"
-                                                                    (f
-                                                                        (add x <| by (by deltaX coeff) <| floatCast w)
-                                                                        (add y <| by (by deltaX coeff) <| floatCast h)
-                                                                    )
-                                                                <|
-                                                                    \piece ->
-                                                                        if_
-                                                                            (eq piece zero)
-                                                                            (return vec3Zero)
-                                                                            (assignAdd sum piece unsafeNop)
+                    def2
+                        ( floatT, "sum", zero )
+                        ( floatT, "samples", float <| antialiasingSamples * 2 + 1 )
+                    <|
+                        \sum samples ->
+                            assignBy samples samples <|
+                                def floatT
+                                    "coeff"
+                                    (float 0.0875)
+                                    (\coeff ->
+                                        forLeq ( "w", int <| -antialiasingSamples, int antialiasingSamples )
+                                            (\w ->
+                                                forLeq ( "h", int <| -antialiasingSamples, int antialiasingSamples )
+                                                    (\h ->
+                                                        def floatT
+                                                            "piece"
+                                                            (f
+                                                                (add x <| by (by deltaX coeff) <| floatCast w)
+                                                                (add y <| by (by deltaX coeff) <| floatCast h)
                                                             )
-                                                            unsafeNop
+                                                        <|
+                                                            \piece ->
+                                                                if_
+                                                                    (eq piece zero)
+                                                                    (return vec3Zero)
+                                                                    (assignAdd sum piece unsafeNop)
                                                     )
-                                                    (def floatT "perc" (div (subtract samples <| abs_ sum) samples) <|
-                                                        \perc ->
-                                                            assign perc
-                                                                (pow perc <| float 0.2)
-                                                                (return <| byF perc (vec3 one one one))
-                                                    )
+                                                    unsafeNop
                                             )
+                                            (def floatT "perc" (div (subtract samples <| abs_ sum) samples) <|
+                                                \perc ->
+                                                    assign perc
+                                                        (pow perc <| float 0.2)
+                                                        (return <| byF perc (vec3 one one one))
+                                            )
+                                    )
     in
     ( fileToGlsl [ fDecl, pixelDecl ], pixel )
 
@@ -1495,33 +1496,33 @@ toSrcPolar suffix e =
         ( pixelDecl, pixel ) =
             fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
                 \deltaX deltaY x y ->
-                    def floatT "t" zero <|
-                        \t ->
-                            assignAdd x (div deltaX <| float 2) <|
-                                assignAdd y (div deltaY <| float 2) <|
-                                    def floatT "ot" (atanPlus y x) <|
-                                        \ot ->
-                                            for ( "i", int 0, divConst constants.maxIterations (int 10) )
-                                                (\i ->
-                                                    def floatT "h" (f x y t ot) <|
-                                                        \h ->
-                                                            def floatT "l" (f (subtract x deltaX) y t ot) <|
-                                                                \l ->
-                                                                    def floatT "u" (f x (subtract y deltaY) t ot) <|
-                                                                        \u ->
-                                                                            def floatT "ul" (f (subtract x deltaX) (subtract y deltaY) t ot) <|
-                                                                                \ul ->
-                                                                                    if_ (ors [ lt h zero, lt l zero, lt u zero, lt ul zero ])
-                                                                                        unsafeBreak
-                                                                                        (if_ (ors [ neq h l, neq h u, neq h ul ])
-                                                                                            (return <| vec3 one one one)
-                                                                                            (assignAdd t constants.twopi <|
-                                                                                                assignAdd ot constants.twopi <|
-                                                                                                    unsafeNop
-                                                                                            )
-                                                                                        )
-                                                )
-                                                (return vec3Zero)
+                    assignAdd x (div deltaX <| float 2) <|
+                        assignAdd y (div deltaY <| float 2) <|
+                            def2
+                                ( floatT, "t", zero )
+                                ( floatT, "ot", atanPlus y x )
+                            <|
+                                \t ot ->
+                                    for ( "i", int 0, divConst constants.maxIterations (int 10) )
+                                        (\i ->
+                                            def4
+                                                ( floatT, "h", f x y t ot )
+                                                ( floatT, "l", f (subtract x deltaX) y t ot )
+                                                ( floatT, "u", f x (subtract y deltaY) t ot )
+                                                ( floatT, "ul", f (subtract x deltaX) (subtract y deltaY) t ot )
+                                            <|
+                                                \h l u ul ->
+                                                    if_ (ors [ lt h zero, lt l zero, lt u zero, lt ul zero ])
+                                                        unsafeBreak
+                                                        (if_ (ors [ neq h l, neq h u, neq h ul ])
+                                                            (return <| vec3 one one one)
+                                                            (assignAdd t constants.twopi <|
+                                                                assignAdd ot constants.twopi <|
+                                                                    unsafeNop
+                                                            )
+                                                        )
+                                        )
+                                        (return vec3Zero)
     in
     ( fileToGlsl [ fDecl, pixelDecl ], pixel )
 
