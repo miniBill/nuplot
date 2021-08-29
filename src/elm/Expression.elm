@@ -434,7 +434,7 @@ type PrintExpression
     | PNegate PrintExpression
     | PBy PrintExpression PrintExpression
     | PDiv PrintExpression PrintExpression
-    | PRel String PrintExpression PrintExpression
+    | PRel RelationOperation PrintExpression PrintExpression
     | PPower PrintExpression PrintExpression
     | PReplace (Dict String (Maybe PrintExpression)) PrintExpression
     | PList (List PrintExpression)
@@ -466,7 +466,7 @@ toPrintExpression e =
             PDiv (toPrintExpression l) (toPrintExpression r)
 
         RelationOperation op l r ->
-            PRel (relationToString op) (toPrintExpression l) (toPrintExpression r)
+            PRel op (toPrintExpression l) (toPrintExpression r)
 
         AssociativeOperation Addition l r o ->
             List.foldl (\el a -> PAdd a el)
@@ -568,7 +568,7 @@ toStringPrec p e =
             infixl_ 6 " + " l r
 
         PRel rel l r ->
-            infixl_ 5 (" " ++ rel ++ " ") l r
+            infixl_ 5 (" " ++ relationToString rel ++ " ") l r
 
         PBy ((PInteger _) as l) r ->
             case r of
@@ -1403,7 +1403,7 @@ toTeXStringPrec p e =
                 infixl_ 6 " + " l r
 
             PRel rel l r ->
-                infixl_ 5 (" " ++ rel ++ " ") l r
+                infixl_ 5 (" " ++ relationToString rel ++ " ") l r
 
             PLambda x ((PApply fn [ PVariable v ]) as f) ->
                 if v == x then
