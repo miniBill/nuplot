@@ -532,6 +532,81 @@ gpow =
     Tuple.second gpowCouple
 
 
+iltCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+iltCouple =
+    fun2 vec2T "ilt" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract r.x l.y) (subtract r.y l.x)
+
+
+iltDecl : FunDecl
+iltDecl =
+    Tuple.first iltCouple
+
+
+ilt : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+ilt =
+    Tuple.second iltCouple
+
+
+ileqCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+ileqCouple =
+    fun2 vec2T "ileq" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract r.x l.y) (subtract r.y l.x)
+
+
+ileqDecl : FunDecl
+ileqDecl =
+    Tuple.first ileqCouple
+
+
+ileq : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+ileq =
+    Tuple.second ileqCouple
+
+
+ieqCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+ieqCouple =
+    fun2 vec2T "ieq" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract l.x r.y) (subtract l.y r.x)
+
+
+ieqDecl : FunDecl
+ieqDecl =
+    Tuple.first ieqCouple
+
+
+ieq : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+ieq =
+    Tuple.second ieqCouple
+
+
+igeqCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+igeqCouple =
+    fun2 vec2T "igeq" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract l.x r.y) (subtract l.y r.x)
+
+
+igeqDecl : FunDecl
+igeqDecl =
+    Tuple.first igeqCouple
+
+
+igeq : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+igeq =
+    Tuple.second igeqCouple
+
+
+igtCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+igtCouple =
+    fun2 vec2T "igt" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract l.x r.y) (subtract l.y r.x)
+
+
+igtDecl : FunDecl
+igtDecl =
+    Tuple.first igtCouple
+
+
+igt : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+igt =
+    Tuple.second igtCouple
+
+
 iexpCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 iexpCouple =
     fun1 vec2T "iexp" (vec2T "z") <| \z -> return <| vec2 (exp z.x) (exp z.y)
@@ -661,46 +736,26 @@ ctan =
     Tuple.second ctanCouple
 
 
-intervalOperationToGlsl : GlslOperation -> String
+intervalOperationToGlsl : GlslOperation -> List FunDecl
 intervalOperationToGlsl op =
     case op of
         GlslAddition ->
-            ""
+            []
 
         GlslNegation ->
-            fileToGlsl [ inegDecl, gnegDecl ]
+            [ inegDecl, gnegDecl ]
 
         GlslMultiplication ->
-            fileToGlsl [ ibyDecl, gbyDecl ]
+            [ ibyDecl, gbyDecl ]
 
         GlslDivision ->
-            fileToGlsl [ iinverseDecl, idivDecl, gdivDecl ]
+            [ iinverseDecl, idivDecl, gdivDecl ]
 
         GlslPower ->
-            fileToGlsl [ ipowFIDecl, ipowIDecl, ipowDecl, gpowIDecl, gpowDecl ]
+            [ ipowFIDecl, ipowIDecl, ipowDecl, gpowIDecl, gpowDecl ]
 
         GlslRelations ->
-            """
-            vec2 ilt(vec2 l, vec2 r) {
-                return vec2(r.x - l.y, r.y - l.x);
-            }
-
-            vec2 ileq(vec2 l, vec2 r) {
-                return vec2(r.x - l.y, r.y - l.x);
-            }
-
-            vec2 ieq(vec2 l, vec2 r) {
-                return vec2(l.x - r.y, l.y - r.x);
-            }
-
-            vec2 igeq(vec2 l, vec2 r) {
-                return vec2(l.x - r.y, l.y - r.x);
-            }
-
-            vec2 igt(vec2 l, vec2 r) {
-                return vec2(l.x - r.y, l.y - r.x);
-            }
-            """
+            [ iltDecl, ileqDecl, ieqDecl, igeqDecl, igtDecl ]
 
 
 straightFunctionToGlsl : GlslFunction -> List FunDecl

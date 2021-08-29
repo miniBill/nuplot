@@ -8,7 +8,7 @@ import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, 
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (atanPlusDecl, constantToGlsl, deindent, dupDecl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (FunDecl, unknownFunDecl)
+import UI.Glsl.Generator as Generator exposing (FunDecl, fileToGlsl, unknownFunDecl)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -369,10 +369,11 @@ requirementToGlsl i r =
         RequireConstant c ->
             constantToGlsl c
                 |> Tuple.first
-                |> Generator.funDeclToGlsl
+                |> (\l -> [ l ])
+                |> fileToGlsl
 
         RequireOperation o ->
-            operationToGlsl i o
+            operationToGlsl i o |> fileToGlsl
 
 
 expressionToRequirements : Expression -> List Requirement
@@ -693,19 +694,18 @@ dependenciesOf req =
             []
 
 
-operationToGlsl : RequiresInterval -> GlslOperation -> String
+operationToGlsl : RequiresInterval -> GlslOperation -> List FunDecl
 operationToGlsl interval op =
     case interval of
         StraightOnly ->
-            Generator.fileToGlsl <| straightOperationToGlsl op
+            straightOperationToGlsl op
 
         IntervalOnly ->
-            deindent 12 <| intervalOperationToGlsl op
+            intervalOperationToGlsl op
 
         IntervalAndStraight ->
-            (Generator.fileToGlsl <| straightOperationToGlsl op)
-                ++ "\n"
-                ++ deindent 12 (intervalOperationToGlsl op)
+            straightOperationToGlsl op
+                ++ intervalOperationToGlsl op
 
 
 functionToGlsl : RequiresInterval -> GlslFunction -> String
