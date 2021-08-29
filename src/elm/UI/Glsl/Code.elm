@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, ands, arr, assign, assignAdd, assignBy, atan2_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted4, eq, exp, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -16,6 +16,7 @@ type alias Uniforms =
     , u_zoomCenter : Expression2
     , u_phi : Expression1 Float
     , u_theta : Expression1 Float
+    , u_completelyReal : Expression1 Float
     }
 
 
@@ -1613,6 +1614,7 @@ uniforms =
     , u_zoomCenter = uniform vec2T "u_zoomCenter"
     , u_phi = uniform floatT "u_phi"
     , u_theta = uniform floatT "u_theta"
+    , u_completelyReal = uniform floatT "u_completelyReal"
     }
 
 
@@ -1712,34 +1714,43 @@ toSrcVectorField2D suffix x y =
     """
 
 
-toSrcContour : String -> Expression.Expression -> String
+toSrcContour : String -> Expression.Expression -> ( String, ExpressionX xa Float -> ExpressionX xb Float -> ExpressionX xc Float -> ExpressionX xd Float -> Expression3 )
 toSrcContour suffix e =
-    """
-    vec3 pixel""" ++ suffix ++ """_o(float deltaX, float deltaY, float x, float y) {
-        vec2 z = """ ++ Generator.expressionToGlsl (expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] e).base ++ """;
+    let
+        ( pixelODecl, pixelO ) =
+            fun4 vec3T ("pixel" ++ suffix ++ "_o") (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
+                \_ _ x y ->
+                    def vec2T "z" (expressionToGlsl [ ( "x", x ), ( "y", y ) ] e) <|
+                        \z ->
+                            def floatT "theta" (div (atan2_ z.y z.x) constants.twopi) <|
+                                \theta ->
+                                    def floatT "logRadius" (log2 <| length z) <|
+                                        \logRadius ->
+                                            def floatT "powerRemainder" (fract logRadius) <|
+                                                \powerRemainder ->
+                                                    def floatT "squished" (subtract (float 0.7) (by powerRemainder <| float 0.4)) <|
+                                                        \squished ->
+                                                            if_ (gt uniforms.u_completelyReal zero)
+                                                                (def floatT "haf" (div powerRemainder <| float 6.0) <|
+                                                                    \haf ->
+                                                                        return <|
+                                                                            ternary (gt z.x zero)
+                                                                                (hl2rgb (add haf <| float 0.3) squished)
+                                                                                (hl2rgb (subtract haf <| float 0.2) (subtract one squished))
+                                                                )
+                                                                (def floatT "td" (thetaDelta theta) <|
+                                                                    \td ->
+                                                                        def floatT "l" (mix one squished <| smoothstep zero one td) <|
+                                                                            \l ->
+                                                                                return <| hl2rgb theta l
+                                                                )
 
-        float theta = atan(z.y, z.x) / TWOPI;
-
-        float logRadius = log2(length(z));
-        float powerRemainder = fract(logRadius);
-        float squished = 0.7 - powerRemainder * 0.4;
-
-        if(u_completelyReal > 0.0) {
-            float haf = fract(logRadius) / 6.0;
-            if(z.x > 0.0)
-                return hl2rgb(haf + 0.3, squished);
-            else
-                return hl2rgb(haf - 0.1, 1.0 - squished);
-        }
-
-        float td = thetaDelta(theta);
-        float l = mix(1.0, squished, smoothstep(0.0, 1.0, td));
-        return hl2rgb(theta, l);
-    }
-
-    vec3 pixel""" ++ suffix ++ """(float deltaX, float deltaY, float x, float y) {
-        // Antialiasing
-
+        ( pixelDecl, pixel ) =
+            fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
+                \deltaX deltaY x y ->
+                    -- Antialiasing
+                    unknownStatement
+                        ("""
         float dist = 1.0 / 3.0;
         vec3 a = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x + dist * deltaX, y + dist * deltaY);
         vec3 b = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x - dist * deltaX, y - dist * deltaY);
@@ -1756,8 +1767,9 @@ toSrcContour suffix e =
         vec3 h = pixel""" ++ suffix ++ """_o(deltaX, deltaY, x, y + 2.0 * dist * deltaY);
 
         return (a + b + c + d + e + f + g + h) / 8.0;
-    }
-    """
+                    """)
+    in
+    ( fileToGlsl [ pixelODecl, pixelDecl ], pixel )
 
 
 toSrcRelation : String -> Expression.Expression -> String

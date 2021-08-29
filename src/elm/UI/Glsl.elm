@@ -82,11 +82,15 @@ getGlsl rayDifferentials graph =
                     build2d (\q -> ( toSrcRelation prefix q, unsafeCallPixel prefix )) e
 
                 Contour e ->
+                    let
+                        ( src, pixel ) =
+                            toSrcContour prefix e
+                    in
                     { expr = e
-                    , srcExpr = toSrcContour prefix e
+                    , srcExpr = src
                     , interval = StraightOnly
                     , usesThetaDelta = True
-                    , pixel2D = [ { call = unsafeCallPixel prefix, color = False } ]
+                    , pixel2D = [ { call = pixel, color = False } ]
                     , pixel3D = []
                     }
 
