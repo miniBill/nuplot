@@ -1391,16 +1391,6 @@ ccbrt =
     Tuple.second ccbrtCouple
 
 
-ccbrtDecl : FunDecl
-ccbrtDecl =
-    Tuple.first ccbrtCouple
-
-
-ccbrt : ExpressionX xa Vec2 -> Expression2
-ccbrt =
-    Tuple.second ccbrtCouple
-
-
 csquareTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 csquareTuple =
     fun1 vec2T "csquare" (vec2T "z") <| \z -> return <| cby z z

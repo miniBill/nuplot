@@ -1132,10 +1132,10 @@ dotted33Internal e =
 uniform : TypingFunction t c -> String -> c
 uniform typeF name =
     let
-        ( TypedName _ _ expr, _ ) =
+        ( TypedName _ _ e, _ ) =
             typeF name
     in
-    expr
+    e
 
 
 unknown : String -> Expression t
@@ -1183,8 +1183,8 @@ argToString (TypedName (Type t) (Name n) _) =
 
 
 toVar : TypedName t c -> c
-toVar (TypedName _ _ expr) =
-    expr
+toVar (TypedName _ _ e) =
+    e
 
 
 fun0 :
@@ -1731,8 +1731,8 @@ innerValue2 ctx l r k =
 
 
 autovectorizingFloatOp : Context -> String -> (Float -> Float) -> Expr -> Result ErrorValue ( Dict String GlslValue, GlslValue )
-autovectorizingFloatOp ctx name inner expr =
-    innerValue ctx expr
+autovectorizingFloatOp ctx name inner e =
+    innerValue ctx e
         |> Result.andThen
             (\( ctx2, v ) ->
                 case v of
