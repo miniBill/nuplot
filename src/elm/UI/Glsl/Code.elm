@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1913,6 +1913,7 @@ toSrcPolar suffix e =
 
 constants :
     { maxIterations : ExpressionX { isConstant : Constant } Int
+    , maxDepth : ExpressionX { isConstant : Constant } Int
     , pihalf : ExpressionX { isConstant : Constant } Float
     , pi : ExpressionX { isConstant : Constant } Float
     , twopi : ExpressionX { isConstant : Constant } Float
@@ -1920,6 +1921,7 @@ constants :
     }
 constants =
     { maxIterations = constant intT "MAX_ITERATIONS"
+    , maxDepth = constant intT "MAX_DEPTH"
     , pihalf = constant floatT "PIHALF"
     , pi = constant floatT "PI"
     , twopi = constant floatT "TWOPI"
@@ -1944,24 +1946,45 @@ toSrcParametric suffix e =
         ( pixelDecl, pixel ) =
             fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
                 \deltaX deltaY x y ->
-                    unknownStatement
-                        ("""
-                            float max_distance = pow(2.0, 10.0);
-                            float from = -max_distance / 2.0;
-                            float to = max_distance / 2.0;
-                            vec2 p = vec2(x, y);
-                            int depth = 0;
-                            int choices = 0;
-                            float ithreshold = 10.0 * deltaX * deltaX;
-                            for(int it = 0; it < MAX_ITERATIONS; it++) {
-                                float midpoint = mix(from, to, 0.5);
-                                vec2 front = interval""" ++ suffix ++ """(p, from, midpoint);
-                                vec2 back = interval""" ++ suffix ++ """(p, midpoint, to);
-                                if(depth >= MAX_DEPTH
-                                    || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
-                                    || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
-                                    )
-                                        return vec3(1,1,1);
+                    def floatT "max_distance" (float <| 2 ^ 10) <|
+                        \max_distance ->
+                            def6
+                                ( floatT "from", div (negate_ max_distance) (float 2) )
+                                ( floatT "to", div max_distance (float 2) )
+                                ( vec2T "p", vec2 x y )
+                                ( intT "depth", int 0 )
+                                ( intT "choices", int 0 )
+                                ( floatT "ithreshold", by (by (float 10) deltaX) deltaX )
+                            <|
+                                \from to p depth choices ithreshold ->
+                                    for ( "it", int 0, constants.maxIterations )
+                                        (\_ ->
+                                            def floatT "midpoint" (mix from to <| float 0.5) <|
+                                                \midpoint ->
+                                                    def2
+                                                        ( vec2T "front", interval p from midpoint )
+                                                        ( vec2T "back", interval p midpoint to )
+                                                    <|
+                                                        \front back ->
+                                                            if_
+                                                                (ors
+                                                                    [ geq depth constants.maxDepth
+                                                                    , ands
+                                                                        [ lt (subtract front.y front.x) ithreshold
+                                                                        , leq front.x zero
+                                                                        , geq front.y zero
+                                                                        ]
+                                                                    , ands
+                                                                        [ lt (subtract back.y back.x) ithreshold
+                                                                        , leq back.x zero
+                                                                        , geq back.y zero
+                                                                        ]
+                                                                    ]
+                                                                )
+                                                                (return <| vec3 one one one)
+                                                                (unknownStatement
+                                                                    ("""
+                                 
                                 if(front.x <= 0.0 && front.y >= 0.0) {
                                     to = midpoint;
                                     depth++;
@@ -1994,9 +2017,10 @@ toSrcParametric suffix e =
                                     if(depth == 0)
                                         return vec3(0,0,0);
                                 }
-                            }
-                            return vec3(0,0,0);
-                        """)
+                                        """)
+                                                                )
+                                        )
+                                        (return vec3Zero)
     in
     ( [ intervalDecl, pixelDecl ], pixel )
 
