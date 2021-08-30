@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add3, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add3, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
@@ -15,6 +15,7 @@ type FunDecl
 
 type Stat
     = If Expr Stat Stat
+    | IfElse Expr Stat Stat Stat
     | For String Expr RelationOperation Expr Stat Stat
     | Line String
     | Return Expr
@@ -148,12 +149,23 @@ statementToGlsl (Statement r) =
     let
         go i c =
             case c of
-                If cond t f ->
+                If cond t n ->
                     [ indent i ("if (" ++ expressionToGlsl (Expression cond) ++ ") {")
                     , go (i + 1) t
                     , indent i "}"
                     , ""
-                    , go i f
+                    , go i n
+                    ]
+                        |> String.join "\n"
+
+                IfElse cond t f n ->
+                    [ indent i ("if (" ++ expressionToGlsl (Expression cond) ++ ") {")
+                    , go (i + 1) t
+                    , indent i "} else {"
+                    , go (i + 1) f
+                    , indent i "}"
+                    , ""
+                    , go i n
                     ]
                         |> String.join "\n"
 
@@ -1312,9 +1324,14 @@ fun5 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) ( arg4, _ ) body
     )
 
 
-if_ : Expression1 Bool -> Statement r -> Statement r -> Statement r
-if_ cond (Statement ifTrue) (Statement ifFalse) =
-    Statement <| If (unwrapExpression cond) ifTrue ifFalse
+if_ : Expression1 Bool -> Statement q -> Statement r -> Statement r
+if_ cond (Statement ifTrue) (Statement next) =
+    Statement <| If (unwrapExpression cond) ifTrue next
+
+
+ifElse : Expression1 Bool -> Statement q -> Statement r -> Statement s -> Statement s
+ifElse cond (Statement ifTrue) (Statement ifFalse) (Statement next) =
+    Statement <| IfElse (unwrapExpression cond) ifTrue ifFalse next
 
 
 for : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
@@ -1374,10 +1391,6 @@ def typeF name v k =
     Statement <| Decl t n (Just <| unwrapExpression v) ks
 
 
-
---def2 : ( TypingFunction tv v, String, ExpressionX xv tv ) -> ( TypingFunction tw w, String, ExpressionX xw tw ) -> (v -> w -> Statement tr) -> Statement tr
-
-
 def2 :
     ( ( TypedName ta a, Expression ta -> a ), ExpressionX xa ta )
     -> ( ( TypedName tb b, Expression tb -> b ), ExpressionX xb tb )
@@ -1427,6 +1440,52 @@ def4 ( ( TypedName (Type t0) n0 e0, _ ), v0 ) ( ( TypedName (Type t1) n1 e1, _ )
                 Decl t2 n2 (Just <| unwrapExpression v2) <|
                     Decl t3 n3 (Just <| unwrapExpression v3) <|
                         ks
+
+
+def5 :
+    ( ( TypedName ta a, Expression ta -> a ), ExpressionX xa ta )
+    -> ( ( TypedName tb b, Expression tb -> b ), ExpressionX xb tb )
+    -> ( ( TypedName tc c, Expression tc -> c ), ExpressionX xc tc )
+    -> ( ( TypedName td d, Expression td -> d ), ExpressionX xd td )
+    -> ( ( TypedName te e, Expression te -> e ), ExpressionX xe te )
+    -> (a -> b -> c -> d -> e -> Statement r)
+    -> Statement r
+def5 ( ( TypedName (Type t0) n0 e0, _ ), v0 ) ( ( TypedName (Type t1) n1 e1, _ ), v1 ) ( ( TypedName (Type t2) n2 e2, _ ), v2 ) ( ( TypedName (Type t3) n3 e3, _ ), v3 ) ( ( TypedName (Type t4) n4 e4, _ ), v4 ) k =
+    let
+        (Statement ks) =
+            k e0 e1 e2 e3 e4
+    in
+    Statement <|
+        Decl t0 n0 (Just <| unwrapExpression v0) <|
+            Decl t1 n1 (Just <| unwrapExpression v1) <|
+                Decl t2 n2 (Just <| unwrapExpression v2) <|
+                    Decl t3 n3 (Just <| unwrapExpression v3) <|
+                        Decl t4 n4 (Just <| unwrapExpression v4) <|
+                            ks
+
+
+def6 :
+    ( ( TypedName ta a, Expression ta -> a ), ExpressionX xa ta )
+    -> ( ( TypedName tb b, Expression tb -> b ), ExpressionX xb tb )
+    -> ( ( TypedName tc c, Expression tc -> c ), ExpressionX xc tc )
+    -> ( ( TypedName td d, Expression td -> d ), ExpressionX xd td )
+    -> ( ( TypedName te e, Expression te -> e ), ExpressionX xe te )
+    -> ( ( TypedName tf f, Expression tf -> f ), ExpressionX xf tf )
+    -> (a -> b -> c -> d -> e -> f -> Statement r)
+    -> Statement r
+def6 ( ( TypedName (Type t0) n0 e0, _ ), v0 ) ( ( TypedName (Type t1) n1 e1, _ ), v1 ) ( ( TypedName (Type t2) n2 e2, _ ), v2 ) ( ( TypedName (Type t3) n3 e3, _ ), v3 ) ( ( TypedName (Type t4) n4 e4, _ ), v4 ) ( ( TypedName (Type t5) n5 e5, _ ), v5 ) k =
+    let
+        (Statement ks) =
+            k e0 e1 e2 e3 e4 e5
+    in
+    Statement <|
+        Decl t0 n0 (Just <| unwrapExpression v0) <|
+            Decl t1 n1 (Just <| unwrapExpression v1) <|
+                Decl t2 n2 (Just <| unwrapExpression v2) <|
+                    Decl t3 n3 (Just <| unwrapExpression v3) <|
+                        Decl t4 n4 (Just <| unwrapExpression v4) <|
+                            Decl t5 n5 (Just <| unwrapExpression v5) <|
+                                ks
 
 
 assign : ExpressionX a t -> ExpressionX b t -> Expression1 t
@@ -1760,21 +1819,34 @@ interpret ctx (Statement s) =
                 |> value ctx
                 |> Result.map (\( ctx2, val ) -> ( ctx2, val ))
 
-        If c t f ->
+        If c t n ->
             Expression c
                 |> value ctx
                 |> Result.andThen
                     (\( ctx2, cval ) ->
                         case cval of
                             VBool True ->
-                                interpret ctx2 <| Statement t
+                                interpret ctx2 (Statement t)
+                                    |> Result.andThen
+                                        (\( ctx3, res ) ->
+                                            case res of
+                                                -- TODO: Fix this
+                                                VVoid ->
+                                                    interpret ctx3 (Statement n)
+
+                                                _ ->
+                                                    Ok ( ctx3, res )
+                                        )
 
                             VBool False ->
-                                interpret ctx2 <| Statement f
+                                interpret ctx2 <| Statement n
 
                             _ ->
                                 Err <| InvalidTypes <| "Condition of if evaluated to " ++ Debug.toString cval
                     )
+
+        IfElse _ _ _ _ ->
+            Debug.todo "branch 'IfElse _' not implemented"
 
         Nop ->
             Ok ( ctx, VVoid )

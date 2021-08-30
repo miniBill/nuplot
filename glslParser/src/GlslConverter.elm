@@ -1,7 +1,7 @@
 module GlslConverter exposing (main)
 
 import Browser
-import Element as Element exposing (Element, column, el, fill, height, padding, paragraph, row, scrollbarY, scrollbars, spacing, text, width)
+import Element as Element exposing (Element, column, el, fill, height, padding, paragraph, row, scrollbars, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -32,14 +32,52 @@ init : Model
 init =
     let
         i =
-            """vec2 ccbrt(vec2 z) {
-                if(z.y == 0.0) {
-                    return vec2(sign(z.x) * pow(z.x, 1.0 / 3.0), 0);
-                }
-                float r = pow(dot(z, z), 1.0 / 6.0);
-                float t = atan(z.y, z.x) / 3.0 + (z.x > 0.0 ? 0.0 : radians(120.0));
-                return r * vec2(cos(t), sin(t));
-            }"""
+            """{for(int it = 0; it < MAX_ITERATIONS; it++) {
+                                float midpoint = mix(from, to, 0.5);
+                                vec2 front = interval\"\"\" ++ suffix ++ \"\"\"(p, from, midpoint);
+                                vec2 back = interval\"\"\" ++ suffix ++ \"\"\"(p, midpoint, to);
+                                if(depth >= MAX_DEPTH
+                                    || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
+                                    || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
+                                    )
+                                        return vec3(1,1,1);
+                                if(front.x <= 0.0 && front.y >= 0.0) {
+                                    to = midpoint;
+                                    depth++;
+                                    choices = choices * 2;
+                                } else if(back.x <= 0.0 && back.y >= 0.0) {
+                                    from = midpoint;
+                                    depth++;
+                                    choices = choices * 2 + 1;
+                                } else {
+                                    // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
+                                    for(int j = MAX_DEPTH - 1; j > 0; j--) {
+                                        if(j > depth)
+                                            continue;
+                                        depth--;
+                                        choices /= 2;
+                                        if(choices / 2 * 2 == choices) {
+                                            midpoint = to;
+                                            to = to + (to - from);
+                                            vec2 back = interval\"\"\" ++ suffix ++ \"\"\"(p, midpoint, to);
+                                            if(back.x <= 0.0 && back.y >= 0.0) {
+                                                from = midpoint;
+                                                depth++;
+                                                choices = choices * 2 + 1;
+                                                break;
+                                            }
+                                        } else {
+                                            from = from - (to - from);
+                                        }
+                                    }
+                                    if(depth == 0)
+                                        return vec3(0,0,0);
+                                }
+                            }
+                            return vec3(0,0,0);
+                               
+
+}"""
     in
     { input = i
     , output = toOutput i
@@ -130,6 +168,7 @@ type alias Function =
     , name : String
     , args : List ( String, String )
     , body : Statement
+    , hasSuffix : Bool
     }
 
 
@@ -180,6 +219,7 @@ type Expression
     | BinaryOperation BinaryOperation Expression Expression
     | BooleanOperation BooleanOperation Expression Expression
     | RelationOperation RelationOperation Expression Expression
+    | PostfixIncrement Expression
 
 
 type Either a b
@@ -202,10 +242,10 @@ parse =
 
 functionParser : Parser Function
 functionParser =
-    succeed Function
+    succeed (\returnType { name, hasSuffix } args body -> { returnType = returnType, name = name, hasSuffix = hasSuffix, args = args, body = body })
         |= typeParser
         |. spaces
-        |= identifierParser
+        |= identifierWithSuffixParser
         |. spaces
         |= sequence
             { start = "("
@@ -227,12 +267,23 @@ argParser =
         |= identifierParser
 
 
+identifierWithSuffixParser : Parser { name : String, hasSuffix : Bool }
+identifierWithSuffixParser =
+    succeed (\name hasSuffix -> { name = name, hasSuffix = hasSuffix })
+        |= identifierParser
+        |= oneOf
+            [ succeed True |. symbol "\"\"\" ++ suffix ++ \"\"\""
+            , succeed False
+            ]
+
+
 identifierParser : Parser String
 identifierParser =
-    getChompedString <|
-        succeed ()
+    getChompedString
+        (succeed ()
             |. chompIf (\c -> Char.isAlpha c || c == '_')
             |. chompWhile (\c -> Char.isAlphaNum c || c == '_')
+        )
 
 
 typeParser : Parser String
@@ -512,36 +563,43 @@ unaryParser =
 
 atomParser : Parser Expression
 atomParser =
-    oneOf
-        [ succeed identity
-            |. symbol "("
-            |. spaces
-            |= Parser.lazy (\_ -> expressionParser)
-            |. spaces
-            |. symbol ")"
-        , succeed (\a f -> f a)
-            |= identifierParser
-            |= oneOf
-                [ succeed (\sw v -> Dot v sw)
-                    |. symbol "."
-                    |= identifierParser
-                , succeed (\args v -> Call v args)
-                    |= sequence
-                        { start = "("
-                        , separator = ","
-                        , item = Parser.lazy <| \_ -> expressionParser
-                        , end = ")"
-                        , trailing = Forbidden
-                        , spaces = spaces
-                        }
-                , succeed Variable
-                ]
-        , Parser.andThen tryParseNumber <|
-            getChompedString <|
-                succeed ()
-                    |. chompIf (\c -> c == '.' || Char.isDigit c)
-                    |. chompWhile (\c -> c == '.' || Char.isDigit c)
-        ]
+    succeed (\a f -> f a)
+        |= oneOf
+            [ succeed identity
+                |. symbol "("
+                |. spaces
+                |= Parser.lazy (\_ -> expressionParser)
+                |. spaces
+                |. symbol ")"
+            , succeed (\a f -> f a)
+                |= Parser.map .name identifierWithSuffixParser
+                |= oneOf
+                    [ succeed (\sw v -> Dot v sw)
+                        |. symbol "."
+                        |= identifierParser
+                    , succeed (\args v -> Call v args)
+                        |= sequence
+                            { start = "("
+                            , separator = ","
+                            , item = Parser.lazy <| \_ -> expressionParser
+                            , end = ")"
+                            , trailing = Forbidden
+                            , spaces = spaces
+                            }
+                    , succeed Variable
+                    ]
+            , Parser.andThen tryParseNumber <|
+                getChompedString <|
+                    succeed ()
+                        |. chompIf (\c -> c == '.' || Char.isDigit c)
+                        |. chompWhile (\c -> c == '.' || Char.isDigit c)
+            ]
+        |. spaces
+        |= oneOf
+            [ succeed PostfixIncrement
+                |. symbol "++"
+            , succeed identity
+            ]
 
 
 tryParseNumber : String -> Parser Expression
@@ -571,29 +629,49 @@ prettyPrint e =
 
 prettyPrintFunction : Function -> String
 prettyPrintFunction fun =
-    fun.name
-        ++ "Couple = "
-        ++ "fun"
-        ++ String.fromInt (List.length fun.args)
-        ++ " "
-        ++ fun.returnType
-        ++ "T \""
-        ++ fun.name
-        ++ "\" "
-        ++ String.join " " (List.map (\( t, n ) -> "(" ++ t ++ "T \"" ++ n ++ "\")") fun.args)
-        ++ " <| \\"
-        ++ String.join " " (List.map Tuple.second fun.args)
-        ++ " ->\n    "
-        ++ (prettyPrintStatement fun.body |> String.split "\n" |> String.join "\n    ")
-        ++ "\n\n"
-        ++ fun.name
-        ++ "Decl = Tuple.first "
-        ++ fun.name
-        ++ "Couple\n"
-        ++ fun.name
-        ++ " = Tuple.second "
-        ++ fun.name
-        ++ "Couple"
+    if fun.hasSuffix then
+        "("
+            ++ fun.name
+            ++ "Decl, "
+            ++ fun.name
+            ++ ") = fun"
+            ++ String.fromInt (List.length fun.args)
+            ++ " "
+            ++ fun.returnType
+            ++ "T "
+            ++ "(\""
+            ++ fun.name
+            ++ "\" ++ suffix)"
+            ++ " "
+            ++ String.join " " (List.map (\( t, n ) -> "(" ++ t ++ "T \"" ++ n ++ "\")") fun.args)
+            ++ " <| \\"
+            ++ String.join " " (List.map Tuple.second fun.args)
+            ++ " -> "
+            ++ (prettyPrintStatement fun.body |> String.split "\n" |> String.join " ")
+
+    else
+        fun.name
+            ++ "Couple = fun"
+            ++ String.fromInt (List.length fun.args)
+            ++ " "
+            ++ fun.returnType
+            ++ "T \""
+            ++ fun.name
+            ++ "\" "
+            ++ String.join " " (List.map (\( t, n ) -> "(" ++ t ++ "T \"" ++ n ++ "\")") fun.args)
+            ++ " <| \\"
+            ++ String.join " " (List.map Tuple.second fun.args)
+            ++ " ->\n    "
+            ++ (prettyPrintStatement fun.body |> String.split "\n" |> String.join "\n    ")
+            ++ "\n\n"
+            ++ fun.name
+            ++ "Decl = Tuple.first "
+            ++ fun.name
+            ++ "Couple\n"
+            ++ fun.name
+            ++ " = Tuple.second "
+            ++ fun.name
+            ++ "Couple"
 
 
 prettyPrintStatement : Statement -> String
@@ -745,6 +823,9 @@ prettyPrintExpression e =
 
         RelationOperation rop l r ->
             lisp [ prettyPrintRelationOperation rop, prettyPrintExpression l, prettyPrintExpression r ]
+
+        PostfixIncrement c ->
+            lisp [ "plusPostfix", prettyPrintExpression c ]
 
 
 prettyPrintRelationOperation : RelationOperation -> String
