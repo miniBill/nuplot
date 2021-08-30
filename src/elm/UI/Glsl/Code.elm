@@ -1171,7 +1171,7 @@ arg =
 
 cargTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 cargTuple =
-    fun1 vec2T "arg" (vec2T "v") <| \v -> return <| vec2 (atan2_ v.y v.x) zero
+    fun1 vec2T "carg" (vec2T "v") <| \v -> return <| vec2 (atan2_ v.y v.x) zero
 
 
 cargDecl : FunDecl
