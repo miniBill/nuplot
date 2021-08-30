@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1958,69 +1958,77 @@ toSrcParametric suffix e =
                             <|
                                 \from to p depth choices ithreshold ->
                                     for ( "it", int 0, constants.maxIterations )
-                                        (\_ ->
-                                            def floatT "midpoint" (mix from to <| float 0.5) <|
-                                                \midpoint ->
-                                                    def2
-                                                        ( vec2T "front", interval p from midpoint )
-                                                        ( vec2T "back", interval p midpoint to )
-                                                    <|
-                                                        \front back ->
-                                                            if_
-                                                                (ors
-                                                                    [ geq depth constants.maxDepth
-                                                                    , ands
-                                                                        [ lt (subtract front.y front.x) ithreshold
-                                                                        , leq front.x zero
-                                                                        , geq front.y zero
-                                                                        ]
-                                                                    , ands
-                                                                        [ lt (subtract back.y back.x) ithreshold
-                                                                        , leq back.x zero
-                                                                        , geq back.y zero
-                                                                        ]
-                                                                    ]
-                                                                )
-                                                                (return <| vec3 one one one)
-                                                                (unknownStatement
-                                                                    ("""
-                                 
-                                if(front.x <= 0.0 && front.y >= 0.0) {
-                                    to = midpoint;
-                                    depth++;
-                                    choices *= 2;
-                                } else if(back.x <= 0.0 && back.y >= 0.0) {
-                                    from = midpoint;
-                                    depth++;
-                                    choices = choices * 2 + 1;
-                                } else {
-                                    // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
-                                    for(int j = MAX_DEPTH - 1; j > 0; j--) {
-                                        if(j > depth)
-                                            continue;
-                                        depth--;
-                                        choices /= 2;
-                                        if(choices / 2 * 2 == choices) {
-                                            midpoint = to;
-                                            to = to + (to - from);
-                                            vec2 back = interval""" ++ suffix ++ """(p, midpoint, to);
-                                            if(back.x <= 0.0 && back.y >= 0.0) {
-                                                from = midpoint;
-                                                depth++;
-                                                choices = choices * 2 + 1;
-                                                break;
-                                            }
-                                        } else {
-                                            from = from - (to - from);
-                                        }
-                                    }
-                                    if(depth == 0)
-                                        return vec3(0,0,0);
-                                }
-                                        """)
-                                                                )
-                                        )
+                                        (\_ -> innerLoop from to p depth choices ithreshold)
                                         (return vec3Zero)
+
+        innerLoop from to p depth choices ithreshold =
+            def floatT "midpoint" (mix from to <| float 0.5) <|
+                \midpoint ->
+                    def2
+                        ( vec2T "front", interval p from midpoint )
+                        ( vec2T "back", interval p midpoint to )
+                    <|
+                        \front back ->
+                            if_
+                                (ors
+                                    [ geq depth constants.maxDepth
+                                    , ands
+                                        [ lt (subtract front.y front.x) ithreshold
+                                        , leq front.x zero
+                                        , geq front.y zero
+                                        ]
+                                    , ands
+                                        [ lt (subtract back.y back.x) ithreshold
+                                        , leq back.x zero
+                                        , geq back.y zero
+                                        ]
+                                    ]
+                                )
+                                (return <| vec3 one one one)
+                                (ifElse
+                                    (ands [ leq front.x zero, geq front.y zero ])
+                                    (expr (assign to midpoint) <|
+                                        expr (postfixPlus depth) <|
+                                            assignBy choices (int 2) <|
+                                                unsafeNop
+                                    )
+                                    (ifElse
+                                        (ands [ leq back.x zero, geq back.y zero ])
+                                        (expr (assign from midpoint) <|
+                                            expr (postfixPlus depth) <|
+                                                expr (assign choices (add (by choices (int 2)) (int 1))) <|
+                                                    unsafeNop
+                                        )
+                                        (unknownStatement
+                                            ("""
+                                                // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
+                                                for(int j = MAX_DEPTH - 1; j > 0; j--) {
+                                                    if(j > depth)
+                                                        continue;
+                                                    depth--;
+                                                    choices /= 2;
+                                                    if(choices / 2 * 2 == choices) {
+                                                        midpoint = to;
+                                                        to = to + (to - from);
+                                                        vec2 back = interval""" ++ suffix ++ """(p, midpoint, to);
+                                                        if(back.x <= 0.0 && back.y >= 0.0) {
+                                                            from = midpoint;
+                                                            depth++;
+                                                            choices = choices * 2 + 1;
+                                                            break;
+                                                        }
+                                                    } else {
+                                                        from = from - (to - from);
+                                                    }
+                                                }
+                                                if(depth == 0)
+                                                    return vec3(0,0,0);
+                                            """)
+                                        )
+                                        unsafeNop
+                                    )
+                                    unsafeNop
+                                )
     in
     ( [ intervalDecl, pixelDecl ], pixel )
 
