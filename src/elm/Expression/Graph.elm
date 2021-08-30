@@ -1,6 +1,6 @@
 module Expression.Graph exposing (Graph(..), fromExpression, toExpression, toString)
 
-import Expression exposing (AssociativeOperation, BinaryOperation, Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), UnaryOperation, getFreeVariables)
+import Expression exposing (Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..), getFreeVariables)
 import Expression.Simplify
 import Expression.Utils exposing (minus)
 import Set
@@ -16,16 +16,6 @@ type Graph
     | Implicit3D Expression
     | Contour Expression
     | GraphList (List Graph)
-
-
-type GraphExpression
-    = GFloat Float
-    | GVariable String
-    | GAssociative AssociativeOperation GraphExpression GraphExpression (List GraphExpression)
-    | GBinary BinaryOperation GraphExpression GraphExpression
-    | GUnary UnaryOperation GraphExpression
-    | GApply FunctionName (List GraphExpression)
-    | GList (List GraphExpression)
 
 
 fromExpression : Expression -> Graph

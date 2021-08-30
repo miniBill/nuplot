@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, pow, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1094,27 +1094,7 @@ straightFunctionToGlsl name =
             """ } ]
 
         Mbrot22 ->
-            [ unknownFunDecl { name = "cmbrot", type_ = "TODO", body = """
-            vec2 cmbrot(vec2 x, vec2 y) {
-                vec2 c = x + vec2(-y.y, y.x);
-
-                float p = length(c - vec2(0.25, 0));
-                if(c.x <= p - 2.0*p*p + 0.25 || length(c + vec2(1,0)) <= 0.25)
-                    return vec2(0,0);
-
-                vec2 z = c;
-                for(int i = 0; i < 4000; i++) {
-                    z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
-                    if(length(z) > 1000000.0) {
-                        float logLength = log(length(z));
-                        float nu = log(logLength / log(2.0)) / log(2.0);
-                        float fi = float(i) - nu;
-                        return vec2(sin(fi),cos(fi));
-                    }
-                }
-                return vec2(0,0);
-            }
-            """ } ]
+            [ cmbrotDecl ]
 
 
 cexpTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
@@ -1212,6 +1192,47 @@ cmaxDecl =
 cmax : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
 cmax =
     Tuple.second cmaxTuple
+
+
+cmbrotCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
+cmbrotCouple =
+    fun2 vec2T "cmbrot" (vec2T "x") (vec2T "y") <|
+        \x y ->
+            def vec2T "c" (add x (vec2 (negate_ y.y) y.x)) <|
+                \c ->
+                    def floatT "p" (length (subtract c (vec2 (float 0.25) zero))) <|
+                        \p ->
+                            if_ (or (leq c.x (add (subtract p (by (by (float 2) p) p)) (float 0.25))) (leq (length (add c (vec2 one zero))) (float 0.25)))
+                                (return vec2Zero)
+                                (def vec2T "z" c <|
+                                    \z ->
+                                        for ( "i", int 0, int 4000 )
+                                            (\i ->
+                                                expr (assign z (add (vec2 (subtract (by z.x z.x) (by z.y z.y)) (by (by (float 2) z.x) z.y)) c))
+                                                    (if_ (gt (length z) (float 1000000))
+                                                        (def floatT "logLength" (log (length z)) <|
+                                                            \logLength ->
+                                                                def floatT "nu" (div (log (div logLength (log (float 2)))) (log (float 2))) <|
+                                                                    \nu ->
+                                                                        def floatT "fi" (subtract (floatCast i) nu) <|
+                                                                            \fi ->
+                                                                                return (vec2 (sin_ fi) (cos_ fi))
+                                                        )
+                                                        unsafeNop
+                                                    )
+                                            )
+                                            (return vec2Zero)
+                                )
+
+
+cmbrotDecl : FunDecl
+cmbrotDecl =
+    Tuple.first cmbrotCouple
+
+
+cmbrot : ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2
+cmbrot =
+    Tuple.second cmbrotCouple
 
 
 csqrtTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
@@ -1674,8 +1695,8 @@ toSrcImplicit suffix e =
                                             )
                                             (def floatT "perc" (div (subtract samples <| abs_ sum) samples) <|
                                                 \perc ->
-                                                    assign perc
-                                                        (pow perc <| float 0.2)
+                                                    expr
+                                                        (assign perc (pow perc <| float 0.2))
                                                         (return <| byF perc (vec3 one one one))
                                             )
                                     )
@@ -2219,8 +2240,9 @@ expressionToGlsl context =
                 --     csolve (go e)
                 -- PApply (KnownFunction Mod) [ e ] ->
                 --     cmod (go e)
-                -- PApply (KnownFunction Mbrot) [ e ] ->
-                --     cmbrot (go e)
+                PApply (KnownFunction Mbrot) [ x, y ] ->
+                    cmbrot (go x) (go y)
+
                 -- PApply (KnownFunction For) [ e ] ->
                 --     cfor (go e)
                 PApply (KnownFunction Min) es ->
@@ -2466,7 +2488,8 @@ mainGlsl rayDifferentials pixel2Def pixel3Def =
                 pixel2Decl
                     ++ [ Tuple.first <|
                             fun0 voidT "main" <|
-                                assign gl_FragColor pixel2 unsafeNop
+                                expr (assign gl_FragColor pixel2)
+                                    unsafeNop
                        ]
 
         ( [], _ ) ->
@@ -2479,7 +2502,8 @@ mainGlsl rayDifferentials pixel2Def pixel3Def =
                 ++ fileToGlsl
                     [ Tuple.first <|
                         fun0 voidT "main" <|
-                            assign gl_FragColor pixel3 unsafeNop
+                            expr (assign gl_FragColor pixel3)
+                                unsafeNop
                     ]
 
         _ ->
@@ -2496,7 +2520,8 @@ mainGlsl rayDifferentials pixel2Def pixel3Def =
                 ++ fileToGlsl
                     [ Tuple.first <|
                         fun0 voidT "main" <|
-                            assign gl_FragColor (max4 pixel2 pixel3) unsafeNop
+                            expr (assign gl_FragColor (max4 pixel2 pixel3))
+                                unsafeNop
                     ]
 
 
@@ -2589,8 +2614,9 @@ addPixel deltaX deltaY x y px curr i { call, color } next =
             else
                 call deltaX deltaY x y
     in
-    assign curr k <|
-        assign px (ternary3 (eq curr vec3Zero) px curr) next
+    expr (assign curr k) <|
+        expr (assign px (ternary3 (eq curr vec3Zero) px curr))
+            next
 
 
 axisTuple : ( FunDecl, Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float )
