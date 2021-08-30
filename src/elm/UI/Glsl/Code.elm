@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -798,8 +798,8 @@ casinTuple =
             def vec2T "s" (csqrt <| subtract (vec2 one zero) (cby z z)) <|
                 \s ->
                     def vec2T "arg" (subtract s <| cby (vec2 zero one) z) <|
-                        \arg ->
-                            return <| cby (vec2 zero one) (cln arg)
+                        \arg_ ->
+                            return <| cby (vec2 zero one) (cln arg_)
 
 
 casinDecl : FunDecl
@@ -834,8 +834,8 @@ catanTuple =
             if_ (eq z.y zero)
                 (return <| vec2 (atan_ z.x) zero)
                 (def2
-                    ( vec2T, "o", vec2 one zero )
-                    ( vec2T, "iz", cby (vec2 zero one) z )
+                    ( vec2T "o", vec2 one zero )
+                    ( vec2T "iz", cby (vec2 zero one) z )
                  <|
                     \o iz ->
                         def vec2T "l" (cdiv (add o iz) (subtract o iz)) <|
@@ -1050,15 +1050,7 @@ straightFunctionToGlsl name =
             """ } ]
 
         Arg22 ->
-            [ unknownFunDecl { name = "arg", type_ = "TODO", body = """
-            float arg(vec2 v) {
-                return atan(v.y, v.x);
-            }
-
-            vec2 carg(vec2 v) {
-                return vec2(atan(v.y, v.x), 0);
-            }
-            """ } ]
+            [ argDecl, cargDecl ]
 
         Pw22 ->
             [ unknownFunDecl { name = "cpw", type_ = "TODO", body = """
@@ -1162,6 +1154,36 @@ cre =
     Tuple.second creTuple
 
 
+argTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression1 Float )
+argTuple =
+    fun1 floatT "arg" (vec2T "v") <| \v -> return <| atan2_ v.y v.x
+
+
+argDecl : FunDecl
+argDecl =
+    Tuple.first argTuple
+
+
+arg : ExpressionX xa Vec2 -> Expression1 Float
+arg =
+    Tuple.second argTuple
+
+
+cargTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+cargTuple =
+    fun1 vec2T "arg" (vec2T "v") <| \v -> return <| vec2 (atan2_ v.y v.x) zero
+
+
+cargDecl : FunDecl
+cargDecl =
+    Tuple.first cargTuple
+
+
+carg : ExpressionX xa Vec2 -> Expression2
+carg =
+    Tuple.second cargTuple
+
+
 cminTuple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
 cminTuple =
     fun2 vec2T "cmin" (vec2T "l") (vec2T "r") <| \l r -> return <| ternary (lt l.x r.x) l r
@@ -1199,8 +1221,8 @@ csqrtTuple =
             if_ (ands [ eq z.y zero, geq z.x zero ])
                 (return <| vec2 (sqrt_ z.x) zero)
                 (def2
-                    ( floatT, "r", pow (dot z z) (float 0.25) )
-                    ( floatT, "t", byF (float 0.5) (atan2_ z.y z.x) )
+                    ( floatT "r", pow (dot z z) (float 0.25) )
+                    ( floatT "t", byF (float 0.5) (atan2_ z.y z.x) )
                  <|
                     \r t ->
                         return <| byF r <| vec2 (cos_ t) (sin_ t)
@@ -1622,8 +1644,8 @@ toSrcImplicit suffix e =
             fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
                 \deltaX _ x y ->
                     def2
-                        ( floatT, "sum", zero )
-                        ( floatT, "samples", float <| antialiasingSamples * 2 + 1 )
+                        ( floatT "sum", zero )
+                        ( floatT "samples", float <| antialiasingSamples * 2 + 1 )
                     <|
                         \sum samples ->
                             assignBy samples samples <|
@@ -1694,17 +1716,17 @@ toSrcPolar suffix e =
                     assignAdd x (div deltaX <| float 2) <|
                         assignAdd y (div deltaY <| float 2) <|
                             def2
-                                ( floatT, "t", zero )
-                                ( floatT, "ot", atanPlus y x )
+                                ( floatT "t", zero )
+                                ( floatT "ot", atanPlus y x )
                             <|
                                 \t ot ->
                                     for ( "i", int 0, divConst constants.maxIterations (int 10) )
                                         (\_ ->
                                             def4
-                                                ( floatT, "h", f x y t ot )
-                                                ( floatT, "l", f (subtract x deltaX) y t ot )
-                                                ( floatT, "u", f x (subtract y deltaY) t ot )
-                                                ( floatT, "ul", f (subtract x deltaX) (subtract y deltaY) t ot )
+                                                ( floatT "h", f x y t ot )
+                                                ( floatT "l", f (subtract x deltaX) y t ot )
+                                                ( floatT "u", f x (subtract y deltaY) t ot )
+                                                ( floatT "ul", f (subtract x deltaX) (subtract y deltaY) t ot )
                                             <|
                                                 \h l u ul ->
                                                     if_ (ors [ lt h zero, lt l zero, lt u zero, lt ul zero ])
@@ -1743,9 +1765,9 @@ toSrcParametric suffix e =
             fun3 vec2T ("interval" ++ suffix) (vec2T "p") (floatT "from") (floatT "to") <|
                 \p from to ->
                     def3
-                        ( vec2T, "x", vec2 p.x p.x )
-                        ( vec2T, "y", vec2 p.y p.y )
-                        ( vec2T, "t", ternary (lt from to) (vec2 from to) (vec2 to from) )
+                        ( vec2T "x", vec2 p.x p.x )
+                        ( vec2T "y", vec2 p.y p.y )
+                        ( vec2T "t", ternary (lt from to) (vec2 from to) (vec2 to from) )
                     <|
                         \x y t ->
                             return <| expressionToIntervalGlsl (toPrintExpression e)
@@ -1832,8 +1854,8 @@ thetaDeltaCouple =
             if_ (lt uniforms.u_whiteLines one)
                 (return <| float 100)
                 (def2
-                    ( floatT, "thetaSix", add (by theta uniforms.u_whiteLines) (float 0.5) )
-                    ( floatT, "thetaNeigh", float 0.05 )
+                    ( floatT "thetaSix", add (by theta uniforms.u_whiteLines) (float 0.5) )
+                    ( floatT "thetaNeigh", float 0.05 )
                  <|
                     \thetaSix thetaNeigh ->
                         return <| divF (abs_ (subtract (fract thetaSix) (float 0.5))) thetaNeigh
@@ -1861,27 +1883,28 @@ toSrcVectorField2D suffix xexpr yexpr =
             fun2 vec2T ("vector" ++ suffix) (floatT "x") (floatT "y") <|
                 \x y ->
                     def2
-                        ( vec2T, "xv", expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] xexpr )
-                        ( vec2T, "yv", expressionToGlsl [ ( "x", dotted1 <| unknown "x" ), ( "y", dotted1 <| unknown "y" ) ] yexpr )
+                        ( vec2T "xv", expressionToGlsl [ ( "x", x ), ( "y", y ) ] xexpr )
+                        ( vec2T "yv", expressionToGlsl [ ( "x", x ), ( "y", y ) ] yexpr )
                     <|
                         \xv yv -> return <| ternary (lt (add (abs_ xv.y) (abs_ yv.y)) (float epsilon)) (vec2 xv.x yv.x) vec2Zero
 
-        nearDecl =
-            unknownFunDecl
-                { name = "near"
-                , type_ = "TODO"
-                , body = """
-                    bool near(vec2 o, vec2 corner, vec2 vector, float deltaX, float mx) {
-                        float angleCorner = arg(o - corner);
-                        float angleVector = arg(vector);
-                        float delta = mod(angleCorner - angleVector, TWOPI);
-                        float l = length(vector) / mx;
-                        float maxLength = deltaX * VECTOR_SPACING * (l < """ ++ floatToGlsl epsilon ++ """ ? 0.0 : l / 2.0 + 0.5);
-                        float wantedLength = length(o - corner);
-                        float angularDistance = mix(180.0, 0.0, pow(wantedLength / maxLength, 0.3));
-                        return (delta < radians(angularDistance) || delta > radians(360.0 - angularDistance)) && wantedLength < maxLength;
-                    }"""
-                }
+        ( nearDecl, near ) =
+            fun5 boolT "near" (vec2T "o") (vec2T "corner") (vec2T "vect") (floatT "deltaX") (floatT "mx") <|
+                \o corner vect deltaX mx ->
+                    def2
+                        ( floatT "angleCorner", arg <| subtract o corner )
+                        ( floatT "angleVector", arg vect )
+                    <|
+                        \angleCorner angleVector ->
+                            unknownStatement
+                                ("""
+                                float delta = mod(angleCorner - angleVector, TWOPI);
+                                float l = length(vect) / mx;
+                                float maxLength = deltaX * VECTOR_SPACING * (l < """ ++ floatToGlsl epsilon ++ """ ? 0.0 : l / 2.0 + 0.5);
+                                float wantedLength = length(o - corner);
+                                float angularDistance = mix(180.0, 0.0, pow(wantedLength / maxLength, 0.3));
+                                return (delta < radians(angularDistance) || delta > radians(360.0 - angularDistance)) && wantedLength < maxLength;
+                                """)
 
         ( pixelDecl, pixel ) =
             fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
@@ -1949,8 +1972,8 @@ toSrcContour suffix expr =
                     def vec2T "z" (expressionToGlsl [ ( "x", x ), ( "y", y ) ] expr) <|
                         \z ->
                             def2
-                                ( floatT, "theta", div (atan2_ z.y z.x) constants.twopi )
-                                ( floatT, "logRadius", log2 <| length z )
+                                ( floatT "theta", div (atan2_ z.y z.x) constants.twopi )
+                                ( floatT "logRadius", log2 <| length z )
                             <|
                                 \theta logRadius ->
                                     def floatT "powerRemainder" (fract logRadius) <|
@@ -1979,15 +2002,15 @@ toSrcContour suffix expr =
                     def floatT "dist" (float <| 1 / 3) <|
                         \dist ->
                             def4
-                                ( vec3T, "a", pixelO deltaX deltaY (add x <| by dist deltaX) (add y <| by dist deltaY) )
-                                ( vec3T, "b", pixelO deltaX deltaY (subtract x <| by dist deltaX) (subtract y <| by dist deltaY) )
-                                ( vec3T, "c", pixelO deltaX deltaY (add x <| by dist deltaX) (subtract y <| by dist deltaY) )
-                                ( vec3T, "d", pixelO deltaX deltaY (subtract x <| by dist deltaX) (add y <| by dist deltaY) )
+                                ( vec3T "a", pixelO deltaX deltaY (add x <| by dist deltaX) (add y <| by dist deltaY) )
+                                ( vec3T "b", pixelO deltaX deltaY (subtract x <| by dist deltaX) (subtract y <| by dist deltaY) )
+                                ( vec3T "c", pixelO deltaX deltaY (add x <| by dist deltaX) (subtract y <| by dist deltaY) )
+                                ( vec3T "d", pixelO deltaX deltaY (subtract x <| by dist deltaX) (add y <| by dist deltaY) )
                             <|
                                 \a b c d ->
                                     def2
-                                        ( vec3T, "mn", min_ a <| min_ b <| min_ c d )
-                                        ( vec3T, "mx", max_ a <| max_ b <| max_ c d )
+                                        ( vec3T "mn", min_ a <| min_ b <| min_ c d )
+                                        ( vec3T "mx", max_ a <| max_ b <| max_ c d )
                                     <|
                                         \mn mx ->
                                             def vec3T "diff" (abs_ (subtract mx mn)) <|
@@ -1997,10 +2020,10 @@ toSrcContour suffix expr =
                                                         (def floatT "dist2" (by (float 2) dist) <|
                                                             \dist2 ->
                                                                 def4
-                                                                    ( vec3T, "e", pixelO deltaX deltaY (add x <| byF dist2 deltaX) y )
-                                                                    ( vec3T, "f", pixelO deltaX deltaY (subtract x <| byF dist2 deltaX) y )
-                                                                    ( vec3T, "g", pixelO deltaX deltaY x (subtract y <| byF dist2 deltaY) )
-                                                                    ( vec3T, "h", pixelO deltaX deltaY x (add y <| byF dist2 deltaY) )
+                                                                    ( vec3T "e", pixelO deltaX deltaY (add x <| byF dist2 deltaX) y )
+                                                                    ( vec3T "f", pixelO deltaX deltaY (subtract x <| byF dist2 deltaX) y )
+                                                                    ( vec3T "g", pixelO deltaX deltaY x (subtract y <| byF dist2 deltaY) )
+                                                                    ( vec3T "h", pixelO deltaX deltaY x (add y <| byF dist2 deltaY) )
                                                                 <|
                                                                     \e f g h ->
                                                                         return <| divF (adds3 [ a, b, c, d, e, f, g, h ]) (float 8)
@@ -2667,7 +2690,7 @@ main3D rayDifferentials suffixes =
                                                     \t ->
                                                         def floatT "p" (by (float -2.0) uniforms.u_phi) <|
                                                             \p ->
-                                                                def vec3T "eye" (eyePosition t p) <|
+                                                                def vec3T "eye" (eyePosition eyeDist t p) <|
                                                                     \eye ->
                                                                         def vec3T "target" vec3Zero <|
                                                                             \target ->
@@ -2704,8 +2727,8 @@ main3D rayDifferentials suffixes =
         ( raytraceSrc, raytraceF ) =
             raytrace suffixes
 
-        eyePosition t p =
-            byF (dotted1 <| unknown "eye_dist") <|
+        eyePosition eyeDist t p =
+            byF eyeDist <|
                 normalize <|
                     vec3
                         (by (cos_ t) (sin_ p))
