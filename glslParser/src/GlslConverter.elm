@@ -1,7 +1,7 @@
 module GlslConverter exposing (main)
 
 import Browser
-import Element as Element exposing (Element, column, el, fill, height, padding, row, scrollbarY, spacing, text, width)
+import Element as Element exposing (Element, column, el, fill, height, padding, paragraph, row, scrollbarY, scrollbars, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -32,25 +32,14 @@ init : Model
 init =
     let
         i =
-            """vec2 cmbrot(vec2 x, vec2 y) {
-    vec2 c = x + vec2(-y.y, y.x);
-
-    float p = length(c - vec2(0.25, 0));
-    if(c.x <= p - 2.0*p*p + 0.25 || length(c + vec2(1,0)) <= 0.25)
-        return vec2(0,0);
-
-    vec2 z = c;
-    for(int i = 0; i < 4000; i++) {
-        z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
-        if(length(z) > 1000000.0) {
-            float logLength = log(length(z));
-            float nu = log(logLength / log(2.0)) / log(2.0);
-            float fi = float(i) - nu;
-            return vec2(sin(fi),cos(fi));
-        }
-    }
-    return vec2(0,0);
-}"""
+            """vec2 ccbrt(vec2 z) {
+                if(z.y == 0.0) {
+                    return vec2(sign(z.x) * pow(z.x, 1.0 / 3.0), 0);
+                }
+                float r = pow(dot(z, z), 1.0 / 6.0);
+                float t = atan(z.y, z.x) / 3.0 + (z.x > 0.0 ? 0.0 : radians(120.0));
+                return r * vec2(cos(t), sin(t));
+            }"""
     in
     { input = i
     , output = toOutput i
@@ -88,26 +77,35 @@ input value =
 output : String -> Element Msg
 output value =
     let
-        tc =
-            Html.pre [] [ Html.text value ]
-                |> Element.html
-                |> el
-                    [ width fill
-                    , height fill
-                    , Border.width 1
-                    , Font.family [ Font.typeface "Fira Code", Font.monospace ]
-                    , padding 10
-                    , scrollbarY
-                    ]
+        bordering =
+            el
+                [ width fill
+                , height fill
+                , Border.width 1
+                , Font.family [ Font.typeface "Fira Code", Font.monospace ]
+                , padding 10
+                , scrollbars
+                ]
     in
-    column
-        [ spacing 10
-        , width fill
-        , height fill
-        ]
-        [ text "Output (Elm code)"
-        , tc
-        ]
+    if String.contains "problem" value then
+        paragraph [] [ text value ]
+            |> bordering
+
+    else
+        let
+            tc =
+                Html.pre [] [ Html.text value ]
+                    |> Element.html
+                    |> bordering
+        in
+        column
+            [ spacing 10
+            , width fill
+            , height fill
+            ]
+            [ text "Output (Elm code)"
+            , tc
+            ]
 
 
 update : Msg -> Model -> Model
@@ -363,7 +361,25 @@ defParser =
 
 expressionParser : Parser Expression
 expressionParser =
-    booleanParser
+    ternaryParser
+
+
+ternaryParser : Parser Expression
+ternaryParser =
+    Parser.succeed (\c f -> f c)
+        |= booleanParser
+        |. spaces
+        |= oneOf
+            [ succeed (\t f c -> Ternary c t f)
+                |. symbol "?"
+                |. spaces
+                |= booleanParser
+                |. spaces
+                |. symbol ":"
+                |. spaces
+                |= Parser.lazy (\_ -> ternaryParser)
+            , succeed identity
+            ]
 
 
 booleanParser : Parser Expression
@@ -497,7 +513,13 @@ unaryParser =
 atomParser : Parser Expression
 atomParser =
     oneOf
-        [ succeed (\a f -> f a)
+        [ succeed identity
+            |. symbol "("
+            |. spaces
+            |= Parser.lazy (\_ -> expressionParser)
+            |. spaces
+            |. symbol ")"
+        , succeed (\a f -> f a)
             |= identifierParser
             |= oneOf
                 [ succeed (\sw v -> Dot v sw)
@@ -624,7 +646,7 @@ prettyPrintStatement stat =
                 ++ ")"
 
         Return e ->
-            "(return " ++ prettyPrintExpression e ++ ")\n"
+            "(return <| " ++ prettyPrintExpression e ++ ")\n"
 
         Nop ->
             "unsafeNop\n"
@@ -659,7 +681,14 @@ prettyPrintExpression e =
             lisp [ prettyPrintBinaryOperation op, prettyPrintExpression l, prettyPrintExpression r ]
 
         Float f ->
-            lisp [ "float", String.fromFloat f ]
+            if f == 0 then
+                "zero"
+
+            else if f == 1 then
+                "one"
+
+            else
+                lisp [ "float", String.fromFloat f ]
 
         Int i ->
             lisp [ "int", String.fromInt i ]
@@ -684,28 +713,29 @@ prettyPrintExpression e =
                             :: List.map
                                 (\c ->
                                     case c of
-                                        Int 0 ->
-                                            "zero"
-
-                                        Int 1 ->
-                                            "one"
-
                                         Int i ->
-                                            "(float " ++ String.fromInt i ++ ")"
+                                            prettyPrintExpression (Float <| toFloat i)
 
                                         _ ->
                                             prettyPrintExpression c
                                 )
                                 args
 
-            else if List.member n [ "sin", "cos" ] then
+            else if n == "atan" then
+                if List.length args == 2 then
+                    lisp <| "atan2_" :: List.map prettyPrintExpression args
+
+                else
+                    lisp <| "atan_" :: List.map prettyPrintExpression args
+
+            else if List.member n [ "sin", "cos", "radians", "round", "floor", "ceil" ] then
                 lisp <| (n ++ "_") :: List.map prettyPrintExpression args
 
             else
                 lisp <| n :: List.map prettyPrintExpression args
 
-        Ternary _ _ _ ->
-            "branch 'Ternary _ _ _' not implemented"
+        Ternary c l r ->
+            lisp [ "ternary\n", prettyPrintExpression c, prettyPrintExpression l, prettyPrintExpression r ]
 
         UnaryOperation Negate ex ->
             lisp [ "negate_", prettyPrintExpression ex ]
