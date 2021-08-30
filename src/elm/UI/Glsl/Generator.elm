@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add3, add4, adds2, adds3, adds4, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add3, add4, adds2, adds3, adds4, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, if_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, ors, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
@@ -1039,6 +1039,11 @@ call4Internal name arg0 arg1 arg2 arg3 =
     Expression (Call name [ unwrapExpression arg0, unwrapExpression arg1, unwrapExpression arg2, unwrapExpression arg3 ])
 
 
+call5Internal : String -> ExpressionX a l -> ExpressionX b m -> ExpressionX c n -> ExpressionX d r -> ExpressionX e s -> Expression t
+call5Internal name arg0 arg1 arg2 arg3 arg4 =
+    Expression (Call name [ unwrapExpression arg0, unwrapExpression arg1, unwrapExpression arg2, unwrapExpression arg3, unwrapExpression arg4 ])
+
+
 dotted1 : Expression t -> Expression1 t
 dotted1 (Expression e) =
     dotted1Internal e
@@ -1268,6 +1273,30 @@ fun4 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) body =
     )
 
 
+fun5 :
+    TypingFunction tr r
+    -> String
+    -> ( TypedName ta a, Expression ta -> a )
+    -> ( TypedName tb b, Expression tb -> b )
+    -> ( TypedName tc c, Expression tc -> c )
+    -> ( TypedName td d, Expression td -> d )
+    -> ( TypedName te e, Expression te -> e )
+    -> (a -> b -> c -> d -> e -> Statement tr)
+    ->
+        ( FunDecl
+        , ExpressionX xa ta -> ExpressionX xb tb -> ExpressionX xc tc -> ExpressionX xd td -> ExpressionX xe te -> r
+        )
+fun5 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) ( arg4, _ ) body =
+    let
+        ( typed, dotter ) =
+            typeF name
+    in
+    ( funInternal typed [ argToString arg0, argToString arg1, argToString arg2, argToString arg3, argToString arg4 ] <|
+        body (toVar arg0) (toVar arg1) (toVar arg2) (toVar arg3) (toVar arg4)
+    , \l m c n r -> dotter (call5Internal name l m c n r)
+    )
+
+
 if_ : Expression1 Bool -> Statement r -> Statement r -> Statement r
 if_ cond (Statement ifTrue) (Statement ifFalse) =
     Statement <| If (unwrapExpression cond) ifTrue ifFalse
@@ -1330,15 +1359,17 @@ def typeF name v k =
     Statement <| Decl t n (Just <| unwrapExpression v) ks
 
 
-def2 : ( TypingFunction tv v, String, ExpressionX xv tv ) -> ( TypingFunction tw w, String, ExpressionX xw tw ) -> (v -> w -> Statement tr) -> Statement tr
-def2 ( typeF0, name0, v0 ) ( typeF1, name1, v1 ) k =
+
+--def2 : ( TypingFunction tv v, String, ExpressionX xv tv ) -> ( TypingFunction tw w, String, ExpressionX xw tw ) -> (v -> w -> Statement tr) -> Statement tr
+
+
+def2 :
+    ( ( TypedName ta a, Expression ta -> a ), ExpressionX xa ta )
+    -> ( ( TypedName tb b, Expression tb -> b ), ExpressionX xb tb )
+    -> (a -> b -> Statement r)
+    -> Statement r
+def2 ( ( TypedName (Type t0) n0 e0, _ ), v0 ) ( ( TypedName (Type t1) n1 e1, _ ), v1 ) k =
     let
-        ( TypedName (Type t0) n0 e0, _ ) =
-            typeF0 name0
-
-        ( TypedName (Type t1) n1 e1, _ ) =
-            typeF1 name1
-
         (Statement ks) =
             k e0 e1
     in
@@ -1346,22 +1377,13 @@ def2 ( typeF0, name0, v0 ) ( typeF1, name1, v1 ) k =
 
 
 def3 :
-    ( TypingFunction tv v, String, ExpressionX xv tv )
-    -> ( TypingFunction tw w, String, ExpressionX xw tw )
-    -> ( TypingFunction tx x, String, ExpressionX xx tx )
-    -> (v -> w -> x -> Statement tr)
-    -> Statement tr
-def3 ( typeF0, name0, v0 ) ( typeF1, name1, v1 ) ( typeF2, name2, v2 ) k =
+    ( ( TypedName ta a, Expression ta -> a ), ExpressionX xa ta )
+    -> ( ( TypedName tb b, Expression tb -> b ), ExpressionX xb tb )
+    -> ( ( TypedName tc c, Expression tc -> c ), ExpressionX xc tc )
+    -> (a -> b -> c -> Statement r)
+    -> Statement r
+def3 ( ( TypedName (Type t0) n0 e0, _ ), v0 ) ( ( TypedName (Type t1) n1 e1, _ ), v1 ) ( ( TypedName (Type t2) n2 e2, _ ), v2 ) k =
     let
-        ( TypedName (Type t0) n0 e0, _ ) =
-            typeF0 name0
-
-        ( TypedName (Type t1) n1 e1, _ ) =
-            typeF1 name1
-
-        ( TypedName (Type t2) n2 e2, _ ) =
-            typeF2 name2
-
         (Statement ks) =
             k e0 e1 e2
     in
@@ -1373,26 +1395,14 @@ def3 ( typeF0, name0, v0 ) ( typeF1, name1, v1 ) ( typeF2, name2, v2 ) k =
 
 
 def4 :
-    ( TypingFunction tv v, String, ExpressionX xv tv )
-    -> ( TypingFunction tw w, String, ExpressionX xw tw )
-    -> ( TypingFunction tx x, String, ExpressionX xx tx )
-    -> ( TypingFunction ty y, String, ExpressionX xy ty )
-    -> (v -> w -> x -> y -> Statement tr)
-    -> Statement tr
-def4 ( typeF0, name0, v0 ) ( typeF1, name1, v1 ) ( typeF2, name2, v2 ) ( typeF3, name3, v3 ) k =
+    ( ( TypedName ta a, Expression ta -> a ), ExpressionX xa ta )
+    -> ( ( TypedName tb b, Expression tb -> b ), ExpressionX xb tb )
+    -> ( ( TypedName tc c, Expression tc -> c ), ExpressionX xc tc )
+    -> ( ( TypedName td d, Expression td -> d ), ExpressionX xd td )
+    -> (a -> b -> c -> d -> Statement r)
+    -> Statement r
+def4 ( ( TypedName (Type t0) n0 e0, _ ), v0 ) ( ( TypedName (Type t1) n1 e1, _ ), v1 ) ( ( TypedName (Type t2) n2 e2, _ ), v2 ) ( ( TypedName (Type t3) n3 e3, _ ), v3 ) k =
     let
-        ( TypedName (Type t0) n0 e0, _ ) =
-            typeF0 name0
-
-        ( TypedName (Type t1) n1 e1, _ ) =
-            typeF1 name1
-
-        ( TypedName (Type t2) n2 e2, _ ) =
-            typeF2 name2
-
-        ( TypedName (Type t3) n3 e3, _ ) =
-            typeF3 name3
-
         (Statement ks) =
             k e0 e1 e2 e3
     in
@@ -1451,6 +1461,11 @@ type Mat3
 voidT : TypingFunction () (Never -> a)
 voidT n =
     ( TypedName (Type "void") (Name n) never, always never )
+
+
+boolT : TypingFunction Bool (Expression1 Bool)
+boolT n =
+    ( TypedName (Type "bool") (Name n) (dotted1Internal (Variable n)), dotted1 )
 
 
 intT : TypingFunction Int (Expression1 Int)
