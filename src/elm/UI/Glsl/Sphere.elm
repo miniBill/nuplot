@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 import Expression exposing (Expression)
 import Expression.Polynomial exposing (Exponents)
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator exposing (FunDecl, floatToGlsl, unknownFunDecl)
+import UI.Glsl.Generator as Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, boolT, floatT, floatToGlsl, fun4, mat3T, out, unknownStatement, vec3T)
 import UI.Glsl.Polynomial as Polynomial
 
 
@@ -73,14 +73,12 @@ reduce poly =
             )
 
 
-toGlsl : String -> Sphere -> FunDecl
+toGlsl : String -> Sphere -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool )
 toGlsl suffix (Sphere { center, radius }) =
-    unknownFunDecl
-        { name = "bisect" ++ suffix
-        , type_ = "TODO"
-        , body =
-            """
-            bool bisect""" ++ suffix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
+    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
+        \o d maxDistance found ->
+            unknownStatement
+                ("""
                 vec3 center = vec3(""" ++ floatToGlsl center.x ++ """,""" ++ floatToGlsl center.y ++ """,""" ++ floatToGlsl center.z ++ """);
 
                 vec3 to_center = o - center;
@@ -90,10 +88,8 @@ toGlsl suffix (Sphere { center, radius }) =
                 if(delta < 0.)
                     return false;
                 float x = -b - sqrt(delta);
-                if(x < """ ++ threshold ++ """)
+                if(x < """ ++ Generator.expressionToGlsl (threshold maxDistance).base ++ """)
                     return false;
                 found = o + x * mix(d[0], d[1], 0.5);
                 return true;
-            }
-            """
-        }
+            """)

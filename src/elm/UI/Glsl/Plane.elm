@@ -4,7 +4,7 @@ import Dict
 import Expression exposing (Expression)
 import Maybe
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator exposing (FunDecl, floatToGlsl, unknownFunDecl)
+import UI.Glsl.Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, add, arr, assign, boolT, byF, def, def2, div, dot, expr, float, floatT, fun4, gt, int, mat3T, negate_, out, return, vec3, vec3T)
 import UI.Glsl.Polynomial as Polynomial
 
 
@@ -35,12 +35,10 @@ asPlane e =
             )
 
 
-toGlsl : String -> Plane -> FunDecl
+toGlsl : String -> Plane -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool )
 toGlsl suffix (Plane { x, y, z, known }) =
-    unknownFunDecl
-        { name = "bisect" ++ suffix
-        , type_ = "TODO"
-        , body =
+    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
+        \o d maxDistance found ->
             -- a x + b y + c z + k = 0
             -- x = ox + t dx
             -- y = oy + t dy
@@ -48,11 +46,18 @@ toGlsl suffix (Plane { x, y, z, known }) =
             -- a ox + a t dx + b oy + b t dy + c oz + c t dz + k = 0
             -- t (a dx + b dy + c dy) = - k - (a ox + b oy + c oz)
             -- t = - (k + dot abc o) / (dot abc d)
-            """bool bisect""" ++ suffix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
-                vec3 coeffs = vec3(""" ++ floatToGlsl x ++ "," ++ floatToGlsl y ++ "," ++ floatToGlsl z ++ """);
-                float t = -(""" ++ floatToGlsl known ++ """ + dot(coeffs, o)) / dot(coeffs, 0.5 * (d[0] + d[1]));
-                found = o + t * 0.5 * (d[0] + d[1]);
-                return t > """ ++ threshold ++ """;
-            }
-            """
-        }
+            def2
+                ( vec3T "coeffs", vec3 (float x) (float y) (float z) )
+                ( vec3T "dsum", byF (float 0.5) <| add (arr d <| int 0) (arr d <| int 1) )
+            <|
+                \coeffs dsum ->
+                    def floatT
+                        "t"
+                        (div
+                            (negate_ <| add (float known) (dot coeffs o))
+                            (dot coeffs dsum)
+                        )
+                    <|
+                        \t ->
+                            expr (assign found <| add o <| byF t dsum) <|
+                                return (gt t <| threshold maxDistance)

@@ -6,7 +6,7 @@ import Expression.Polynomial exposing (Exponents)
 import Expression.Utils exposing (minus, zero)
 import Maybe.Extra as Maybe
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator as Generator exposing (dotted1, unknown)
+import UI.Glsl.Generator as Generator exposing (ExpressionX, dotted1, unknown)
 
 
 getDegree : Dict (List ( a, number )) b -> number
@@ -64,8 +64,8 @@ toFloat e =
             Nothing
 
 
-getSolutions : Dict Int Expression -> Maybe ( Int, List ( String, String ) )
-getSolutions poly =
+getSolutions : ExpressionX x Float -> Dict Int Expression -> Maybe ( Int, List ( String, String ) )
+getSolutions maxDistance poly =
     let
         deg =
             poly
@@ -88,7 +88,7 @@ getSolutions poly =
                 |> Generator.expressionToGlsl
 
         tFrom v =
-            ( "t", v ++ ".x < 0.0 || abs(" ++ v ++ ".y) > " ++ threshold ++ " ? t : min(" ++ v ++ ".x, t)" )
+            ( "t", v ++ ".x < 0.0 || abs(" ++ v ++ ".y) > " ++ Generator.expressionToGlsl (threshold maxDistance).base ++ " ? t : min(" ++ v ++ ".x, t)" )
 
         sols =
             case deg of
