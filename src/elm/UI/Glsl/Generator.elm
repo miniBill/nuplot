@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add3, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uNsAfEtYpEcAsT, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
@@ -77,6 +77,7 @@ type alias Expression2 =
     { base : Expression Vec2
     , x : Expression1 Float
     , y : Expression1 Float
+    , yx : Expression1 Vec2
     }
 
 
@@ -95,6 +96,7 @@ type alias Expression4 =
     , z : Expression1 Float
     , w : Expression1 Float
     , xy : Expression2
+    , yx : Expression2
     , yzw : Expression3
     }
 
@@ -751,6 +753,16 @@ tan_ =
     dotted1 << call1Internal "tan"
 
 
+acos_ : ExpressionX a t -> Expression1 t
+acos_ =
+    dotted1 << call1Internal "acos"
+
+
+acos2 : ExpressionX a Vec2 -> Expression2
+acos2 =
+    dotted2 << call1Internal "acos"
+
+
 sinh : ExpressionX a t -> Expression1 t
 sinh =
     dotted1 << call1Internal "sinh"
@@ -896,6 +908,7 @@ vec2 x y =
     { base = call2Internal "vec2" x y
     , x = { base = x.base }
     , y = { base = y.base }
+    , yx = { base = call2Internal "vec2" y x }
     }
 
 
@@ -925,6 +938,7 @@ vec4 x y z w =
     , z = { base = z.base }
     , w = { base = w.base }
     , xy = dotted2 <| call2Internal "vec2" x y
+    , yx = dotted2 <| call2Internal "vec2" y x
     , yzw = dotted3 <| call3Internal "vec3" y z w
     }
 
@@ -1106,6 +1120,7 @@ dotted2Internal e =
     { base = Expression e
     , x = dotInternal e "x"
     , y = dotInternal e "y"
+    , yx = dotInternal e "yx"
     }
 
 
@@ -1135,8 +1150,9 @@ dotted4Internal e =
     , y = dotInternal e "y"
     , z = dotInternal e "z"
     , w = dotInternal e "w"
-    , xy = dotted2 (Expression (Dot e "xy"))
-    , yzw = dotted3 (Expression (Dot e "yzw"))
+    , xy = dotted2 <| Expression <| Dot e "xy"
+    , yx = dotted2 <| Expression <| Dot e "yx"
+    , yzw = dotted3 <| Expression <| Dot e "yzw"
     }
 
 
