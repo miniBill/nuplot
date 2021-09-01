@@ -32,50 +32,9 @@ init : Model
 init =
     let
         i =
-            """{for(int it = 0; it < MAX_ITERATIONS; it++) {
-                                float midpoint = mix(from, to, 0.5);
-                                vec2 front = interval\"\"\" ++ suffix ++ \"\"\"(p, from, midpoint);
-                                vec2 back = interval\"\"\" ++ suffix ++ \"\"\"(p, midpoint, to);
-                                if(depth >= MAX_DEPTH
-                                    || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
-                                    || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
-                                    )
-                                        return vec3(1,1,1);
-                                if(front.x <= 0.0 && front.y >= 0.0) {
-                                    to = midpoint;
-                                    depth++;
-                                    choices = choices * 2;
-                                } else if(back.x <= 0.0 && back.y >= 0.0) {
-                                    from = midpoint;
-                                    depth++;
-                                    choices = choices * 2 + 1;
-                                } else {
-                                    // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
-                                    for(int j = MAX_DEPTH - 1; j > 0; j--) {
-                                        if(j > depth)
-                                            continue;
-                                        depth--;
-                                        choices /= 2;
-                                        if(choices / 2 * 2 == choices) {
-                                            midpoint = to;
-                                            to = to + (to - from);
-                                            vec2 back = interval\"\"\" ++ suffix ++ \"\"\"(p, midpoint, to);
-                                            if(back.x <= 0.0 && back.y >= 0.0) {
-                                                from = midpoint;
-                                                depth++;
-                                                choices = choices * 2 + 1;
-                                                break;
-                                            }
-                                        } else {
-                                            from = from - (to - from);
-                                        }
-                                    }
-                                    if(depth == 0)
-                                        return vec3(0,0,0);
-                                }
-                            }
-                            return vec3(0,0,0);
-                               
+            """{
+
+
 
 }"""
     in
@@ -211,7 +170,7 @@ type UnaryOperation
 type Expression
     = Float Float
     | Int Int
-    | Dot String String
+    | Dot Expression String
     | Variable String
     | Call String (List Expression)
     | Ternary Expression Expression Expression
@@ -563,21 +522,19 @@ unaryParser =
 
 atomParser : Parser Expression
 atomParser =
-    succeed (\a f -> f a)
+    succeed (\a f   ->   f a)
         |= oneOf
-            [ succeed identity
+            [ succeed (\a f -> f a)
                 |. symbol "("
                 |. spaces
                 |= Parser.lazy (\_ -> expressionParser)
                 |. spaces
                 |. symbol ")"
-            , succeed (\a f -> f a)
+                |= maybeDot
+            , succeed (\a f md ->md<| f a)
                 |= Parser.map .name identifierWithSuffixParser
                 |= oneOf
-                    [ succeed (\sw v -> Dot v sw)
-                        |. symbol "."
-                        |= identifierParser
-                    , succeed (\args v -> Call v args)
+                    [ succeed (\args v -> Call v args)
                         |= sequence
                             { start = "("
                             , separator = ","
@@ -588,6 +545,7 @@ atomParser =
                             }
                     , succeed Variable
                     ]
+                |= maybeDot
             , Parser.andThen tryParseNumber <|
                 getChompedString <|
                     succeed ()
@@ -600,6 +558,16 @@ atomParser =
                 |. symbol "++"
             , succeed identity
             ]
+
+
+maybeDot : Parser (Expression -> Expression)
+maybeDot =
+    oneOf
+        [ succeed (\p v -> Dot v p)
+            |. symbol "."
+            |= identifierParser
+        , succeed identity
+        ]
 
 
 tryParseNumber : String -> Parser Expression
@@ -772,7 +740,7 @@ prettyPrintExpression e =
             lisp [ "int", String.fromInt i ]
 
         Dot v sw ->
-            v ++ "." ++ sw
+            prettyPrintExpression v ++ "." ++ sw
 
         Variable v ->
             v
@@ -806,7 +774,7 @@ prettyPrintExpression e =
                 else
                     lisp <| "atan_" :: List.map prettyPrintExpression args
 
-            else if List.member n [ "sin", "cos", "radians", "round", "floor", "ceil" ] then
+            else if List.member n [ "sin", "cos", "radians", "round", "floor", "ceil", "sqrt" ] then
                 lisp <| (n ++ "_") :: List.map prettyPrintExpression args
 
             else
