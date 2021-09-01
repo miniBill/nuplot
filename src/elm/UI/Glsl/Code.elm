@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -127,16 +127,14 @@ cdivTuple =
         \a b ->
             def floatT "k" (div one <| dot b b) <|
                 \k ->
-                    def floatT "r" (by k <| dot a b) <|
-                        \r ->
-                            def floatT
-                                "i"
-                                (by k
-                                    (subtract (by a.y b.x) (by a.x b.y))
-                                )
-                            <|
-                                \i ->
-                                    return <| vec2 r i
+                    def2
+                        ( floatT "r", by k <| dot a b )
+                        ( floatT "i"
+                        , by k (subtract (by a.y b.x) (by a.x b.y))
+                        )
+                    <|
+                        \r i ->
+                            return <| vec2 r i
 
 
 cdivDecl : FunDecl
@@ -219,7 +217,7 @@ inegCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 inegCouple =
     fun1 vec2T "ineg" (vec2T "v") <|
         \v ->
-            return <| vec2 (negate_ v.y) (negate_ v.x)
+            return <| negate_ v.yx
 
 
 inegDecl : FunDecl
@@ -534,7 +532,7 @@ gpow =
 
 iltCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
 iltCouple =
-    fun2 vec2T "ilt" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract r.x l.y) (subtract r.y l.x)
+    fun2 vec2T "ilt" (vec2T "l") (vec2T "r") <| \l r -> return <| subtract r l.yx
 
 
 iltDecl : FunDecl
@@ -549,7 +547,7 @@ ilt =
 
 ileqCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
 ileqCouple =
-    fun2 vec2T "ileq" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract r.x l.y) (subtract r.y l.x)
+    fun2 vec2T "ileq" (vec2T "l") (vec2T "r") <| \l r -> return <| subtract r l.yx
 
 
 ileqDecl : FunDecl
@@ -564,7 +562,7 @@ ileq =
 
 ineqCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
 ineqCouple =
-    fun2 vec2T "ineq" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract r.x l.y) (subtract r.y l.x)
+    fun2 vec2T "ineq" (vec2T "l") (vec2T "r") <| \l r -> return <| subtract r l.yx
 
 
 ineqDecl : FunDecl
@@ -579,7 +577,7 @@ ineq =
 
 ieqCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
 ieqCouple =
-    fun2 vec2T "ieq" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract l.x r.y) (subtract l.y r.x)
+    fun2 vec2T "ieq" (vec2T "l") (vec2T "r") <| \l r -> return <| subtract l r.yx
 
 
 ieqDecl : FunDecl
@@ -594,7 +592,7 @@ ieq =
 
 igeqCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
 igeqCouple =
-    fun2 vec2T "igeq" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract l.x r.y) (subtract l.y r.x)
+    fun2 vec2T "igeq" (vec2T "l") (vec2T "r") <| \l r -> return <| subtract l r.yx
 
 
 igeqDecl : FunDecl
@@ -609,7 +607,7 @@ igeq =
 
 igtCouple : ( FunDecl, ExpressionX xa Vec2 -> ExpressionX xb Vec2 -> Expression2 )
 igtCouple =
-    fun2 vec2T "igt" (vec2T "l") (vec2T "r") <| \l r -> return <| vec2 (subtract l.x r.y) (subtract l.y r.x)
+    fun2 vec2T "igt" (vec2T "l") (vec2T "r") <| \l r -> return <| subtract l r.yx
 
 
 igtDecl : FunDecl
@@ -632,7 +630,7 @@ iabsCouple =
                     (vec2 zero <| max_ z.y <| abs_ z.x)
                     (ternary
                         (leq z.x zero)
-                        (vec2 (negate_ z.y) (negate_ z.x))
+                        (negate_ z.yx)
                         z
                     )
 
@@ -645,6 +643,62 @@ iabsDecl =
 iabs : ExpressionX xa Vec2 -> Expression2
 iabs =
     Tuple.second iabsCouple
+
+
+iacosCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
+iacosCouple =
+    fun1 vec2T "iacos" (vec2T "z") <|
+        \z ->
+            -- Don't use clamp so if z is fully outside range the result is empty
+            def vec2T "clamped" (vec2 (max_ z.x (negate_ one)) (min_ z.y one)) <|
+                \clamped ->
+                    return <| (acos2 clamped).yx
+
+
+iacosDecl : FunDecl
+iacosDecl =
+    Tuple.first iacosCouple
+
+
+iacos : ExpressionX xa Vec2 -> Expression2
+iacos =
+    Tuple.second iacosCouple
+
+
+
+-- """
+-- vec2 iacos(vec2 z) {
+--     // Don't use clamp so if z is fully outside range the result is empty
+--     vec2 clamped = vec2(
+--         max(z.x, -1.0),
+--         min(z.y, 1.0)
+--     );
+--     return acos(clamped).yx;
+-- }
+-- vec4 gacos(vec4 v) {
+--     return vec4(acos(v.x), -v.yzw / sqrt(1.0 - v.x * v.x));
+-- }
+-- """
+
+
+gacosCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
+gacosCouple =
+    fun1 vec4T "gacos" (vec4T "v") <|
+        \v ->
+            return <|
+                vec4_1_3
+                    (acos_ v.x)
+                    (divF (negate_ v.yzw) (sqrt_ (subtract one (by v.x v.x))))
+
+
+gacosDecl : FunDecl
+gacosDecl =
+    Tuple.first gacosCouple
+
+
+gacos : ExpressionX xa Vec4 -> Expression4
+gacos =
+    Tuple.second gacosCouple
 
 
 gabsCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
@@ -664,7 +718,7 @@ gabs =
 
 iexpCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 iexpCouple =
-    fun1 vec2T "iexp" (vec2T "z") <| \z -> return <| vec2 (exp z.x) (exp z.y)
+    fun1 vec2T "iexp" (vec2T "z") <| \z -> return <| exp z
 
 
 iexpDecl : FunDecl
@@ -694,7 +748,7 @@ gexp =
 
 ilnCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 ilnCouple =
-    fun1 vec2T "iln" (vec2T "z") <| \z -> return <| vec2 (log z.x) (log z.y)
+    fun1 vec2T "iln" (vec2T "z") <| \z -> return <| log z
 
 
 ilnDecl : FunDecl
@@ -778,7 +832,10 @@ ctanCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 ctanCouple =
     fun1 vec2T "ctan" (vec2T "z") <|
         \z ->
-            return <| ternary (eq z.y zero) (vec2 (tan_ z.x) zero) (cdiv (csin z) (ccos z))
+            return <|
+                ternary (eq z.y zero)
+                    (vec2 (tan_ z.x) zero)
+                    (cdiv (csin z) (ccos z))
 
 
 ctanDecl : FunDecl
@@ -814,7 +871,9 @@ casin =
 
 cacosTuple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 cacosTuple =
-    fun1 vec2T "cacos" (vec2T "z") <| \z -> return <| subtract (vec2 constants.pihalf zero) (casin z)
+    fun1 vec2T "cacos" (vec2T "z") <|
+        \z ->
+            return <| subtract (vec2 constants.pihalf zero) (casin z)
 
 
 cacosDecl : FunDecl
@@ -946,9 +1005,7 @@ cabs =
 
 csignCouple : ( FunDecl, ExpressionX xa Vec2 -> Expression2 )
 csignCouple =
-    fun1 vec2T "csign" (vec2T "z") <|
-        \z ->
-            return <| vec2 (sign z.x) (sign z.y)
+    fun1 vec2T "csign" (vec2T "z") <| \z -> return <| sign z
 
 
 csignDecl : FunDecl
@@ -1107,9 +1164,12 @@ cexpTuple =
 
 cexpFunction : Expression2 -> Statement Vec2
 cexpFunction z =
-    if_ (eq z.y zero)
-        (return <| vec2 (exp z.x) zero)
-        (return <| vec2 (by (cos_ z.y) (exp z.x)) (by (sin_ z.y) (exp z.x)))
+    return <|
+        byF (exp z.x) <|
+            ternary
+                (eq z.y zero)
+                (vec2 one zero)
+                (vec2 (cos_ z.y) (sin_ z.y))
 
 
 cexpDecl : FunDecl
@@ -1453,20 +1513,7 @@ intervalFunctionToGlsl name =
             fileToGlsl [ iabsDecl, gabsDecl ]
 
         Acos22 ->
-            """
-            vec2 iacos(vec2 z) {
-                // Don't use clamp so if z is fully outside range the result is empty
-                vec2 clamped = vec2(
-                    max(z.x, -1.0),
-                    min(z.y, 1.0)
-                );
-                return acos(clamped).yx;
-            }
-
-            vec4 gacos(vec4 v) {
-                return vec4(acos(v.x), -v.yzw / sqrt(1.0 - v.x * v.x));
-            }
-            """
+            fileToGlsl [ iacosDecl, gacosDecl ]
 
         Arg22 ->
             """
@@ -1697,7 +1744,7 @@ intervalFunctionToGlsl name =
         Sqrt22 ->
             """
             vec2 isqrt(vec2 v) {
-                return vec2(sqrt(max(0.0, v.x)), sqrt(max(0.0, v.y)));
+                return sqrt(max(vec2(0,0), v));
             }
 
             vec4 gsqrt(vec4 v) {
@@ -1754,7 +1801,7 @@ intervalFunctionToGlsl name =
         Min222 ->
             """
             vec2 imin(vec2 l, vec2 r) {
-                return vec2(min(l.x, r.x), min(l.y, r.y));
+                return min(l, r);
             }
 
             vec4 gmin(vec4 l, vec4 r) {
@@ -1765,7 +1812,7 @@ intervalFunctionToGlsl name =
         Max222 ->
             """
             vec2 imax(vec2 l, vec2 r) {
-                return vec2(max(l.x, r.x), max(l.y, r.y));
+                return max(l, r);
             }
 
             vec4 gmax(vec4 l, vec4 r) {
@@ -1938,7 +1985,7 @@ toSrcParametric suffix e =
                     def3
                         ( vec2T "x", vec2 p.x p.x )
                         ( vec2T "y", vec2 p.y p.y )
-                        ( vec2T "t", ternary (lt from to) (vec2 from to) (vec2 to from) )
+                        ( vec2T "t", vec2 (min_ from to) (max_ from to) )
                     <|
                         \x y t ->
                             return <| expressionToIntervalGlsl (toPrintExpression e)
@@ -2559,7 +2606,7 @@ expressionToIntervalGlsl expr =
             if List.any (\( _, v ) -> name == KnownFunction v) Expression.variadicFunctions then
                 case List.map go ex of
                     [] ->
-                        vec2 zero zero
+                        vec2Zero
 
                     head :: tail ->
                         dotted2 <| List.foldl (\e a -> unsafeCall ("i" ++ Expression.functionNameToString name) [ a, e.base ]) head.base tail
@@ -2575,7 +2622,7 @@ expressionToIntervalGlsl expr =
 
         -- If this happens, it's too late
         PLambda _ _ ->
-            vec2 zero zero
+            vec2Zero
 
 
 expressionToNormalGlsl : { x : Expression1 Float, y : Expression1 Float, z : Expression1 Float } -> Expression.Expression -> Expression4
