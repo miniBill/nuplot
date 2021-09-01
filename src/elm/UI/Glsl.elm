@@ -8,7 +8,7 @@ import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, 
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (atanPlusDecl, constantToGlsl, deindent, dupDecl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (FunDecl, boolT, fileToGlsl, floatT, fun4, mat3T, out, unknown, unknownFunDecl, unknownStatement, vec3T)
+import UI.Glsl.Generator as Generator exposing (FunDecl, boolT, fileToGlsl, floatT, fun4, mat3T, out, unknown, unknownStatement, vec3T)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -149,7 +149,14 @@ getGlsl rayDifferentials graph =
                 |> List.map (requirementToGlsl interval)
                 |> String.join "\n"
     in
-    declarations
+    "#define PIHALF "
+        ++ String.fromFloat (pi / 2)
+        ++ "\n#define PI "
+        ++ String.fromFloat pi
+        ++ "\n#define TWOPI "
+        ++ String.fromFloat (pi * 2)
+        ++ "\n"
+        ++ declarations
         ++ thetaDeltaCode
         ++ reqs
         ++ "\n/* Expression */\n"
@@ -157,21 +164,9 @@ getGlsl rayDifferentials graph =
         ++ mainGlsl rayDifferentials pixel2D pixel3D
 
 
-piDecl : FunDecl
-piDecl =
-    unknownFunDecl
-        { name = "PI"
-        , type_ = "float"
-        , body =
-            """#define PIHALF """ ++ String.fromFloat (pi / 2) ++ """
-            #define PI """ ++ String.fromFloat pi ++ """
-            #define TWOPI """ ++ String.fromFloat (pi * 2)
-        }
-
-
 declarations : String
 declarations =
-    [ piDecl, atanPlusDecl, gnumDecl, dupDecl ]
+    [ atanPlusDecl, gnumDecl, dupDecl ]
         |> Generator.fileToGlsl
 
 
