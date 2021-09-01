@@ -8,7 +8,7 @@ import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, 
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (atanPlusDecl, constantToGlsl, deindent, dupDecl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (FunDecl, boolT, fileToGlsl, floatT, fun4, mat3T, out, unknown, unknownStatement, vec3T)
+import UI.Glsl.Generator as Generator exposing (FunDecl, boolT, def, fileToGlsl, float, floatT, fun4, mat3T, out, unknown, unknownStatement, vec3T)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -278,12 +278,11 @@ tryGlslFromPolynomial suffix e =
                 ( funDecl, _ ) =
                     fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
                         \o d maxDistance found ->
-                            unknownStatement ("""
-                        float t = max_distance * 2.0;
-                        """ ++ checks ++ """
-                        found = o + t * mix(d[0], d[1], 0.5);
-                        return t < max_distance && t > 0.0;
-                    """)
+                            def floatT "t" (Generator.by maxDistance <| float 2) <|
+                                \t_ ->
+                                    unknownStatement (checks ++ """
+                                    found = o + t * mix(d[0], d[1], 0.5);
+                                    return t < max_distance && t > 0.0;""")
             in
             { expr = div one <| sqrt_ <| cbrt <| ipow e 3
             , funDecls = [ funDecl ]
