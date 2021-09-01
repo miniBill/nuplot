@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownFunDecl, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, out, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -663,22 +663,6 @@ iacosDecl =
 iacos : ExpressionX xa Vec2 -> Expression2
 iacos =
     Tuple.second iacosCouple
-
-
-
--- """
--- vec2 iacos(vec2 z) {
---     // Don't use clamp so if z is fully outside range the result is empty
---     vec2 clamped = vec2(
---         max(z.x, -1.0),
---         min(z.y, 1.0)
---     );
---     return acos(clamped).yx;
--- }
--- vec4 gacos(vec4 v) {
---     return vec4(acos(v.x), -v.yzw / sqrt(1.0 - v.x * v.x));
--- }
--- """
 
 
 gacosCouple : ( FunDecl, ExpressionX xa Vec4 -> Expression4 )
@@ -2255,16 +2239,23 @@ toSrcContour suffix expr =
                                                         )
 
         ( pixelDecl, pixel ) =
+            let
+                dist =
+                    1 / 3
+            in
             fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <|
                 \deltaX deltaY x y ->
-                    -- Antialiasing
-                    def floatT "dist" (float <| 1 / 3) <|
-                        \dist ->
+                    def2
+                        ( floatT "deltaXr", by deltaX <| float dist )
+                        ( floatT "deltaYr", by deltaY <| float dist )
+                    <|
+                        \deltaXr deltaYr ->
+                            -- Antialiasing
                             def4
-                                ( vec3T "a", pixelO deltaX deltaY (add x <| by dist deltaX) (add y <| by dist deltaY) )
-                                ( vec3T "b", pixelO deltaX deltaY (subtract x <| by dist deltaX) (subtract y <| by dist deltaY) )
-                                ( vec3T "c", pixelO deltaX deltaY (add x <| by dist deltaX) (subtract y <| by dist deltaY) )
-                                ( vec3T "d", pixelO deltaX deltaY (subtract x <| by dist deltaX) (add y <| by dist deltaY) )
+                                ( vec3T "a", pixelO deltaX deltaY (add x deltaXr) (add y deltaYr) )
+                                ( vec3T "b", pixelO deltaX deltaY (subtract x deltaXr) (subtract y deltaYr) )
+                                ( vec3T "c", pixelO deltaX deltaY (add x deltaXr) (subtract y deltaYr) )
+                                ( vec3T "d", pixelO deltaX deltaY (subtract x deltaXr) (add y deltaYr) )
                             <|
                                 \a b c d ->
                                     def2
@@ -2274,18 +2265,19 @@ toSrcContour suffix expr =
                                         \mn mx ->
                                             def vec3T "diff" (abs_ (subtract mx mn)) <|
                                                 \diff ->
-                                                    if_ (ands [ lt diff.x dist, lt diff.y dist, lt diff.z dist ])
+                                                    if_ (ands [ lt diff.x (float dist), lt diff.y (float dist), lt diff.z (float dist) ])
                                                         (return <| divF (adds3 [ a, b, c, d ]) (float 4))
-                                                        (def floatT "dist2" (by (float 2) dist) <|
-                                                            \dist2 ->
+                                                        (assignBy deltaXr (float 2) <|
+                                                            (assignBy deltaYr (float 2) <|
                                                                 def4
-                                                                    ( vec3T "e", pixelO deltaX deltaY (add x <| byF dist2 deltaX) y )
-                                                                    ( vec3T "f", pixelO deltaX deltaY (subtract x <| byF dist2 deltaX) y )
-                                                                    ( vec3T "g", pixelO deltaX deltaY x (subtract y <| byF dist2 deltaY) )
-                                                                    ( vec3T "h", pixelO deltaX deltaY x (add y <| byF dist2 deltaY) )
+                                                                    ( vec3T "e", pixelO deltaX deltaY (add x deltaXr) y )
+                                                                    ( vec3T "f", pixelO deltaX deltaY (subtract x deltaXr) y )
+                                                                    ( vec3T "g", pixelO deltaX deltaY x (subtract y deltaYr) )
+                                                                    ( vec3T "h", pixelO deltaX deltaY x (add y deltaYr) )
                                                                 <|
                                                                     \e f g h ->
                                                                         return <| divF (adds3 [ a, b, c, d, e, f, g, h ]) (float 8)
+                                                            )
                                                         )
     in
     ( [ pixelODecl, pixelDecl ], pixel )
@@ -2438,8 +2430,6 @@ expressionToGlsl context =
                 PApply (KnownFunction Abs) [ e ] ->
                     cabs (go e)
 
-                -- PApply (KnownFunction (Root r)) [ e ] ->
-                --     croot r (go e)
                 PApply (KnownFunction Ln) [ e ] ->
                     cln (go e)
 
@@ -2461,14 +2451,6 @@ expressionToGlsl context =
                 PApply (KnownFunction Arg) [ e ] ->
                     carg (go e)
 
-                -- PApply (KnownFunction Gra) [ e ] ->
-                --     cgra (go e)
-                -- PApply (KnownFunction Det) [ e ] ->
-                --     cdet (go e)
-                -- PApply (KnownFunction Dd) [ e ] ->
-                --     cdd (go e)
-                -- PApply (KnownFunction Ii) [ e ] ->
-                --     cii (go e)
                 PApply (KnownFunction Round) [ e ] ->
                     cround (go e)
 
@@ -2481,22 +2463,12 @@ expressionToGlsl context =
                 PApply (KnownFunction Pw) [ c, t, f ] ->
                     cpw (go c) (go t) (go f)
 
-                -- PApply (KnownFunction Plot) [ e ] ->
-                --     cplot (go e)
-                -- PApply (KnownFunction APlot) [ e ] ->
-                --     caPlot (go e)
-                -- PApply (KnownFunction StepSimplify) [ e ] ->
-                --     cstepSimplify (go e)
-                -- PApply (KnownFunction Solve) [ e ] ->
-                --     csolve (go e)
                 PApply (KnownFunction Mod) [ l, r ] ->
                     cmod (go l) (go r)
 
                 PApply (KnownFunction Mbrot) [ x, y ] ->
                     cmbrot (go x) (go y)
 
-                -- PApply (KnownFunction For) [ e ] ->
-                --     cfor (go e)
                 PApply (KnownFunction Min) es ->
                     variadic cmin es
 
@@ -2506,6 +2478,26 @@ expressionToGlsl context =
                 PApply (UserFunction name) ex ->
                     dotted2 <| unsafeCall ("c" ++ name) (List.map (go >> .base) ex)
 
+                -- PApply (KnownFunction Gra) [ e ] ->
+                --     cgra (go e)
+                -- PApply (KnownFunction Det) [ e ] ->
+                --     cdet (go e)
+                -- PApply (KnownFunction Dd) [ e ] ->
+                --     cdd (go e)
+                -- PApply (KnownFunction Ii) [ e ] ->
+                --     cii (go e)
+                -- PApply (KnownFunction Plot) [ e ] ->
+                --     cplot (go e)
+                -- PApply (KnownFunction APlot) [ e ] ->
+                --     caPlot (go e)
+                -- PApply (KnownFunction StepSimplify) [ e ] ->
+                --     cstepSimplify (go e)
+                -- PApply (KnownFunction Solve) [ e ] ->
+                --     csolve (go e)
+                -- PApply (KnownFunction For) [ e ] ->
+                --     cfor (go e)
+                -- PApply (KnownFunction (Root r)) [ e ] ->
+                --     croot r (go e)
                 PApply name ex ->
                     dotted2 <| unsafeCall ("c" ++ functionNameToString name) (List.map (go >> .base) ex)
 
@@ -2956,7 +2948,7 @@ main3D rayDifferentials suffixes =
 
         ( block, pixel3 ) =
             fun0 vec4T "pixel3" <|
-                (def floatT "eye_dist" (byF (float 2) uniforms.u_viewportWidth) <|
+                def floatT "eye_dist" (byF (float 2) uniforms.u_viewportWidth) <|
                     \eyeDist ->
                         def vec2T "canvas_size" (vec2 uniforms.u_canvasWidth uniforms.u_canvasHeight) <|
                             \canvasSize ->
@@ -2993,7 +2985,6 @@ main3D rayDifferentials suffixes =
                                                                                                                                                         def floatT "max_distance" (by (float 100) eyeDist) <|
                                                                                                                                                             \maxDistance ->
                                                                                                                                                                 return <| raytraceF canvasPoint d maxDistance
-                )
 
         dValue : ExpressionX a Vec3 -> ExpressionX b Float -> ExpressionX c Vec3 -> Expression33
         dValue rayDirection k diffs =
@@ -3002,7 +2993,7 @@ main3D rayDifferentials suffixes =
                 (add rayDirection <| byF k diffs)
                 vec3Zero
 
-        ( raytraceSrc, raytraceF ) =
+        ( raytraceDecl, raytraceF ) =
             raytrace suffixes
 
         eyePosition eyeDist t p =
@@ -3013,10 +3004,10 @@ main3D rayDifferentials suffixes =
                         (by (cos_ t) (negate_ <| cos_ p))
                         (sin_ t)
     in
-    ( deindent 12 <| raytraceSrc ++ fileToGlsl [ block ], pixel3 )
+    ( fileToGlsl [ raytraceDecl, block ], pixel3 )
 
 
-raytrace : List String -> ( String, ExpressionX a Vec3 -> ExpressionX b Mat3 -> Expression1 Float -> Expression4 )
+raytrace : List String -> ( FunDecl, ExpressionX a Vec3 -> ExpressionX b Mat3 -> Expression1 Float -> Expression4 )
 raytrace suffixes =
     let
         colorCoeff =
@@ -3043,16 +3034,19 @@ raytrace suffixes =
                         light_coeff = 0.2;
                     }
             """
-
-        src =
-            """
-            vec4 raytrace(vec3 o, mat3 d, float max_distance) {
-                vec3 found = vec3(0);
-                float curr_distance = max_distance;
-                int found_index = -1;
-                vec3 f = vec3(0);
-                vec3 n = vec3(0);
-                """ ++ innerTrace ++ """
+    in
+    fun3 vec4T "ratytrace" (vec3T "o") (mat3T "d") (floatT "max_distance") <|
+        \o d maxDistance ->
+            def5
+                ( vec3T "found", vec3Zero )
+                ( floatT "curr_distance", maxDistance )
+                ( intT "found_index", int -1 )
+                ( vec3T "f", vec3Zero )
+                ( vec3T "n", vec3Zero )
+            <|
+                \found currDistance foundIndex f n ->
+                    unknownStatement
+                        (innerTrace ++ """
                 if(found_index < 0)
                     return vec4(0,0,0,1);
 
@@ -3073,36 +3067,23 @@ raytrace suffixes =
                     max(0.2, """ ++ colorCoeff ++ """)
                 );
                 return vec4(px, 1.0);
-            }
-    """
-    in
-    ( src
-    , \o d maxDistance ->
-        dotted4 <|
-            unsafeCall "raytrace"
-                [ Generator.uNsAfEtYpEcAsT o.base
-                , Generator.uNsAfEtYpEcAsT d.base
-                , Generator.uNsAfEtYpEcAsT maxDistance.base
-                ]
-    )
+    """)
 
 
-threshold : String
-threshold =
-    "0.000001 * max_distance"
+threshold : ExpressionX x Float -> Expression1 Float
+threshold max_distance =
+    by (float 0.000001) max_distance
 
 
-suffixToBisect : String -> FunDecl
+suffixToBisect : String -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool )
 suffixToBisect suffix =
-    unknownFunDecl
-        { name = "bisect" ++ suffix
-        , type_ = "TODO"
-        , body =
-            """
-            bool bisect""" ++ suffix ++ """(vec3 o, mat3 d, float max_distance, out vec3 found) {
+    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
+        \o d maxDistance found ->
+            unknownStatement
+                ("""
                 mat3 from = mat3(o, o, vec3(0));
                 mat3 to = from + max_distance * d;
-                float ithreshold = """ ++ threshold ++ """;
+                float ithreshold = """ ++ Generator.expressionToGlsl (threshold maxDistance).base ++ """;
                 int depth = 0;
                 int choices = 0;
                 for(int it = 0; it < MAX_ITERATIONS; it++) {
@@ -3150,9 +3131,7 @@ suffixToBisect suffix =
                     }
                 }
                 return false;
-            }
-    """
-        }
+    """)
 
 
 deindent : Int -> String -> String
