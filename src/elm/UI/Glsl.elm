@@ -8,7 +8,7 @@ import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, 
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (atanPlusDecl, constantToGlsl, deindent, dupDecl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (FunDecl, boolT, def, fileToGlsl, float, floatT, fun4, mat3T, out, unknown, unknownStatement, vec3T)
+import UI.Glsl.Generator as Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, boolT, def, fileToGlsl, float, floatT, fun4, mat3T, out, unknown, unknownStatement, vec3T)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -92,7 +92,7 @@ getGlsl rayDifferentials graph =
                     , interval = IntervalAndStraight
                     , usesThetaDelta = True
                     , pixel2D = []
-                    , pixel3D = [ prefix ]
+                    , pixel3D = [ f.bisect ]
                     }
 
                 GraphList children ->
@@ -170,19 +170,33 @@ declarations =
         |> Generator.fileToGlsl
 
 
-get3DSource : String -> Expression -> { expr : Expression, funDecls : List FunDecl }
+get3DSource :
+    String
+    -> Expression
+    ->
+        { expr : Expression
+        , funDecls : List FunDecl
+        , bisect :
+            ExpressionX xa Vec3
+            -> ExpressionX xb Mat3
+            -> ExpressionX xc Float
+            -> ExpressionX xd Vec3
+            -> Expression1 Bool
+        }
 get3DSource prefix e =
     case Sphere.asSphere e |> Maybe.map (Sphere.toGlsl prefix) of
-        Just glsl ->
+        Just ( glsl, bisect ) ->
             { expr = e
-            , funDecls = [ Tuple.first glsl ]
+            , funDecls = [ glsl ]
+            , bisect = bisect
             }
 
         Nothing ->
             case Plane.asPlane e |> Maybe.map (Plane.toGlsl prefix) of
-                Just ( glsl, _ ) ->
+                Just ( glsl, bisect ) ->
                     { expr = e
                     , funDecls = [ glsl ]
+                    , bisect = bisect
                     }
 
                 Nothing ->
@@ -194,13 +208,20 @@ get3DSource prefix e =
                             let
                                 glsl =
                                     toSrc3D prefix e
+
+                                ( decl, bisect ) =
+                                    UI.Glsl.Code.suffixToBisect prefix
                             in
                             { expr = e
-                            , funDecls = glsl ++ [ Tuple.first <| UI.Glsl.Code.suffixToBisect prefix ]
+                            , funDecls = glsl ++ [ decl ]
+                            , bisect = bisect
                             }
 
 
-tryGlslFromPolynomial : String -> Expression -> Maybe { expr : Expression, funDecls : List FunDecl }
+
+--tryGlslFromPolynomial : String -> Expression -> Maybe { expr : Expression, funDecls : List FunDecl }
+
+
 tryGlslFromPolynomial suffix e =
     let
         t =
@@ -275,7 +296,7 @@ tryGlslFromPolynomial suffix e =
                         |> List.reverse
                         |> String.join "\n                        "
 
-                ( funDecl, _ ) =
+                ( funDecl, bisect ) =
                     fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
                         \o d maxDistance found ->
                             def floatT "t" (Generator.by maxDistance <| float 2) <|
@@ -286,9 +307,11 @@ tryGlslFromPolynomial suffix e =
             in
             { expr = div one <| sqrt_ <| cbrt <| ipow e 3
             , funDecls = [ funDecl ]
+            , bisect = bisect
             }
     in
-    UI.Glsl.Polynomial.getSolutions { base = unknown "max_distance" } poly |> Maybe.map (\( _, sols ) -> fromSols sols)
+    UI.Glsl.Polynomial.getSolutions { base = unknown "max_distance" } poly
+        |> Maybe.map (\( _, sols ) -> fromSols sols)
 
 
 transitiveClosure : List Requirement -> List Requirement

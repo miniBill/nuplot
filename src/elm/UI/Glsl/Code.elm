@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def2, def3, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, out, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def1, def2, def3, def3Chain, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, out, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -2712,15 +2712,18 @@ expressionToNormalGlsl { x, y, z } =
     toPrintExpression >> go
 
 
-mainGlsl :
-    Bool
-    ->
-        List
-            { call : Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression3
-            , color : Bool
-            }
-    -> List String
-    -> String
+
+-- mainGlsl :
+--     Bool
+--     ->
+--         List
+--             { call : Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression3
+--             , color : Bool
+--             }
+--     -> List String
+--     -> String
+
+
 mainGlsl rayDifferentials pixel2Def pixel3Def =
     case ( pixel2Def, pixel3Def ) of
         ( _, [] ) ->
@@ -2936,8 +2939,12 @@ toSrc3D suffix e =
     ]
 
 
-main3D : Bool -> List String -> ( String, Expression4 )
-main3D rayDifferentials suffixes =
+
+--main3D : Bool -> List String -> ( String, Expression4 )
+
+
+main3D : Bool -> List (Expression3 -> Expression1 Mat3 -> Expression1 Float -> Expression3 -> Expression1 Bool) -> ( String, Expression4 )
+main3D rayDifferentials bisects =
     let
         kValue =
             if rayDifferentials then
@@ -2980,11 +2987,12 @@ main3D rayDifferentials suffixes =
                                                                                                                                     \diffs ->
                                                                                                                                         def floatT "k" (float kValue) <|
                                                                                                                                             \k ->
-                                                                                                                                                def mat3T "d" (dValue rayDirection k diffs) <|
-                                                                                                                                                    \d ->
-                                                                                                                                                        def floatT "max_distance" (by (float 100) eyeDist) <|
-                                                                                                                                                            \maxDistance ->
-                                                                                                                                                                return <| raytraceF canvasPoint d maxDistance
+                                                                                                                                                def2
+                                                                                                                                                    ( mat3T "d", dValue rayDirection k diffs )
+                                                                                                                                                    ( floatT "max_distance", by (float 100) eyeDist )
+                                                                                                                                                <|
+                                                                                                                                                    \d maxDistance ->
+                                                                                                                                                        return <| raytraceF canvasPoint d maxDistance
 
         dValue : ExpressionX a Vec3 -> ExpressionX b Float -> ExpressionX c Vec3 -> Expression33
         dValue rayDirection k diffs =
@@ -2994,7 +3002,7 @@ main3D rayDifferentials suffixes =
                 vec3Zero
 
         ( raytraceDecl, raytraceF ) =
-            raytrace suffixes
+            raytrace bisects
 
         eyePosition eyeDist t p =
             byF eyeDist <|
@@ -3007,67 +3015,98 @@ main3D rayDifferentials suffixes =
     ( fileToGlsl [ raytraceDecl, block ], pixel3 )
 
 
-raytrace : List String -> ( FunDecl, ExpressionX a Vec3 -> ExpressionX b Mat3 -> Expression1 Float -> Expression4 )
-raytrace suffixes =
+
+-- raytrace :
+--     List
+--         (Expression3
+--          -> Expression1 Mat3
+--          -> Expression1 Float
+--          -> ExpressionX a Vec3
+--          -> Expression1 Bool
+--         )
+--     -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> Expression4 )
+
+
+raytrace bisects =
     let
         colorCoeff =
-            floatToGlsl (1.19 - 0.2 * toFloat (List.length suffixes))
-
-        innerTrace =
-            String.join "\n" (List.indexedMap suffixToRay suffixes)
-
-        innerLightTrace =
-            String.join "\n" (List.map suffixToRayLight suffixes)
-
-        suffixToRay i suffix =
-            """
-                if(bisect""" ++ suffix ++ """(o, d, max_distance, f) && length(f - o) < curr_distance) {
-                    found_index = """ ++ String.fromInt i ++ """;
-                    found = f;
-                    curr_distance = length(found - o);
-                }
-            """
-
-        suffixToRayLight suffix =
-            """
-                    else if(bisect""" ++ suffix ++ """(offseted, light_direction, light_distance, f)) {
-                        light_coeff = 0.2;
-                    }
-            """
+            float (1.19 - 0.2 * toFloat (List.length bisects))
     in
     fun3 vec4T "ratytrace" (vec3T "o") (mat3T "d") (floatT "max_distance") <|
         \o d maxDistance ->
-            def5
+            def4
                 ( vec3T "found", vec3Zero )
                 ( floatT "curr_distance", maxDistance )
                 ( intT "found_index", int -1 )
                 ( vec3T "f", vec3Zero )
-                ( vec3T "n", vec3Zero )
             <|
-                \found currDistance foundIndex f n ->
-                    unknownStatement
-                        (innerTrace ++ """
-                if(found_index < 0)
-                    return vec4(0,0,0,1);
+                \found currDistance foundIndex f ->
+                    let
+                        innerTrace next =
+                            List.foldl
+                                (\bisect ( i, s ) ->
+                                    ( i + 1
+                                    , bisectToRay i bisect s
+                                    )
+                                )
+                                ( 0, next )
+                                bisects
+                                |> Tuple.second
 
-                float hue_based_on_index = (float(found_index))*radians(360.0 / 1.1);
-
-                vec3 ld = normalize(vec3(-0.3, 0.0, 1.0));
-                vec3 diffs = d[1] - d[0];
-                mat3 light_direction = mat3(ld - 0.5 * diffs, ld + 0.5 * diffs, vec3(0));
-                float light_distance = max_distance;
-                float light_coeff = 0.45;
-                vec3 offseted = found + 0.0001 * max_distance * normalize(o - found);
-                if(0 == 1) { }
-                """ ++ innerLightTrace ++ """
-
-                vec3 px = mix(
-                    hl2rgb(hue_based_on_index, light_coeff),
-                    hl2rgb(found.z * 0.5, light_coeff),
-                    max(0.2, """ ++ colorCoeff ++ """)
-                );
-                return vec4(px, 1.0);
-    """)
+                        bisectToRay i bisect =
+                            if_ (ands [ bisect o d maxDistance f, lt (length (subtract f o)) currDistance ])
+                                (expr (assign foundIndex <| int i) <|
+                                    expr (assign found f) <|
+                                        expr (assign currDistance <| length <| subtract found o) <|
+                                            unsafeNop
+                                )
+                    in
+                    innerTrace <|
+                        if_ (lt foundIndex <| int 0)
+                            (return <| vec4 zero zero zero one)
+                        <|
+                            def5
+                                ( vec3T "ld", normalize <| vec3 (float -0.3) zero one )
+                                ( vec3T "diffs", subtract (arr d (int 1)) (arr d (int 0)) )
+                                ( floatT "light_distance", maxDistance )
+                                ( vec3T "offseted"
+                                , add found <| byF (by (float 0.0001) maxDistance) <| normalize <| subtract o found
+                                )
+                                ( floatT "hue_based_on_index"
+                                , by (floatCast foundIndex) <| float <| radians (360 / 1.1)
+                                )
+                            <|
+                                \ld diffs lightDistance offseted hueBasedOnIndex ->
+                                    def3Chain
+                                        ( mat3T "light_direction"
+                                        , mat3_3_3_3
+                                            (subtract ld <| byF (float 0.5) diffs)
+                                            (add ld <| byF (float 0.5) diffs)
+                                            vec3Zero
+                                        )
+                                        ( floatT "light_coeff"
+                                        , \lightDirection ->
+                                            ternary
+                                                (ors
+                                                    (List.map
+                                                        (\bisect ->
+                                                            bisect offseted lightDirection lightDistance f
+                                                        )
+                                                        bisects
+                                                    )
+                                                )
+                                                (float 0.2)
+                                                (float 0.45)
+                                        )
+                                        ( vec3T "px"
+                                        , \lightCoeff ->
+                                            mix
+                                                (hl2rgb hueBasedOnIndex lightCoeff)
+                                                (hl2rgb (by (float 0.5) found.z) lightCoeff)
+                                                (max_ (float 0.2) colorCoeff)
+                                        )
+                                    <|
+                                        \px -> return <| vec4_3_1 px one
 
 
 threshold : ExpressionX x Float -> Expression1 Float
