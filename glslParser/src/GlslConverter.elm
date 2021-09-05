@@ -170,15 +170,18 @@ type UnaryOperation
 type Expression
     = Float Float
     | Int Int
+    | Bool Bool
     | Dot Expression String
     | Variable String
     | Call String (List Expression)
+    | Arr Expression Expression
     | Ternary Expression Expression Expression
     | UnaryOperation UnaryOperation Expression
     | BinaryOperation BinaryOperation Expression Expression
     | BooleanOperation BooleanOperation Expression Expression
     | RelationOperation RelationOperation Expression Expression
     | PostfixIncrement Expression
+    | PostfixDecrement Expression
 
 
 type Either a b
@@ -254,16 +257,15 @@ typeParser =
 
 statementParser : Parser Statement
 statementParser =
-    Parser.lazy <|
-        \_ ->
-            oneOf
-                [ blockParser
-                , returnParser
-                , ifParser
-                , forParser
-                , defParser
-                , expressionStatementParser
-                ]
+    Parser.lazy <| \_ ->
+    oneOf
+        [ blockParser
+        , returnParser
+        , ifParser
+        , forParser
+        , defParser
+        , expressionStatementParser
+        ]
 
 
 expressionStatementParser : Parser Statement
@@ -522,7 +524,7 @@ unaryParser =
 
 atomParser : Parser Expression
 atomParser =
-    succeed (\a f   ->   f a)
+    succeed (\a f -> f a)
         |= oneOf
             [ succeed (\a f -> f a)
                 |. symbol "("
@@ -531,8 +533,11 @@ atomParser =
                 |. spaces
                 |. symbol ")"
                 |= maybeDot
-            , succeed (\a f md ->md<| f a)
+            , succeed (Bool True) |. symbol "true"
+            , succeed (Bool False) |. symbol "false"
+            , succeed (\a f md -> md <| f a)
                 |= Parser.map .name identifierWithSuffixParser
+                |. spaces
                 |= oneOf
                     [ succeed (\args v -> Call v args)
                         |= sequence
@@ -543,6 +548,12 @@ atomParser =
                             , trailing = Forbidden
                             , spaces = spaces
                             }
+                    , succeed (\arg v -> Arr (Variable v) arg)
+                        |. symbol "["
+                        |. spaces
+                        |= Parser.lazy (\_ -> expressionParser)
+                        |. spaces
+                        |. symbol "]"
                     , succeed Variable
                     ]
                 |= maybeDot
@@ -556,6 +567,8 @@ atomParser =
         |= oneOf
             [ succeed PostfixIncrement
                 |. symbol "++"
+            , succeed PostfixDecrement
+                |. symbol "--"
             , succeed identity
             ]
 
@@ -739,6 +752,16 @@ prettyPrintExpression e =
         Int i ->
             lisp [ "int", String.fromInt i ]
 
+        Bool b ->
+            lisp
+                [ "bool"
+                , if b then
+                    "True"
+
+                  else
+                    "False"
+                ]
+
         Dot v sw ->
             prettyPrintExpression v ++ "." ++ sw
 
@@ -780,6 +803,9 @@ prettyPrintExpression e =
             else
                 lisp <| n :: List.map prettyPrintExpression args
 
+        Arr l r ->
+            lisp [ "arr", prettyPrintExpression l, prettyPrintExpression r ]
+
         Ternary c l r ->
             lisp [ "ternary\n", prettyPrintExpression c, prettyPrintExpression l, prettyPrintExpression r ]
 
@@ -794,6 +820,9 @@ prettyPrintExpression e =
 
         PostfixIncrement c ->
             lisp [ "plusPostfix", prettyPrintExpression c ]
+
+        PostfixDecrement c ->
+            lisp [ "minusPostfix", prettyPrintExpression c ]
 
 
 prettyPrintRelationOperation : RelationOperation -> String
