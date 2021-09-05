@@ -4,7 +4,7 @@ import Dict
 import Expression exposing (Expression)
 import Maybe
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, add, arr, assign, boolT, byF, def, def2, div, dot, expr, float, floatT, fun4, gt, int, mat3T, negate_, out, return, vec3, vec3T)
+import UI.Glsl.Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, add, arr, assign, boolT, byF, def, div, dot, expr, float, floatT, fun4, gt, int, mat3T, negate_, out, return, vec3, vec3T)
 import UI.Glsl.Polynomial as Polynomial
 
 
@@ -45,10 +45,8 @@ toGlsl suffix (Plane { x, y, z, known }) =
     -- a ox + a t dx + b oy + b t dy + c oz + c t dz + k = 0
     -- t (a dx + b dy + c dy) = - k - (a ox + b oy + c oz)
     -- t = - (k + dot abc o) / (dot abc d)
-    def2
-        ( vec3T "coeffs", vec3 (float x) (float y) (float z) )
-        ( vec3T "dsum", byF (float 0.5) <| add (arr d <| int 0) (arr d <| int 1) )
-    <| \coeffs dsum ->
+    def vec3T "coeffs" (vec3 (float x) (float y) (float z)) <| \coeffs ->
+    def vec3T "dsum" (byF (float 0.5) <| add (arr d <| int 0) (arr d <| int 1)) <| \dsum ->
     def floatT
         "t"
         (div
@@ -56,5 +54,5 @@ toGlsl suffix (Plane { x, y, z, known }) =
             (dot coeffs dsum)
         )
     <| \t ->
-    expr (assign found <| add o <| byF t dsum) <|
-        return (gt t <| threshold maxDistance)
+    expr (assign found <| add o <| byF t dsum) <| \_ ->
+    return (gt t <| threshold maxDistance)
