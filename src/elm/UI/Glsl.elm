@@ -297,13 +297,11 @@ tryGlslFromPolynomial suffix e =
                         |> String.join "\n                        "
 
                 ( funDecl, bisect ) =
-                    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
-                        \o d maxDistance found ->
-                            def floatT "t" (Generator.by maxDistance <| float 2) <|
-                                \t_ ->
-                                    unknownStatement (checks ++ """
-                                    found = o + t * mix(d[0], d[1], 0.5);
-                                    return t < max_distance && t > 0.0;""")
+                    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
+                    def floatT "t" (Generator.by maxDistance <| float 2) <| \t_ ->
+                    unknownStatement (checks ++ """
+                    found = o + t * mix(d[0], d[1], 0.5);
+                    return t < max_distance && t > 0.0;""")
             in
             { expr = div one <| sqrt_ <| cbrt <| ipow e 3
             , funDecls = [ funDecl ]
