@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deinde
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def3, def3Chain, def4, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, out, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, def5, def6, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, out, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1819,12 +1819,10 @@ toSrcPolar suffix e =
                     def floatT "ot" (atanPlus y x) <| \ot ->
                     for ( "i", int 0, divConst constants.maxIterations (int 10) )
                         (\_ ->
-                            def4
-                                ( floatT "h", f x y t ot )
-                                ( floatT "l", f (subtract x deltaX) y t ot )
-                                ( floatT "u", f x (subtract y deltaY) t ot )
-                                ( floatT "ul", f (subtract x deltaX) (subtract y deltaY) t ot )
-                            <| \h l u ul ->
+                            def floatT "h" (f x y t ot) <| \h ->
+                            def floatT "l" (f (subtract x deltaX) y t ot) <| \l ->
+                            def floatT "u" (f x (subtract y deltaY) t ot) <| \u ->
+                            def floatT "ul" (f (subtract x deltaX) (subtract y deltaY) t ot) <| \ul ->
                             if_ (ors [ lt h zero, lt l zero, lt u zero, lt ul zero ])
                                 unsafeBreak
                                 (if_ (ors [ neq h l, neq h u, neq h ul ])
@@ -1863,11 +1861,9 @@ toSrcParametric suffix e =
     let
         ( intervalDecl, interval ) =
             fun3 vec2T ("interval" ++ suffix) (vec2T "p") (floatT "from") (floatT "to") <| \p from to ->
-            def3
-                ( vec2T "x", vec2 p.x p.x )
-                ( vec2T "y", vec2 p.y p.y )
-                ( vec2T "t", vec2 (min_ from to) (max_ from to) )
-            <| \x y t ->
+            def vec2T "x" (vec2 p.x p.x) <| \x ->
+            def vec2T "y" (vec2 p.y p.y) <| \y ->
+            def vec2T "t" (vec2 (min_ from to) (max_ from to)) <| \t ->
             return <| expressionToIntervalGlsl (toPrintExpression e)
 
         ( pixelDecl, pixel ) =
@@ -2000,7 +1996,7 @@ toSrcVectorField2D suffix xexpr yexpr =
             fun2 vec2T ("vector" ++ suffix) (floatT "x") (floatT "y") <| \x y ->
             def vec2T "xv" (expressionToGlsl [ ( "x", x ), ( "y", y ) ] xexpr) <| \xv ->
             def vec2T "yv" (expressionToGlsl [ ( "x", x ), ( "y", y ) ] yexpr) <| \yv ->
-            \xv yv -> return <| ternary (lt (add (abs_ xv.y) (abs_ yv.y)) (float epsilon)) (vec2 xv.x yv.x) vec2Zero
+            return <| ternary (lt (add (abs_ xv.y) (abs_ yv.y)) (float epsilon)) (vec2 xv.x yv.x) vec2Zero
 
         ( nearDecl, near ) =
             fun5 boolT "near" (vec2T "o") (vec2T "corner") (vec2T "vect") (floatT "deltaX") (floatT "mx") <| \o corner vect deltaX mx ->
@@ -2109,12 +2105,10 @@ toSrcContour suffix expr =
             def floatT "deltaXr" (by deltaX <| float dist) <| \deltaXr ->
             def floatT "deltaYr" (by deltaY <| float dist) <| \deltaYr ->
             -- Antialiasing
-            def4
-                ( vec3T "a", pixelO deltaX deltaY (add x deltaXr) (add y deltaYr) )
-                ( vec3T "b", pixelO deltaX deltaY (subtract x deltaXr) (subtract y deltaYr) )
-                ( vec3T "c", pixelO deltaX deltaY (add x deltaXr) (subtract y deltaYr) )
-                ( vec3T "d", pixelO deltaX deltaY (subtract x deltaXr) (add y deltaYr) )
-            <| \a b c d ->
+            def vec3T "a" (pixelO deltaX deltaY (add x deltaXr) (add y deltaYr)) <| \a ->
+            def vec3T "b" (pixelO deltaX deltaY (subtract x deltaXr) (subtract y deltaYr)) <| \b ->
+            def vec3T "c" (pixelO deltaX deltaY (add x deltaXr) (subtract y deltaYr)) <| \c ->
+            def vec3T "d" (pixelO deltaX deltaY (subtract x deltaXr) (add y deltaYr)) <| \d ->
             def vec3T "mn" (min_ a <| min_ b <| min_ c d) <| \mn ->
             def vec3T "mx" (max_ a <| max_ b <| max_ c d) <| \mx ->
             def vec3T "diff" (abs_ (subtract mx mn)) <| \diff ->
@@ -2122,12 +2116,10 @@ toSrcContour suffix expr =
                 (return <| divF (adds3 [ a, b, c, d ]) (float 4))
                 (assignBy deltaXr (float 2) <|
                     (assignBy deltaYr (float 2) <|
-                        def4
-                            ( vec3T "e", pixelO deltaX deltaY (add x deltaXr) y )
-                            ( vec3T "f", pixelO deltaX deltaY (subtract x deltaXr) y )
-                            ( vec3T "g", pixelO deltaX deltaY x (subtract y deltaYr) )
-                            ( vec3T "h", pixelO deltaX deltaY x (add y deltaYr) )
-                        <| \e f g h ->
+                        def vec3T "e" (pixelO deltaX deltaY (add x deltaXr) y) <| \e ->
+                        def vec3T "f" (pixelO deltaX deltaY (subtract x deltaXr) y) <| \f ->
+                        def vec3T "g" (pixelO deltaX deltaY x (subtract y deltaYr)) <| \g ->
+                        def vec3T "h" (pixelO deltaX deltaY x (add y deltaYr)) <| \h ->
                         return <| divF (adds3 [ a, b, c, d, e, f, g, h ]) (float 8)
                     )
                 )
@@ -2792,7 +2784,7 @@ main3D rayDifferentials bisects =
                 def vec3T "diffs" (abs_ <| fwidth rayDirection) <| \diffs ->
                 def floatT "k" (float kValue) <| \k ->
                 def mat3T "d" (dValue rayDirection k diffs) <| \d ->
-                def floatT "max_distance" (by (float 100) eyeDist) <| \max_distance ->
+                def floatT "max_distance" (by (float 100) eyeDist) <| \maxDistance ->
                 return <| raytraceF canvasPoint d maxDistance
 
         dValue : ExpressionX a Vec3 -> ExpressionX b Float -> ExpressionX c Vec3 -> Expression33
@@ -2834,12 +2826,10 @@ raytrace bisects =
             float (1.19 - 0.2 * toFloat (List.length bisects))
     in
     fun3 vec4T "ratytrace" (vec3T "o") (mat3T "d") (floatT "max_distance") <| \o d maxDistance ->
-    def4
-        ( vec3T "found", vec3Zero )
-        ( floatT "curr_distance", maxDistance )
-        ( intT "found_index", int -1 )
-        ( vec3T "f", vec3Zero )
-    <| \found currDistance foundIndex f ->
+    def vec3T "found" vec3Zero <| \found ->
+    def floatT "curr_distance" maxDistance <| \currDistance ->
+    def intT "found_index" (int -1) <| \foundIndex ->
+    def vec3T "f" vec3Zero <| \f ->
     let
         innerTrace next =
             List.foldl
@@ -2875,36 +2865,10 @@ raytrace bisects =
                 , by (floatCast foundIndex) <| float <| radians (360 / 1.1)
                 )
             <| \ld diffs lightDistance offseted hueBasedOnIndex ->
-            def3Chain
-                ( mat3T "light_direction"
-                , mat3_3_3_3
-                    (subtract ld <| byF (float 0.5) diffs)
-                    (add ld <| byF (float 0.5) diffs)
-                    vec3Zero
-                )
-                ( floatT "light_coeff"
-                , \lightDirection ->
-                    ternary
-                        (ors
-                            (List.map
-                                (\bisect ->
-                                    bisect offseted lightDirection lightDistance f
-                                )
-                                bisects
-                            )
-                        )
-                        (float 0.2)
-                        (float 0.45)
-                )
-                ( vec3T "px"
-                , \lightCoeff ->
-                    mix
-                        (hl2rgb hueBasedOnIndex lightCoeff)
-                        (hl2rgb (by (float 0.5) found.z) lightCoeff)
-                        (max_ (float 0.2) colorCoeff)
-                )
-            <|
-                \px -> return <| vec4_3_1 px one
+            def mat3T "light_direction" (mat3_3_3_3 (subtract ld <| byF (float 0.5) diffs) (add ld <| byF (float 0.5) diffs) vec3Zero) <| \light_direction ->
+            def floatT "light_coeff" (ternary (ors (List.map (\bisect -> bisect offseted lightDirection lightDistance f) bisects)) (float 0.2) (float 0.45)) <| \light_coeff ->
+            def vec3T "px" (mix (hl2rgb hueBasedOnIndex lightCoeff) (hl2rgb (by (float 0.5) found.z) lightCoeff) (max_ (float 0.2) colorCoeff)) <| \px ->
+            return <| vec4_3_1 px one
 
 
 threshold : ExpressionX x Float -> Expression1 Float
