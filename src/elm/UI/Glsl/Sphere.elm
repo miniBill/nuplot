@@ -75,21 +75,20 @@ reduce poly =
 
 toGlsl : String -> Sphere -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool )
 toGlsl suffix (Sphere { center, radius }) =
-    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
-        \o d maxDistance found ->
-            unknownStatement
-                ("""
-                vec3 center = vec3(""" ++ floatToGlsl center.x ++ """,""" ++ floatToGlsl center.y ++ """,""" ++ floatToGlsl center.z ++ """);
+    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
+    unknownStatement
+        ("""
+        vec3 center = vec3(""" ++ floatToGlsl center.x ++ """,""" ++ floatToGlsl center.y ++ """,""" ++ floatToGlsl center.z ++ """);
 
-                vec3 to_center = o - center;
-                float b = dot(to_center, mix(d[0], d[1], 0.5));
-                float c = dot(to_center, to_center) - """ ++ floatToGlsl (radius * radius) ++ """;
-                float delta = b*b - c;
-                if(delta < 0.)
-                    return false;
-                float x = -b - sqrt(delta);
-                if(x < """ ++ Generator.expressionToGlsl (threshold maxDistance).base ++ """)
-                    return false;
-                found = o + x * mix(d[0], d[1], 0.5);
-                return true;
-            """)
+        vec3 to_center = o - center;
+        float b = dot(to_center, mix(d[0], d[1], 0.5));
+        float c = dot(to_center, to_center) - """ ++ floatToGlsl (radius * radius) ++ """;
+        float delta = b*b - c;
+        if(delta < 0.)
+            return false;
+        float x = -b - sqrt(delta);
+        if(x < """ ++ Generator.expressionToGlsl (threshold maxDistance).base ++ """)
+            return false;
+        found = o + x * mix(d[0], d[1], 0.5);
+        return true;
+    """)
