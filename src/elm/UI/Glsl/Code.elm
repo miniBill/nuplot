@@ -1,8 +1,8 @@
-module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, deindent, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator as Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, fileToGlsl, float, floatCast, floatT, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, out, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add33, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, false, fileToGlsl, float, floatCast, floatT, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1896,14 +1896,14 @@ toSrcParametric suffix e =
                 (ifElse
                     (ands [ leq front.x zero, geq front.y zero ])
                     (expr (assign to midpoint) <| \_ ->
-                    expr (postfixPlus depth) <| \_ ->
+                    expr (postfixIncrement depth) <| \_ ->
                     assignBy choices (int 2) <| \_ ->
                     unsafeNop
                     )
                     (ifElse
                         (ands [ leq back.x zero, geq back.y zero ])
                         (expr (assign from midpoint) <| \_ ->
-                        expr (postfixPlus depth) <| \_ ->
+                        expr (postfixIncrement depth) <| \_ ->
                         expr (assign choices (add (by choices (int 2)) (int 1))) <| \_ ->
                         unsafeNop
                         )
@@ -2012,10 +2012,9 @@ toSrcVectorField2D suffix xexpr yexpr =
 
         ( pixelDecl, pixel ) =
             fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <| \deltaX deltaY x y ->
-            unknownStatement ("""
-            vec2 o = vec2(x, y);
-
-            float mx = 0.0;
+            def vec2T "o" (vec2 x y) <| \o ->
+            def floatT "mx" zero <| \mx ->
+            unknownStatement (""" 
             for(int xi = -X_POINTS; xi <= X_POINTS; xi++) {
                 for(int yi = -Y_POINTS; yi <= Y_POINTS; yi++) {
                     vec2 p = u_zoomCenter + vec2(deltaX * VECTOR_SPACING * float(xi), deltaX * VECTOR_SPACING * float(yi));
@@ -2722,24 +2721,32 @@ axisDecl =
     Tuple.first axisTuple
 
 
-toSrc3D : String -> Expression.Expression -> File
+toSrc3D :
+    String
+    -> Expression.Expression
+    -> ( List FunDecl, ExpressionX xa Mat3 -> ExpressionX xb Mat3 -> Expression2 )
 toSrc3D suffix e =
-    [ Tuple.first <|
-        fun1 vec3T ("normal" ++ suffix) (vec3T "p") <| \p ->
-        def floatT "x" p.x <| \x ->
-        def floatT "y" p.y <| \y ->
-        def floatT "z" p.z <| \z ->
-        def vec4T "gradient" (expressionToNormalGlsl { x = x, y = y, z = z } e) <| \gradient ->
-        return <| normalize gradient.yzw
-    , Tuple.first <|
-        fun2 vec2T ("interval" ++ suffix) (mat3T "f") (mat3T "t") <| \f t ->
-        def vec3T "mn" (min_ (arr f <| int 0) (arr t <| int 0)) <| \mn ->
-        def vec3T "mx" (max_ (arr f <| int 1) (arr t <| int 1)) <| \mx ->
-        def vec2T "x" (vec2 mn.x mx.x) <| \_ ->
-        def vec2T "y" (vec2 mn.y mx.y) <| \_ ->
-        def vec2T "z" (vec2 mn.z mx.z) <| \_ ->
-        return <| expressionToIntervalGlsl <| toPrintExpression e
-    ]
+    let
+        ( intervalDecl, interval ) =
+            fun2 vec2T ("interval" ++ suffix) (mat3T "f") (mat3T "t") <| \f t ->
+            def vec3T "mn" (min_ (arr f <| int 0) (arr t <| int 0)) <| \mn ->
+            def vec3T "mx" (max_ (arr f <| int 1) (arr t <| int 1)) <| \mx ->
+            def vec2T "x" (vec2 mn.x mx.x) <| \_ ->
+            def vec2T "y" (vec2 mn.y mx.y) <| \_ ->
+            def vec2T "z" (vec2 mn.z mx.z) <| \_ ->
+            return <| expressionToIntervalGlsl <| toPrintExpression e
+    in
+    ( [ Tuple.first <|
+            fun1 vec3T ("normal" ++ suffix) (vec3T "p") <| \p ->
+            def floatT "x" p.x <| \x ->
+            def floatT "y" p.y <| \y ->
+            def floatT "z" p.z <| \z ->
+            def vec4T "gradient" (expressionToNormalGlsl { x = x, y = y, z = z } e) <| \gradient ->
+            return <| normalize gradient.yzw
+      , intervalDecl
+      ]
+    , interval
+    )
 
 
 
@@ -2799,18 +2806,15 @@ main3D rayDifferentials bisects =
     ( fileToGlsl [ raytraceDecl, block ], pixel3 )
 
 
-
--- raytrace :
---     List
---         (Expression3
---          -> Expression1 Mat3
---          -> Expression1 Float
---          -> ExpressionX a Vec3
---          -> Expression1 Bool
---         )
---     -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> Expression4 )
-
-
+raytrace :
+    List
+        (Expression3
+         -> Expression1 Mat3
+         -> Expression1 Float
+         -> Expression3
+         -> Expression1 Bool
+        )
+    -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> Expression4 )
 raytrace bisects =
     let
         colorCoeff =
@@ -2861,77 +2865,75 @@ threshold max_distance =
     by (float 0.000001) max_distance
 
 
-suffixToBisect : String -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool )
-suffixToBisect suffix =
-    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
-    unknownStatement
-        ("""
-        mat3 from = mat3(o, o, vec3(0));
-        mat3 to = from + max_distance * d;
-        float ithreshold = """ ++ Generator.expressionToGlsl (threshold maxDistance).base ++ """;
-        int depth = 0;
-        int choices = 0;
-        for(int it = 0; it < MAX_ITERATIONS; it++) {
-            mat3 midpoint = 0.5 * (from + to);
-            vec2 front = interval""" ++ suffix ++ """(from, midpoint);
-            vec2 back = interval""" ++ suffix ++ """(midpoint, to);
-            if(depth >= MAX_DEPTH
-                || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
-                || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
-                ) {
-                    found = mix(midpoint[0], midpoint[1], 0.5);
-                    return true;
-                }
-            if(front.x <= 0.0 && front.y >= 0.0) {
-                to = midpoint;
-                depth++;
-                choices = left_shift(choices);
-            } else if(back.x <= 0.0 && back.y >= 0.0) {
-                from = midpoint;
-                depth++;
-                choices = left_shift_increment(choices);
-            } else {
-                // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
-                for(int j = MAX_DEPTH - 1; j > 0; j--) {
-                    if(j > depth)
-                        continue;
-                    depth--;
-                    choices = right_shift(choices);
-                    if(is_even(choices)) {
-                        midpoint = to;
-                        to = to + (to - from);
-                        vec2 back = interval""" ++ suffix ++ """(midpoint, to);
-                        if(back.x <= 0.0 && back.y >= 0.0) {
-                            from = midpoint;
-                            depth++;
-                            choices = left_shift_increment(choices);
-                            break;
-                        }
-                    } else {
-                        from = from - (to - from);
-                    }
-                }
-                if(depth == 0)
-                    return false;
-            }
-        }
-        return false;
-    """)
-
-
-deindent : Int -> String -> String
-deindent i =
+suffixToBisect : (Expression33 -> Expression33 -> Expression2) -> String -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool )
+suffixToBisect interval suffix =
     let
-        s =
-            String.repeat i " "
-    in
-    String.split "\n"
-        >> List.map
-            (\l ->
-                if String.startsWith s l then
-                    String.dropLeft i l
+        mainLoop found from to ithreshold depth choices _ =
+            def mat3T "midpoint" (byF (float 0.5) (add33 from to)) <| \midpoint ->
+            def vec2T "front" (interval from midpoint) <| \front ->
+            def vec2T "back" (interval midpoint to) <| \back ->
+            if_
+                (ors
+                    [ geq depth constants.maxDepth, ands [ lt (subtract front.y front.x) ithreshold, leq front.x zero, geq front.y zero ], ands [ lt (subtract back.y back.x) ithreshold, leq back.x zero, geq back.y zero ] ]
+                )
+                (expr (assign found (mix (arr midpoint (int 0)) (arr midpoint (int 1)) (float 0.5))) <| \_ ->
+                return <| bool True
+                )
+                (ifElse (ands [ leq front.x zero, geq front.y zero ])
+                    (expr (assign to midpoint) <| \_ ->
+                    expr (postfixIncrement depth) <| \_ ->
+                    expr (assign choices (dotted1 <| unsafeCall "left_shift" [ choices.base ])) <| \_ ->
+                    unsafeNop
+                    )
+                    (ifElse (ands [ leq back.x zero, geq back.y zero ])
+                        (backtrackLeft from to depth choices midpoint)
+                        (backtrackRight from to depth choices midpoint)
+                        unsafeNop
+                    )
+                    unsafeNop
+                )
 
-                else
-                    l
-            )
-        >> String.join "\n"
+        backtrackLeft from _ depth choices midpoint =
+            expr (assign from midpoint) <| \_ ->
+            expr (postfixIncrement depth) <| \_ ->
+            expr (assign choices (dotted1 <| unsafeCall "left_shift_increment" [ choices.base ])) <| \_ ->
+            unsafeNop
+
+        backtrackRight from to depth choices midpoint =
+            -- This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
+            forDown ( "j", subtractConst constants.maxDepth (int 1), int 0 )
+                (\j ->
+                    if_ (gt j depth)
+                        (unknownStatement "continue;")
+                        (expr (postfixDecrement depth) <| \_ ->
+                        expr (assign choices <| dotted1 <| unsafeCall "right_shift" [ choices.base ]) <| \_ ->
+                        ifElse (dotted1 <| unsafeCall "is_even" [ choices.base ])
+                            (expr (assign midpoint to) <| \_ ->
+                            expr (assign to <| add to (subtract to from)) <| \_ ->
+                            def vec2T "back" (interval midpoint to) <| \back ->
+                            if_ (ands [ leq back.x zero, geq back.y zero ])
+                                (expr (assign from midpoint) <| \_ ->
+                                expr (postfixIncrement depth) <| \_ ->
+                                expr (assign choices <| dotted1 <| unsafeCall "left_shift_increment" [ choices.base ]) <| \_ ->
+                                unknownStatement "break;"
+                                )
+                                unsafeNop
+                            )
+                            (expr (assign from <| subtract from (subtract to from)) <| \_ -> unsafeNop)
+                            unsafeNop
+                        )
+                )
+                (if_ (eq depth (int 0))
+                    (return false)
+                    unsafeNop
+                )
+    in
+    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
+    def mat3T "from" (mat3_3_3_3 o o vec3Zero) <| \from ->
+    def mat3T "to" (add from <| byF maxDistance d) <| \to ->
+    def floatT "ithreshold" (threshold maxDistance) <| \ithreshold ->
+    def intT "depth" (int 0) <| \depth ->
+    def intT "choices" (int 0) <| \choices ->
+    for ( "it", int 0, constants.maxIterations )
+        (mainLoop found from to ithreshold depth choices)
+        (return <| bool False)

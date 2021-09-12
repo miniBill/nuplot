@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, out, postfixPlus, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, tan_, ternary, ternary3, true, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
@@ -16,7 +16,7 @@ type FunDecl
 type Stat
     = If Expr Stat Stat
     | IfElse Expr Stat Stat Stat
-    | For String Expr RelationOperation Expr Stat Stat
+    | For String Expr RelationOperation Expr Expr Stat Stat
     | Line String
     | Return Expr
     | Break
@@ -45,7 +45,8 @@ type Expr
     | Div Expr Expr
     | Call String (List Expr)
     | Negate Expr
-    | PostfixPlus Expr
+    | PostfixIncrement Expr
+    | PostfixDecrement Expr
     | Unknown String
     | Dot Expr String
     | Array Expr Expr
@@ -161,6 +162,22 @@ statementToGlsl (Statement r) =
                     ]
                         |> String.join "\n"
 
+                IfElse cond t ((If _ _ _) as f) n ->
+                    [ indent i ("if (" ++ expressionToGlsl (Expression cond) ++ ") {")
+                    , go (i + 1) t
+                    , indent i <| "} else " ++ String.trimLeft (go i f)
+                    , go i n
+                    ]
+                        |> String.join "\n"
+
+                IfElse cond t ((IfElse _ _ _ _) as f) n ->
+                    [ indent i ("if (" ++ expressionToGlsl (Expression cond) ++ ") {")
+                    , go (i + 1) t
+                    , indent i <| "} else " ++ String.trimLeft (go i f)
+                    , go i n
+                    ]
+                        |> String.join "\n"
+
                 IfElse cond t f n ->
                     [ indent i ("if (" ++ expressionToGlsl (Expression cond) ++ ") {")
                     , go (i + 1) t
@@ -172,8 +189,8 @@ statementToGlsl (Statement r) =
                     ]
                         |> String.join "\n"
 
-                For var from rel to loop next ->
-                    [ indent i ("for (int " ++ var ++ " = " ++ expressionToGlsl (Expression from) ++ "; " ++ var ++ " " ++ relationToString rel ++ " " ++ expressionToGlsl (Expression to) ++ "; " ++ var ++ "++) {")
+                For var from rel to step loop next ->
+                    [ indent i ("for (int " ++ var ++ " = " ++ expressionToGlsl (Expression from) ++ "; " ++ var ++ " " ++ relationToString rel ++ " " ++ expressionToGlsl (Expression to) ++ "; " ++ expressionToGlsl (Expression step) ++ ") {")
                     , go (i + 1) loop
                     , indent i "}"
                     , ""
@@ -192,6 +209,15 @@ statementToGlsl (Statement r) =
 
                 Continue ->
                     indent i "continue;"
+
+                ExpressionStatement e Nop ->
+                    indent i (expressionToGlsl (Expression e) ++ ";")
+
+                Decl t (Name n) (Just e) Nop ->
+                    indent i (t ++ " " ++ n ++ " = " ++ expressionToGlsl (Expression e) ++ ";")
+
+                Decl t (Name n) Nothing Nop ->
+                    indent i (t ++ " " ++ n ++ ";")
 
                 ExpressionStatement e next ->
                     indent i (expressionToGlsl (Expression e) ++ ";\n") ++ go i next
@@ -371,8 +397,11 @@ expressionToGlsl (Expression tree) =
                 Negate c ->
                     "-" ++ go2 False c
 
-                PostfixPlus c ->
+                PostfixIncrement c ->
                     go2 False c ++ "++"
+
+                PostfixDecrement c ->
+                    go2 False c ++ "--"
 
                 _ ->
                     go2 rec e
@@ -551,6 +580,11 @@ expr24 f l r =
     dotted4Internal (f (unwrapExpression l) (unwrapExpression r))
 
 
+expr233 : (Expr -> Expr -> Expr) -> ExpressionX a Mat3 -> ExpressionX b Mat3 -> Expression33
+expr233 f l r =
+    dotted33Internal (f (unwrapExpression l) (unwrapExpression r))
+
+
 expr3 : (Expr -> Expr -> Expr -> Expr) -> ExpressionX a l -> ExpressionX b m -> ExpressionX c r -> Expression1 t
 expr3 f l m r =
     dotted1Internal (f (unwrapExpression l) (unwrapExpression m) (unwrapExpression r))
@@ -596,9 +630,21 @@ add4 =
     expr24 Add
 
 
+add33 : ExpressionX a Mat3 -> ExpressionX b Mat3 -> Expression33
+add33 =
+    expr233 Add
+
+
 subtract : ExpressionX a t -> ExpressionX b t -> Expression1 t
 subtract =
     expr2 Subtract
+
+
+subtractConst : ExpressionX { a | isConstant : Constant } t -> ExpressionX { b | isConstant : Constant } t -> ExpressionX { isConstant : Constant } t
+subtractConst l r =
+    { base = (expr2 Subtract l r).base
+    , isConstant = Constant
+    }
 
 
 subtract2 : ExpressionX a Vec2 -> ExpressionX b Vec2 -> Expression2
@@ -626,9 +672,14 @@ negate2 e =
     dotted2Internal (Negate <| unwrapExpression e)
 
 
-postfixPlus : ExpressionX a t -> Expression1 t
-postfixPlus =
-    expr1 PostfixPlus
+postfixIncrement : ExpressionX a t -> Expression1 t
+postfixIncrement =
+    expr1 PostfixIncrement
+
+
+postfixDecrement : ExpressionX a t -> Expression1 t
+postfixDecrement =
+    expr1 PostfixDecrement
 
 
 by : ExpressionX a t -> ExpressionX b t -> Expression1 t
@@ -1035,6 +1086,13 @@ int i =
     }
 
 
+bool : Bool -> ExpressionX { isConstant : Constant } Bool
+bool b =
+    { base = Expression <| Bool b
+    , isConstant = Constant
+    }
+
+
 constant : TypingFunction t r -> String -> ExpressionX { isConstant : Constant } t
 constant _ name =
     { base = Expression <| Variable name
@@ -1352,12 +1410,17 @@ ifElse cond (Statement ifTrue) (Statement ifFalse) (Statement next) =
 
 for : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
 for ( var, from, to ) loop (Statement next) =
-    Statement <| For var (unwrapExpression from) LessThan (unwrapExpression to) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
+    Statement <| For var (unwrapExpression from) LessThan (unwrapExpression to) (PostfixIncrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
 
 
 forLeq : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
 forLeq ( var, from, to ) loop (Statement next) =
-    Statement <| For var (unwrapExpression from) LessThanOrEquals (unwrapExpression to) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
+    Statement <| For var (unwrapExpression from) LessThanOrEquals (unwrapExpression to) (PostfixIncrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
+
+
+forDown : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
+forDown ( var, from, to ) loop (Statement next) =
+    Statement <| For var (unwrapExpression from) GreaterThan (unwrapExpression to) (PostfixDecrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
 
 
 return : ExpressionX a r -> Statement r
@@ -1705,8 +1768,11 @@ innerValue ctx e =
         AssignCombo _ _ _ ->
             Debug.todo "branch 'AssignCombo _ _' not implemented"
 
-        PostfixPlus _ ->
-            Debug.todo "branch 'PostfixPlus _' not implemented"
+        PostfixIncrement _ ->
+            Debug.todo "branch 'PostfixIncrement _' not implemented"
+
+        PostfixDecrement _ ->
+            Debug.todo "branch 'PostfixDecrement _' not implemented"
 
 
 innerValue2 :
@@ -1798,8 +1864,8 @@ interpret ctx (Statement s) =
         Decl _ _ _ _ ->
             Debug.todo "branch 'Decl _ _ _' not implemented"
 
-        For _ _ _ _ _ _ ->
-            Debug.todo "branch 'For _ _ _ _ _ _' not implemented"
+        For _ _ _ _ _ _ _ ->
+            Debug.todo "branch 'For _ _ _ _ _ _ _' not implemented"
 
         Break ->
             Debug.todo "branch 'Break' not implemented"

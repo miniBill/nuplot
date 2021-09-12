@@ -1,12 +1,12 @@
-module UI.Glsl.Polynomial exposing (asPolynomial, getDegree, getSolutions)
+module UI.Glsl.Polynomial exposing (asPolynomial, getDegree, getSolutions, glslFromPolySolutions, glslFromSolutions)
 
 import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), UnaryOperation(..))
 import Expression.Polynomial exposing (Exponents)
-import Expression.Utils exposing (minus, zero)
+import Expression.Utils
 import Maybe.Extra as Maybe
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator as Generator exposing (ExpressionX, dotted1, unknown)
+import UI.Glsl.Generator as Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, add, ands, arr, assign, boolT, by, byF, def, dotted1, expr, float, floatT, fun4, gt, int, lt, mat3T, mix, out, return, unknown, unknownStatement, vec3T, zero)
 
 
 getDegree : Dict (List ( a, number )) b -> number
@@ -22,7 +22,7 @@ asPolynomial : List String -> Expression -> Maybe (Dict Exponents Float)
 asPolynomial vars e =
     case e of
         RelationOperation Equals l r ->
-            asPolynomial vars (minus l r)
+            asPolynomial vars (Expression.Utils.minus l r)
 
         _ ->
             e
@@ -75,7 +75,7 @@ getSolutions maxDistance poly =
 
         get d =
             Dict.get d poly
-                |> Maybe.withDefault zero
+                |> Maybe.withDefault Expression.Utils.zero
                 |> UI.Glsl.Code.expressionToGlsl
                     [ ( "dx", dotted1 <| unknown "dx" )
                     , ( "dy", dotted1 <| unknown "dy" )
@@ -156,3 +156,60 @@ getSolutions maxDistance poly =
 
     else
         Just ( deg, sols )
+
+
+glslFromSolutions :
+    String
+    -> List ( String, String )
+    ->
+        { funDecls : List FunDecl
+        , bisect : ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool
+        }
+glslFromSolutions suffix sols =
+    let
+        checks =
+            sols
+                |> List.foldl
+                    (\( k, v ) ( known, f ) ->
+                        let
+                            ( decl, drop ) =
+                                if List.member k known then
+                                    ( "", 0 )
+
+                                else if String.startsWith "!" k then
+                                    ( "float ", 1 )
+
+                                else
+                                    ( "vec2 ", 0 )
+
+                            newLine =
+                                \n -> f <| expr (dotted1 <| unknown (decl ++ String.dropLeft drop k ++ " = " ++ v ++ ";")) <| \_ -> n
+                        in
+                        ( k :: known, newLine )
+                    )
+                    ( [ "t" ], identity )
+                |> Tuple.second
+
+        ( funDecl, bisect ) =
+            fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
+            def floatT "t" (by maxDistance <| float 2) <| \t ->
+            checks <|
+                expr (assign found (add o (byF t (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))))) <| \_ ->
+                return <| ands [ lt t maxDistance, gt t zero ]
+    in
+    { funDecls = [ funDecl ]
+    , bisect = bisect
+    }
+
+
+glslFromPolySolutions :
+    String
+    -> ExpressionX xm Float
+    -> Dict Int Expression
+    ->
+        Maybe
+            { funDecls : List FunDecl
+            , bisect : ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool
+            }
+glslFromPolySolutions suffix maxDistance poly =
+    getSolutions maxDistance poly |> Maybe.map (\( _, sols ) -> glslFromSolutions suffix sols)
