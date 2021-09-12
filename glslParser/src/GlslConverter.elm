@@ -34,7 +34,8 @@ init =
         i =
             """{
 
-
+for(int j = MAX_DEPTH - 1; j > 0; j--) {
+}
 
 }"""
     in
@@ -119,7 +120,72 @@ toOutput i =
             Debug.toString e
 
         Ok o ->
-            prettyPrint o
+            prettyPrint <| simplifyEither o
+
+
+simplifyEither : Either Function Statement -> Either Function Statement
+simplifyEither o =
+    case o of
+        Left f ->
+            Left <| simplifyFunction f
+
+        Right s ->
+            Right <| simplifyStatement s
+
+
+simplifyFunction : Function -> Function
+simplifyFunction f =
+    { f | body = simplifyStatement f.body }
+
+
+simplifyStatement : Statement -> Statement
+simplifyStatement s =
+    case s of
+        Nop ->
+            Nop
+
+        Expression e n ->
+            Expression (simplify e) (simplifyStatement n)
+
+        For v from rel to step inner next ->
+            For v (simplify from) rel (simplify to) step (simplifyStatement inner) (simplifyStatement next)
+
+        If cond t f ->
+            If (simplify cond) (simplifyStatement t) (simplifyStatement f)
+
+        Return e ->
+            Return (simplify e)
+
+        Def t n v next ->
+            Def t n (simplify v) (simplifyStatement next)
+
+        Decl t n next ->
+            Decl t n (simplifyStatement next)
+
+
+simplify : Expression -> Expression
+simplify e =
+    case e of
+        BooleanOperation op es ->
+            es
+                |> List.map simplify
+                |> List.concatMap
+                    (\c ->
+                        case c of
+                            BooleanOperation cop ces ->
+                                if op == cop then
+                                    ces
+
+                                else
+                                    [ c ]
+
+                            _ ->
+                                [ c ]
+                    )
+                |> BooleanOperation op
+
+        _ ->
+            e
 
 
 type alias Function =
@@ -133,7 +199,7 @@ type alias Function =
 
 type Statement
     = Expression Expression Statement
-    | For String Expression RelationOperation Expression Statement Statement
+    | For String Expression RelationOperation Expression Bool Statement Statement
     | If Expression Statement Statement
     | Return Expression
     | Def String String Expression Statement
@@ -173,12 +239,13 @@ type Expression
     | Bool Bool
     | Dot Expression String
     | Variable String
+    | Constant String
     | Call String (List Expression)
     | Arr Expression Expression
     | Ternary Expression Expression Expression
     | UnaryOperation UnaryOperation Expression
     | BinaryOperation BinaryOperation Expression Expression
-    | BooleanOperation BooleanOperation Expression Expression
+    | BooleanOperation BooleanOperation (List Expression)
     | RelationOperation RelationOperation Expression Expression
     | PostfixIncrement Expression
     | PostfixDecrement Expression
@@ -326,7 +393,7 @@ forParser =
         |. spaces
         |. identifierParser
         |. spaces
-        |. symbol "++"
+        |= oneOf [ succeed True |. symbol "++", succeed False |. symbol "--" ]
         |. spaces
         |. symbol ")"
         |. spaces
@@ -398,8 +465,8 @@ booleanParser : Parser Expression
 booleanParser =
     multiSequence
         { separators =
-            [ ( BooleanOperation Or, symbol "||" )
-            , ( BooleanOperation And, symbol "&&" )
+            [ ( \l r -> BooleanOperation Or [ l, r ], symbol "||" )
+            , ( \l r -> BooleanOperation And [ l, r ], symbol "&&" )
             ]
         , item = relationParser
         , allowNegation = False
@@ -548,13 +615,13 @@ atomParser =
                             , trailing = Forbidden
                             , spaces = spaces
                             }
-                    , succeed (\arg v -> Arr (Variable v) arg)
+                    , succeed (\arg v -> Arr (toVariableOrConstant v) arg)
                         |. symbol "["
                         |. spaces
                         |= Parser.lazy (\_ -> expressionParser)
                         |. spaces
                         |. symbol "]"
-                    , succeed Variable
+                    , succeed toVariableOrConstant
                     ]
                 |= maybeDot
             , Parser.andThen tryParseNumber <|
@@ -571,6 +638,15 @@ atomParser =
                 |. symbol "--"
             , succeed identity
             ]
+
+
+toVariableOrConstant : String -> Expression
+toVariableOrConstant s =
+    if String.toUpper s == s then
+        Constant s
+
+    else
+        Variable s
 
 
 maybeDot : Parser (Expression -> Expression)
@@ -661,12 +737,17 @@ prettyPrintStatement stat =
         Expression e next ->
             "expr "
                 ++ prettyPrintExpression e
-                ++ "(\n"
+                ++ "<| (\\_ -> \n"
                 ++ prettyPrintStatement next
                 ++ ")"
 
-        For var from LessThan to loop next ->
-            "for (\""
+        For var from LessThan to step loop next ->
+            (if step then
+                "for (\""
+
+             else
+                "forDown (\""
+            )
                 ++ var
                 ++ "\", "
                 ++ prettyPrintExpression from
@@ -680,8 +761,13 @@ prettyPrintStatement stat =
                 ++ prettyPrintStatement next
                 ++ ")"
 
-        For var from LessThanOrEquals to loop next ->
-            "forLeq ("
+        For var from LessThanOrEquals to step loop next ->
+            (if step then
+                "forLeq (\""
+
+             else
+                "forLeqDown (\""
+            )
                 ++ var
                 ++ ", "
                 ++ prettyPrintExpression from
@@ -725,8 +811,22 @@ prettyPrintStatement stat =
         Decl _ _ _ ->
             "TODO branch 'Decl _ _ _' not implemented"
 
-        For _ _ _ _ _ _ ->
-            "TODO branch 'For _ _ _ _ _ _' not implemented"
+        For v f GreaterThan t _ loop next ->
+            "forDown (\""
+                ++ v
+                ++ "\", "
+                ++ prettyPrintExpression f
+                ++ ",  "
+                ++ prettyPrintExpression t
+                ++ ") (\\"
+                ++ v
+                ++ " ->"
+                ++ prettyPrintStatement loop
+                ++ ")"
+                ++ prettyPrintStatement next
+
+        For _ _ _ _ _ _ _ ->
+            "TODO branch For not completely implemented"
 
 
 prettyPrintExpression : Expression -> String
@@ -736,9 +836,6 @@ prettyPrintExpression e =
             "(" ++ String.join " " args ++ ")"
     in
     case e of
-        BinaryOperation op l r ->
-            lisp [ prettyPrintBinaryOperation op, prettyPrintExpression l, prettyPrintExpression r ]
-
         Float f ->
             if f == 0 then
                 "zero"
@@ -767,6 +864,23 @@ prettyPrintExpression e =
 
         Variable v ->
             v
+
+        Constant c ->
+            case String.split "_" c of
+                [] ->
+                    "constants.???"
+
+                h :: t ->
+                    let
+                        toTitle s =
+                            case String.uncons s of
+                                Nothing ->
+                                    ""
+
+                                Just ( sh, st ) ->
+                                    String.cons (Char.toUpper sh) (String.toLower st)
+                    in
+                    "constants." ++ String.toLower h ++ String.concat (List.map toTitle t)
 
         Call "float" [ arg ] ->
             lisp [ "floatCast", prettyPrintExpression arg ]
@@ -812,17 +926,25 @@ prettyPrintExpression e =
         UnaryOperation Negate ex ->
             lisp [ "negate_", prettyPrintExpression ex ]
 
-        BooleanOperation bop l r ->
-            lisp [ prettyPrintBooleanOperation bop, prettyPrintExpression l, prettyPrintExpression r ]
+        BinaryOperation op l r ->
+            lisp [ prettyPrintBinaryOperation op, prettyPrintExpression l, prettyPrintExpression r ]
+
+        BooleanOperation op es ->
+            lisp
+                [ prettyPrintBooleanOperation op
+                , "["
+                , String.join ", " <| List.map prettyPrintExpression es
+                , "]"
+                ]
 
         RelationOperation rop l r ->
             lisp [ prettyPrintRelationOperation rop, prettyPrintExpression l, prettyPrintExpression r ]
 
         PostfixIncrement c ->
-            lisp [ "plusPostfix", prettyPrintExpression c ]
+            lisp [ "postfixIncrement", prettyPrintExpression c ]
 
         PostfixDecrement c ->
-            lisp [ "minusPostfix", prettyPrintExpression c ]
+            lisp [ "postfixDecrement", prettyPrintExpression c ]
 
 
 prettyPrintRelationOperation : RelationOperation -> String
@@ -854,10 +976,10 @@ prettyPrintBooleanOperation : BooleanOperation -> String
 prettyPrintBooleanOperation op =
     case op of
         And ->
-            "and"
+            "ands"
 
         Or ->
-            "or"
+            "ors"
 
 
 prettyPrintBinaryOperation : BinaryOperation -> String

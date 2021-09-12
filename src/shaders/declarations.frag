@@ -1,6 +1,3 @@
-#define MAX_DEPTH 30
-//#define MAX_DEPTH 60
-
 precision highp float;
 
 uniform float u_whiteLines;
