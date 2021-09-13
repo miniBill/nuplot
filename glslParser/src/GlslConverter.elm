@@ -34,8 +34,7 @@ init =
         i =
             """{
 
-for(int j = MAX_DEPTH - 1; j > 0; j--) {
-}
+
 
 }"""
     in
@@ -737,9 +736,8 @@ prettyPrintStatement stat =
         Expression e next ->
             "expr "
                 ++ prettyPrintExpression e
-                ++ "<| (\\_ -> \n"
+                ++ " <| \\_ ->\n"
                 ++ prettyPrintStatement next
-                ++ ")"
 
         For var from LessThan to step loop next ->
             (if step then
@@ -757,9 +755,8 @@ prettyPrintStatement stat =
                 ++ var
                 ++ " ->\n"
                 ++ prettyPrintStatement loop
-                ++ ") ("
+                ++ ") <| \\_ ->\n"
                 ++ prettyPrintStatement next
-                ++ ")"
 
         For var from LessThanOrEquals to step loop next ->
             (if step then
@@ -777,18 +774,55 @@ prettyPrintStatement stat =
                 ++ var
                 ++ " ->\n"
                 ++ prettyPrintStatement loop
-                ++ ") ("
+                ++ ") <| \\_ ->\n"
                 ++ prettyPrintStatement next
-                ++ ")"
+
+
+        For var from GreaterThan to step loop next ->
+            (if step then
+                "for (\""
+
+             else
+                "forDown (\""
+            )
+                ++ var
+                ++ "\", "
+                ++ prettyPrintExpression from
+                ++ ", "
+                ++ prettyPrintExpression to
+                ++ ") (\\"
+                ++ var
+                ++ " ->\n"
+                ++ prettyPrintStatement loop
+                ++ ") <| \\_ ->\n"
+                ++ prettyPrintStatement next
+
+        For var from GreaterThanOrEquals to step loop next ->
+            (if step then
+                "forLeq (\""
+
+             else
+                "forLeqDown (\""
+            )
+                ++ var
+                ++ ", "
+                ++ prettyPrintExpression from
+                ++ ", "
+                ++ prettyPrintExpression to
+                ++ ") (\\"
+                ++ var
+                ++ " ->\n"
+                ++ prettyPrintStatement loop
+                ++ ") <| \\_ ->\n"
+                ++ prettyPrintStatement next
 
         If cond ifTrue next ->
             "if_ "
                 ++ prettyPrintExpression cond
                 ++ "(\n"
                 ++ prettyPrintStatement ifTrue
-                ++ ") ("
+                ++ ") <| \\_ ->\n"
                 ++ prettyPrintStatement next
-                ++ ")"
 
         Return e ->
             "(return <| " ++ prettyPrintExpression e ++ ")\n"
@@ -810,23 +844,9 @@ prettyPrintStatement stat =
 
         Decl _ _ _ ->
             "TODO branch 'Decl _ _ _' not implemented"
-
-        For v f GreaterThan t _ loop next ->
-            "forDown (\""
-                ++ v
-                ++ "\", "
-                ++ prettyPrintExpression f
-                ++ ",  "
-                ++ prettyPrintExpression t
-                ++ ") (\\"
-                ++ v
-                ++ " ->"
-                ++ prettyPrintStatement loop
-                ++ ")"
-                ++ prettyPrintStatement next
-
+        
         For _ _ _ _ _ _ _ ->
-            "TODO branch For not completely implemented"
+            "TODO branch 'For _ _ _ _ _ _ _' not implemented"
 
 
 prettyPrintExpression : Expression -> String
