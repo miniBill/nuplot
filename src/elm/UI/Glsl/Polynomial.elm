@@ -6,7 +6,7 @@ import Expression.Polynomial exposing (Exponents)
 import Expression.Utils
 import Maybe.Extra as Maybe
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator as Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, add, ands, arr, assign, boolT, by, byF, def, dotted1, expr, float, floatT, fun4, gt, int, lt, mat3T, mix, out, return, unknown, unknownStatement, vec3T, zero)
+import UI.Glsl.Generator as Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, add, ands, arr, assign, boolT, by, byF, def, dotted1, expr, float, floatT, fun4, gt, int, lt, mat3T, mix, out, return, unknown, vec3T, zero)
 
 
 getDegree : Dict (List ( a, number )) b -> number
