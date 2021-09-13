@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, Continue, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, nop, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
@@ -256,8 +256,13 @@ relationToString rel =
             ">"
 
 
-unsafeNop : Statement a
-unsafeNop =
+nop : Continue ()
+nop () =
+    Statement Nop
+
+
+unsafeNop : Continue a
+unsafeNop () =
     Statement Nop
 
 
@@ -1420,18 +1425,18 @@ dottedVariable4 v =
     dotted4 (Expression (Variable v))
 
 
-if_ : Expression1 Bool -> Statement q -> (() -> Statement r) -> Statement r
-if_ cond (Statement ifTrue) next =
-    Statement <| If (unwrapExpression cond) ifTrue (unwrapLazyStatement next)
+type alias Continue s =
+    () -> Statement s
+
+
+if_ : Expression1 Bool -> (Continue r -> Statement r) -> Continue r -> Statement r
+if_ cond ifTrue next =
+    Statement <| If (unwrapExpression cond) (unwrapStatement <| ifTrue unsafeNop) (unwrapLazyStatement next)
 
 
 ifElse : Expression1 Bool -> ((() -> Statement s) -> Statement s) -> ((() -> Statement s) -> Statement s) -> (() -> Statement s) -> Statement s
 ifElse cond ifTrue ifFalse next =
-    let
-        cont _ =
-            unsafeNop
-    in
-    Statement <| IfElse (unwrapExpression cond) (unwrapStatement <| ifTrue cont) (unwrapStatement <| ifFalse cont) (unwrapLazyStatement next)
+    Statement <| IfElse (unwrapExpression cond) (unwrapStatement <| ifTrue unsafeNop) (unwrapStatement <| ifFalse unsafeNop) (unwrapLazyStatement next)
 
 
 for :
@@ -1446,7 +1451,7 @@ for ( var, from, to ) loop next =
             LessThan
             (unwrapExpression to)
             (PostfixIncrement (Variable var))
-            (unwrapStatement <| loop (dottedVariable1 var) (\_ -> unsafeNop))
+            (unwrapStatement <| loop (dottedVariable1 var) unsafeNop)
             (unwrapLazyStatement next)
 
 
@@ -1462,7 +1467,7 @@ forLeq ( var, from, to ) loop next =
             LessThanOrEquals
             (unwrapExpression to)
             (PostfixIncrement (Variable var))
-            (unwrapStatement <| loop (dottedVariable1 var) (\_ -> unsafeNop))
+            (unwrapStatement <| loop (dottedVariable1 var) unsafeNop)
             (unwrapLazyStatement next)
 
 
@@ -1478,7 +1483,7 @@ forDown ( var, from, to ) loop next =
             GreaterThan
             (unwrapExpression to)
             (PostfixDecrement (Variable var))
-            (unwrapStatement <| loop (dottedVariable1 var) (\_ -> unsafeNop))
+            (unwrapStatement <| loop (dottedVariable1 var) unsafeNop)
             (unwrapLazyStatement next)
 
 
@@ -1496,7 +1501,7 @@ unsafeBreak =
     Statement Break
 
 
-unsafeContinue : Statement ()
+unsafeContinue : Statement a
 unsafeContinue =
     let
         _ =
