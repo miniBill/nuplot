@@ -58,8 +58,8 @@ cbyDecl =
 
 atanPlusTuple : ( FunDecl, ExpressionX xa Float -> ExpressionX xb Float -> Expression1 Float )
 atanPlusTuple =
-    fun2 floatT "atanPlus" (floatT "y") (floatT "x") <| \x y ->
-    return <| mod (add constants.twopi (dotted1 <| unsafeCall "atan" [ y.base, x.base ])) constants.twopi
+    fun2 floatT "atanPlus" (floatT "y") (floatT "x") <| \y x ->
+    return <| mod (add constants.twopi (atan2_ y x)) constants.twopi
 
 
 atanPlusDecl : FunDecl
@@ -1276,7 +1276,7 @@ cmbrotCouple =
     <| \_ ->
     def vec2T "z" c <| \z ->
     for ( "i", int 0, int 4000 )
-        (\i ->
+        (\i cont ->
             expr (assign z (add (vec2 (subtract (by z.x z.x) (by z.y z.y)) (by (by (float 2) z.x) z.y)) c)) <| \_ ->
             if_ (gt (length z) (float 1000000))
                 (def floatT "logLength" (log (length z)) <| \logLength ->
@@ -1284,8 +1284,8 @@ cmbrotCouple =
                 def floatT "fi" (subtract (floatCast i) nu) <| \fi ->
                 return <| vec2 (sin_ fi) (cos_ fi)
                 )
-            <| \_ ->
-            unsafeNop
+            <|
+                cont
         )
     <| \_ ->
     return vec2Zero
@@ -1757,9 +1757,9 @@ toSrcImplicit suffix e =
             assignBy samples samples <| \_ ->
             def floatT "coeff" (float 0.0875) <| \coeff ->
             forLeq ( "w", int <| -antialiasingSamples, int antialiasingSamples )
-                (\w ->
+                (\w cont ->
                     forLeq ( "h", int <| -antialiasingSamples, int antialiasingSamples )
-                        (\h ->
+                        (\h _ ->
                             def floatT
                                 "piece"
                                 (f
@@ -1771,10 +1771,10 @@ toSrcImplicit suffix e =
                                 (eq piece zero)
                                 (return vec3Zero)
                             <| \_ ->
-                            assignAdd sum piece <| \_ -> unsafeNop
+                            assignAdd sum piece cont
                         )
-                    <| \_ ->
-                    unsafeNop
+                    <|
+                        cont
                 )
             <| \_ ->
             def floatT "perc" (div (subtract samples <| abs_ sum) samples) <| \perc ->
@@ -1816,7 +1816,7 @@ toSrcPolar suffix e =
             def floatT "t" zero <| \t ->
             def floatT "ot" (atanPlus y x) <| \ot ->
             for ( "i", int 0, divConst constants.maxIterations (int 10) )
-                (\_ ->
+                (\_ cont ->
                     def floatT "h" (f x y t ot) <| \h ->
                     def floatT "l" (f (subtract x deltaX) y t ot) <| \l ->
                     def floatT "u" (f x (subtract y deltaY) t ot) <| \u ->
@@ -1828,8 +1828,7 @@ toSrcPolar suffix e =
                         (return <| vec3 one one one)
                     <| \_ ->
                     assignAdd t constants.twopi <| \_ ->
-                    assignAdd ot constants.twopi <| \_ ->
-                    unsafeNop
+                    assignAdd ot constants.twopi cont
                 )
             <| \_ ->
             return vec3Zero
@@ -1891,7 +1890,7 @@ toSrcParametric suffix e =
             <| \_ ->
             return vec3Zero
 
-        innerLoop from to p depth choices ithreshold =
+        innerLoop from to p depth choices ithreshold cont =
             def floatT "midpoint" (mix from to <| float 0.5) <| \midpoint ->
             def vec2T "front" (interval p from midpoint) <| \front ->
             def vec2T "back" (interval p midpoint to) <| \back ->
@@ -1914,56 +1913,49 @@ toSrcParametric suffix e =
             <| \_ ->
             ifElse
                 (ands [ leq front.x zero, geq front.y zero ])
-                (expr (assign to midpoint) <| \_ ->
-                expr (postfixIncrement depth) <| \_ ->
-                assignBy choices (int 2) <| \_ ->
-                unsafeNop
-                )
-                (ifElse
-                    (ands [ leq back.x zero, geq back.y zero ])
-                    (expr (assign from midpoint) <| \_ ->
+                (\_ ->
+                    expr (assign to midpoint) <| \_ ->
                     expr (postfixIncrement depth) <| \_ ->
-                    expr (assign choices (add (by choices (int 2)) (int 1))) <| \_ ->
-                    unsafeNop
+                    assignBy choices (int 2) cont
+                )
+                (ifElse (ands [ leq back.x zero, geq back.y zero ])
+                    (\_ ->
+                        expr (assign from midpoint) <| \_ ->
+                        expr (postfixIncrement depth) <| \_ ->
+                        expr (assign choices (add (by choices (int 2)) (int 1))) cont
                     )
                     -- This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
-                    (forDown ( "j", subtractConst constants.maxDepth (int 1), int 0 )
-                        (\j ->
-                            if_ (gt j depth)
-                                unsafeContinue
-                            <| \_ ->
-                            expr (postfixDecrement depth) <| \_ ->
-                            expr (assign choices (div choices (int 2))) <| \_ ->
-                            ifElse (eq (by (div choices (int 2)) (int 2)) choices)
-                                (expr (assign midpoint to) <| \_ ->
-                                expr (assign to (add to (subtract to from))) <| \_ ->
-                                expr (assign back (interval p midpoint to)) <| \_ ->
-                                if_ (ands [ leq back.x zero, geq back.y zero ])
-                                    (expr (assign from midpoint) <| \_ ->
-                                    expr (postfixIncrement depth) <| \_ ->
-                                    expr (assign choices (add (by choices (int 2)) (int 1))) <| \_ ->
-                                    unsafeBreak
-                                    )
+                    (\_ ->
+                        forDown ( "j", subtractConst constants.maxDepth (int 1), int 0 )
+                            (\j _ ->
+                                if_ (gt j depth)
+                                    unsafeContinue
                                 <| \_ ->
-                                unsafeNop
-                                )
-                                (expr (assign from (subtract from (subtract to from))) <| \_ ->
-                                unsafeNop
-                                )
-                            <|
-                                \_ -> unsafeNop
-                        )
-                     <| \_ ->
-                     if_ (eq depth (int 0))
-                         (return vec3Zero)
-                     <|
-                         \_ -> unsafeNop
+                                expr (postfixDecrement depth) <| \_ ->
+                                expr (assign choices (div choices (int 2))) <| \_ ->
+                                ifElse (eq (by (div choices (int 2)) (int 2)) choices)
+                                    (\_ ->
+                                        expr (assign midpoint to) <| \_ ->
+                                        expr (assign to (add to (subtract to from))) <| \_ ->
+                                        expr (assign back (interval p midpoint to)) <| \_ ->
+                                        if_ (ands [ leq back.x zero, geq back.y zero ])
+                                            (expr (assign from midpoint) <| \_ ->
+                                            expr (postfixIncrement depth) <| \_ ->
+                                            expr (assign choices (add (by choices (int 2)) (int 1))) <| \_ ->
+                                            unsafeBreak
+                                            )
+                                            cont
+                                    )
+                                    (expr (assign from (subtract from (subtract to from))))
+                                    cont
+                            )
+                        <| \_ ->
+                        if_ (eq depth (int 0))
+                            (return vec3Zero)
+                            cont
                     )
-                 <| \_ ->
-                 unsafeNop
                 )
-            <| \_ ->
-            unsafeNop
+                cont
     in
     ( [ intervalDecl, pixelDecl ], pixel )
 
@@ -2043,9 +2035,9 @@ toSrcVectorField2D suffix xexpr yexpr =
             def floatT "mx" zero <| \mx ->
             def floatT "k" (by deltaX constants.vectorSpacing) <| \k ->
             forLeq ( "xi", negateConst constants.xPoints, constants.xPoints )
-                (\xi ->
+                (\xi cont ->
                     forLeq ( "yi", negateConst constants.yPoints, constants.yPoints )
-                        (\yi ->
+                        (\yi _ ->
                             def vec2T
                                 "p"
                                 (add uniforms.u_zoomCenter
@@ -2056,11 +2048,9 @@ toSrcVectorField2D suffix xexpr yexpr =
                                 )
                             <| \p ->
                             def vec2T "v" (vector p.x p.y) <| \v ->
-                            expr (assign mx (max_ mx (length v))) <| \_ ->
-                            unsafeNop
+                            expr (assign mx (max_ mx (length v))) cont
                         )
-                    <| \_ ->
-                    unsafeNop
+                        cont
                 )
             <| \_ ->
             def vec3T "colorA" (vec3 zero one zero) <| \colorA ->
@@ -2200,7 +2190,7 @@ expressionToGlsl context =
                             vec2 w zero
 
                         Nothing ->
-                            dotted2 <| unknown <| "Variable " ++ v ++ " is undefined"
+                            vec2Zero
 
                 PInteger v ->
                     vec2 (float <| toFloat v) zero
@@ -2249,7 +2239,7 @@ expressionToGlsl context =
                             vec2 (by w w) zero
 
                         Nothing ->
-                            dotted2 <| unknown <| "Variable " ++ v ++ " is undefined"
+                            vec2Zero
 
                 PPower l (PInteger 2) ->
                     csquare (go l)
@@ -2338,39 +2328,16 @@ expressionToGlsl context =
                 PApply (KnownFunction Max) es ->
                     variadic cmax es
 
-                PApply (UserFunction name) ex ->
-                    dotted2 <| unsafeCall ("c" ++ name) (List.map (go >> .base) ex)
-
-                -- PApply (KnownFunction Gra) [ e ] ->
-                --     cgra (go e)
-                -- PApply (KnownFunction Det) [ e ] ->
-                --     cdet (go e)
-                -- PApply (KnownFunction Dd) [ e ] ->
-                --     cdd (go e)
-                -- PApply (KnownFunction Ii) [ e ] ->
-                --     cii (go e)
-                -- PApply (KnownFunction Plot) [ e ] ->
-                --     cplot (go e)
-                -- PApply (KnownFunction APlot) [ e ] ->
-                --     caPlot (go e)
-                -- PApply (KnownFunction StepSimplify) [ e ] ->
-                --     cstepSimplify (go e)
-                -- PApply (KnownFunction Solve) [ e ] ->
-                --     csolve (go e)
-                -- PApply (KnownFunction For) [ e ] ->
-                --     cfor (go e)
-                -- PApply (KnownFunction (Root r)) [ e ] ->
-                --     croot r (go e)
-                PApply name ex ->
-                    dotted2 <| unsafeCall ("c" ++ functionNameToString name) (List.map (go >> .base) ex)
-
-                PList es ->
-                    dotted2 <| unsafeCall ("vec" ++ String.fromInt (List.length es)) (List.map (go >> .base) es)
-
                 PReplace var e ->
                     go (Expression.pfullSubstitute var e)
 
                 -- If this happens, it's too late
+                PApply _ _ ->
+                    vec2Zero
+
+                PList _ ->
+                    vec2Zero
+
                 PLambda _ _ ->
                     vec2Zero
     in
@@ -2403,7 +2370,7 @@ expressionToIntervalGlsl vars expr =
                     w
 
                 Nothing ->
-                    dotted2 <| unknown v
+                    vec2Zero
 
         PInteger v ->
             dup <| float <| toFloat v
@@ -2906,7 +2873,7 @@ threshold max_distance =
 suffixToBisect : (Expression33 -> Expression33 -> Expression2) -> String -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool )
 suffixToBisect interval suffix =
     let
-        mainLoop found from to ithreshold depth choices _ =
+        mainLoop found from to ithreshold depth choices _ cont =
             def mat3T "midpoint" (byF (float 0.5) (add33 from to)) <| \midpoint ->
             def vec2T "front" (interval from midpoint) <| \front ->
             def vec2T "back" (interval midpoint to) <| \back ->
@@ -2919,57 +2886,51 @@ suffixToBisect interval suffix =
                 )
             <| \_ ->
             ifElse (ands [ leq front.x zero, geq front.y zero ])
-                (expr (assign to midpoint) <| \_ ->
-                expr (postfixIncrement depth) <| \_ ->
-                expr (assign choices (dotted1 <| unsafeCall "left_shift" [ choices.base ])) <| \_ ->
-                unsafeNop
+                (\_ ->
+                    expr (assign to midpoint) <| \_ ->
+                    expr (postfixIncrement depth) <| \_ ->
+                    expr (assign choices (dotted1 <| unsafeCall "left_shift" [ choices.base ])) cont
                 )
                 (ifElse (ands [ leq back.x zero, geq back.y zero ])
                     (backtrackLeft from to depth choices midpoint)
                     (backtrackRight from to depth choices midpoint)
-                 <| \_ ->
-                 unsafeNop
                 )
-            <| \_ ->
-            unsafeNop
+                cont
 
-        backtrackLeft from _ depth choices midpoint =
+        backtrackLeft from _ depth choices midpoint cont =
             expr (assign from midpoint) <| \_ ->
             expr (postfixIncrement depth) <| \_ ->
-            expr (assign choices (dotted1 <| unsafeCall "left_shift_increment" [ choices.base ])) <| \_ ->
-            unsafeNop
+            expr (assign choices (dotted1 <| unsafeCall "left_shift_increment" [ choices.base ])) cont
 
-        backtrackRight from to depth choices midpoint =
+        backtrackRight from to depth choices midpoint cont =
             -- This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
             forDown ( "j", subtractConst constants.maxDepth (int 1), int 0 )
-                (\j ->
+                (\j _ ->
                     if_ (gt j depth)
                         unsafeContinue
                     <| \_ ->
                     expr (postfixDecrement depth) <| \_ ->
                     expr (assign choices <| dotted1 <| unsafeCall "right_shift" [ choices.base ]) <| \_ ->
                     ifElse (dotted1 <| unsafeCall "is_even" [ choices.base ])
-                        (expr (assign midpoint to) <| \_ ->
-                        expr (assign to <| add to (subtract to from)) <| \_ ->
-                        def vec2T "back" (interval midpoint to) <| \back ->
-                        if_ (ands [ leq back.x zero, geq back.y zero ])
-                            (expr (assign from midpoint) <| \_ ->
-                            expr (postfixIncrement depth) <| \_ ->
-                            expr (assign choices <| dotted1 <| unsafeCall "left_shift_increment" [ choices.base ]) <| \_ ->
-                            unsafeBreak
-                            )
-                        <| \_ ->
-                        unsafeNop
+                        (\_ ->
+                            expr (assign midpoint to) <| \_ ->
+                            expr (assign to <| add to (subtract to from)) <| \_ ->
+                            def vec2T "back" (interval midpoint to) <| \back ->
+                            if_ (ands [ leq back.x zero, geq back.y zero ])
+                                (expr (assign from midpoint) <| \_ ->
+                                expr (postfixIncrement depth) <| \_ ->
+                                expr (assign choices <| dotted1 <| unsafeCall "left_shift_increment" [ choices.base ]) <| \_ ->
+                                unsafeBreak
+                                )
+                                cont
                         )
-                        (expr (assign from <| subtract from (subtract to from)) <| \_ -> unsafeNop)
-                    <| \_ ->
-                    unsafeNop
+                        (expr (assign from <| subtract from (subtract to from)))
+                        cont
                 )
             <| \_ ->
             if_ (eq depth (int 0))
                 (return false)
-            <| \_ ->
-            unsafeNop
+                cont
     in
     fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
     def mat3T "from" (mat3_3_3_3 o o vec3Zero) <| \from ->

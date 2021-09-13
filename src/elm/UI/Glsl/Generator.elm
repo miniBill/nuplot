@@ -1041,12 +1041,12 @@ vec4Zero =
 
 gl_FragColor : Expression4
 gl_FragColor =
-    dotted4 (Expression (Variable "gl_FragColor"))
+    dottedVariable4 "gl_FragColor"
 
 
 gl_FragCoord : Expression4
 gl_FragCoord =
-    dotted4 (Expression (Variable "gl_FragCoord"))
+    dottedVariable4 "gl_FragCoord"
 
 
 
@@ -1400,29 +1400,86 @@ fun5 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) ( arg4, _ ) body
     )
 
 
+dottedVariable1 : String -> Expression1 t
+dottedVariable1 v =
+    dotted1 (Expression (Variable v))
+
+
+dottedVariable2 : String -> Expression2
+dottedVariable2 v =
+    dotted2 (Expression (Variable v))
+
+
+dottedVariable3 : String -> Expression3
+dottedVariable3 v =
+    dotted3 (Expression (Variable v))
+
+
+dottedVariable4 : String -> Expression4
+dottedVariable4 v =
+    dotted4 (Expression (Variable v))
+
+
 if_ : Expression1 Bool -> Statement q -> (() -> Statement r) -> Statement r
 if_ cond (Statement ifTrue) next =
     Statement <| If (unwrapExpression cond) ifTrue (unwrapLazyStatement next)
 
 
-ifElse : Expression1 Bool -> Statement q -> Statement r -> (() -> Statement s) -> Statement s
-ifElse cond (Statement ifTrue) (Statement ifFalse) next =
-    Statement <| IfElse (unwrapExpression cond) ifTrue ifFalse (unwrapLazyStatement next)
+ifElse : Expression1 Bool -> ((() -> Statement s) -> Statement s) -> ((() -> Statement s) -> Statement s) -> (() -> Statement s) -> Statement s
+ifElse cond ifTrue ifFalse next =
+    let
+        cont _ =
+            unsafeNop
+    in
+    Statement <| IfElse (unwrapExpression cond) (unwrapStatement <| ifTrue cont) (unwrapStatement <| ifFalse cont) (unwrapLazyStatement next)
 
 
-for : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> (() -> Statement r) -> Statement r
+for :
+    ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
+    -> (Expression1 Int -> (() -> Statement r) -> Statement r)
+    -> (() -> Statement r)
+    -> Statement r
 for ( var, from, to ) loop next =
-    Statement <| For var (unwrapExpression from) LessThan (unwrapExpression to) (PostfixIncrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) (unwrapLazyStatement next)
+    Statement <|
+        For var
+            (unwrapExpression from)
+            LessThan
+            (unwrapExpression to)
+            (PostfixIncrement (Variable var))
+            (unwrapStatement <| loop (dottedVariable1 var) (\_ -> unsafeNop))
+            (unwrapLazyStatement next)
 
 
-forLeq : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> (() -> Statement r) -> Statement r
+forLeq :
+    ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
+    -> (Expression1 Int -> (() -> Statement r) -> Statement r)
+    -> (() -> Statement r)
+    -> Statement r
 forLeq ( var, from, to ) loop next =
-    Statement <| For var (unwrapExpression from) LessThanOrEquals (unwrapExpression to) (PostfixIncrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) (unwrapLazyStatement next)
+    Statement <|
+        For var
+            (unwrapExpression from)
+            LessThanOrEquals
+            (unwrapExpression to)
+            (PostfixIncrement (Variable var))
+            (unwrapStatement <| loop (dottedVariable1 var) (\_ -> unsafeNop))
+            (unwrapLazyStatement next)
 
 
-forDown : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> (() -> Statement r) -> Statement r
+forDown :
+    ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
+    -> (Expression1 Int -> (() -> Statement r) -> Statement r)
+    -> (() -> Statement r)
+    -> Statement r
 forDown ( var, from, to ) loop next =
-    Statement <| For var (unwrapExpression from) GreaterThan (unwrapExpression to) (PostfixDecrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) (unwrapLazyStatement next)
+    Statement <|
+        For var
+            (unwrapExpression from)
+            GreaterThan
+            (unwrapExpression to)
+            (PostfixDecrement (Variable var))
+            (unwrapStatement <| loop (dottedVariable1 var) (\_ -> unsafeNop))
+            (unwrapLazyStatement next)
 
 
 return : ExpressionX a r -> Statement r
@@ -1486,6 +1543,11 @@ unwrapLazyStatement f =
     next
 
 
+unwrapStatement : Statement r -> Stat
+unwrapStatement (Statement next) =
+    next
+
+
 expr : ExpressionX a t -> (() -> Statement q) -> Statement q
 expr e next =
     Statement <| ExpressionStatement (unwrapExpression e) (unwrapLazyStatement next)
@@ -1528,37 +1590,37 @@ voidT n =
 
 boolT : TypingFunction Bool (Expression1 Bool)
 boolT n =
-    ( TypedName (Type "bool") (Name n) (dotted1Internal (Variable n)), dotted1 )
+    ( TypedName (Type "bool") (Name n) (dottedVariable1 n), dotted1 )
 
 
 intT : TypingFunction Int (Expression1 Int)
 intT n =
-    ( TypedName (Type "int") (Name n) (dotted1Internal (Variable n)), dotted1 )
+    ( TypedName (Type "int") (Name n) (dottedVariable1 n), dotted1 )
 
 
 floatT : TypingFunction Float (Expression1 Float)
 floatT n =
-    ( TypedName (Type "float") (Name n) (dotted1Internal (Variable n)), dotted1 )
+    ( TypedName (Type "float") (Name n) (dottedVariable1 n), dotted1 )
 
 
 vec2T : TypingFunction Vec2 Expression2
 vec2T n =
-    ( TypedName (Type "vec2") (Name n) (dotted2Internal (Variable n)), dotted2 )
+    ( TypedName (Type "vec2") (Name n) (dottedVariable2 n), dotted2 )
 
 
 vec3T : TypingFunction Vec3 Expression3
 vec3T n =
-    ( TypedName (Type "vec3") (Name n) (dotted3Internal (Variable n)), dotted3 )
+    ( TypedName (Type "vec3") (Name n) (dottedVariable3 n), dotted3 )
 
 
 vec4T : TypingFunction Vec4 Expression4
 vec4T n =
-    ( TypedName (Type "vec4") (Name n) (dotted4Internal (Variable n)), dotted4 )
+    ( TypedName (Type "vec4") (Name n) (dottedVariable4 n), dotted4 )
 
 
 mat3T : TypingFunction Mat3 (Expression1 Mat3)
 mat3T n =
-    ( TypedName (Type "mat3") (Name n) (dotted1Internal (Variable n)), dotted1 )
+    ( TypedName (Type "mat3") (Name n) (dottedVariable1 n), dotted1 )
 
 
 out : TypingFunction t r -> TypingFunction t r
