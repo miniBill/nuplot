@@ -191,11 +191,11 @@ glslFromSolutions suffix sols =
                 |> Tuple.second
 
         ( funDecl, bisect ) =
-            fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
+            fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found nop ->
             def floatT "t" (by maxDistance <| float 2) <| \t ->
             checks <|
                 expr (assign found (add o (byF t (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))))) <| \_ ->
-                return <| ands [ lt t maxDistance, gt t zero ]
+                return (ands [ lt t maxDistance, gt t zero ]) nop
     in
     { funDecls = [ funDecl ]
     , bisect = bisect

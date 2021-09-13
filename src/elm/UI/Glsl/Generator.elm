@@ -1,4 +1,4 @@
-module UI.Glsl.Generator exposing (Constant, Context, Continue, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, break, by, by2, by3, byF, ceil_, constant, continue, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, nop, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, Continue, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, break, by, by2, by3, byF, ceil_, constant, continue, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
@@ -1283,14 +1283,14 @@ toVar (TypedName _ _ e) =
 fun0 :
     TypingFunction t c
     -> String
-    -> Statement t
+    -> (Continue () -> Statement t)
     -> ( FunDecl, c )
 fun0 typeF name body =
     let
         ( typed, dotter ) =
             typeF name
     in
-    ( funInternal typed [] body
+    ( funInternal typed [] (body nop)
     , dotter <| call0Internal name
     )
 
@@ -1299,7 +1299,7 @@ fun1 :
     TypingFunction tr r
     -> String
     -> ( TypedName ta a, Expression ta -> a )
-    -> (a -> Statement tr)
+    -> (a -> Continue () -> Statement tr)
     ->
         ( FunDecl
         , ExpressionX xa ta -> r
@@ -1310,7 +1310,7 @@ fun1 typeF name ( arg0, _ ) body =
             typeF name
     in
     ( funInternal typed [ argToString arg0 ] <|
-        body (toVar arg0)
+        body (toVar arg0) nop
     , dotter << call1Internal name
     )
 
@@ -1320,7 +1320,7 @@ fun2 :
     -> String
     -> ( TypedName ta a, Expression ta -> a )
     -> ( TypedName tb b, Expression tb -> b )
-    -> (a -> b -> Statement tr)
+    -> (a -> b -> Continue () -> Statement tr)
     ->
         ( FunDecl
         , ExpressionX xa ta -> ExpressionX xb tb -> r
@@ -1331,7 +1331,7 @@ fun2 typeF name ( arg0, _ ) ( arg1, _ ) body =
             typeF name
     in
     ( funInternal typed [ argToString arg0, argToString arg1 ] <|
-        body (toVar arg0) (toVar arg1)
+        body (toVar arg0) (toVar arg1) nop
     , \l r -> dotter (call2Internal name l r)
     )
 
@@ -1342,7 +1342,7 @@ fun3 :
     -> ( TypedName ta a, Expression ta -> a )
     -> ( TypedName tb b, Expression tb -> b )
     -> ( TypedName tc c, Expression tc -> c )
-    -> (a -> b -> c -> Statement tr)
+    -> (a -> b -> c -> Continue () -> Statement tr)
     ->
         ( FunDecl
         , ExpressionX xa ta -> ExpressionX xb tb -> ExpressionX xc tc -> r
@@ -1353,7 +1353,7 @@ fun3 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) body =
             typeF name
     in
     ( funInternal typed [ argToString arg0, argToString arg1, argToString arg2 ] <|
-        body (toVar arg0) (toVar arg1) (toVar arg2)
+        body (toVar arg0) (toVar arg1) (toVar arg2) nop
     , \l m r -> dotter (call3Internal name l m r)
     )
 
@@ -1365,7 +1365,7 @@ fun4 :
     -> ( TypedName tb b, Expression tb -> b )
     -> ( TypedName tc c, Expression tc -> c )
     -> ( TypedName td d, Expression td -> d )
-    -> (a -> b -> c -> d -> Statement tr)
+    -> (a -> b -> c -> d -> Continue () -> Statement tr)
     ->
         ( FunDecl
         , ExpressionX xa ta -> ExpressionX xb tb -> ExpressionX xc tc -> ExpressionX xd td -> r
@@ -1376,7 +1376,7 @@ fun4 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) body =
             typeF name
     in
     ( funInternal typed [ argToString arg0, argToString arg1, argToString arg2, argToString arg3 ] <|
-        body (toVar arg0) (toVar arg1) (toVar arg2) (toVar arg3)
+        body (toVar arg0) (toVar arg1) (toVar arg2) (toVar arg3) nop
     , \l m n r -> dotter (call4Internal name l m n r)
     )
 
@@ -1389,7 +1389,7 @@ fun5 :
     -> ( TypedName tc c, Expression tc -> c )
     -> ( TypedName td d, Expression td -> d )
     -> ( TypedName te e, Expression te -> e )
-    -> (a -> b -> c -> d -> e -> Statement tr)
+    -> (a -> b -> c -> d -> e -> Continue () -> Statement tr)
     ->
         ( FunDecl
         , ExpressionX xa ta -> ExpressionX xb tb -> ExpressionX xc tc -> ExpressionX xd td -> ExpressionX xe te -> r
@@ -1400,7 +1400,7 @@ fun5 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) ( arg4, _ ) body
             typeF name
     in
     ( funInternal typed [ argToString arg0, argToString arg1, argToString arg2, argToString arg3, argToString arg4 ] <|
-        body (toVar arg0) (toVar arg1) (toVar arg2) (toVar arg3) (toVar arg4)
+        body (toVar arg0) (toVar arg1) (toVar arg2) (toVar arg3) (toVar arg4) nop
     , \l m c n r -> dotter (call5Internal name l m c n r)
     )
 
@@ -1434,15 +1434,15 @@ if_ cond ifTrue next =
     Statement <| If (unwrapExpression cond) (unwrapStatement <| ifTrue internalNop) (unwrapLazyStatement next)
 
 
-ifElse : Expression1 Bool -> ((() -> Statement s) -> Statement s) -> ((() -> Statement s) -> Statement s) -> (() -> Statement s) -> Statement s
+ifElse : Expression1 Bool -> (Continue s -> Statement s) -> (Continue s -> Statement s) -> Continue s -> Statement s
 ifElse cond ifTrue ifFalse next =
     Statement <| IfElse (unwrapExpression cond) (unwrapStatement <| ifTrue internalNop) (unwrapStatement <| ifFalse internalNop) (unwrapLazyStatement next)
 
 
 for :
     ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
-    -> (Expression1 Int -> (() -> Statement r) -> Statement r)
-    -> (() -> Statement r)
+    -> (Expression1 Int -> Continue r -> Statement r)
+    -> Continue r
     -> Statement r
 for ( var, from, to ) loop next =
     Statement <|
@@ -1457,8 +1457,8 @@ for ( var, from, to ) loop next =
 
 forLeq :
     ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
-    -> (Expression1 Int -> (() -> Statement r) -> Statement r)
-    -> (() -> Statement r)
+    -> (Expression1 Int -> Continue r -> Statement r)
+    -> Continue r
     -> Statement r
 forLeq ( var, from, to ) loop next =
     Statement <|
@@ -1473,8 +1473,8 @@ forLeq ( var, from, to ) loop next =
 
 forDown :
     ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
-    -> (Expression1 Int -> (() -> Statement r) -> Statement r)
-    -> (() -> Statement r)
+    -> (Expression1 Int -> Continue r -> Statement r)
+    -> Continue r
     -> Statement r
 forDown ( var, from, to ) loop next =
     Statement <|
@@ -1487,8 +1487,8 @@ forDown ( var, from, to ) loop next =
             (unwrapLazyStatement next)
 
 
-return : ExpressionX a r -> Statement r
-return e =
+return : ExpressionX a r -> Continue x -> Statement r
+return e _ =
     Statement <| Return <| unwrapExpression e
 
 
@@ -1531,7 +1531,7 @@ assign name e =
     dotted1Internal <| Assign (unwrapExpression name) (unwrapExpression e)
 
 
-unwrapLazyStatement : (() -> Statement r) -> Stat
+unwrapLazyStatement : Continue r -> Stat
 unwrapLazyStatement f =
     let
         (Statement next) =
@@ -1545,17 +1545,17 @@ unwrapStatement (Statement next) =
     next
 
 
-expr : ExpressionX a t -> (() -> Statement q) -> Statement q
+expr : ExpressionX a t -> Continue q -> Statement q
 expr e next =
     Statement <| ExpressionStatement (unwrapExpression e) (unwrapLazyStatement next)
 
 
-assignAdd : ExpressionX a t -> ExpressionX b t -> (() -> Statement q) -> Statement q
+assignAdd : ExpressionX a t -> ExpressionX b t -> Continue q -> Statement q
 assignAdd name e next =
     Statement <| ExpressionStatement (AssignCombo ComboAdd (unwrapExpression name) (unwrapExpression e)) (unwrapLazyStatement next)
 
 
-assignBy : ExpressionX a t -> ExpressionX b t -> (() -> Statement q) -> Statement q
+assignBy : ExpressionX a t -> ExpressionX b t -> Continue q -> Statement q
 assignBy name e next =
     Statement <| ExpressionStatement (AssignCombo ComboBy (unwrapExpression name) (unwrapExpression e)) (unwrapLazyStatement next)
 
