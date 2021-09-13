@@ -82,11 +82,11 @@ toGlsl suffix (Sphere { center, radius }) =
     def floatT "c" (subtract (dot to_center to_center) (float <| radius * radius)) <| \c ->
     def floatT "delta" (subtract (by b b) c) <| \delta ->
     if_ (lt delta zero)
-        (return <| bool False)
+        (\_ -> return <| bool False)
     <| \_ ->
     def floatT "x" (subtract (negate_ b) (sqrt_ delta)) <| \x ->
     if_ (lt x <| threshold maxDistance)
-        (return false)
+        (\_ -> return false)
     <| \_ ->
     expr (assign found (add o (byF x (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))))) <| \_ ->
     return true
