@@ -828,7 +828,7 @@ prettyPrintStatement stat =
             "(return <| " ++ prettyPrintExpression e ++ ")\n"
 
         Nop ->
-            "unsafeNop\n"
+            "nop\n"
 
         Def t n v next ->
             "def "

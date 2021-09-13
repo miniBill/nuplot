@@ -1,8 +1,8 @@
 module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
 import Dict exposing (Dict)
-import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator exposing (Constant, Continue, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add33, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, false, fileToGlsl, float, floatCast, floatT, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, nop, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, uniform, unknown, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), toPrintExpression)
+import UI.Glsl.Generator exposing (Constant, Continue, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add33, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, break, by, by2, by3, byF, ceil_, constant, continue, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, false, fileToGlsl, float, floatCast, floatT, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, nop, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, uniform, unsafeCall, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1819,7 +1819,7 @@ toSrcPolar suffix e =
                     def floatT "u" (f x (subtract y deltaY) t ot) <| \u ->
                     def floatT "ul" (f (subtract x deltaX) (subtract y deltaY) t ot) <| \ul ->
                     if_ (ors [ lt h zero, lt l zero, lt u zero, lt ul zero ])
-                        (\_ -> unsafeBreak)
+                        break
                     <| \_ ->
                     if_ (ors [ neq h l, neq h u, neq h ul ])
                         (\_ -> return <| vec3 one one one)
@@ -1935,7 +1935,7 @@ toSrcParametric suffix e =
                         forDown ( "j", subtractConst constants.maxDepth (int 1), int 0 )
                             (\j _ ->
                                 if_ (gt j depth)
-                                    (\_ -> unsafeContinue)
+                                    continue
                                 <| \_ ->
                                 expr (postfixDecrement depth) <| \_ ->
                                 expr (assign choices (div choices (int 2))) <| \_ ->
@@ -1949,7 +1949,7 @@ toSrcParametric suffix e =
                                                 expr (assign from midpoint) <| \_ ->
                                                 expr (postfixIncrement depth) <| \_ ->
                                                 expr (assign choices (add (by choices (int 2)) (int 1))) <| \_ ->
-                                                unsafeBreak
+                                                break cont
                                             )
                                             cont
                                     )
@@ -2913,7 +2913,7 @@ suffixToBisect interval suffix =
             forDown ( "j", subtractConst constants.maxDepth (int 1), int 0 )
                 (\j _ ->
                     if_ (gt j depth)
-                        (\_ -> unsafeContinue)
+                        continue
                     <| \_ ->
                     expr (postfixDecrement depth) <| \_ ->
                     expr (assign choices <| dotted1 <| unsafeCall "right_shift" [ choices.base ]) <| \_ ->
@@ -2927,7 +2927,7 @@ suffixToBisect interval suffix =
                                     expr (assign from midpoint) <| \_ ->
                                     expr (postfixIncrement depth) <| \_ ->
                                     expr (assign choices <| dotted1 <| unsafeCall "left_shift_increment" [ choices.base ]) <| \_ ->
-                                    unsafeBreak
+                                    break cont
                                 )
                                 cont
                         )
