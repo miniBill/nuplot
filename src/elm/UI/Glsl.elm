@@ -4,11 +4,11 @@ import Dict
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..))
 import Expression.Graph exposing (Graph(..))
 import Expression.Polynomial exposing (asPolynomial)
-import Expression.Utils exposing (by, cbrt, div, ipow, minus, one, plus, sqrt_, square)
+import Expression.Utils exposing (by, minus, plus, square)
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (atanPlusDecl, constantToGlsl, dupDecl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, add, arr, assign, boolT, def, expr, fileToGlsl, float, floatT, fun4, int, mat3T, mix, out, unknown, unknownStatement, vec3T)
+import UI.Glsl.Generator as Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, expr, fileToGlsl, unknown)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
@@ -193,29 +193,30 @@ get3DSource prefix e =
             }
 
         Nothing ->
-            -- case Plane.asPlane e |> Maybe.map (Plane.toGlsl prefix) of
-            --     Just ( glsl, bisect ) ->
-            --         { expr = e
-            --         , funDecls = [ glsl ]
-            --         , bisect = bisect
-            --         }
-            --     Nothing ->
-            case tryGlslFromPolynomial prefix e of
-                Just o ->
-                    o
-
-                Nothing ->
-                    let
-                        ( glsl, interval ) =
-                            toSrc3D prefix e
-
-                        ( decl, bisect ) =
-                            UI.Glsl.Code.suffixToBisect interval prefix
-                    in
+            case Plane.asPlane e |> Maybe.map (Plane.toGlsl prefix) of
+                Just ( glsl, bisect ) ->
                     { expr = e
-                    , funDecls = glsl ++ [ decl ]
+                    , funDecls = [ glsl ]
                     , bisect = bisect
                     }
+
+                Nothing ->
+                    case tryGlslFromPolynomial prefix e of
+                        Just o ->
+                            o
+
+                        Nothing ->
+                            let
+                                ( glsl, interval ) =
+                                    toSrc3D prefix e
+
+                                ( decl, bisect ) =
+                                    UI.Glsl.Code.suffixToBisect interval prefix
+                            in
+                            { expr = e
+                            , funDecls = glsl ++ [ decl ]
+                            , bisect = bisect
+                            }
 
 
 tryGlslFromPolynomial :

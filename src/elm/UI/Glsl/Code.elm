@@ -1,8 +1,8 @@
 module UI.Glsl.Code exposing (atanPlusDecl, cexpFunction, constantToGlsl, dupDecl, expressionToGlsl, gnumDecl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, suffixToBisect, thetaDeltaDecl, threshold, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
 
-import Dict
+import Dict exposing (Dict)
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), functionNameToString, toPrintExpression)
-import UI.Glsl.Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add33, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, false, fileToGlsl, float, floatCast, floatT, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+import UI.Glsl.Generator exposing (Constant, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, Mat3, Statement, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add33, add4, adds3, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted4, eq, exp, expr, false, fileToGlsl, float, floatCast, floatT, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, int, intCast, intT, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, uniform, unknown, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
@@ -1867,7 +1867,15 @@ toSrcParametric suffix e =
             def vec2T "x" (vec2 p.x p.x) <| \x ->
             def vec2T "y" (vec2 p.y p.y) <| \y ->
             def vec2T "t" (vec2 (min_ from to) (max_ from to)) <| \t ->
-            return <| expressionToIntervalGlsl (toPrintExpression e)
+            return <|
+                expressionToIntervalGlsl
+                    (Dict.fromList
+                        [ ( "x", x )
+                        , ( "y", y )
+                        , ( "t", t )
+                        ]
+                    )
+                    (toPrintExpression e)
 
         ( pixelDecl, pixel ) =
             fun4 vec3T ("pixel" ++ suffix) (floatT "deltaX") (floatT "deltaY") (floatT "x") (floatT "y") <| \deltaX deltaY x y ->
@@ -1918,37 +1926,44 @@ toSrcParametric suffix e =
                     expr (assign choices (add (by choices (int 2)) (int 1))) <| \_ ->
                     unsafeNop
                     )
-                    (unknownStatement
-                        ("""
-            // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
-            for(int j = MAX_DEPTH - 1; j > 0; j--) {
-                if(j > depth)
-                    continue;
-                depth--;
-                choices /= 2;
-                if(choices / 2 * 2 == choices) {
-                    midpoint = to;
-                    to = to + (to - from);
-                    vec2 back = interval""" ++ suffix ++ """(p, midpoint, to);
-                    if(back.x <= 0.0 && back.y >= 0.0) {
-                        from = midpoint;
-                        depth++;
-                        choices = choices * 2 + 1;
-                        break;
-                    }
-                } else {
-                    from = from - (to - from);
-                }
-            }
-            if(depth == 0)
-                return vec3(0,0,0);
-                """)
-                                                    )
-                                                 <| \_ ->
-                                                 unsafeNop
-                                                )
-                                            <| \_ ->
-                                            unsafeNop
+                    -- This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
+                    (forDown ( "j", subtractConst constants.maxDepth (int 1), int 0 )
+                        (\j ->
+                            if_ (gt j depth)
+                                unsafeContinue
+                            <| \_ ->
+                            expr (postfixDecrement depth) <| \_ ->
+                            expr (assign choices (div choices (int 2))) <| \_ ->
+                            ifElse (eq (by (div choices (int 2)) (int 2)) choices)
+                                (expr (assign midpoint to) <| \_ ->
+                                expr (assign to (add to (subtract to from))) <| \_ ->
+                                expr (assign back (interval p midpoint to)) <| \_ ->
+                                if_ (ands [ leq back.x zero, geq back.y zero ])
+                                    (expr (assign from midpoint) <| \_ ->
+                                    expr (postfixIncrement depth) <| \_ ->
+                                    expr (assign choices (add (by choices (int 2)) (int 1))) <| \_ ->
+                                    unsafeBreak
+                                    )
+                                <| \_ ->
+                                unsafeNop
+                                )
+                                (expr (assign from (subtract from (subtract to from))) <| \_ ->
+                                unsafeNop
+                                )
+                            <|
+                                \_ -> unsafeNop
+                        )
+                     <| \_ ->
+                     if_ (eq depth (int 0))
+                         (return vec3Zero)
+                     <|
+                         \_ -> unsafeNop
+                    )
+                 <| \_ ->
+                 unsafeNop
+                )
+            <| \_ ->
+            unsafeNop
     in
     ( [ intervalDecl, pixelDecl ], pixel )
 
@@ -2362,8 +2377,8 @@ expressionToGlsl context =
     toPrintExpression >> go
 
 
-expressionToIntervalGlsl : PrintExpression -> Expression2
-expressionToIntervalGlsl expr =
+expressionToIntervalGlsl : Dict String Expression2 -> PrintExpression -> Expression2
+expressionToIntervalGlsl vars expr =
     let
         unsafeApply name ex =
             let
@@ -2373,7 +2388,7 @@ expressionToIntervalGlsl expr =
             dotted2 <| unsafeCall name (List.map (go >> .base) ex)
 
         go =
-            expressionToIntervalGlsl
+            expressionToIntervalGlsl vars
     in
     case expr of
         PVariable "pi" ->
@@ -2383,7 +2398,12 @@ expressionToIntervalGlsl expr =
             dup <| exp one
 
         PVariable v ->
-            dotted2 <| unknown v
+            case Dict.get v vars of
+                Just w ->
+                    w
+
+                Nothing ->
+                    dotted2 <| unknown v
 
         PInteger v ->
             dup <| float <| toFloat v
@@ -2747,10 +2767,10 @@ toSrc3D suffix e =
             fun2 vec2T ("interval" ++ suffix) (mat3T "f") (mat3T "t") <| \f t ->
             def vec3T "mn" (min_ (arr f <| int 0) (arr t <| int 0)) <| \mn ->
             def vec3T "mx" (max_ (arr f <| int 1) (arr t <| int 1)) <| \mx ->
-            def vec2T "x" (vec2 mn.x mx.x) <| \_ ->
-            def vec2T "y" (vec2 mn.y mx.y) <| \_ ->
-            def vec2T "z" (vec2 mn.z mx.z) <| \_ ->
-            return <| expressionToIntervalGlsl <| toPrintExpression e
+            def vec2T "x" (vec2 mn.x mx.x) <| \x ->
+            def vec2T "y" (vec2 mn.y mx.y) <| \y ->
+            def vec2T "z" (vec2 mn.z mx.z) <| \z ->
+            return <| expressionToIntervalGlsl (Dict.fromList [ ( "x", x ), ( "y", y ), ( "z", z ) ]) <| toPrintExpression e
     in
     ( [ Tuple.first <|
             fun1 vec3T ("normal" ++ suffix) (vec3T "p") <| \p ->
