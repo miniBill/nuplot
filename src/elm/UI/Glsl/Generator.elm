@@ -1,7 +1,8 @@
-module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, by, by2, by3, byF, ceil_, constant, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unknownStatement, unsafeBreak, unsafeCall, unsafeContinue, unsafeNop, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
+import Expression.NumericRange exposing (isCompletelyReal)
 import Set
 
 
@@ -665,6 +666,13 @@ subtract4 =
 negate_ : ExpressionX a t -> Expression1 t
 negate_ =
     expr1 Negate
+
+
+negateConst : ExpressionX { a | isConstant : Constant } t -> ExpressionX { isConstant : Constant } t
+negateConst l =
+    { base = (expr1 Negate l).base
+    , isConstant = Constant
+    }
 
 
 negate2 : ExpressionX a Vec2 -> Expression2
@@ -1398,29 +1406,29 @@ fun5 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) ( arg4, _ ) body
     )
 
 
-if_ : Expression1 Bool -> Statement q -> Statement r -> Statement r
-if_ cond (Statement ifTrue) (Statement next) =
-    Statement <| If (unwrapExpression cond) ifTrue next
+if_ : Expression1 Bool -> Statement q -> (() -> Statement r) -> Statement r
+if_ cond (Statement ifTrue) next =
+    Statement <| If (unwrapExpression cond) ifTrue (unwrapLazyStatement next)
 
 
-ifElse : Expression1 Bool -> Statement q -> Statement r -> Statement s -> Statement s
-ifElse cond (Statement ifTrue) (Statement ifFalse) (Statement next) =
-    Statement <| IfElse (unwrapExpression cond) ifTrue ifFalse next
+ifElse : Expression1 Bool -> Statement q -> Statement r -> (() -> Statement s) -> Statement s
+ifElse cond (Statement ifTrue) (Statement ifFalse) next =
+    Statement <| IfElse (unwrapExpression cond) ifTrue ifFalse (unwrapLazyStatement next)
 
 
-for : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
-for ( var, from, to ) loop (Statement next) =
-    Statement <| For var (unwrapExpression from) LessThan (unwrapExpression to) (PostfixIncrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
+for : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> (() -> Statement r) -> Statement r
+for ( var, from, to ) loop next =
+    Statement <| For var (unwrapExpression from) LessThan (unwrapExpression to) (PostfixIncrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) (unwrapLazyStatement next)
 
 
-forLeq : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
-forLeq ( var, from, to ) loop (Statement next) =
-    Statement <| For var (unwrapExpression from) LessThanOrEquals (unwrapExpression to) (PostfixIncrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
+forLeq : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> (() -> Statement r) -> Statement r
+forLeq ( var, from, to ) loop next =
+    Statement <| For var (unwrapExpression from) LessThanOrEquals (unwrapExpression to) (PostfixIncrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) (unwrapLazyStatement next)
 
 
-forDown : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> Statement r -> Statement r
-forDown ( var, from, to ) loop (Statement next) =
-    Statement <| For var (unwrapExpression from) GreaterThan (unwrapExpression to) (PostfixDecrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) next
+forDown : ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int ) -> (Expression1 Int -> Statement w) -> (() -> Statement r) -> Statement r
+forDown ( var, from, to ) loop next =
+    Statement <| For var (unwrapExpression from) GreaterThan (unwrapExpression to) (PostfixDecrement (Variable var)) ((\(Statement s) -> s) (loop <| dotted1 <| Expression <| Variable var)) (unwrapLazyStatement next)
 
 
 return : ExpressionX a r -> Statement r
@@ -1475,31 +1483,28 @@ assign name e =
     dotted1Internal <| Assign (unwrapExpression name) (unwrapExpression e)
 
 
-expr : ExpressionX a t -> (() -> Statement q) -> Statement q
-expr e n =
+unwrapLazyStatement : (() -> Statement r) -> Stat
+unwrapLazyStatement f =
     let
         (Statement next) =
-            n ()
+            f ()
     in
-    Statement <| ExpressionStatement (unwrapExpression e) next
+    next
+
+
+expr : ExpressionX a t -> (() -> Statement q) -> Statement q
+expr e next =
+    Statement <| ExpressionStatement (unwrapExpression e) (unwrapLazyStatement next)
 
 
 assignAdd : ExpressionX a t -> ExpressionX b t -> (() -> Statement q) -> Statement q
-assignAdd name e n =
-    let
-        (Statement next) =
-            n ()
-    in
-    Statement <| ExpressionStatement (AssignCombo ComboAdd (unwrapExpression name) (unwrapExpression e)) next
+assignAdd name e next =
+    Statement <| ExpressionStatement (AssignCombo ComboAdd (unwrapExpression name) (unwrapExpression e)) (unwrapLazyStatement next)
 
 
 assignBy : ExpressionX a t -> ExpressionX b t -> (() -> Statement q) -> Statement q
-assignBy name e n =
-    let
-        (Statement next) =
-            n ()
-    in
-    Statement <| ExpressionStatement (AssignCombo ComboBy (unwrapExpression name) (unwrapExpression e)) next
+assignBy name e next =
+    Statement <| ExpressionStatement (AssignCombo ComboBy (unwrapExpression name) (unwrapExpression e)) (unwrapLazyStatement next)
 
 
 
