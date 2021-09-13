@@ -37,7 +37,7 @@ asPlane e =
 
 toGlsl : String -> Plane -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool )
 toGlsl suffix (Plane { x, y, z, known }) =
-    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
+    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found nop ->
     -- a x + b y + c z + k = 0
     -- x = ox + t dx
     -- y = oy + t dy
@@ -55,4 +55,4 @@ toGlsl suffix (Plane { x, y, z, known }) =
         )
     <| \t ->
     expr (assign found <| add o <| byF t dsum) <| \_ ->
-    return (gt t <| threshold maxDistance)
+    return (gt t <| threshold maxDistance) nop

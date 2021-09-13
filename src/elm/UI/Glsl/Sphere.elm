@@ -75,18 +75,18 @@ reduce poly =
 
 toGlsl : String -> Sphere -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool )
 toGlsl suffix (Sphere { center, radius }) =
-    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
+    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found nop ->
     def vec3T "center" (vec3 (float center.x) (float center.y) (float center.z)) <| \centerVar ->
     def vec3T "to_center" (subtract o centerVar) <| \to_center ->
     def floatT "b" (dot to_center (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))) <| \b ->
     def floatT "c" (subtract (dot to_center to_center) (float <| radius * radius)) <| \c ->
     def floatT "delta" (subtract (by b b) c) <| \delta ->
     if_ (lt delta zero)
-        (\_ -> return <| bool False)
+        (return <| bool False)
     <| \_ ->
     def floatT "x" (subtract (negate_ b) (sqrt_ delta)) <| \x ->
     if_ (lt x <| threshold maxDistance)
-        (\_ -> return false)
+        (return false)
     <| \_ ->
     expr (assign found (add o (byF x (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))))) <| \_ ->
-    return true
+    return true nop
