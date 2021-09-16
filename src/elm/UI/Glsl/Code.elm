@@ -2478,14 +2478,14 @@ expressionToIntervalGlsl vars expr =
             else
                 unsafeApply ("i" ++ Expression.functionNameToString name) ex
 
-        PList es ->
-            unsafeApply ("vec" ++ String.fromInt (List.length es)) es
-
         PReplace var e ->
             go (Expression.pfullSubstitute var e)
 
         -- If this happens, it's too late
         PLambda _ _ ->
+            vec2Zero
+
+        PList _ ->
             vec2Zero
 
 
