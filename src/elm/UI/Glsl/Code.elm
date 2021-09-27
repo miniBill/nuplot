@@ -2584,18 +2584,15 @@ expressionToNormalGlsl { x, y, z } =
     toPrintExpression >> go
 
 
-
--- mainGlsl :
---     Bool
---     ->
---         List
---             { call : Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression3
---             , color : Bool
---             }
---     -> List String
---     -> String
-
-
+mainGlsl :
+    Bool
+    ->
+        List
+            { call : Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression1 Float -> Expression3
+            , color : Bool
+            }
+    -> List (Expression3 -> Expression1 Mat3 -> Expression1 Float -> Expression3 -> Expression1 Bool)
+    -> String
 mainGlsl rayDifferentials pixel2Def pixel3Def =
     case ( pixel2Def, pixel3Def ) of
         ( _, [] ) ->
