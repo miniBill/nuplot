@@ -19,6 +19,7 @@ import Expression
         , visit
         )
 import Expression.Derivative
+import Expression.NumericRange as NumericRange
 import Expression.Polynomial exposing (asPolynomial)
 import Expression.Utils exposing (abs_, by, byShort, cbrt, cos_, div, divShort, factor, i, im, ipow, ipowShort, minus, minusOne, negateShort, negate_, one, plus, plusShort, pow, re, sin_, sqrt_, square, two, zero)
 import Fraction
@@ -262,28 +263,8 @@ stepSimplifyApply fname sargs =
                 ( Re, _ ) ->
                     stepSimplifyRe sargs
 
-                ( Im, [ AssociativeOperation Addition l m r ] ) ->
-                    plus <| List.map im <| l :: m :: r
-
-                ( Im, [ Variable v ] ) ->
-                    if v == "i" then
-                        one
-
-                    else
-                        zero
-
-                ( Im, [ Integer _ ] ) ->
-                    zero
-
-                ( Im, [ Float _ ] ) ->
-                    zero
-
-                ( Im, [ AssociativeOperation Multiplication l m r ] ) ->
-                    let
-                        rest =
-                            by (m :: r)
-                    in
-                    plus [ by [ re l, im rest ], by [ im l, re rest ] ]
+                ( Im, _ ) ->
+                    stepSimplifyIm sargs
 
                 ( Ii, [ expr, Variable var, from, to ] ) ->
                     stepSimplifyIntegral expr var from to
@@ -694,40 +675,109 @@ cbrtInteger j =
 stepSimplifyRe : List Expression -> Expression
 stepSimplifyRe sargs =
     case sargs of
-        [ BinaryOperation Division (AssociativeOperation Addition l m r) d ] ->
-            plus <| List.map (\c -> re <| div c d) (l :: m :: r)
-
-        [ BinaryOperation Division n (Integer d) ] ->
-            div (re n) (Integer d)
-
-        [ UnaryOperation Negate c ] ->
-            negate_ <| re c
-
-        [ AssociativeOperation Addition l m r ] ->
-            plus <| List.map re <| l :: m :: r
-
-        [ Variable v ] ->
-            if v == "i" then
-                zero
+        [ sarg ] ->
+            if NumericRange.get sarg /= NumericRange.Complex then
+                sarg
 
             else
-                Variable v
+                case sarg of
+                    AssociativeOperation Addition l m r ->
+                        plus <| List.map re <| l :: m :: r
 
-        [ Integer i ] ->
-            Integer i
+                    BinaryOperation Division (AssociativeOperation Addition l m r) d ->
+                        plus <| List.map (\c -> re <| div c d) (l :: m :: r)
 
-        [ Float i ] ->
-            Float i
+                    BinaryOperation Division (AssociativeOperation Multiplication l m r) d ->
+                        stepSimplifyRe [ by <| [ div l d, m ] ++ r ]
 
-        [ AssociativeOperation Multiplication l m r ] ->
-            let
-                rest =
-                    by (m :: r)
-            in
-            minus (by [ re l, re rest ]) (by [ im l, im rest ])
+                    BinaryOperation Division (UnaryOperation Negate n) d ->
+                        negate_ <| re <| div n d
+
+                    BinaryOperation Division n (Integer d) ->
+                        div (re n) (Integer d)
+
+                    UnaryOperation Negate c ->
+                        negate_ <| re c
+
+                    Variable v ->
+                        if v == "i" then
+                            zero
+
+                        else
+                            Variable v
+
+                    Integer i ->
+                        Integer i
+
+                    Float i ->
+                        Float i
+
+                    AssociativeOperation Multiplication l m r ->
+                        let
+                            rest =
+                                by (m :: r)
+                        in
+                        minus (by [ re l, re rest ]) (by [ im l, im rest ])
+
+                    _ ->
+                        Apply (KnownFunction Re) sargs
 
         _ ->
             Apply (KnownFunction Re) sargs
+
+
+stepSimplifyIm : List Expression -> Expression
+stepSimplifyIm sargs =
+    case sargs of
+        [ sarg ] ->
+            if NumericRange.get sarg /= NumericRange.Complex then
+                zero
+
+            else
+                case sarg of
+                    AssociativeOperation Addition l m r ->
+                        plus <| List.map im <| l :: m :: r
+
+                    BinaryOperation Division (AssociativeOperation Addition l m r) d ->
+                        plus <| List.map (\c -> im <| div c d) (l :: m :: r)
+
+                    BinaryOperation Division (AssociativeOperation Multiplication l m r) d ->
+                        stepSimplifyIm [ by <| [ div l d, m ] ++ r ]
+
+                    BinaryOperation Division (UnaryOperation Negate n) d ->
+                        negate_ <| im <| div n d
+
+                    BinaryOperation Division n (Integer d) ->
+                        div (im n) (Integer d)
+
+                    Variable v ->
+                        if v == "i" then
+                            one
+
+                        else
+                            zero
+
+                    Integer _ ->
+                        zero
+
+                    Float _ ->
+                        zero
+
+                    UnaryOperation Negate c ->
+                        negate_ <| im c
+
+                    AssociativeOperation Multiplication l m r ->
+                        let
+                            rest =
+                                by (m :: r)
+                        in
+                        plus [ by [ re l, im rest ], by [ im l, re rest ] ]
+
+                    _ ->
+                        Apply (KnownFunction Im) sargs
+
+        _ ->
+            Apply (KnownFunction Im) sargs
 
 
 stepSimplifyDivision : Expression -> Expression -> Expression
