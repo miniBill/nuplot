@@ -947,6 +947,15 @@ stepSimplifyPower ls rs =
             else
                 Integer <| il ^ ir
 
+        ( Integer il, Float fr ) ->
+            Float <| toFloat il ^ fr
+
+        ( Float fl, Integer ir ) ->
+            Float <| fl ^ toFloat ir
+
+        ( Float fl, Float fr ) ->
+            Float <| fl ^ fr
+
         ( Integer b, BinaryOperation Division (Integer en) (Integer ed) ) ->
             if b == 0 then
                 Integer 0
@@ -1144,23 +1153,25 @@ sortByDegree aop ee =
                    )
 
         by f x y =
-            if aop == Addition then
-                compare -(f x) -(f y)
-
-            else
-                compare (f x) (f y)
+            compare (f x) (f y)
     in
     List.foldl
         (\var ->
             List.stableSortWith
-                (by <|
-                    \e ->
-                        -- "i" doesn't have higher nonsimplified powers, and we want it later
-                        if var == "i" && aop == Addition then
-                            negate <| Maybe.withDefault -1 <| polyDegree var e
+                (by <| \e ->
+                let
+                    base =
+                        Maybe.withDefault -1 <| polyDegree var e
 
-                        else
-                            Maybe.withDefault -1 <| polyDegree var e
+                    description =
+                        Expression.toString e
+                in
+                if (aop /= Addition) || (var == "i") then
+                    -- "i" doesn't have higher nonsimplified powers, and we want it later
+                    ( base, description )
+
+                else
+                    ( negate base, description )
                 )
         )
         ee
@@ -1180,6 +1191,15 @@ stepSimplifyAddition left right =
 
                 ( Integer il, Integer ir ) ->
                     Just <| Integer <| il + ir
+
+                ( Integer il, Float fr ) ->
+                    Just <| Float <| toFloat il + fr
+
+                ( Float fl, Integer ir ) ->
+                    Just <| Float <| fl + toFloat ir
+
+                ( Float fl, Float fr ) ->
+                    Just <| Float <| fl + fr
 
                 ( _, AssociativeOperation Multiplication (Integer c) mon [] ) ->
                     if Expression.equals left mon then
@@ -1236,6 +1256,22 @@ stepSimplifyAddition left right =
 
                 ( List _, List _ ) ->
                     addMatrices left right
+
+                ( BinaryOperation Power (Apply (KnownFunction lf) [ la ]) le, BinaryOperation Power (Apply (KnownFunction rf) [ ra ]) re ) ->
+                    let
+                        isTwo x =
+                            x == Integer 2 || x == Float 2
+                    in
+                    if
+                        ((lf == Sin && rf == Cos) || (lf == Cos && rf == Sin))
+                            && isTwo le
+                            && isTwo re
+                            && Expression.equals la ra
+                    then
+                        Just one
+
+                    else
+                        Nothing
 
                 _ ->
                     if Expression.equals left right then
@@ -1296,6 +1332,15 @@ stepSimplifyMultiplication left right =
 
                 ( Integer il, Integer ir ) ->
                     Just <| Integer <| il * ir
+
+                ( Integer il, Float fr ) ->
+                    Just <| Float <| toFloat il * fr
+
+                ( Float fl, Integer ir ) ->
+                    Just <| Float <| fl * toFloat ir
+
+                ( Float fl, Float fr ) ->
+                    Just <| Float <| fl * fr
 
                 ( Integer j, _ ) ->
                     if j == -1 then
