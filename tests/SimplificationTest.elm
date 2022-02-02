@@ -358,4 +358,21 @@ stepSimplificationChainTests =
         , negate_ <| div (Integer 11) five
         ]
       )
+    , ( div
+            (negate_ <| div (Integer 12) five)
+            (negate_ <| div (Integer 11) five)
+      , [ div
+            (div (Integer 12) five)
+            (div (Integer 11) five)
+        , div
+            (by [ Integer 12, five ])
+            (by [ five, Integer 11 ])
+        , div
+            (Integer 60)
+            (Integer 55)
+        , div
+            (Integer 12)
+            (Integer 11)
+        ]
+      )
     ]
