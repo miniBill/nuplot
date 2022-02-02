@@ -63,8 +63,8 @@ solveTests =
         none =
             Variable "none: x"
 
-        pi =
-            Variable "pi"
+        -- pi =
+        --     Variable "pi"
     in
     [ {- let
            repls =
@@ -108,8 +108,8 @@ solveTests =
                 , minus x two
                 ]
       , x
-      , [ xeq minusOne
-        , xeq one
+      , [ xeq one
+        , xeq minusOne
         , xeq two
         ]
       )
