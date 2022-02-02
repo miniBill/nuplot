@@ -5,7 +5,7 @@ import Expect
 import Expression exposing (AssociativeOperation(..), Expression(..), RelationOperation(..))
 import Expression.Parser
 import Expression.Simplify
-import Expression.Utils exposing (a, atan2_, b, by, c, complex, cos_, cosh_, div, double, f, five, four, g, i, ipow, m, minus, minusOne, n, negate_, one, plus, r, s, sin_, sinh_, six, sqrt_, square, three, triple, two, x, y, z, zero)
+import Expression.Utils exposing (a, atan2_, b, by, c, complex, cos_, cosh_, div, double, f, five, four, i, ipow, m, minus, minusOne, n, negate_, one, plus, s, sin_, sinh_, six, sqrt_, square, three, triple, two, x, y, z, zero)
 import Test exposing (Test, describe, test)
 
 
@@ -334,10 +334,14 @@ stepSimplificationTests =
 
 stepSimplificationChainTests : List ( Expression, List Expression )
 stepSimplificationChainTests =
-    [ ( by
+    [ ( by [ six, negate_ s ], [ negate_ <| by [ six, s ] ] )
+    , ( by
             [ div six five
             , negate_ s
             ]
-      , [ div (by [ six, negate_ s ]) five, zero ]
+      , [ div (by [ six, negate_ s ]) five
+        , div (negate_ <| by [ six, s ]) five
+        , div (by [ Integer -6, s ]) five
+        ]
       )
     ]
