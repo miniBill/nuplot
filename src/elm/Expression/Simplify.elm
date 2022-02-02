@@ -141,6 +141,9 @@ stepSimplifyNegate context expr =
         Integer ni ->
             Integer -ni
 
+        Float nf ->
+            Float -nf
+
         List ls ->
             stepList context
                 { andThen = \ss -> List <| List.map negate_ ss
@@ -853,6 +856,9 @@ stepSimplifyDivision ls rs =
                     else
                         div (Integer <| li // g) (Integer <| ri // g)
 
+        ( Float lf, Float rf ) ->
+            Float <| lf / rf
+
         ( _, AssociativeOperation Addition l m r ) ->
             let
                 ( reals, immaginaries ) =
@@ -953,12 +959,32 @@ stepSimplifyDivision ls rs =
             else
                 div ls rs
 
+        ( UnaryOperation Negate ln, Float rf ) ->
+            if rf == -1 then
+                ln
+
+            else if rf < 0 then
+                div ln (Float -rf)
+
+            else
+                div ls rs
+
         ( _, Integer ri ) ->
             if ri == -1 then
                 negate_ ls
 
             else if ri < 0 then
                 div (negate_ ls) (Integer -ri)
+
+            else
+                div ls rs
+
+        ( _, Float rf ) ->
+            if rf == -1 then
+                negate_ ls
+
+            else if rf < 0 then
+                div (negate_ ls) (Float -rf)
 
             else
                 div ls rs
