@@ -795,6 +795,16 @@ stepSimplifyDivision ls rs =
                     else
                         div ls rs
 
+                UnaryOperation Negate (BinaryOperation Division _ _) ->
+                    if Zipper.canGoRight dz then
+                        trySimplifyFactors nz (Zipper.right 1 dz) dzip
+
+                    else if Zipper.canGoRight nz then
+                        trySimplifyFactors (Zipper.right 1 nz) dzip dzip
+
+                    else
+                        div ls rs
+
                 Integer 1 ->
                     div
                         (by <| Zipper.getLeft nz ++ Zipper.getRight nz)
@@ -1129,20 +1139,6 @@ stepSimplifyAssociative context aop args =
                                                 UnaryOperation Negate ne ->
                                                     ( ne :: acc, not negated )
 
-                                                Integer i ->
-                                                    if i < 0 then
-                                                        ( Integer -i :: acc, not negated )
-
-                                                    else
-                                                        ( e :: acc, negated )
-
-                                                Float f ->
-                                                    if f < 0 then
-                                                        ( Float -f :: acc, not negated )
-
-                                                    else
-                                                        ( e :: acc, negated )
-
                                                 _ ->
                                                     ( e :: acc, negated )
                                         )
@@ -1284,6 +1280,12 @@ stepSimplifyAddition left right =
                         div
                             (plus [ by [ negate_ ln, rd ], by [ rn, ld ] ])
                             (by [ ld, rd ])
+
+                ( UnaryOperation Negate (BinaryOperation Division ln ld), _ ) ->
+                    Just <|
+                        div
+                            (plus [ negate_ ln, by [ right, ld ] ])
+                            ld
 
                 ( UnaryOperation Negate nl, _ ) ->
                     if Expression.equals nl right then
