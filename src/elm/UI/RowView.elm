@@ -369,7 +369,12 @@ viewSolutionTree pageWidth tree =
             [ viewLaTeX pageWidth <| "\\not \\exists " ++ v ++ " \\in \\mathbb{R}" ]
 
         SolutionDone e ->
-            [ viewLaTeX pageWidth <| Expression.toTeXString e ]
+            [ --Theme.row [] [
+              viewLaTeX pageWidth <| Expression.toTeXString e
+
+            -- , Expression.toDebugTree Debug.todo e
+            -- ]
+            ]
 
         SolutionBranch children ->
             let
