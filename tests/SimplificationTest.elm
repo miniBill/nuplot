@@ -5,7 +5,7 @@ import Expect
 import Expression exposing (AssociativeOperation(..), Expression(..), RelationOperation(..))
 import Expression.Parser
 import Expression.Simplify
-import Expression.Utils exposing (a, atan2_, b, by, c, complex, cos_, cosh_, div, double, f, g, i, ipow, m, minus, minusOne, n, negate_, one, plus, r, sin_, sinh_, sqrt_, square, triple, two, x, y, z, zero)
+import Expression.Utils exposing (a, atan2_, b, by, c, complex, cos_, cosh_, div, double, f, five, four, g, i, ipow, m, minus, minusOne, n, negate_, one, plus, r, s, sin_, sinh_, six, sqrt_, square, three, triple, two, x, y, z, zero)
 import Test exposing (Test, describe, test)
 
 
@@ -44,6 +44,25 @@ suite =
                         (Expression.toString stepSimplified ++ " = " ++ Debug.toString stepSimplified)
             ]
 
+        toTestsStepChainSimplify ( from, tos ) =
+            case tos of
+                [] ->
+                    []
+
+                toHead :: toTail ->
+                    let
+                        stepSimplified =
+                            Expression.Simplify.stepSimplify Dict.empty from
+
+                        step =
+                            test (Expression.toString from ++ " step simplifies to " ++ Expression.toString toHead) <|
+                                \_ ->
+                                    Expect.equal
+                                        (Expression.toString toHead ++ " = " ++ Debug.toString toHead)
+                                        (Expression.toString stepSimplified ++ " = " ++ Debug.toString stepSimplified)
+                    in
+                    step :: toTestsStepChainSimplify ( toHead, toTail )
+
         toTestSort ( aop, from, to ) =
             let
                 sorted =
@@ -60,6 +79,8 @@ suite =
             List.concatMap toTestsSimplify simplificationTests
         , describe "Expression.Simplify.stepSimplify" <|
             List.concatMap toTestsStepSimplify stepSimplificationTests
+        , describe "Expression.Simplify.stepSimplify [full]" <|
+            List.concatMap toTestsStepChainSimplify stepSimplificationChainTests
         , describe "Expression.Simplify.sortByDegree" <|
             List.map toTestSort sortTests
         ]
@@ -92,7 +113,7 @@ simplificationTests =
             )
             (plus [ double a, square b ])
       , plus
-            [ by [ Integer 4, x ]
+            [ by [ four, x ]
             , by [ Integer 9, square z ]
             ]
       )
@@ -104,7 +125,7 @@ simplificationTests =
     , ( Replace (Dict.singleton "a" <| Just one) a, one )
     , ( Replace
             (Dict.fromList
-                [ ( "cov", Just <| Integer 3 )
+                [ ( "cov", Just three )
                 ]
             )
             (byself <| Variable "cov")
@@ -209,7 +230,7 @@ simplificationTests =
                (square <| plus [ negate_ d, c ])
        , ( "(3/10)/a"
          , div
-               (div (Integer 3) (Integer 10))
+               (div three (Integer 10))
                a
          , "3/10/a"
          )
@@ -251,7 +272,7 @@ simplificationTests =
                (Dict.fromList
                    [ ( "g"
                      , plus
-                           [ pow (minus (byself x) (byself y)) (div (Integer 3) two)
+                           [ pow (minus (byself x) (byself y)) (div three two)
                            , div one <| Integer 10
                            ]
                      )
@@ -271,15 +292,15 @@ sortTests =
     , ( Addition, [ by [ a, x ], by [ b, x ] ], [ by [ a, x ], by [ b, x ] ] )
     , ( Addition, [ square a, square b ], [ square a, square b ] )
     , ( Multiplication, [ c, b, a ], [ a, b, c ] )
-    , ( Multiplication, [ Integer 3, i ], [ Integer 3, i ] )
-    , let
-        afmn =
-            by [ a, f, m, n ]
+    , ( Multiplication, [ three, i ], [ three, i ] )
 
-        agmr =
-            by [ a, g, m, r ]
-      in
-      ( Addition, [ afmn, agmr, negate_ afmn ], [ afmn, negate_ afmn, agmr ] )
+    -- , let
+    --     afmn =
+    --         by [ a, f, m, n ]
+    --     agmr =
+    --         by [ a, g, m, r ]
+    --   in
+    --   ( Addition, [ afmn, agmr, negate_ afmn ], [ afmn, negate_ afmn, agmr ] )
     ]
 
 
@@ -306,6 +327,17 @@ stepSimplificationTests =
     , ( parseOrBreak "[r=sqrt(x²+y²);t=atan2(y,x)]r=2/t"
       , RelationOperation Equals
             (sqrt_ <| plus [ square x, square y ])
-            (div (Integer 2) (atan2_ y x))
+            (div two (atan2_ y x))
+      )
+    ]
+
+
+stepSimplificationChainTests : List ( Expression, List Expression )
+stepSimplificationChainTests =
+    [ ( by
+            [ div six five
+            , negate_ s
+            ]
+      , [ div (by [ six, negate_ s ]) five, zero ]
       )
     ]
