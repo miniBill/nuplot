@@ -1116,12 +1116,44 @@ stepSimplifyAssociative context aop args =
         andThen ls =
             ls
                 |> groupOneWith groupStep
-                |> (case aop of
-                        Addition ->
-                            identity
+                |> (\res ->
+                        case aop of
+                            Addition ->
+                                res
 
-                        Multiplication ->
-                            tryExtract findNegate (\( negated, rest ) -> [ negate_ <| build <| negated :: rest ])
+                            Multiplication ->
+                                res
+                                    |> List.foldr
+                                        (\e ( acc, negated ) ->
+                                            case e of
+                                                UnaryOperation Negate ne ->
+                                                    ( ne :: acc, not negated )
+
+                                                Integer i ->
+                                                    if i < 0 then
+                                                        ( Integer -i :: acc, not negated )
+
+                                                    else
+                                                        ( e :: acc, negated )
+
+                                                Float f ->
+                                                    if f < 0 then
+                                                        ( Float -f :: acc, not negated )
+
+                                                    else
+                                                        ( e :: acc, negated )
+
+                                                _ ->
+                                                    ( e :: acc, negated )
+                                        )
+                                        ( [], False )
+                                    |> (\( acc, negated ) ->
+                                            if negated then
+                                                [ negate_ <| build acc ]
+
+                                            else
+                                                acc
+                                       )
                    )
                 |> sortByDegree aop
                 |> build
@@ -1133,14 +1165,6 @@ stepSimplifyAssociative context aop args =
             { ifChanged = build
             , andThen = andThen
             }
-
-
-tryExtract : (a -> Maybe b) -> (( b, List a ) -> List a) -> List a -> List a
-tryExtract f g es =
-    es
-        |> extract f
-        |> Maybe.map g
-        |> Maybe.withDefault es
 
 
 extract : (a -> Maybe b) -> List a -> Maybe ( b, List a )
@@ -1176,16 +1200,6 @@ findSpecificVariable j expr =
             Nothing
 
 
-findNegate : Expression -> Maybe Expression
-findNegate expr =
-    case expr of
-        UnaryOperation Negate e ->
-            Just e
-
-        _ ->
-            Nothing
-
-
 sortByDegree : AssociativeOperation -> List Expression -> List Expression
 sortByDegree aop ee =
     let
@@ -1208,20 +1222,21 @@ sortByDegree aop ee =
     List.foldl
         (\var ->
             List.stableSortWith
-                (by <| \e ->
-                let
-                    base =
-                        Maybe.withDefault -1 <| polyDegree var e
+                (by <|
+                    \e ->
+                        let
+                            base =
+                                Maybe.withDefault -1 <| polyDegree var e
 
-                    description =
-                        Expression.toString e
-                in
-                if (aop /= Addition) || (var == "i") then
-                    -- "i" doesn't have higher nonsimplified powers, and we want it later
-                    ( base, description )
+                            description =
+                                Expression.toString e
+                        in
+                        if (aop /= Addition) || (var == "i") then
+                            -- "i" doesn't have higher nonsimplified powers, and we want it later
+                            ( base, description )
 
-                else
-                    ( negate base, description )
+                        else
+                            ( negate base, description )
                 )
         )
         ee
