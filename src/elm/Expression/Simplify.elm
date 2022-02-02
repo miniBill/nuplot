@@ -943,6 +943,26 @@ stepSimplifyDivision ls rs =
         ( UnaryOperation Negate ln, UnaryOperation Negate rn ) ->
             div ln rn
 
+        ( UnaryOperation Negate ln, Integer ri ) ->
+            if ri == -1 then
+                ln
+
+            else if ri < 0 then
+                div ln (Integer -ri)
+
+            else
+                div ls rs
+
+        ( _, Integer ri ) ->
+            if ri == -1 then
+                negate_ ls
+
+            else if ri < 0 then
+                div (negate_ ls) (Integer -ri)
+
+            else
+                div ls rs
+
         _ ->
             if Expression.equals ls rs then
                 one
