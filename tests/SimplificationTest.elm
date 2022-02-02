@@ -334,7 +334,12 @@ stepSimplificationTests =
 
 stepSimplificationChainTests : List ( Expression, List Expression )
 stepSimplificationChainTests =
-    [ ( by [ six, negate_ s ], [ negate_ <| by [ six, s ] ] )
+    [ ( by [ six, negate_ s ]
+      , [ negate_ <| by [ six, s ]
+        , by [ Integer -6, s ]
+        , by [ Integer -6, s ]
+        ]
+      )
     , ( by
             [ div six five
             , negate_ s
@@ -342,6 +347,15 @@ stepSimplificationChainTests =
       , [ div (by [ six, negate_ s ]) five
         , div (negate_ <| by [ six, s ]) five
         , div (by [ Integer -6, s ]) five
+        , div (by [ Integer -6, s ]) five
+        ]
+      )
+    , ( plus [ negate_ (div six five), Integer -1 ]
+      , [ div (plus [ negate_ <| Integer 6, by [ Integer -1, five ] ]) five
+        , div (plus [ Integer -6, Integer -5 ]) five
+        , div (Integer -11) five
+        , negate_ <| div (Integer 11) five
+        , negate_ <| div (Integer 11) five
         ]
       )
     ]

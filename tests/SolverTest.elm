@@ -108,8 +108,8 @@ solveTests =
                 , minus x two
                 ]
       , x
-      , [ xeq one
-        , xeq minusOne
+      , [ xeq minusOne
+        , xeq one
         , xeq two
         ]
       )
