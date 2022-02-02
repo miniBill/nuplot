@@ -816,8 +816,14 @@ stepSimplifyDivision ls rs =
                         (by <| Zipper.getLeft dz ++ Zipper.getRight dz)
     in
     case ( ls, rs ) of
+        ( BinaryOperation Division lsn lsd, BinaryOperation Division rsn rsd ) ->
+            div (by [ lsn, rsd ]) (by [ lsd, rsn ])
+
         ( BinaryOperation Division lsn lsd, _ ) ->
             div lsn <| by [ lsd, rs ]
+
+        ( _, BinaryOperation Division rsn rsd ) ->
+            div (by [ ls, rsd ]) rsn
 
         ( _, Variable "i" ) ->
             by [ ls, negate_ i ]
@@ -933,6 +939,9 @@ stepSimplifyDivision ls rs =
 
             else
                 div ls rs
+
+        ( UnaryOperation Negate ln, UnaryOperation Negate rn ) ->
+            div ln rn
 
         _ ->
             if Expression.equals ls rs then
