@@ -288,29 +288,6 @@ export class NuPlot extends HTMLElement {
     return shader;
   }
 
-  fromScreen(x: number, y: number): Point {
-    return {
-      x: NuPlot.project(x, 0, this.canvas.width, this.minx(), this.maxx()),
-      y: NuPlot.project(y, 0, this.canvas.height, this.miny(), this.maxy()),
-    };
-  }
-
-  minx(): number {
-    return this.center.x - this.viewportWidth / 2.0;
-  }
-
-  maxx(): number {
-    return this.center.x + this.viewportWidth / 2.0;
-  }
-
-  miny(): number {
-    return this.center.y - this.viewportHeight / 2.0;
-  }
-
-  maxy(): number {
-    return this.center.y - this.viewportHeight / 2.0;
-  }
-
   get viewportHeight() {
     return (this.viewportWidth / this.canvas.width) * this.canvas.height;
   }
