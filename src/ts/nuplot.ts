@@ -1,8 +1,11 @@
 import declarations from "../shaders/declarations.frag";
 
+declare var process: { env: { NODE_ENV: string } };
+
 declare class ClipboardItem {
   constructor(data: { [mimeType: string]: Blob });
 }
+
 declare global {
   interface Clipboard {
     write(items: ClipboardItem[]): void;
