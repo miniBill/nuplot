@@ -1,7 +1,9 @@
 module Glsl.Parser exposing (function, statement)
 
-import Glsl.Types exposing (BinaryOperation(..), BooleanOperation(..), Expression(..), Function, RelationOperation(..), Statement(..), UnaryOperation(..))
+import Glsl.Types exposing (BinaryOperation(..), BooleanOperation(..), Expression(..), ForDirection(..), Function, RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
+import Html.Attributes exposing (id)
 import Parser exposing ((|.), (|=), Parser, Step(..), Trailing(..), chompIf, chompWhile, getChompedString, loop, oneOf, problem, sequence, spaces, succeed, symbol)
+import Parser.Workaround
 
 
 function : Parser Function
@@ -23,7 +25,7 @@ function =
         |= statement
 
 
-argParser : Parser ( String, String )
+argParser : Parser ( Type, String )
 argParser =
     succeed Tuple.pair
         |= typeParser
@@ -50,10 +52,19 @@ identifierParser =
         )
 
 
-typeParser : Parser String
+typeParser : Parser Type
 typeParser =
-    [ "void", "bool", "int", "float", "vec2", "vec3", "vec4", "mat3" ]
-        |> List.map (\s -> succeed s |. symbol s)
+    [ ( "void", TVoid )
+    , ( "bool", TBool )
+    , ( "float", TFloat )
+    , ( "int", TInt )
+    , ( "vec2", TVec2 )
+    , ( "ivec2", TIVec2 )
+    , ( "vec3", TVec3 )
+    , ( "vec4", TVec4 )
+    , ( "mat3", TMat3 )
+    ]
+        |> List.map (\( s, t ) -> succeed t |. symbol s)
         |> oneOf
 
 
@@ -62,7 +73,8 @@ statement =
     Parser.lazy <|
         \_ ->
             oneOf
-                [ blockParser
+                [ commentParser
+                , blockParser
                 , returnParser
                 , ifParser
                 , forParser
@@ -104,7 +116,17 @@ maybeStatementParser =
 
 forParser : Parser Statement
 forParser =
-    Parser.succeed For
+    Parser.succeed
+        (\var from op to direction step ->
+            For
+                { var = var
+                , from = from
+                , op = op
+                , to = to
+                , direction = direction
+                , step = step
+                }
+        )
         |. symbol "for"
         |. spaces
         |. symbol "("
@@ -129,7 +151,10 @@ forParser =
         |. spaces
         |. identifierParser
         |. spaces
-        |= oneOf [ succeed True |. symbol "++", succeed False |. symbol "--" ]
+        |= oneOf
+            [ succeed PlusPlus |. symbol "++"
+            , succeed MinusMinus |. symbol "--"
+            ]
         |. spaces
         |. symbol ")"
         |. spaces
@@ -148,6 +173,14 @@ returnParser =
         |. symbol ";"
 
 
+commentParser : Parser Statement
+commentParser =
+    Parser.succeed identity
+        |. Parser.Workaround.lineCommentAfter "//"
+        |. spaces
+        |= maybeStatementParser
+
+
 blockParser : Parser Statement
 blockParser =
     Parser.succeed identity
@@ -160,7 +193,14 @@ blockParser =
 
 defParser : Parser Statement
 defParser =
-    succeed Def
+    succeed
+        (\type_ var val ->
+            Def
+                { type_ = type_
+                , var = var
+                , val = val
+                }
+        )
         |= typeParser
         |. spaces
         |= identifierParser
@@ -235,6 +275,7 @@ relationOperationParser =
         , succeed LessThan |. symbol "<"
         , succeed GreaterThan |. symbol ">"
         , succeed Equals |. symbol "=="
+        , succeed NotEquals |. symbol "!="
         , succeed Assign |. symbol "="
         ]
 

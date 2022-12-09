@@ -1,31 +1,50 @@
-module Glsl.Types exposing (BinaryOperation(..), BooleanOperation(..), Expression(..), Function, RelationOperation(..), Statement(..), UnaryOperation(..))
+module Glsl.Types exposing (BinaryOperation(..), BooleanOperation(..), Expression(..), ForDirection(..), Function, RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
 
 
 type alias Function =
-    { returnType : String
+    { returnType : Type
     , name : String
-    , args : List ( String, String )
+    , args : List ( Type, String )
     , body : Statement
     , hasSuffix : Bool
     }
 
 
+type Type
+    = TFloat
+    | TInt
+    | TVec2
+    | TIVec2
+    | TIVec3
+    | TIVec4
+    | TVec3
+    | TVec4
+    | TMat3
+    | TVoid
+    | TBool
+
+
 type Statement
     = Expression Expression Statement
-    | For String Expression RelationOperation Expression Bool Statement Statement
+    | For { var : String, from : Expression, op : RelationOperation, to : Expression, direction : ForDirection, step : Statement } Statement
     | If Expression Statement Statement
     | Return Expression
-    | Def String String Expression Statement
-    | Decl String String Statement
+    | Def { type_ : Type, var : String, val : Expression } Statement
+    | Decl { type_ : Type, var : String } Statement
     | Nop
+
+
+type ForDirection
+    = PlusPlus
+    | MinusMinus
 
 
 type RelationOperation
     = LessThanOrEquals
     | LessThan
     | Equals
-    | Assign
     | NotEquals
+    | Assign
     | GreaterThanOrEquals
     | GreaterThan
 
