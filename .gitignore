@@ -2,6 +2,8 @@ elm-stuff
 .cache
 node_modules
 /dist
+/src/optimized.js
+generated
 
 # Ignore Yarn caches
 .yarn/*
