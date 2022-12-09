@@ -1,4 +1,4 @@
-module Glsl.Helper exposing (ComboOperation(..), Expr(..), Expression(..), Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, Mat3(..), RelationOperation(..), Stat(..), Statement(..), TypingFunction, Vec2(..), Vec3(..), Vec4(..), innerCall)
+module Glsl.Helper exposing (ComboOperation(..), Expr(..), Expression(..), Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, Mat3(..), Name(..), RelationOperation(..), Stat(..), Statement(..), TypingFunction, Vec2(..), Vec3(..), Vec4(..), innerCall)
 
 import Set exposing (Set)
 

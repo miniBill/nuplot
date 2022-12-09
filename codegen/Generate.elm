@@ -10,8 +10,7 @@ import Gen.Glsl.Helper
 import Glsl.Parser
 import Glsl.Types exposing (BinaryOperation(..), Expression(..), Function, Statement(..), Type(..))
 import List.Extra
-import Parser exposing ((|.), (|=), Parser)
-import Parser.Workaround
+import Parser
 import Result.Extra
 import Set exposing (Set)
 
@@ -39,7 +38,7 @@ generate glsl =
                 env : Env
                 env =
                     List.foldl
-                        (\( { name, returnType, args }, _ ) ->
+                        (\{ name, returnType, args } ->
                             functionHasType
                                 name
                                 (List.map Tuple.first args)
@@ -73,11 +72,11 @@ functionHasType baseName argTypes returnType env =
     { env | functionsEnv = Dict.insert (fullName baseName argTypes) returnType env.functionsEnv }
 
 
-declarationsDictionary : List ( Function, String ) -> Elm.Declaration
+declarationsDictionary : List Function -> Elm.Declaration
 declarationsDictionary functions =
     functions
         |> List.map
-            (\( { name }, _ ) ->
+            (\{ name } ->
                 Elm.tuple
                     (Elm.string name)
                     (Elm.withType Type.string <|
@@ -153,8 +152,8 @@ type alias Env =
     }
 
 
-functionToDeclarations : Env -> ( Function, String ) -> Result String (List Elm.Declaration)
-functionToDeclarations env ( function, body ) =
+functionToDeclarations : Env -> Function -> Result String (List Elm.Declaration)
+functionToDeclarations env function =
     let
         argDecls : List ( String, Maybe Type.Annotation )
         argDecls =
@@ -172,7 +171,7 @@ functionToDeclarations env ( function, body ) =
 
         maybeDeps : Result String (Set String)
         maybeDeps =
-            findDepsStatement envWithArgs function.body
+            findDepsStatement envWithArgs function.stat
                 |> Result.mapError (\e -> e ++ " while generating " ++ function.name)
     in
     Result.map
@@ -190,7 +189,7 @@ functionToDeclarations env ( function, body ) =
                         )
                         |> Elm.withType Gen.Glsl.Helper.annotation_.expression
             in
-            [ Elm.string body
+            [ Elm.string function.body
                 |> Elm.declaration (function.name ++ "Body")
             , Elm.function argDecls expr
                 |> Elm.declaration function.name
@@ -792,31 +791,6 @@ builtin_v_v =
     )
 
 
-parseFile : String -> Result (List Parser.DeadEnd) (List ( Function, String ))
+parseFile : String -> Result (List Parser.DeadEnd) (List Function)
 parseFile glsl =
-    Parser.run
-        (fileParser glsl)
-        glsl
-
-
-fileParser : String -> Parser (List ( Function, String ))
-fileParser glsl =
-    Parser.succeed (List.filterMap identity)
-        |= Parser.sequence
-            { start = ""
-            , separator = ""
-            , item =
-                Parser.oneOf
-                    [ Parser.succeed Nothing
-                        |. Parser.Workaround.lineCommentAfter "//"
-                    , Parser.succeed
-                        (\begin parsed end -> Just ( parsed, String.slice begin end glsl ))
-                        |= Parser.getOffset
-                        |= Glsl.Parser.function
-                        |= Parser.getOffset
-                    ]
-            , end = ""
-            , trailing = Parser.Optional
-            , spaces = Parser.spaces
-            }
-        |. Parser.end
+    Parser.run Glsl.Parser.file glsl
