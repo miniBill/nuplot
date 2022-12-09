@@ -1,7 +1,8 @@
-module UI.Glsl.Generator exposing (Constant, Context, Continue, ErrorValue(..), Expression, Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, break, by, by2, by3, byF, ceil_, constant, continue, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, Continue, ErrorValue(..), File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, break, by, by2, by3, byF, ceil_, constant, continue, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
 import Expression exposing (RelationOperation(..))
+import Glsl.Helper exposing (Expression(..), Expression1, Expression2, Expression3, Expression4, ExpressionX, Statement)
 import Set
 
 
@@ -11,115 +12,6 @@ type alias File =
 
 type FunDecl
     = FunDecl { name : String, type_ : String, body : String }
-
-
-type Stat
-    = If Expr Stat Stat
-    | IfElse Expr Stat Stat Stat
-    | For String Expr RelationOperation Expr Expr Stat Stat
-    | Line String
-    | Return Expr
-    | Break
-    | Continue
-    | ExpressionStatement Expr Stat
-    | Decl String Name (Maybe Expr) Stat
-    | Nop
-
-
-type Statement r
-    = Statement Stat
-
-
-type Expr
-    = Bool Bool
-    | Int Int
-    | Float Float
-    | Variable String
-    | And Expr Expr
-    | Or Expr Expr
-    | Comparison RelationOperation Expr Expr
-    | Ternary Expr Expr Expr
-    | Add Expr Expr
-    | Subtract Expr Expr
-    | By Expr Expr
-    | Div Expr Expr
-    | Call String (List Expr)
-    | Negate Expr
-    | PostfixIncrement Expr
-    | PostfixDecrement Expr
-    | Unknown String
-    | Dot Expr String
-    | Array Expr Expr
-    | Assign Expr Expr
-    | AssignCombo ComboOperation Expr Expr
-
-
-type ComboOperation
-    = ComboAdd
-    | ComboSubtract
-    | ComboBy
-    | ComboDiv
-
-
-type Expression t
-    = Expression Expr
-
-
-type alias ExpressionX a t =
-    { a | base : Expression t }
-
-
-type alias Expression1 t =
-    { base : Expression t
-    }
-
-
-type alias Expression2 =
-    { base : Expression Vec2
-    , x : Expression1 Float
-    , y : Expression1 Float
-    , yx : Expression1 Vec2
-    }
-
-
-type alias Expression3 =
-    { base : Expression Vec3
-    , x : Expression1 Float
-    , y : Expression1 Float
-    , z : Expression1 Float
-    }
-
-
-type alias Expression4 =
-    { base : Expression Vec4
-    , x : Expression1 Float
-    , y : Expression1 Float
-    , z : Expression1 Float
-    , w : Expression1 Float
-    , xy : Expression2
-    , yx : Expression2
-    , yzw : Expression3
-    }
-
-
-type alias Expression33 =
-    { base : Expression Mat3 }
-
-
-type alias TypingFunction t r =
-    String -> ( TypedName t r, Expression t -> r )
-
-
-type TypedName t r
-    = TypedName Type Name r
-
-
-type Type
-    = Type String
-
-
-type Name
-    = Name String
 
 
 
@@ -1718,49 +1610,52 @@ innerValue ctx e =
                     Err <| MissingVariable v
 
         And l r ->
-            innerValue2 ctx l r <| \ctx2 vl vr ->
-            case ( vl, vr ) of
-                ( VBool bl, VBool br ) ->
-                    Ok ( ctx2, VBool <| bl && br )
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VBool bl, VBool br ) ->
+                            Ok ( ctx2, VBool <| bl && br )
 
-                _ ->
-                    Err <|
-                        InvalidTypes
-                            ("Cannot calculate `and` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `and` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Or l r ->
-            innerValue2 ctx l r <| \ctx2 vl vr ->
-            case ( vl, vr ) of
-                ( VBool bl, VBool br ) ->
-                    Ok ( ctx2, VBool <| bl || br )
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VBool bl, VBool br ) ->
+                            Ok ( ctx2, VBool <| bl || br )
 
-                _ ->
-                    Err <|
-                        InvalidTypes
-                            ("Cannot calculate `or` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `or` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Comparison k l r ->
-            innerValue2 ctx l r <| \ctx2 vl vr ->
-            case ( vl, vr, k ) of
-                ( VFloat fl, VFloat fr, LessThan ) ->
-                    Ok ( ctx2, VBool (fl < fr) )
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr, k ) of
+                        ( VFloat fl, VFloat fr, LessThan ) ->
+                            Ok ( ctx2, VBool (fl < fr) )
 
-                ( VFloat fl, VFloat fr, LessThanOrEquals ) ->
-                    Ok ( ctx2, VBool (fl <= fr) )
+                        ( VFloat fl, VFloat fr, LessThanOrEquals ) ->
+                            Ok ( ctx2, VBool (fl <= fr) )
 
-                ( VFloat fl, VFloat fr, Equals ) ->
-                    Ok ( ctx2, VBool (fl == fr) )
+                        ( VFloat fl, VFloat fr, Equals ) ->
+                            Ok ( ctx2, VBool (fl == fr) )
 
-                ( VFloat fl, VFloat fr, GreaterThanOrEquals ) ->
-                    Ok ( ctx2, VBool (fl >= fr) )
+                        ( VFloat fl, VFloat fr, GreaterThanOrEquals ) ->
+                            Ok ( ctx2, VBool (fl >= fr) )
 
-                ( VFloat fl, VFloat fr, GreaterThan ) ->
-                    Ok ( ctx2, VBool (fl > fr) )
+                        ( VFloat fl, VFloat fr, GreaterThan ) ->
+                            Ok ( ctx2, VBool (fl > fr) )
 
-                _ ->
-                    Err <|
-                        InvalidTypes
-                            ("Cannot compare " ++ valueToString vl ++ " and " ++ valueToString vr)
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot compare " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Ternary _ _ _ ->
             Debug.todo "branch 'Ternary _ _ _' not implemented"
@@ -1772,29 +1667,31 @@ innerValue ctx e =
             Debug.todo "branch 'Subtract _ _' not implemented"
 
         By l r ->
-            innerValue2 ctx l r <| \ctx2 vl vr ->
-            case ( vl, vr ) of
-                ( VFloat fl, VFloat fr ) ->
-                    Ok ( ctx2, VFloat <| fl * fr )
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VFloat fl, VFloat fr ) ->
+                            Ok ( ctx2, VFloat <| fl * fr )
 
-                _ ->
-                    Err <|
-                        InvalidTypes
-                            ("Cannot calculate `*` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `*` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Div _ _ ->
             Debug.todo "branch 'Div _ _' not implemented"
 
         Call "vec2" [ l, r ] ->
-            innerValue2 ctx l r <| \ctx2 vl vr ->
-            case ( vl, vr ) of
-                ( VFloat fl, VFloat fr ) ->
-                    Ok ( ctx2, VVec2 fl fr )
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VFloat fl, VFloat fr ) ->
+                            Ok ( ctx2, VVec2 fl fr )
 
-                _ ->
-                    Err <|
-                        InvalidTypes
-                            ("Cannot calculate `vec2` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `vec2` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Call "exp" [ l ] ->
             autovectorizingFloatOp ctx "exp" (\fv -> Basics.e ^ fv) l
