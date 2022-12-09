@@ -1,8 +1,7 @@
 module UI.Glsl.Generator exposing (Constant, Context, Continue, ErrorValue(..), File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, break, by, by2, by3, byF, ceil_, constant, continue, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
-import Expression exposing (RelationOperation(..))
-import Glsl.Helper exposing (Expression(..), Expression1, Expression2, Expression3, Expression4, ExpressionX, Statement)
+import Glsl.Helper exposing (ComboOperation(..), Expr(..), Expression(..), Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, Name(..), RelationOperation(..), Stat(..), Statement(..))
 import Set
 
 
@@ -42,88 +41,89 @@ funDeclToGlsl (FunDecl { body }) =
 
 statementToGlsl : Statement s -> String
 statementToGlsl (Statement r) =
-    let
-        go i c =
-            case c of
-                If cond t n ->
-                    [ indent i ("if (" ++ expressionToGlsl (Expression cond) ++ ") {")
-                    , go (i + 1) t
-                    , indent i "}"
-                    , ""
-                    , go i n
-                    ]
-                        |> String.join "\n"
+    statToGlsl 1 r
 
-                IfElse cond t ((If _ _ _) as f) n ->
-                    [ indent i ("if (" ++ expressionToGlsl (Expression cond) ++ ") {")
-                    , go (i + 1) t
-                    , indent i <| "} else " ++ String.trimLeft (go i f)
-                    , go i n
-                    ]
-                        |> String.join "\n"
 
-                IfElse cond t ((IfElse _ _ _ _) as f) n ->
-                    [ indent i ("if (" ++ expressionToGlsl (Expression cond) ++ ") {")
-                    , go (i + 1) t
-                    , indent i <| "} else " ++ String.trimLeft (go i f)
-                    , go i n
-                    ]
-                        |> String.join "\n"
+statToGlsl : Int -> Stat -> String
+statToGlsl i c =
+    case c of
+        If cond t n ->
+            [ indent i ("if (" ++ exprToGlsl (Expression cond) ++ ") {")
+            , statToGlsl (i + 1) t
+            , indent i "}"
+            , ""
+            , statToGlsl i n
+            ]
+                |> String.join "\n"
 
-                IfElse cond t f n ->
-                    [ indent i ("if (" ++ expressionToGlsl (Expression cond) ++ ") {")
-                    , go (i + 1) t
-                    , indent i "} else {"
-                    , go (i + 1) f
-                    , indent i "}"
-                    , ""
-                    , go i n
-                    ]
-                        |> String.join "\n"
+        IfElse cond t ((If _ _ _) as f) n ->
+            [ indent i ("if (" ++ exprToGlsl (Expression cond) ++ ") {")
+            , statToGlsl (i + 1) t
+            , indent i <| "} else " ++ String.trimLeft (statToGlsl i f)
+            , statToGlsl i n
+            ]
+                |> String.join "\n"
 
-                For var from rel to step loop next ->
-                    [ indent i ("for (int " ++ var ++ " = " ++ expressionToGlsl (Expression from) ++ "; " ++ var ++ " " ++ relationToString rel ++ " " ++ expressionToGlsl (Expression to) ++ "; " ++ expressionToGlsl (Expression step) ++ ") {")
-                    , go (i + 1) loop
-                    , indent i "}"
-                    , ""
-                    , go i next
-                    ]
-                        |> String.join "\n"
+        IfElse cond t ((IfElse _ _ _ _) as f) n ->
+            [ indent i ("if (" ++ exprToGlsl (Expression cond) ++ ") {")
+            , statToGlsl (i + 1) t
+            , indent i <| "} else " ++ String.trimLeft (statToGlsl i f)
+            , statToGlsl i n
+            ]
+                |> String.join "\n"
 
-                Line l ->
-                    indent i l ++ ";"
+        IfElse cond t f n ->
+            [ indent i ("if (" ++ exprToGlsl (Expression cond) ++ ") {")
+            , statToGlsl (i + 1) t
+            , indent i "} else {"
+            , statToGlsl (i + 1) f
+            , indent i "}"
+            , ""
+            , statToGlsl i n
+            ]
+                |> String.join "\n"
 
-                Return e ->
-                    indent i <| "return " ++ expressionToGlsl (Expression e) ++ ";"
+        For var from rel to step loop next ->
+            [ indent i ("for (int " ++ var ++ " = " ++ exprToGlsl (Expression from) ++ "; " ++ var ++ " " ++ relationToString rel ++ " " ++ exprToGlsl (Expression to) ++ "; " ++ exprToGlsl (Expression step) ++ ") {")
+            , statToGlsl (i + 1) loop
+            , indent i "}"
+            , ""
+            , statToGlsl i next
+            ]
+                |> String.join "\n"
 
-                Break ->
-                    indent i "break;"
+        Line l ->
+            indent i l ++ ";"
 
-                Continue ->
-                    indent i "continue;"
+        Return e ->
+            indent i <| "return " ++ exprToGlsl (Expression e) ++ ";"
 
-                ExpressionStatement e Nop ->
-                    indent i (expressionToGlsl (Expression e) ++ ";")
+        Break ->
+            indent i "break;"
 
-                Decl t (Name n) (Just e) Nop ->
-                    indent i (t ++ " " ++ n ++ " = " ++ expressionToGlsl (Expression e) ++ ";")
+        Continue ->
+            indent i "continue;"
 
-                Decl t (Name n) Nothing Nop ->
-                    indent i (t ++ " " ++ n ++ ";")
+        ExpressionStatement e Nop ->
+            indent i (exprToGlsl (Expression e) ++ ";")
 
-                ExpressionStatement e next ->
-                    indent i (expressionToGlsl (Expression e) ++ ";\n") ++ go i next
+        Decl t (Name n) (Just e) Nop ->
+            indent i (t ++ " " ++ n ++ " = " ++ exprToGlsl (Expression e) ++ ";")
 
-                Decl t (Name n) (Just e) next ->
-                    indent i (t ++ " " ++ n ++ " = " ++ expressionToGlsl (Expression e) ++ ";\n") ++ go i next
+        Decl t (Name n) Nothing Nop ->
+            indent i (t ++ " " ++ n ++ ";")
 
-                Decl t (Name n) Nothing next ->
-                    indent i (t ++ " " ++ n ++ ";\n") ++ go i next
+        ExpressionStatement e next ->
+            indent i (exprToGlsl (Expression e) ++ ";\n") ++ statToGlsl i next
 
-                Nop ->
-                    ""
-    in
-    go 1 r
+        Decl t (Name n) (Just e) next ->
+            indent i (t ++ " " ++ n ++ " = " ++ exprToGlsl (Expression e) ++ ";\n") ++ statToGlsl i next
+
+        Decl t (Name n) Nothing next ->
+            indent i (t ++ " " ++ n ++ ";\n") ++ statToGlsl i next
+
+        Nop ->
+            ""
 
 
 relationToString : RelationOperation -> String
@@ -160,6 +160,11 @@ internalNop () =
 
 expressionToGlsl : Expression t -> String
 expressionToGlsl (Expression tree) =
+    exprToGlsl tree.expr
+
+
+exprToGlsl : Expr -> String
+exprToGlsl tree =
     let
         -- The numbers are precedence numbers from the GLSL spec
         go : Bool -> Expr -> String

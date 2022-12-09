@@ -1,14 +1,24 @@
-module Glsl.Parser exposing (function, statement)
+module Glsl.Parser exposing (file, function, statement)
 
 import Glsl.Types exposing (BinaryOperation(..), BooleanOperation(..), Expression(..), ForDirection(..), Function, RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
-import Html.Attributes exposing (id)
 import Parser exposing ((|.), (|=), Parser, Step(..), Trailing(..), chompIf, chompWhile, getChompedString, loop, oneOf, problem, sequence, spaces, succeed, symbol)
 import Parser.Workaround
 
 
 function : Parser Function
 function =
-    succeed (\returnType { name, hasSuffix } args body -> { returnType = returnType, name = name, hasSuffix = hasSuffix, args = args, body = body })
+    succeed
+        (\glsl begin returnType { name, hasSuffix } args stat end ->
+            { returnType = returnType
+            , name = name
+            , hasSuffix = hasSuffix
+            , args = args
+            , stat = stat
+            , body = String.slice begin end glsl
+            }
+        )
+        |= Parser.getSource
+        |= Parser.getOffset
         |= typeParser
         |. spaces
         |= identifierWithSuffixParser
@@ -23,6 +33,7 @@ function =
             }
         |. spaces
         |= statement
+        |= Parser.getOffset
 
 
 argParser : Parser ( Type, String )
@@ -449,3 +460,29 @@ tryParseNumber n =
 
                 Nothing ->
                     problem "Expected a number"
+
+
+file : Parser (List Function)
+file =
+    Parser.succeed (List.filterMap identity)
+        |= Parser.sequence
+            { start = ""
+            , separator = ""
+            , item =
+                Parser.oneOf
+                    [ Parser.succeed Nothing
+                        |. Parser.Workaround.lineCommentAfter "//"
+                    , Parser.succeed Nothing
+                        |. Parser.Workaround.lineCommentAfter "#define"
+                    , Parser.succeed Nothing
+                        |. Parser.Workaround.lineCommentAfter "precision highp"
+                    , Parser.succeed Nothing
+                        |. Parser.Workaround.lineCommentAfter "uniform"
+                    , Parser.succeed Just
+                        |= function
+                    ]
+            , end = ""
+            , trailing = Parser.Optional
+            , spaces = Parser.spaces
+            }
+        |. Parser.end

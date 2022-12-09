@@ -5,7 +5,8 @@ type alias Function =
     { returnType : Type
     , name : String
     , args : List ( Type, String )
-    , body : Statement
+    , stat : Statement
+    , body : String
     , hasSuffix : Bool
     }
 

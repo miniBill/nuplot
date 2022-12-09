@@ -1,7 +1,7 @@
 module Glsl.PrettyPrinter exposing (function, statement)
 
-import Glsl.Types exposing (BinaryOperation(..), BooleanOperation(..), Expression(..), Function, RelationOperation(..), Statement(..), UnaryOperation(..))
-import Parser exposing ((|.), (|=), Step(..), Trailing(..), loop)
+import Glsl.Types exposing (BinaryOperation(..), BooleanOperation(..), Expression(..), ForDirection(..), Function, RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
+import Parser exposing ((|.), (|=), Step(..), Trailing(..))
 
 
 function : Function -> String
@@ -14,32 +14,32 @@ function fun =
             ++ ") = fun"
             ++ String.fromInt (List.length fun.args)
             ++ " "
-            ++ fun.returnType
+            ++ prettyPrintType fun.returnType
             ++ "T "
             ++ "(\""
             ++ fun.name
             ++ "\" ++ suffix)"
             ++ " "
-            ++ String.join " " (List.map (\( t, n ) -> "(" ++ t ++ "T \"" ++ n ++ "\")") fun.args)
+            ++ String.join " " (List.map (\( t, n ) -> "(" ++ prettyPrintType t ++ "T \"" ++ n ++ "\")") fun.args)
             ++ " <| \\"
             ++ String.join " " (List.map Tuple.second fun.args)
             ++ " -> "
-            ++ (statement fun.body |> String.split "\n" |> String.join " ")
+            ++ (statement fun.stat |> String.split "\n" |> String.join " ")
 
     else
         fun.name
             ++ "Couple = fun"
             ++ String.fromInt (List.length fun.args)
             ++ " "
-            ++ fun.returnType
+            ++ prettyPrintType fun.returnType
             ++ "T \""
             ++ fun.name
             ++ "\" "
-            ++ String.join " " (List.map (\( t, n ) -> "(" ++ t ++ "T \"" ++ n ++ "\")") fun.args)
+            ++ String.join " " (List.map (\( t, n ) -> "(" ++ prettyPrintType t ++ "T \"" ++ n ++ "\")") fun.args)
             ++ " <| \\"
             ++ String.join " " (List.map Tuple.second fun.args)
             ++ " ->\n    "
-            ++ (statement fun.body |> String.split "\n" |> String.join "\n    ")
+            ++ (statement fun.stat |> String.split "\n" |> String.join "\n    ")
             ++ "\n\n"
             ++ fun.name
             ++ "Decl = Tuple.first "
@@ -60,81 +60,92 @@ statement stat =
                 ++ " <| \\_ ->\n"
                 ++ statement next
 
-        For var from LessThan to step loop next ->
-            (if step then
-                "for (\""
+        For { var, from, op, to, step, direction } next ->
+            case op of
+                LessThan ->
+                    (if direction == PlusPlus then
+                        "for (\""
 
-             else
-                "forDown (\""
-            )
-                ++ var
-                ++ "\", "
-                ++ prettyPrintExpression from
-                ++ ", "
-                ++ prettyPrintExpression to
-                ++ ") (\\"
-                ++ var
-                ++ " ->\n"
-                ++ statement loop
-                ++ ") <| \\_ ->\n"
-                ++ statement next
+                     else
+                        "forDown (\""
+                    )
+                        ++ var
+                        ++ "\", "
+                        ++ prettyPrintExpression from
+                        ++ ", "
+                        ++ prettyPrintExpression to
+                        ++ ") (\\"
+                        ++ var
+                        ++ " ->\n"
+                        ++ statement step
+                        ++ ") <| \\_ ->\n"
+                        ++ statement next
 
-        For var from LessThanOrEquals to step loop next ->
-            (if step then
-                "forLeq (\""
+                LessThanOrEquals ->
+                    (if direction == PlusPlus then
+                        "forLeq (\""
 
-             else
-                "forLeqDown (\""
-            )
-                ++ var
-                ++ ", "
-                ++ prettyPrintExpression from
-                ++ ", "
-                ++ prettyPrintExpression to
-                ++ ") (\\"
-                ++ var
-                ++ " ->\n"
-                ++ statement loop
-                ++ ") <| \\_ ->\n"
-                ++ statement next
+                     else
+                        "forLeqDown (\""
+                    )
+                        ++ var
+                        ++ ", "
+                        ++ prettyPrintExpression from
+                        ++ ", "
+                        ++ prettyPrintExpression to
+                        ++ ") (\\"
+                        ++ var
+                        ++ " ->\n"
+                        ++ statement step
+                        ++ ") <| \\_ ->\n"
+                        ++ statement next
 
-        For var from GreaterThan to step loop next ->
-            (if step then
-                "for (\""
+                GreaterThan ->
+                    (if direction == PlusPlus then
+                        "for (\""
 
-             else
-                "forDown (\""
-            )
-                ++ var
-                ++ "\", "
-                ++ prettyPrintExpression from
-                ++ ", "
-                ++ prettyPrintExpression to
-                ++ ") (\\"
-                ++ var
-                ++ " ->\n"
-                ++ statement loop
-                ++ ") <| \\_ ->\n"
-                ++ statement next
+                     else
+                        "forDown (\""
+                    )
+                        ++ var
+                        ++ "\", "
+                        ++ prettyPrintExpression from
+                        ++ ", "
+                        ++ prettyPrintExpression to
+                        ++ ") (\\"
+                        ++ var
+                        ++ " ->\n"
+                        ++ statement step
+                        ++ ") <| \\_ ->\n"
+                        ++ statement next
 
-        For var from GreaterThanOrEquals to step loop next ->
-            (if step then
-                "forLeq (\""
+                GreaterThanOrEquals ->
+                    (if direction == PlusPlus then
+                        "forLeq (\""
 
-             else
-                "forLeqDown (\""
-            )
-                ++ var
-                ++ ", "
-                ++ prettyPrintExpression from
-                ++ ", "
-                ++ prettyPrintExpression to
-                ++ ") (\\"
-                ++ var
-                ++ " ->\n"
-                ++ statement loop
-                ++ ") <| \\_ ->\n"
-                ++ statement next
+                     else
+                        "forLeqDown (\""
+                    )
+                        ++ var
+                        ++ ", "
+                        ++ prettyPrintExpression from
+                        ++ ", "
+                        ++ prettyPrintExpression to
+                        ++ ") (\\"
+                        ++ var
+                        ++ " ->\n"
+                        ++ statement step
+                        ++ ") <| \\_ ->\n"
+                        ++ statement next
+
+                Equals ->
+                    "TODO branch 'Equals' not implemented"
+
+                NotEquals ->
+                    "TODO branch 'NotEquals' not implemented"
+
+                Assign ->
+                    "TODO branch 'Assign' not implemented"
 
         If cond ifTrue next ->
             "if_ "
@@ -150,23 +161,57 @@ statement stat =
         Nop ->
             "nop\n"
 
-        Def t n v next ->
+        Def { type_, var, val } next ->
             "def "
-                ++ t
+                ++ prettyPrintType type_
                 ++ "T \""
-                ++ n
+                ++ var
                 ++ "\" ("
-                ++ prettyPrintExpression v
+                ++ prettyPrintExpression val
                 ++ ") <| \\"
-                ++ n
+                ++ var
                 ++ " -> \n"
                 ++ statement next
 
-        Decl _ _ _ ->
+        Decl _ _ ->
             "TODO branch 'Decl _ _ _' not implemented"
 
-        For _ _ _ _ _ _ _ ->
-            "TODO branch 'For _ _ _ _ _ _ _' not implemented"
+
+prettyPrintType : Type -> String
+prettyPrintType type_ =
+    case type_ of
+        TFloat ->
+            "float"
+
+        TInt ->
+            "int"
+
+        TVec2 ->
+            "vec2"
+
+        TIVec2 ->
+            "ivec2"
+
+        TIVec3 ->
+            "ivec3"
+
+        TIVec4 ->
+            "ivec4"
+
+        TVec3 ->
+            "vec3"
+
+        TVec4 ->
+            "vec4"
+
+        TMat3 ->
+            "mat3"
+
+        TVoid ->
+            "void"
+
+        TBool ->
+            "bool"
 
 
 prettyPrintExpression : Expression -> String
