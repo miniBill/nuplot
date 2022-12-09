@@ -1,3 +1,21 @@
+#define MAX_DEPTH 30
+//#define MAX_DEPTH 60
+
+#define P31 2147483648
+#define P32M1 4294967295
+
+precision highp float;
+
+uniform float u_whiteLines;
+uniform float u_completelyReal;
+uniform float u_drawAxes;
+uniform vec2 u_zoomCenter;
+uniform float u_viewportWidth;
+uniform float u_canvasWidth;
+uniform float u_canvasHeight;
+uniform float u_phi;
+uniform float u_theta;
+
 ///////////
 // Utils //
 ///////////
@@ -12,6 +30,11 @@ float tanh(float x) {
   return (p - m) / (p + m);
 }
 
+float round(float v) { return floor(v + 0.5); }
+vec2 round(vec2 v) { return floor(v + 0.5); }
+vec3 round(vec3 v) { return floor(v + 0.5); }
+vec4 round(vec4 v) { return floor(v + 0.5); }
+
 float cbrt(float v) { return sign(v) * pow(abs(v), 1. / 3.); }
 
 bool between(float x, float low, float high) { return low <= x && x <= high; }
@@ -22,8 +45,6 @@ vec3 hl2rgb(float h, float l) {
   vec3 rgb = clamp(abs(mod(h * 6. + vec3(0., 4., 2.), 6.) - 3.) - 1., 0., 1.);
   return l + (rgb - .5) * (1. - abs(2. * l - 1.));
 }
-
-vec2 dup(float x) { return vec2(x, x); }
 
 vec4 gnum(float f) { return vec4(f, 0, 0, 0); }
 
@@ -90,6 +111,22 @@ vec2 cdiv(vec2 a, vec2 b) {
   return vec2(r, i);
 }
 
+vec2 cln(vec2 z) {
+  if (z.y == 0. && z.x >= 0.) {
+    return vec2(log(z.x), 0);
+  }
+  float px = length(z);
+  float py = atan(z.y, z.x);
+  return vec2(log(px), py);
+}
+
+vec2 cexp(vec2 z) {
+  if (z.y == 0.) {
+    return vec2(exp(z.x), 0);
+  }
+  return vec2(cos(z.y), sin(z.y)) * exp(z.x);
+}
+
 vec2 cpow(vec2 w, vec2 z) {
   if (w.x >= 0. && w.y == 0. && z.y == 0.) {
     return vec2(pow(w.x, z.x), 0);
@@ -117,6 +154,15 @@ vec2 ctan(vec2 z) {
     return vec2(tan(z.x), 0);
   }
   return cdiv(csin(z), ccos(z));
+}
+
+vec2 csqrt(vec2 z) {
+  if (z.y == 0. && z.x >= 0.) {
+    return vec2(sqrt(z.x), 0);
+  }
+  float r = pow(dot(z, z), .25);
+  float t = atan(z.y, z.x) * .5;
+  return r * vec2(cos(t), sin(t));
 }
 
 vec2 casin(vec2 z) {
@@ -156,15 +202,6 @@ vec2 cabs(vec2 z) { return vec2(length(z), 0.); }
 
 vec2 csign(vec2 z) { return vec2(sign(z.x), sign(z.y)); }
 
-vec2 csqrt(vec2 z) {
-  if (z.y == 0. && z.x >= 0.) {
-    return vec2(sqrt(z.x), 0);
-  }
-  float r = pow(dot(z, z), .25);
-  float t = atan(z.y, z.x) * .5;
-  return r * vec2(cos(t), sin(t));
-}
-
 vec2 ccbrt(vec2 z) {
   if (z.y == 0.) {
     return vec2(sign(z.x) * pow(z.x, 1. / 3.), 0);
@@ -176,23 +213,7 @@ vec2 ccbrt(vec2 z) {
 
 vec2 csquare(vec2 z) { return cby(z, z); }
 
-vec2 cln(vec2 z) {
-  if (z.y == 0. && z.x >= 0.) {
-    return vec2(log(z.x), 0);
-  }
-  float px = length(z);
-  float py = atan(z.y, z.x);
-  return vec2(log(px), py);
-}
-
 vec2 clog10(vec2 z) { return cdiv(cln(z), vec2(log(10.), 0)); }
-
-vec2 cexp(vec2 z) {
-  if (z.y == 0.) {
-    return vec2(exp(z.x), 0);
-  }
-  return vec2(cos(z.y) * exp(z.x), sin(z.y) * exp(z.x));
-}
 
 vec2 cre(vec2 z) { return vec2(z.x, 0); }
 vec2 cim(vec2 z) { return vec2(z.y, 0); }
@@ -250,22 +271,22 @@ vec2 iby(vec2 l, vec2 r) {
 }
 
 vec2 iinverse(vec2 y) {
-  if (y.x <= 0.0 && y.y >= 0.0)
-    return vec2(-1.0 / 0.0, 1.0 / 0.0);
-  if (y.y == 0.0)
-    return vec2(-1.0 / 0.0, 1.0 / y.x);
-  if (y.x == 0.0)
-    return vec2(1.0 / y.y, 1.0 / 0.0);
-  return vec2(1.0 / y.y, 1.0 / y.x);
+  if (y.x <= 0. && y.y >= 0.)
+    return vec2(-1. / 0., 1. / 0.);
+  if (y.y == 0.)
+    return vec2(-1. / 0., 1. / y.x);
+  if (y.x == 0.)
+    return vec2(1. / y.y, 1. / 0.);
+  return vec2(1. / y.y, 1. / y.x);
 }
 
 vec2 idiv(vec2 l, vec2 r) { return iby(l, iinverse(r)); }
 
 float ipow(float b, int e) {
   float fe = float(e);
-  if (mod(fe, 2.0) == 0.0)
+  if (mod(fe, 2.) == 0.)
     return pow(abs(b), fe);
-  return b * pow(abs(b), fe - 1.0);
+  return b * pow(abs(b), fe - 1.);
 }
 
 vec2 ipow(vec2 b, int e) {
@@ -282,6 +303,9 @@ vec2 ipow(vec2 b, int e) {
   }
   return vec2(mn, mx);
 }
+
+vec2 iln(vec2 z) { return log(z); }
+vec2 iexp(vec2 z) { return exp(z); }
 
 vec2 ipow(vec2 b, vec2 e) {
   if (e.y - e.x < .000001 && abs(e.x - round(e.x)) < .000001)
@@ -375,8 +399,6 @@ vec2 iarg(vec2 z) {
 
 vec2 isign(vec2 z) { return sign(z); }
 
-vec2 iexp(vec2 z) { return vec2(exp(z.x), exp(z.y)); }
-vec2 iln(vec2 z) { return vec2(log(z.x), log(z.y)); }
 vec2 ilog10(vec2 z) { return log(z) / log(10.); }
 
 vec2 ipw(vec2 c, vec2 t, vec2 f) {
@@ -399,13 +421,13 @@ vec2 isquare(vec2 z) {
 vec2 isqrt(vec2 v) { return vec2(sqrt(max(0., v.x)), sqrt(max(0., v.y))); }
 vec2 icbrt(vec2 v) { return vec2(cbrt(v.x), cbrt(v.y)); }
 
-vec2 imin(vec2 l, vec2 r) { return vec2(min(l.x, r.x), min(l.y, r.y)); }
-vec2 imax(vec2 l, vec2 r) { return vec2(max(l.x, r.x), max(l.y, r.y)); }
-vec2 imod(vec2 x, vec2 y) { return x + ineg(iby(y, ifloor(idiv(x, y)))); }
-
 vec2 iceiling(vec2 z) { return ceil(z); }
 vec2 ifloor(vec2 z) { return floor(z); }
 vec2 iround(vec2 z) { return round(z); }
+
+vec2 imin(vec2 l, vec2 r) { return vec2(min(l.x, r.x), min(l.y, r.y)); }
+vec2 imax(vec2 l, vec2 r) { return vec2(max(l.x, r.x), max(l.y, r.y)); }
+vec2 imod(vec2 x, vec2 y) { return x + ineg(iby(y, ifloor(idiv(x, y)))); }
 
 //////////////////////////////////////////////////
 // With derivatives - used to calculate normals //
@@ -420,13 +442,16 @@ vec4 gdiv(vec4 l, vec4 r) {
   return vec4(l.x / r.x, (r.x * l.yzw - l.x * r.yzw) / pow(r.x, 2.));
 }
 
-vec4 gpow(vec4 b, int e) {
-  return vec4(pow(b.x, float(e)), float(e) * pow(b.x, float(e - 1)) * b.yzw);
+vec4 gpow(vec4 b, float e) {
+  return vec4(pow(b.x, e), e * pow(b.x, e - 1.) * b.yzw);
 }
+
+vec4 gexp(vec4 z) { return vec4(exp(z.x), exp(z.x) * z.yzw); }
+vec4 gln(vec4 z) { return vec4(log(z.x), z.yzw / z.x); }
+
 vec4 gpow(vec4 b, vec4 e) {
-  int ie = int(e.x);
-  if (float(ie) == e.x && e.y == 0. && e.z == 0. && e.w == 0.) {
-    return gpow(b, ie);
+  if (floor(e.x) == e.x && e.y == 0. && e.z == 0. && e.w == 0.) {
+    return gpow(b, e.x);
   }
   return gexp(gby(gln(b), e));
 }
@@ -459,8 +484,6 @@ vec4 gre(vec4 v) { return v; }
 vec4 gim(vec4 v) { return vec4(0, 0, 0, 1); }
 vec4 garg(vec4 z) { return gnum(z.x >= 0. ? 0. : radians(180.)); }
 
-vec4 gexp(vec4 z) { return vec4(exp(z.x), exp(z.x) * z.yzw); }
-vec4 gln(vec4 z) { return vec4(log(z.x), z.yzw / z.x); }
 vec4 glog10(vec4 z) { return vec4(log(z.x), z.yzw / z.x) / log(10.); }
 vec4 gpw(vec4 c, vec4 t, vec4 f) { return c.x > 0. ? t : f; }
 vec4 gsquare(vec4 z) { return vec4(z.x * z.x, 2. * z.x * z.yzw); }
