@@ -5,7 +5,6 @@ import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression
 import Glsl exposing (vec211)
 import Glsl.Helper exposing (Expression)
 import UI.Glsl.Generator exposing (Vec2, abs2, add2, by, exp, expr, float, negate2, one, subtract, subtract2, vec2Zero, zero)
-import UI.Glsl.Model exposing (GlslConstant(..), GlslFunction(..), GlslOperation(..))
 
 
 expressionToGlsl : List ( String, Expression Float ) -> Expression.Expression -> Expression Vec2

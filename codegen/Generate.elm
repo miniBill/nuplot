@@ -76,11 +76,21 @@ declarationsDictionary : List Function -> Elm.Declaration
 declarationsDictionary functions =
     functions
         |> List.map
-            (\{ name } ->
+            (\{ name, args, deps } ->
+                let
+                    fname : String
+                    fname =
+                        fullName name (List.map Tuple.first args)
+                in
                 Elm.tuple
-                    (Elm.string name)
-                    (Elm.withType Type.string <|
-                        Elm.val (name ++ "Body")
+                    (Elm.string fname)
+                    (Elm.record
+                        [ ( "body"
+                          , Elm.withType Type.string <|
+                                Elm.val (fname ++ "Body")
+                          )
+                        , ( "deps", deps )
+                        ]
                     )
             )
         |> Gen.Dict.fromList
@@ -152,26 +162,12 @@ type alias Env =
     }
 
 
-functionToDeclarations : Env -> Function -> Result String (List Elm.Declaration)
-functionToDeclarations env function =
-    let
-        envWithArgs : Env
-        envWithArgs =
-            List.foldl (\( type_, name ) -> variableHasType name type_) env function.args
-
-        maybeDeps : Result String (Set String)
-        maybeDeps =
-            findDepsStatement envWithArgs function.stat
-                |> Result.mapError (\e -> e ++ " while generating " ++ function.name)
-    in
-    Result.map
-        (\deps ->
-            [ Elm.string function.body
-                |> Elm.declaration (function.name ++ "Body")
-            , wrapFunction function.name function.args function.returnType deps
-            ]
-        )
-        maybeDeps
+functionToDeclarations : Function -> List Elm.Declaration
+functionToDeclarations function =
+    [ Elm.string function.body
+        |> Elm.declaration (function.name ++ "Body")
+    , wrapFunction function.name function.args function.returnType function.deps
+    ]
 
 
 wrapFunction : String -> List ( Type, String ) -> Type -> Set String -> Elm.Declaration
