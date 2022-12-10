@@ -44,7 +44,7 @@ generate glsl =
                                 (List.map Tuple.first args)
                                 returnType
                         )
-                        { functionsEnv = builtinFunctions
+                        { functionsEnv = builtinFunctions |> Dict.map (\_ -> Tuple.second)
                         , variablesEnv = builtinUniforms
                         }
                         functions
@@ -57,7 +57,7 @@ generate glsl =
             in
             case maybeDecls of
                 Ok decls ->
-                    declarationsDictionary functions :: List.concat decls
+                    declarationsDictionary functions :: List.concat decls ++ builtinDecls
 
                 Err e ->
                     "Error generating file"
@@ -155,16 +155,6 @@ type alias Env =
 functionToDeclarations : Env -> Function -> Result String (List Elm.Declaration)
 functionToDeclarations env function =
     let
-        argDecls : List ( String, Maybe Type.Annotation )
-        argDecls =
-            List.map
-                (\( _, name ) ->
-                    ( name
-                    , Just Gen.Glsl.Helper.annotation_.expression
-                    )
-                )
-                function.args
-
         envWithArgs : Env
         envWithArgs =
             List.foldl (\( type_, name ) -> variableHasType name type_) env function.args
@@ -176,27 +166,98 @@ functionToDeclarations env function =
     in
     Result.map
         (\deps ->
-            let
-                expr : List Elm.Expression -> Elm.Expression
-                expr args =
-                    Gen.Glsl.Helper.call_.call
-                        (Elm.string function.name)
-                        (Elm.list args)
-                        (deps
-                            |> Set.toList
-                            |> List.map Elm.string
-                            |> Elm.list
-                        )
-                        |> Elm.withType Gen.Glsl.Helper.annotation_.expression
-            in
             [ Elm.string function.body
                 |> Elm.declaration (function.name ++ "Body")
-            , Elm.function argDecls expr
-                |> Elm.declaration function.name
-                |> Elm.expose
+            , wrapFunction function.name function.args function.returnType deps
             ]
         )
         maybeDeps
+
+
+wrapFunction : String -> List ( Type, String ) -> Type -> Set String -> Elm.Declaration
+wrapFunction name args returnType deps =
+    let
+        argDecls : List ( String, Maybe Type.Annotation )
+        argDecls =
+            List.map
+                (\( type_, argName ) ->
+                    ( argName
+                    , Just <| Gen.Glsl.Helper.annotation_.expression (typeToAnnotation type_)
+                    )
+                )
+                args
+
+        innerCall argValues _ =
+            case argValues of
+                [] ->
+                    Gen.Glsl.Helper.unsafeCall0 name
+
+                [ arg0 ] ->
+                    Gen.Glsl.Helper.unsafeCall1 name arg0
+
+                [ arg0, arg1 ] ->
+                    Gen.Glsl.Helper.unsafeCall2 name arg0 arg1
+
+                [ arg0, arg1, arg2 ] ->
+                    Gen.Glsl.Helper.unsafeCall3 name arg0 arg1 arg2
+
+                [ arg0, arg1, arg2, arg3 ] ->
+                    Gen.Glsl.Helper.unsafeCall4 name arg0 arg1 arg2 arg3
+
+                _ :: _ :: _ ->
+                    Elm.string "TODO"
+
+        expr : List Elm.Expression -> Elm.Expression
+        expr argValues =
+            innerCall
+                argValues
+                (deps
+                    |> Set.toList
+                    |> List.map Elm.string
+                    |> Elm.list
+                )
+                |> Elm.withType (Gen.Glsl.Helper.annotation_.expression (typeToAnnotation returnType))
+    in
+    Elm.function argDecls expr
+        |> Elm.declaration name
+        |> Elm.expose
+
+
+typeToAnnotation : Type -> Type.Annotation
+typeToAnnotation type_ =
+    case type_ of
+        TBool ->
+            Type.bool
+
+        TFloat ->
+            Type.float
+
+        TInt ->
+            Type.int
+
+        TVec2 ->
+            Gen.Glsl.Helper.annotation_.vec2
+
+        TIVec2 ->
+            Gen.Glsl.Helper.annotation_.iVec2
+
+        TVec3 ->
+            Gen.Glsl.Helper.annotation_.vec3
+
+        TIVec3 ->
+            Gen.Glsl.Helper.annotation_.iVec3
+
+        TVec4 ->
+            Gen.Glsl.Helper.annotation_.vec4
+
+        TIVec4 ->
+            Gen.Glsl.Helper.annotation_.iVec4
+
+        TMat3 ->
+            Gen.Glsl.Helper.annotation_.mat3
+
+        TVoid ->
+            Gen.Glsl.Helper.annotation_.void
 
 
 variableHasType : String -> Type -> Env -> Env
@@ -480,44 +541,44 @@ binaryOperationToString bop =
 
 fullName : String -> List Type -> String
 fullName baseName argTypes =
-    let
-        typeToShort : Type -> String
-        typeToShort t =
-            case t of
-                TFloat ->
-                    "1"
-
-                TInt ->
-                    "i1"
-
-                TVec2 ->
-                    "2"
-
-                TIVec2 ->
-                    "i2"
-
-                TVec3 ->
-                    "3"
-
-                TIVec3 ->
-                    "i3"
-
-                TVec4 ->
-                    "4"
-
-                TIVec4 ->
-                    "i4"
-
-                TMat3 ->
-                    "m3"
-
-                TVoid ->
-                    "v"
-
-                TBool ->
-                    "b1"
-    in
     String.concat (baseName :: List.map typeToShort argTypes)
+
+
+typeToShort : Type -> String
+typeToShort t =
+    case t of
+        TFloat ->
+            "1"
+
+        TInt ->
+            "i1"
+
+        TVec2 ->
+            "2"
+
+        TIVec2 ->
+            "i2"
+
+        TVec3 ->
+            "3"
+
+        TIVec3 ->
+            "i3"
+
+        TVec4 ->
+            "4"
+
+        TIVec4 ->
+            "i4"
+
+        TMat3 ->
+            "m3"
+
+        TVoid ->
+            "v"
+
+        TBool ->
+            "b1"
 
 
 builtinUniforms : Dict String Type
@@ -535,17 +596,17 @@ builtinUniforms =
         |> Dict.fromList
 
 
-builtinFunctions : Dict String Type
+builtinFunctions : Dict String ( List Type, Type )
 builtinFunctions =
     let
-        overload : List String -> List ( String, Type ) -> List ( String, Type )
+        overload : List String -> List ( List Type, Type ) -> List ( String, List Type, Type )
         overload names kinds =
             List.Extra.lift2
-                (\name ( suffix, result ) -> ( name ++ suffix, result ))
+                (\name ( inTypes, result ) -> ( name, inTypes, result ))
                 names
                 kinds
 
-        regular : List ( String, Type )
+        regular : List ( String, List Type, Type )
         regular =
             [ builtin_v_v
             , builtin_v_s
@@ -560,7 +621,7 @@ builtinFunctions =
             ]
                 |> List.concatMap (\( names, kinds ) -> overload names kinds)
 
-        vecs : List ( String, Type )
+        vecs : List ( String, List Type, Type )
         vecs =
             [ ( 2, TVec2 )
             , ( 3, TVec3 )
@@ -569,192 +630,56 @@ builtinFunctions =
                 |> List.concatMap
                     (\( size, type_ ) ->
                         List.map
-                            (\opt ->
-                                ( "vec" ++ String.fromInt size ++ opt, type_ )
+                            (\inTypes ->
+                                ( "vec" ++ String.fromInt size, inTypes, type_ )
                             )
-                            ([ "1", "i1" ]
+                            ([ TFloat, TInt ]
                                 |> List.repeat size
                                 |> List.Extra.cartesianProduct
-                                |> List.map String.concat
-                                |> (++) [ "i1", "1", "13" ]
+                                |> (++) [ [ TInt ], [ TFloat ], [ TFloat, TVec3 ] ]
                             )
                     )
 
-        ivecs : List ( String, Type )
+        ivecs : List ( String, List Type, Type )
         ivecs =
             [ ( 2, TVec2 )
             , ( 3, TVec3 )
             , ( 4, TVec4 )
             ]
-                |> List.concatMap
+                |> List.map
                     (\( size, type_ ) ->
-                        List.map
-                            (\opt ->
-                                ( "ivec" ++ String.fromInt size ++ opt, type_ )
-                            )
-                            ([ "i1" ]
-                                |> List.repeat size
-                                |> List.Extra.cartesianProduct
-                                |> List.map String.concat
-                                |> (++) [ "i1" ]
-                            )
+                        ( "ivec" ++ String.fromInt size, List.repeat size TInt, type_ )
                     )
 
-        others : List ( String, Type )
+        others : List ( String, List Type, Type )
         others =
-            [ ( "cross33", TVec3 )
-            , ( "floati1", TFloat )
-            , ( "int1", TInt )
+            [ ( "cross", [ TVec3, TVec3 ], TVec3 )
+            , ( "float", [ TInt ], TFloat )
+            , ( "int", [ TFloat ], TInt )
             ]
     in
-    Dict.fromList <| regular ++ vecs ++ ivecs ++ others
+    (regular ++ vecs ++ ivecs ++ others)
+        |> List.map
+            (\( name, inTypes, resultType ) ->
+                ( fullName name inTypes, ( inTypes, resultType ) )
+            )
+        |> Dict.fromList
 
 
-builtin_vv_s : ( List String, List ( String, Type ) )
-builtin_vv_s =
-    ( [ -- Geometric
-        "distance"
-      , "dot"
-      ]
-    , [ ( "11", TFloat )
-      , ( "22", TFloat )
-      , ( "33", TFloat )
-      , ( "44", TFloat )
-      ]
-    )
-
-
-builtin_vvs_v : ( List String, List ( String, Type ) )
-builtin_vvs_v =
-    ( [ --Geometric
-        "refract"
-
-      -- Other
-      , "mix"
-      ]
-    , [ ( "111", TFloat )
-      , ( "221", TVec2 )
-      , ( "331", TVec3 )
-      , ( "441", TVec4 )
-      ]
-    )
-
-
-builtin_ssv_v : ( List String, List ( String, Type ) )
-builtin_ssv_v =
-    ( [ -- Other
-        "smoothstep"
-      ]
-    , [ ( "111", TFloat )
-      , ( "112", TVec2 )
-      , ( "113", TVec3 )
-      , ( "114", TVec4 )
-      ]
-    )
-
-
-builtin_vss_v : ( List String, List ( String, Type ) )
-builtin_vss_v =
-    ( [ -- Other
-        "clamp"
-      ]
-    , [ ( "111", TFloat )
-      , ( "211", TVec2 )
-      , ( "311", TVec3 )
-      , ( "411", TVec4 )
-      ]
-    )
-
-
-builtin_vvv_v : ( List String, List ( String, Type ) )
-builtin_vvv_v =
-    ( [ -- Other
-        "clamp"
-      , "mix"
-      , "smoothstep"
-
-      -- Geometry
-      , "faceforward"
-      ]
-    , [ ( "111", TFloat )
-      , ( "222", TVec2 )
-      , ( "333", TVec3 )
-      , ( "444", TVec4 )
-      ]
-    )
-
-
-builtin_sv_v : ( List String, List ( String, Type ) )
-builtin_sv_v =
-    ( [ -- Other
-        "step"
-      ]
-    , [ ( "11", TFloat )
-      , ( "12", TVec2 )
-      , ( "13", TVec3 )
-      , ( "14", TVec4 )
-      ]
-    )
-
-
-builtin_vs_v : ( List String, List ( String, Type ) )
-builtin_vs_v =
-    ( [ -- Comparison
-        "min"
-      , "max"
-
-      -- Other
-      , "mod"
-      ]
-    , [ ( "11", TFloat )
-      , ( "21", TVec2 )
-      , ( "31", TVec3 )
-      , ( "41", TVec4 )
-      ]
-    )
-
-
-builtin_vv_v : ( List String, List ( String, Type ) )
-builtin_vv_v =
-    ( [ -- Comparison
-        "min"
-      , "max"
-
-      -- Complex and power
-      , "pow"
-
-      -- Trig
-      , "atan"
-
-      -- Geometry
-      , "reflect"
-
-      -- Other
-      , "mod"
-      , "step"
-      ]
-    , [ ( "11", TFloat )
-      , ( "22", TVec2 )
-      , ( "33", TVec3 )
-      , ( "44", TVec4 )
-      ]
-    )
-
-
-builtin_v_s : ( List String, List ( String, Type ) )
+builtin_v_s : ( List String, List ( List Type, Type ) )
 builtin_v_s =
     ( [ -- Geometric
         "length"
       ]
-    , [ ( "1", TFloat )
-      , ( "2", TFloat )
-      , ( "3", TFloat )
-      , ( "4", TFloat )
+    , [ ( [ TFloat ], TFloat )
+      , ( [ TVec2 ], TFloat )
+      , ( [ TVec3 ], TFloat )
+      , ( [ TVec4 ], TFloat )
       ]
     )
 
 
-builtin_v_v : ( List String, List ( String, Type ) )
+builtin_v_v : ( List String, List ( List Type, Type ) )
 builtin_v_v =
     ( [ -- Rounding
         "ceil"
@@ -783,12 +708,166 @@ builtin_v_v =
       , "atan"
       , "normalize"
       ]
-    , [ ( "1", TFloat )
-      , ( "2", TVec2 )
-      , ( "3", TVec3 )
-      , ( "4", TVec4 )
+    , [ ( [ TFloat ], TFloat )
+      , ( [ TVec2 ], TVec2 )
+      , ( [ TVec3 ], TVec3 )
+      , ( [ TVec4 ], TVec4 )
       ]
     )
+
+
+builtin_vv_v : ( List String, List ( List Type, Type ) )
+builtin_vv_v =
+    ( [ -- Comparison
+        "min"
+      , "max"
+
+      -- Complex and power
+      , "pow"
+
+      -- Trig
+      , "atan"
+
+      -- Geometry
+      , "reflect"
+
+      -- Other
+      , "mod"
+      , "step"
+      ]
+    , [ ( [ TFloat, TFloat ], TFloat )
+      , ( [ TVec2, TVec2 ], TVec2 )
+      , ( [ TVec3, TVec3 ], TVec3 )
+      , ( [ TVec4, TVec4 ], TVec4 )
+      ]
+    )
+
+
+builtin_sv_v : ( List String, List ( List Type, Type ) )
+builtin_sv_v =
+    ( [ -- Other
+        "step"
+      ]
+    , [ ( [ TFloat, TFloat ], TFloat )
+      , ( [ TFloat, TVec2 ], TVec2 )
+      , ( [ TFloat, TVec3 ], TVec3 )
+      , ( [ TFloat, TVec4 ], TVec4 )
+      ]
+    )
+
+
+builtin_vs_v : ( List String, List ( List Type, Type ) )
+builtin_vs_v =
+    ( [ -- Comparison
+        "min"
+      , "max"
+
+      -- Other
+      , "mod"
+      ]
+    , [ ( [ TFloat, TFloat ], TFloat )
+      , ( [ TVec2, TFloat ], TVec2 )
+      , ( [ TVec3, TFloat ], TVec3 )
+      , ( [ TVec4, TFloat ], TVec4 )
+      ]
+    )
+
+
+builtin_vv_s : ( List String, List ( List Type, Type ) )
+builtin_vv_s =
+    ( [ -- Geometric
+        "distance"
+      , "dot"
+      ]
+    , [ ( [ TFloat, TFloat ], TFloat )
+      , ( [ TVec2, TVec2 ], TFloat )
+      , ( [ TVec3, TVec3 ], TFloat )
+      , ( [ TVec4, TVec4 ], TFloat )
+      ]
+    )
+
+
+builtin_vvs_v : ( List String, List ( List Type, Type ) )
+builtin_vvs_v =
+    ( [ --Geometric
+        "refract"
+
+      -- Other
+      , "mix"
+      ]
+    , [ ( [ TFloat, TFloat, TFloat ], TFloat )
+      , ( [ TVec2, TVec2, TFloat ], TVec2 )
+      , ( [ TVec3, TVec3, TFloat ], TVec3 )
+      , ( [ TVec4, TVec4, TFloat ], TVec4 )
+      ]
+    )
+
+
+builtin_ssv_v : ( List String, List ( List Type, Type ) )
+builtin_ssv_v =
+    ( [ -- Other
+        "smoothstep"
+      ]
+    , [ ( [ TFloat, TFloat, TFloat ], TFloat )
+      , ( [ TFloat, TFloat, TVec2 ], TVec2 )
+      , ( [ TFloat, TFloat, TVec3 ], TVec3 )
+      , ( [ TFloat, TFloat, TVec4 ], TVec4 )
+      ]
+    )
+
+
+builtin_vss_v : ( List String, List ( List Type, Type ) )
+builtin_vss_v =
+    ( [ -- Other
+        "clamp"
+      ]
+    , [ ( [ TFloat, TFloat, TFloat ], TFloat )
+      , ( [ TVec2, TFloat, TFloat ], TVec2 )
+      , ( [ TVec3, TFloat, TFloat ], TVec3 )
+      , ( [ TVec4, TFloat, TFloat ], TVec4 )
+      ]
+    )
+
+
+builtin_vvv_v : ( List String, List ( List Type, Type ) )
+builtin_vvv_v =
+    ( [ -- Other
+        "clamp"
+      , "mix"
+      , "smoothstep"
+
+      -- Geometry
+      , "faceforward"
+      ]
+    , [ ( [ TFloat, TFloat, TFloat ], TFloat )
+      , ( [ TVec2, TVec2, TVec2 ], TVec2 )
+      , ( [ TVec3, TVec3, TVec3 ], TVec3 )
+      , ( [ TVec4, TVec4, TVec4 ], TVec4 )
+      ]
+    )
+
+
+builtinDecls : List Elm.Declaration
+builtinDecls =
+    builtinFunctions
+        |> Dict.toList
+        |> List.map
+            (\( name, ( inTypes, resultType ) ) ->
+                wrapFunction
+                    name
+                    (List.indexedMap
+                        (\i type_ -> ( type_, indexedVar i ))
+                        inTypes
+                    )
+                    resultType
+                    Set.empty
+                    |> Elm.expose
+            )
+
+
+indexedVar : Int -> String
+indexedVar i =
+    String.fromChar <| Char.fromCode <| Char.toCode 'a' + i
 
 
 parseFile : String -> Result (List Parser.DeadEnd) (List Function)
