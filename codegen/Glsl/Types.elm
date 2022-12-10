@@ -8,6 +8,7 @@ type alias Function =
     , stat : Statement
     , body : String
     , hasSuffix : Bool
+    , deps : Set String
     }
 
 
