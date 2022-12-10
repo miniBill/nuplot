@@ -1,7 +1,7 @@
 module UI.Glsl.Generator exposing (Constant, Context, Continue, ErrorValue(..), File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, break, by, by2, by3, byF, ceil_, constant, continue, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
-import Glsl.Helper exposing (ComboOperation(..), Expr(..), Expression(..), Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, Name(..), RelationOperation(..), Stat(..), Statement(..))
+import Glsl.Helper exposing (ComboOperation(..), Expr(..), Expression(..), Name(..), RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction)
 import Set
 
 
@@ -377,22 +377,22 @@ indent i line =
 --EXPRESSIONS
 
 
-ternary : ExpressionX a Bool -> ExpressionX b t -> ExpressionX c t -> Expression1 t
+ternary : ExpressionXBool -> Expression t -> Expression t -> Expression t
 ternary =
     expr3 Ternary
 
 
-ternary3 : ExpressionX xa Bool -> ExpressionX xb Vec3 -> ExpressionX xc Vec3 -> Expression3
+ternary3 : ExpressionX xa Bool -> ExpressionX xb Vec3 -> ExpressionX xc Vec3 -> Expression Vec3
 ternary3 =
     expr33 Ternary
 
 
-and : ExpressionX a Bool -> ExpressionX b Bool -> Expression1 Bool
+and : Expression Bool -> Expression Bool -> Expression Bool
 and =
     expr2 And
 
 
-ands : List (Expression1 Bool) -> Expression1 Bool
+ands : List (Expression Bool) -> Expression Bool
 ands es =
     case es of
         [] ->
@@ -402,12 +402,12 @@ ands es =
             List.foldl (\e a -> expr2 And a e) h t
 
 
-or : ExpressionX a Bool -> ExpressionX b Bool -> Expression1 Bool
+or : Expression Bool -> Expression Bool -> Expression Bool
 or =
     expr2 Or
 
 
-ors : List (Expression1 Bool) -> Expression1 Bool
+ors : List (Expression Bool) -> Expression Bool
 ors es =
     case es of
         [] ->
@@ -417,7 +417,7 @@ ors es =
             List.foldl (\e a -> expr2 Or a e) h t
 
 
-adds2 : List Expression2 -> Expression2
+adds2 : List (Expression Vec2) -> Expression Vec2
 adds2 es =
     case es of
         [] ->
@@ -427,7 +427,7 @@ adds2 es =
             List.foldl (\e a -> add2 a e) h t
 
 
-adds3 : List Expression3 -> Expression3
+adds3 : List (Expression Vec3) -> Expression Vec3
 adds3 es =
     case es of
         [] ->
@@ -437,7 +437,7 @@ adds3 es =
             List.foldl (\e a -> add3 a e) h t
 
 
-adds4 : List Expression4 -> Expression4
+adds4 : List (Expression Vec4) -> Expression Vec4
 adds4 es =
     case es of
         [] ->
@@ -447,63 +447,19 @@ adds4 es =
             List.foldl (\e a -> add4 a e) h t
 
 
-true : Expression1 Bool
+pure : Expr -> Expression t
+pure e =
+    Expression { expr = e, deps = Set.empty }
+
+
+true : Expression Bool
 true =
-    dotted1 <| Expression <| Bool True
+    pure <| Bool True
 
 
-false : Expression1 Bool
+false : Expression Bool
 false =
-    dotted1 <| Expression <| Bool False
-
-
-expr1 : (Expr -> Expr) -> ExpressionX a l -> Expression1 t
-expr1 f e =
-    dotted1Internal (f (unwrapExpression e))
-
-
-expr2 : (Expr -> Expr -> Expr) -> ExpressionX a l -> ExpressionX b r -> Expression1 t
-expr2 f l r =
-    dotted1Internal (f (unwrapExpression l) (unwrapExpression r))
-
-
-expr22 : (Expr -> Expr -> Expr) -> ExpressionX a Vec2 -> ExpressionX b Vec2 -> Expression2
-expr22 f l r =
-    dotted2Internal (f (unwrapExpression l) (unwrapExpression r))
-
-
-expr23 : (Expr -> Expr -> Expr) -> ExpressionX a Vec3 -> ExpressionX b Vec3 -> Expression3
-expr23 f l r =
-    dotted3Internal (f (unwrapExpression l) (unwrapExpression r))
-
-
-expr24 : (Expr -> Expr -> Expr) -> ExpressionX a Vec4 -> ExpressionX b Vec4 -> Expression4
-expr24 f l r =
-    dotted4Internal (f (unwrapExpression l) (unwrapExpression r))
-
-
-expr233 : (Expr -> Expr -> Expr) -> ExpressionX a Mat3 -> ExpressionX b Mat3 -> Expression33
-expr233 f l r =
-    dotted33Internal (f (unwrapExpression l) (unwrapExpression r))
-
-
-expr3 : (Expr -> Expr -> Expr -> Expr) -> ExpressionX a l -> ExpressionX b m -> ExpressionX c r -> Expression1 t
-expr3 f l m r =
-    dotted1Internal (f (unwrapExpression l) (unwrapExpression m) (unwrapExpression r))
-
-
-expr33 : (Expr -> Expr -> Expr -> Expr) -> ExpressionX xa a -> ExpressionX xb b -> ExpressionX xc c -> Expression3
-expr33 f l m r =
-    dotted3Internal (f (unwrapExpression l) (unwrapExpression m) (unwrapExpression r))
-
-
-unwrapExpression : ExpressionX a e -> Expr
-unwrapExpression { base } =
-    let
-        (Expression e) =
-            base
-    in
-    e
+    pure <| Bool False
 
 
 
@@ -512,32 +468,32 @@ unwrapExpression { base } =
 ------------------------------
 
 
-add : ExpressionX a t -> ExpressionX b t -> Expression1 t
+add : Expression t -> Expression t -> Expression t
 add =
     expr2 Add
 
 
-add2 : ExpressionX a Vec2 -> ExpressionX b Vec2 -> Expression2
+add2 : Expression Vec2 -> Expression Vec2 -> Expression Vec2
 add2 =
     expr22 Add
 
 
-add3 : ExpressionX a Vec3 -> ExpressionX b Vec3 -> Expression3
+add3 : Expression Vec3 -> Expression Vec3 -> Expression Vec3
 add3 =
     expr23 Add
 
 
-add4 : ExpressionX a Vec4 -> ExpressionX b Vec4 -> Expression4
+add4 : Expression Vec4 -> Expression Vec4 -> Expression Vec4
 add4 =
     expr24 Add
 
 
-add33 : ExpressionX a Mat3 -> ExpressionX b Mat3 -> Expression33
+add33 : Expression Mat3 -> Expression Mat3 -> Expression Mat3
 add33 =
     expr233 Add
 
 
-subtract : ExpressionX a t -> ExpressionX b t -> Expression1 t
+subtract : Expression t -> Expression t -> Expression t
 subtract =
     expr2 Subtract
 
@@ -549,22 +505,22 @@ subtractConst l r =
     }
 
 
-subtract2 : ExpressionX a Vec2 -> ExpressionX b Vec2 -> Expression2
+subtract2 : ExpressionXVec2 -> Expression Vec2 -> Expression Vec2
 subtract2 =
     expr22 Subtract
 
 
-subtract3 : ExpressionX a Vec3 -> ExpressionX b Vec3 -> Expression3
+subtract3 : Expression Vec3 -> Expression Vec3 -> Expression Vec3
 subtract3 =
     expr23 Subtract
 
 
-subtract4 : ExpressionX a Vec4 -> ExpressionX b Vec4 -> Expression4
+subtract4 : Expression Vec4 -> Expression Vec4 -> Expression Vec4
 subtract4 =
     expr24 Subtract
 
 
-negate_ : ExpressionX a t -> Expression1 t
+negate_ : Expression t -> Expression t
 negate_ =
     expr1 Negate
 
@@ -576,348 +532,284 @@ negateConst l =
     }
 
 
-negate2 : ExpressionX a Vec2 -> Expression2
+negate2 : Expression Vec2 -> Expression Vec2
 negate2 e =
     dotted2Internal (Negate <| unwrapExpression e)
 
 
-postfixIncrement : ExpressionX a t -> Expression1 t
+postfixIncrement : Expression t -> Expression t
 postfixIncrement =
     expr1 PostfixIncrement
 
 
-postfixDecrement : ExpressionX a t -> Expression1 t
+postfixDecrement : Expression t -> Expression t
 postfixDecrement =
     expr1 PostfixDecrement
 
 
-by : ExpressionX a t -> ExpressionX b t -> Expression1 t
+by : Expression t -> Expression t -> Expression t
 by =
     expr2 By
 
 
-by2 : ExpressionX a Vec2 -> ExpressionX b Vec2 -> Expression2
+by2 : ExpressionXVec2 -> Expression Vec2 -> Expression Vec2
 by2 =
     expr22 By
 
 
-by3 : ExpressionX a Vec3 -> ExpressionX b Vec3 -> Expression3
+by3 : Expression Vec3 -> Expression Vec3 -> Expression Vec3
 by3 =
     expr23 By
 
 
-byF : ExpressionX a Float -> ExpressionX b t -> Expression1 t
+byF : Expression Float -> Expression t -> Expression t
 byF =
     expr2 By
 
 
-divF : ExpressionX a t -> ExpressionX b Float -> Expression1 t
+divF : Expression t -> Expression Float -> Expression t
 divF =
     expr2 Div
 
 
-div : ExpressionX a t -> ExpressionX b t -> Expression1 t
+div : Expression t -> Expression t -> Expression t
 div =
     expr2 Div
 
 
-div2 : ExpressionX a Vec2 -> ExpressionX b Vec2 -> Expression2
+div2 : Expression Vec2 -> Expression Vec2 -> Expression Vec2
 div2 =
     expr22 Div
 
 
-divConst : ExpressionX { a | isConstant : Constant } t -> ExpressionX { b | isConstant : Constant } t -> ExpressionX { isConstant : Constant } t
-divConst l r =
-    { base = (expr2 Div l r).base
-    , isConstant = Constant
-    }
-
-
-lt : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
+lt : Expression t -> Expression t -> Expression Bool
 lt =
     expr2 (Comparison LessThan)
 
 
-leq : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
+leq : Expression t -> Expression t -> Expression Bool
 leq =
     expr2 (Comparison LessThanOrEquals)
 
 
-eq : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
+eq : Expression t -> Expression t -> Expression Bool
 eq =
     expr2 (Comparison Equals)
 
 
-neq : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
+neq : Expression t -> Expression t -> Expression Bool
 neq =
     expr2 (Comparison NotEquals)
 
 
-geq : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
+geq : Expression t -> Expression t -> Expression Bool
 geq =
     expr2 (Comparison GreaterThanOrEquals)
 
 
-gt : ExpressionX a t -> ExpressionX b t -> Expression1 Bool
+gt : Expression t -> Expression t -> Expression Bool
 gt =
     expr2 (Comparison GreaterThan)
 
 
-abs_ : ExpressionX a t -> Expression1 t
+abs_ : Expression t -> Expression t
 abs_ =
-    dotted1 << call1Internal "abs"
+    call1Internal "abs"
 
 
-abs2 : ExpressionX a Vec2 -> Expression2
+abs2 : Expression Vec2 -> Expression Vec2
 abs2 =
     dotted2 << call1Internal "abs"
 
 
-abs4 : ExpressionX a Vec4 -> Expression4
+abs4 : Expression Vec4 -> Expression Vec4
 abs4 =
     dotted4 << call1Internal "abs"
 
 
-mix : ExpressionX a t -> ExpressionX b t -> ExpressionX c Float -> Expression1 t
+mix : Expression t -> Expression t -> Expression Float -> Expression t
 mix x y a =
     dotted1 <| call3Internal "mix" x y a
 
 
-smoothstep : ExpressionX a Float -> ExpressionX b Float -> ExpressionX c Float -> Expression1 t
+smoothstep : Expression Float -> Expression Float -> Expression Float -> Expression t
 smoothstep x y a =
     dotted1 <| call3Internal "smoothstep" x y a
 
 
-exp : ExpressionX a t -> Expression1 t
+exp : Expression t -> Expression t
 exp =
-    dotted1 << call1Internal "exp"
+    call1Internal "exp"
 
 
-sqrt_ : ExpressionX a t -> Expression1 t
+sqrt_ : Expression t -> Expression t
 sqrt_ =
-    dotted1 << call1Internal "sqrt"
+    call1Internal "sqrt"
 
 
-sin_ : ExpressionX a t -> Expression1 t
+sin_ : Expression t -> Expression t
 sin_ =
-    dotted1 << call1Internal "sin"
+    call1Internal "sin"
 
 
-cos_ : ExpressionX a t -> Expression1 t
+cos_ : Expression t -> Expression t
 cos_ =
-    dotted1 << call1Internal "cos"
+    call1Internal "cos"
 
 
-tan_ : ExpressionX a t -> Expression1 t
+tan_ : Expression t -> Expression t
 tan_ =
-    dotted1 << call1Internal "tan"
+    call1Internal "tan"
 
 
-acos_ : ExpressionX a t -> Expression1 t
+acos_ : Expression t -> Expression t
 acos_ =
-    dotted1 << call1Internal "acos"
+    call1Internal "acos"
 
 
-acos2 : ExpressionX a Vec2 -> Expression2
+acos2 : Expression Vec2 -> Expression Vec2
 acos2 =
     dotted2 << call1Internal "acos"
 
 
-sinh : ExpressionX a t -> Expression1 t
+sinh : Expression t -> Expression t
 sinh =
-    dotted1 << call1Internal "sinh"
+    call1Internal "sinh"
 
 
-cosh : ExpressionX a t -> Expression1 t
+cosh : Expression t -> Expression t
 cosh =
-    dotted1 << call1Internal "cosh"
+    call1Internal "cosh"
 
 
-log : ExpressionX a t -> Expression1 t
+log : Expression t -> Expression t
 log =
-    dotted1 << call1Internal "log"
+    call1Internal "log"
 
 
-mod : ExpressionX a t -> ExpressionX b t -> Expression1 t
+mod : Expression t -> Expression t -> Expression t
 mod l r =
     dotted1 (call2Internal "mod" l r)
 
 
-min_ : ExpressionX a t -> ExpressionX b t -> Expression1 t
+min_ : Expression t -> Expression t -> Expression t
 min_ l r =
     dotted1 (call2Internal "min" l r)
 
 
-max_ : ExpressionX a t -> ExpressionX b t -> Expression1 t
+max_ : Expression t -> Expression t -> Expression t
 max_ l r =
     dotted1 (call2Internal "max" l r)
 
 
-max3 : ExpressionX a Vec3 -> ExpressionX b Vec3 -> Expression3
+max3 : Expression Vec3 -> Expression Vec3 -> Expression Vec3
 max3 l r =
     dotted3 (call2Internal "max" l r)
 
 
-max4 : ExpressionX a Vec4 -> ExpressionX b Vec4 -> Expression4
+max4 : Expression Vec4 -> Expression Vec4 -> Expression Vec4
 max4 l r =
     dotted4 (call2Internal "max" l r)
 
 
-hl2rgb : ExpressionX a Float -> ExpressionX b Float -> Expression3
+hl2rgb : ExpressionXFloat -> Expression Float -> Expression Vec3
 hl2rgb h l =
     dotted3 (call2Internal "hl2rgb" h l)
 
 
-pow : ExpressionX a Float -> ExpressionX b Float -> Expression1 Float
+pow : Expression Float -> Expression Float -> Expression Float
 pow l r =
     dotted1 (call2Internal "pow" l r)
 
 
-log2 : ExpressionX a Float -> Expression1 Float
+log2 : ExpressionXFloat -> Expression Float
 log2 =
-    dotted1 << call1Internal "log2"
+    call1Internal "log2"
 
 
-ceil_ : ExpressionX a t -> Expression1 t
+ceil_ : Expression t -> Expression t
 ceil_ =
-    dotted1 << call1Internal "ceil"
+    call1Internal "ceil"
 
 
-floor_ : ExpressionX a t -> Expression1 t
+floor_ : Expression t -> Expression t
 floor_ =
-    dotted1 << call1Internal "floor"
+    call1Internal "floor"
 
 
-round_ : ExpressionX a t -> Expression1 t
+round_ : Expression t -> Expression t
 round_ =
-    dotted1 << call1Internal "round"
+    call1Internal "round"
 
 
-sign : ExpressionX a t -> Expression1 t
+sign : Expression t -> Expression t
 sign =
-    dotted1 << call1Internal "sign"
+    call1Internal "sign"
 
 
-radians_ : ExpressionX a Float -> Expression1 Float
+radians_ : Expression Float -> Expression Float
 radians_ =
-    dotted1 << call1Internal "radians"
+    call1Internal "radians"
 
 
-normalize : ExpressionX a t -> Expression1 t
+normalize : Expression t -> Expression t
 normalize =
-    dotted1 << call1Internal "normalize"
+    call1Internal "normalize"
 
 
-normalize3 : ExpressionX a Vec3 -> Expression3
+normalize3 : ExpressionXVec3 -> Expression Vec3
 normalize3 =
     dotted3 << call1Internal "normalize"
 
 
-length : ExpressionX a t -> Expression1 Float
+length : Expression t -> Expression Float
 length =
-    dotted1 << call1Internal "length"
+    call1Internal "length"
 
 
-fwidth : ExpressionX a t -> Expression1 t
+fwidth : Expression t -> Expression t
 fwidth =
-    dotted1 << call1Internal "fwidth"
+    call1Internal "fwidth"
 
 
-cross : ExpressionX a Vec3 -> ExpressionX b Vec3 -> Expression3
+cross : Expression Vec3 -> Expression Vec3 -> Expression Vec3
 cross l r =
     dotted3 <| call2Internal "cross" l r
 
 
-atan_ : ExpressionX a Float -> Expression1 Float
+atan_ : Expression Float -> Expression Float
 atan_ =
-    dotted1 << call1Internal "atan"
+    call1Internal "atan"
 
 
-atan2_ : ExpressionX a Float -> ExpressionX b Float -> Expression1 Float
+atan2_ : ExpressionXFloat -> Expression Float -> Expression Float
 atan2_ l r =
     dotted1 <| call2Internal "atan" l r
 
 
-intCast : ExpressionX a Float -> Expression1 Int
+intCast : Expression Float -> Expression Int
 intCast =
-    dotted1 << call1Internal "int"
+    call1Internal "int"
 
 
-floatCast : ExpressionX a Int -> Expression1 Float
+floatCast : ExpressionXInt -> Expression Float
 floatCast =
-    dotted1 << call1Internal "float"
+    call1Internal "float"
 
 
-fract : ExpressionX a Float -> Expression1 Float
+fract : Expression Float -> Expression Float
 fract =
-    dotted1 << call1Internal "fract"
+    call1Internal "fract"
 
 
-arr : ExpressionX a Mat3 -> ExpressionX b Int -> Expression1 Vec3
+arr : ExpressionXMat3 -> Expression Int -> Expression Vec3
 arr =
     expr2 Array
 
 
-dot : ExpressionX a t -> ExpressionX b t -> Expression1 Float
+dot : Expression t -> Expression t -> Expression Float
 dot l r =
     dotted1 (call2Internal "dot" l r)
-
-
-vec2 : ExpressionX a Float -> ExpressionX b Float -> Expression2
-vec2 x y =
-    { base = call2Internal "vec2" x y
-    , x = { base = x.base }
-    , y = { base = y.base }
-    , yx = { base = call2Internal "vec2" y x }
-    }
-
-
-vec3 :
-    ExpressionX a Float
-    -> ExpressionX b Float
-    -> ExpressionX c Float
-    -> Expression3
-vec3 x y z =
-    { base = call3Internal "vec3" x y z
-    , x = { base = x.base }
-    , y = { base = y.base }
-    , z = { base = z.base }
-    }
-
-
-vec4 :
-    ExpressionX a Float
-    -> ExpressionX b Float
-    -> ExpressionX c Float
-    -> ExpressionX d Float
-    -> Expression4
-vec4 x y z w =
-    { base = call4Internal "vec4" x y z w
-    , x = { base = x.base }
-    , y = { base = y.base }
-    , z = { base = z.base }
-    , w = { base = w.base }
-    , xy = dotted2 <| call2Internal "vec2" x y
-    , yx = dotted2 <| call2Internal "vec2" y x
-    , yzw = dotted3 <| call3Internal "vec3" y z w
-    }
-
-
-vec4_3_1 : ExpressionX a Vec3 -> ExpressionX b Float -> Expression4
-vec4_3_1 xyz w =
-    call2Internal "vec4" xyz w
-        |> dotted4
-
-
-vec4_1_3 : ExpressionX a Float -> ExpressionX b Vec3 -> Expression4
-vec4_1_3 x yzw =
-    call2Internal "vec4" x yzw
-        |> dotted4
-
-
-mat3_3_3_3 : ExpressionX a Vec3 -> ExpressionX b Vec3 -> ExpressionX c Vec3 -> Expression33
-mat3_3_3_3 c0 c1 c2 =
-    call3Internal "mat3" c0 c1 c2 |> dotted33
 
 
 
@@ -926,27 +818,27 @@ mat3_3_3_3 c0 c1 c2 =
 ---------------
 
 
-vec2Zero : Expression2
+vec2Zero : Expression Vec2
 vec2Zero =
     vec2 zero zero
 
 
-vec3Zero : Expression3
+vec3Zero : Expression Vec3
 vec3Zero =
     vec3 zero zero zero
 
 
-vec4Zero : Expression4
+vec4Zero : Expression Vec4
 vec4Zero =
     vec4 zero zero zero zero
 
 
-gl_FragColor : Expression4
+gl_FragColor : Expression Vec4
 gl_FragColor =
     dottedVariable4 "gl_FragColor"
 
 
-gl_FragCoord : Expression4
+gl_FragCoord : Expression Vec4
 gl_FragCoord =
     dottedVariable4 "gl_FragCoord"
 
@@ -966,43 +858,43 @@ type Constant
     = Constant
 
 
-zero : ExpressionX { isConstant : Constant } Float
+zero : Expression Float
 zero =
     float 0
 
 
-one : ExpressionX { isConstant : Constant } Float
+one : Expression Float
 one =
     float 1
 
 
-minusOne : ExpressionX { isConstant : Constant } Float
+minusOne : Expression Float
 minusOne =
     float -1
 
 
-float : Float -> ExpressionX { isConstant : Constant } Float
+float : Float -> Expression Float
 float f =
     { base = Expression (Float f)
     , isConstant = Constant
     }
 
 
-int : Int -> ExpressionX { isConstant : Constant } Int
+int : Int -> Expression Int
 int i =
     { base = Expression <| Int i
     , isConstant = Constant
     }
 
 
-bool : Bool -> ExpressionX { isConstant : Constant } Bool
+bool : Bool -> Expression Bool
 bool b =
     { base = Expression <| Bool b
     , isConstant = Constant
     }
 
 
-constant : TypingFunction t r -> String -> ExpressionX { isConstant : Constant } t
+constant : TypingFunction t r -> String -> Expression t
 constant _ name =
     { base = Expression <| Variable name
     , isConstant = Constant
@@ -1022,132 +914,12 @@ floatToGlsl f =
         s ++ "."
 
 
-call0Internal : String -> Expression t
-call0Internal name =
-    Expression (Call name [])
-
-
-call1Internal : String -> ExpressionX a l -> Expression t
-call1Internal name arg0 =
-    Expression (Call name [ unwrapExpression arg0 ])
-
-
-call2Internal : String -> ExpressionX a l -> ExpressionX b r -> Expression t
-call2Internal name arg0 arg1 =
-    Expression (Call name [ unwrapExpression arg0, unwrapExpression arg1 ])
-
-
-call3Internal : String -> ExpressionX a l -> ExpressionX b m -> ExpressionX c r -> Expression t
-call3Internal name arg0 arg1 arg2 =
-    Expression (Call name [ unwrapExpression arg0, unwrapExpression arg1, unwrapExpression arg2 ])
-
-
-call4Internal : String -> ExpressionX a l -> ExpressionX b m -> ExpressionX c n -> ExpressionX d r -> Expression t
-call4Internal name arg0 arg1 arg2 arg3 =
-    Expression (Call name [ unwrapExpression arg0, unwrapExpression arg1, unwrapExpression arg2, unwrapExpression arg3 ])
-
-
-call5Internal : String -> ExpressionX a l -> ExpressionX b m -> ExpressionX c n -> ExpressionX d r -> ExpressionX e s -> Expression t
-call5Internal name arg0 arg1 arg2 arg3 arg4 =
-    Expression (Call name [ unwrapExpression arg0, unwrapExpression arg1, unwrapExpression arg2, unwrapExpression arg3, unwrapExpression arg4 ])
-
-
-dotted1 : Expression t -> Expression1 t
-dotted1 (Expression e) =
-    dotted1Internal e
-
-
-dotted1Internal : Expr -> Expression1 t
-dotted1Internal e =
-    { base = Expression e
-    }
-
-
-dotted2 : Expression Vec2 -> Expression2
-dotted2 (Expression e) =
-    dotted2Internal e
-
-
-dotInternal : Expr -> String -> Expression1 t
-dotInternal e v =
-    dotted1 (Expression (Dot e v))
-
-
-dotted2Internal : Expr -> Expression2
-dotted2Internal e =
-    { base = Expression e
-    , x = dotInternal e "x"
-    , y = dotInternal e "y"
-    , yx = dotInternal e "yx"
-    }
-
-
-dotted3 : Expression Vec3 -> Expression3
-dotted3 (Expression e) =
-    dotted3Internal e
-
-
-dotted3Internal : Expr -> Expression3
-dotted3Internal e =
-    { base = Expression e
-    , x = dotInternal e "x"
-    , y = dotInternal e "y"
-    , z = dotInternal e "z"
-    }
-
-
-dotted4 : Expression Vec4 -> Expression4
-dotted4 (Expression e) =
-    dotted4Internal e
-
-
-dotted4Internal : Expr -> Expression4
-dotted4Internal e =
-    { base = Expression e
-    , x = dotInternal e "x"
-    , y = dotInternal e "y"
-    , z = dotInternal e "z"
-    , w = dotInternal e "w"
-    , xy = dotted2 <| Expression <| Dot e "xy"
-    , yx = dotted2 <| Expression <| Dot e "yx"
-    , yzw = dotted3 <| Expression <| Dot e "yzw"
-    }
-
-
-dotted33 : Expression Mat3 -> Expression33
-dotted33 (Expression e) =
-    dotted33Internal e
-
-
-dotted33Internal : Expr -> Expression33
-dotted33Internal e =
-    { base = Expression e }
-
-
-uniform : TypingFunction t c -> String -> c
-uniform typeF name =
-    let
-        ( TypedName _ _ e, _ ) =
-            typeF name
-    in
-    e
-
-
-unknown : String -> Expression t
-unknown =
-    let
-        _ =
-            Debug.todo
-    in
-    Expression << Unknown
-
-
 
 -- STATEMENTS
 
 
-funInternal : TypedName t c -> List ( String, String ) -> Statement t -> FunDecl
-funInternal (TypedName (Type rt) (Name name) _) args body =
+funInternal : TypedName t -> List ( String, String ) -> Statement t -> FunDecl
+funInternal (TypedName (Type rt) (Name name)) args body =
     let
         argsList =
             String.join ", " (List.map (\( t, n ) -> t ++ " " ++ n) args)
@@ -1167,14 +939,14 @@ funInternal (TypedName (Type rt) (Name name) _) args body =
         }
 
 
-argToString : TypedName t c -> ( String, String )
-argToString (TypedName (Type t) (Name n) _) =
+argToString : TypedName t -> ( String, String )
+argToString (TypedName (Type t) (Name n)) =
     ( t, n )
 
 
-toVar : TypedName t c -> c
-toVar (TypedName _ _ e) =
-    e
+toVar : TypedName t -> Expression t
+toVar (TypedName _ (Name n)) =
+    pure <| Variable n
 
 
 fun0 :
@@ -1302,22 +1074,22 @@ fun5 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) ( arg4, _ ) body
     )
 
 
-dottedVariable1 : String -> Expression1 t
+dottedVariable1 : String -> Expression t
 dottedVariable1 v =
     dotted1 (Expression (Variable v))
 
 
-dottedVariable2 : String -> Expression2
+dottedVariable2 : String -> Expression Vec2
 dottedVariable2 v =
     dotted2 (Expression (Variable v))
 
 
-dottedVariable3 : String -> Expression3
+dottedVariable3 : String -> Expression Vec3
 dottedVariable3 v =
     dotted3 (Expression (Variable v))
 
 
-dottedVariable4 : String -> Expression4
+dottedVariable4 : String -> Expression Vec4
 dottedVariable4 v =
     dotted4 (Expression (Variable v))
 
@@ -1326,19 +1098,19 @@ type alias Continue s =
     () -> Statement s
 
 
-if_ : Expression1 Bool -> (Continue r -> Statement r) -> Continue r -> Statement r
+if_ : Expression Bool -> (Continue r -> Statement r) -> Continue r -> Statement r
 if_ cond ifTrue next =
     Statement <| If (unwrapExpression cond) (unwrapStatement <| ifTrue internalNop) (unwrapLazyStatement next)
 
 
-ifElse : Expression1 Bool -> (Continue s -> Statement s) -> (Continue s -> Statement s) -> Continue s -> Statement s
+ifElse : Expression Bool -> (Continue s -> Statement s) -> (Continue s -> Statement s) -> Continue s -> Statement s
 ifElse cond ifTrue ifFalse next =
     Statement <| IfElse (unwrapExpression cond) (unwrapStatement <| ifTrue internalNop) (unwrapStatement <| ifFalse internalNop) (unwrapLazyStatement next)
 
 
 for :
     ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
-    -> (Expression1 Int -> Continue r -> Statement r)
+    -> (Expression Int -> Continue r -> Statement r)
     -> Continue r
     -> Statement r
 for ( var, from, to ) loop next =
@@ -1354,7 +1126,7 @@ for ( var, from, to ) loop next =
 
 forLeq :
     ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
-    -> (Expression1 Int -> Continue r -> Statement r)
+    -> (Expression Int -> Continue r -> Statement r)
     -> Continue r
     -> Statement r
 forLeq ( var, from, to ) loop next =
@@ -1370,7 +1142,7 @@ forLeq ( var, from, to ) loop next =
 
 forDown :
     ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
-    -> (Expression1 Int -> Continue r -> Statement r)
+    -> (Expression Int -> Continue r -> Statement r)
     -> Continue r
     -> Statement r
 forDown ( var, from, to ) loop next =
@@ -1384,7 +1156,7 @@ forDown ( var, from, to ) loop next =
             (unwrapLazyStatement next)
 
 
-return : ExpressionX a r -> Continue x -> Statement r
+return : ExpressionXr -> Continue x -> Statement r
 return e _ =
     Statement <| Return <| unwrapExpression e
 
@@ -1423,7 +1195,7 @@ def typeF name v k =
     Statement <| Decl t n (Just <| unwrapExpression v) ks
 
 
-assign : ExpressionX a t -> ExpressionX b t -> Expression1 t
+assign : Expression t -> Expression t -> Expression t
 assign name e =
     dotted1Internal <| Assign (unwrapExpression name) (unwrapExpression e)
 
@@ -1442,17 +1214,17 @@ unwrapStatement (Statement next) =
     next
 
 
-expr : ExpressionX a t -> Continue q -> Statement q
+expr : Expression t -> Continue q -> Statement q
 expr e next =
     Statement <| ExpressionStatement (unwrapExpression e) (unwrapLazyStatement next)
 
 
-assignAdd : ExpressionX a t -> ExpressionX b t -> Continue q -> Statement q
+assignAdd : Expression t -> Expression t -> Continue q -> Statement q
 assignAdd name e next =
     Statement <| ExpressionStatement (AssignCombo ComboAdd (unwrapExpression name) (unwrapExpression e)) (unwrapLazyStatement next)
 
 
-assignBy : ExpressionX a t -> ExpressionX b t -> Continue q -> Statement q
+assignBy : Expression t -> Expression t -> Continue q -> Statement q
 assignBy name e next =
     Statement <| ExpressionStatement (AssignCombo ComboBy (unwrapExpression name) (unwrapExpression e)) (unwrapLazyStatement next)
 
@@ -1477,53 +1249,53 @@ type Mat3
     = Mat3 Mat3
 
 
-voidT : TypingFunction () (Never -> a)
+voidT : TypingFunction ()
 voidT n =
-    ( TypedName (Type "void") (Name n) never, always never )
+    TypedName (Type "void") (Name n)
 
 
-boolT : TypingFunction Bool (Expression1 Bool)
+boolT : TypingFunction Bool
 boolT n =
-    ( TypedName (Type "bool") (Name n) (dottedVariable1 n), dotted1 )
+    TypedName (Type "bool") (Name n)
 
 
-intT : TypingFunction Int (Expression1 Int)
+intT : TypingFunction Int
 intT n =
-    ( TypedName (Type "int") (Name n) (dottedVariable1 n), dotted1 )
+    TypedName (Type "int") (Name n)
 
 
-floatT : TypingFunction Float (Expression1 Float)
+floatT : TypingFunction Float
 floatT n =
-    ( TypedName (Type "float") (Name n) (dottedVariable1 n), dotted1 )
+    TypedName (Type "float") (Name n)
 
 
-vec2T : TypingFunction Vec2 Expression2
+vec2T : TypingFunction Vec2
 vec2T n =
-    ( TypedName (Type "vec2") (Name n) (dottedVariable2 n), dotted2 )
+    TypedName (Type "vec2") (Name n)
 
 
-vec3T : TypingFunction Vec3 Expression3
+vec3T : TypingFunction Vec3
 vec3T n =
-    ( TypedName (Type "vec3") (Name n) (dottedVariable3 n), dotted3 )
+    TypedName (Type "vec3") (Name n)
 
 
-vec4T : TypingFunction Vec4 Expression4
+vec4T : TypingFunction Vec4
 vec4T n =
-    ( TypedName (Type "vec4") (Name n) (dottedVariable4 n), dotted4 )
+    TypedName (Type "vec4") (Name n)
 
 
-mat3T : TypingFunction Mat3 (Expression1 Mat3)
+mat3T : TypingFunction Mat3
 mat3T n =
-    ( TypedName (Type "mat3") (Name n) (dottedVariable1 n), dotted1 )
+    TypedName (Type "mat3") (Name n)
 
 
 out : TypingFunction t r -> TypingFunction t r
 out inner n =
     let
-        ( TypedName (Type t) name v, c ) =
+        (TypedName (Type t) name v) =
             inner n
     in
-    ( TypedName (Type <| "out " ++ t) name v, c )
+    TypedName (Type <| "out " ++ t) name v
 
 
 in_ : TypingFunction t r -> TypingFunction t r

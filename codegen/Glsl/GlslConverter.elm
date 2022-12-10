@@ -7,7 +7,6 @@ import Element.Font as Font
 import Element.Input as Input
 import Glsl.Parser as Parser
 import Glsl.PrettyPrinter as PrettyPrinter
-import Glsl.Simplify as Simplify
 import Glsl.Types exposing (Function, Statement)
 import Html
 import Parser exposing ((|.), (|=), DeadEnd, Step(..), Trailing(..), oneOf, spaces, succeed)
@@ -128,10 +127,10 @@ toOutput i =
             Debug.toString e
 
         Ok (Left o) ->
-            PrettyPrinter.function <| Simplify.function o
+            PrettyPrinter.function o
 
         Ok (Right o) ->
-            PrettyPrinter.statement <| Simplify.statement o
+            PrettyPrinter.statement o
 
 
 parse : String -> Result (List DeadEnd) (Either Function Statement)

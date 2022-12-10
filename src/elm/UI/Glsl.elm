@@ -149,15 +149,7 @@ getGlsl rayDifferentials graph =
                 |> List.map (requirementToGlsl interval)
                 |> String.join "\n"
     in
-    "#define MAX_DEPTH 30\n"
-        ++ "#define PIHALF "
-        ++ String.fromFloat (pi / 2)
-        ++ "\n#define PI "
-        ++ String.fromFloat pi
-        ++ "\n#define TWOPI "
-        ++ String.fromFloat (pi * 2)
-        ++ "\n"
-        ++ declarations
+    declarations
         ++ thetaDeltaCode
         ++ reqs
         ++ "\n/* Expression */\n"

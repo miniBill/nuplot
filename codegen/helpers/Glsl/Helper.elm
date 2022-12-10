@@ -1,15 +1,45 @@
-module Glsl.Helper exposing (ComboOperation(..), Expr(..), Expression(..), Expression1, Expression2, Expression3, Expression33, Expression4, ExpressionX, Mat3(..), Name(..), RelationOperation(..), Stat(..), Statement(..), TypingFunction, Vec2(..), Vec3(..), Vec4(..), innerCall)
+module Glsl.Helper exposing (BinaryOperation(..), ComboOperation(..), Expr(..), Expression(..), IVec2, IVec3, IVec4, Mat3(..), Name(..), RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction, UnaryOperation(..), Vec2(..), Vec3(..), Vec4(..), Void, unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4)
 
 import Set exposing (Set)
 
 
-innerCall : String -> List ExprWithDeps -> List String -> ExprWithDeps
-innerCall name args deps =
-    { expr = Call name (List.map .expr args)
-    , deps =
-        List.map .deps args
-            |> List.foldr Set.union (Set.fromList deps)
-    }
+unsafeCall0 : String -> Expression r
+unsafeCall0 name =
+    unsafeCall name []
+
+
+unsafeCall1 : String -> Expression t -> Expression r
+unsafeCall1 name (Expression arg0) =
+    unsafeCall name [ arg0 ]
+
+
+unsafeCall2 : String -> Expression t -> Expression u -> Expression r
+unsafeCall2 name (Expression arg0) (Expression arg1) =
+    unsafeCall name [ arg0, arg1 ]
+
+
+unsafeCall3 : String -> Expression t -> Expression u -> Expression v -> Expression r
+unsafeCall3 name (Expression arg0) (Expression arg1) (Expression arg2) =
+    unsafeCall name [ arg0, arg1, arg2 ]
+
+
+unsafeCall4 : String -> Expression t -> Expression u -> Expression v -> Expression w -> Expression r
+unsafeCall4 name (Expression arg0) (Expression arg1) (Expression arg2) (Expression arg3) =
+    unsafeCall name [ arg0, arg1, arg2, arg3 ]
+
+
+unsafeCall : String -> List ExprWithDeps -> Expression t
+unsafeCall name args =
+    Expression
+        { expr =
+            args
+                |> List.map .expr
+                |> Call name
+        , deps =
+            args
+                |> List.map .deps
+                |> List.foldr Set.union (Set.singleton name)
+        }
 
 
 
@@ -35,12 +65,9 @@ type Expr
     | Or Expr Expr
     | Comparison RelationOperation Expr Expr
     | Ternary Expr Expr Expr
-    | Add Expr Expr
-    | Subtract Expr Expr
-    | By Expr Expr
-    | Div Expr Expr
+    | UnaryOperation UnaryOperation Expr
+    | BinaryOperation BinaryOperation Expr Expr
     | Call String (List Expr)
-    | Negate Expr
     | PostfixIncrement Expr
     | PostfixDecrement Expr
     | Unknown String
@@ -48,6 +75,17 @@ type Expr
     | Array Expr Expr
     | Assign Expr Expr
     | AssignCombo ComboOperation Expr Expr
+
+
+type BinaryOperation
+    = Add
+    | Subtract
+    | By
+    | Div
+
+
+type UnaryOperation
+    = Negate
 
 
 type RelationOperation
@@ -64,47 +102,6 @@ type ComboOperation
     | ComboSubtract
     | ComboBy
     | ComboDiv
-
-
-type alias ExpressionX a t =
-    { a | base : Expression t }
-
-
-type alias Expression1 t =
-    { base : Expression t
-    }
-
-
-type alias Expression2 =
-    { base : Expression Vec2
-    , x : Expression1 Float
-    , y : Expression1 Float
-    , yx : Expression1 Vec2
-    }
-
-
-type alias Expression3 =
-    { base : Expression Vec3
-    , x : Expression1 Float
-    , y : Expression1 Float
-    , z : Expression1 Float
-    }
-
-
-type alias Expression4 =
-    { base : Expression Vec4
-    , x : Expression1 Float
-    , y : Expression1 Float
-    , z : Expression1 Float
-    , w : Expression1 Float
-    , xy : Expression2
-    , yx : Expression2
-    , yzw : Expression3
-    }
-
-
-type alias Expression33 =
-    { base : Expression Mat3 }
 
 
 
@@ -131,12 +128,12 @@ type Stat
     | Nop
 
 
-type alias TypingFunction t r =
-    String -> ( TypedName t r, Expression t -> r )
+type alias TypingFunction t =
+    String -> TypedName t
 
 
-type TypedName t r
-    = TypedName Type Name r
+type TypedName t
+    = TypedName Type Name
 
 
 type Type
@@ -163,5 +160,21 @@ type Vec4
     = Vec4 Vec4
 
 
+type IVec2
+    = IVec2 IVec2
+
+
+type IVec3
+    = IVec3 IVec3
+
+
+type IVec4
+    = IVec4 IVec4
+
+
 type Mat3
     = Mat3 Mat3
+
+
+type Void
+    = Void Void
