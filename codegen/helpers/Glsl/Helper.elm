@@ -1,35 +1,36 @@
 module Glsl.Helper exposing (BinaryOperation(..), ComboOperation(..), Expr(..), Expression(..), IVec2, IVec3, IVec4, Mat3(..), Name(..), RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction, UnaryOperation(..), Vec2(..), Vec3(..), Vec4(..), Void, unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4)
 
 import Set exposing (Set)
+import SortedSet exposing (SortedSet)
 
 
-unsafeCall0 : String -> Expression r
-unsafeCall0 name =
-    unsafeCall name []
+unsafeCall0 : String -> List String -> Expression r
+unsafeCall0 name deps =
+    unsafeCall name deps []
 
 
-unsafeCall1 : String -> Expression t -> Expression r
-unsafeCall1 name (Expression arg0) =
-    unsafeCall name [ arg0 ]
+unsafeCall1 : String -> List String -> Expression t -> Expression r
+unsafeCall1 name deps (Expression arg0) =
+    unsafeCall name deps [ arg0 ]
 
 
-unsafeCall2 : String -> Expression t -> Expression u -> Expression r
-unsafeCall2 name (Expression arg0) (Expression arg1) =
-    unsafeCall name [ arg0, arg1 ]
+unsafeCall2 : String -> List String -> Expression t -> Expression u -> Expression r
+unsafeCall2 name deps (Expression arg0) (Expression arg1) =
+    unsafeCall name deps [ arg0, arg1 ]
 
 
-unsafeCall3 : String -> Expression t -> Expression u -> Expression v -> Expression r
-unsafeCall3 name (Expression arg0) (Expression arg1) (Expression arg2) =
-    unsafeCall name [ arg0, arg1, arg2 ]
+unsafeCall3 : String -> List String -> Expression t -> Expression u -> Expression v -> Expression r
+unsafeCall3 name deps (Expression arg0) (Expression arg1) (Expression arg2) =
+    unsafeCall name deps [ arg0, arg1, arg2 ]
 
 
-unsafeCall4 : String -> Expression t -> Expression u -> Expression v -> Expression w -> Expression r
-unsafeCall4 name (Expression arg0) (Expression arg1) (Expression arg2) (Expression arg3) =
-    unsafeCall name [ arg0, arg1, arg2, arg3 ]
+unsafeCall4 : String -> List String -> Expression t -> Expression u -> Expression v -> Expression w -> Expression r
+unsafeCall4 name deps (Expression arg0) (Expression arg1) (Expression arg2) (Expression arg3) =
+    unsafeCall name deps [ arg0, arg1, arg2, arg3 ]
 
 
-unsafeCall : String -> List ExprWithDeps -> Expression t
-unsafeCall name args =
+unsafeCall : String -> List String -> List ExprWithDeps -> Expression t
+unsafeCall name deps args =
     Expression
         { expr =
             args
@@ -38,7 +39,7 @@ unsafeCall name args =
         , deps =
             args
                 |> List.map .deps
-                |> List.foldr Set.union (Set.singleton name)
+                |> List.foldl SortedSet.insertAll (SortedSet.fromList deps)
         }
 
 
@@ -52,7 +53,7 @@ type Expression t
 
 type alias ExprWithDeps =
     { expr : Expr
-    , deps : Set String
+    , deps : SortedSet String
     }
 
 
