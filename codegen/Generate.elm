@@ -230,7 +230,7 @@ wrapFunction name args returnType =
                 Just <|
                     if
                         List.member (String.left 1 name) [ "g", "i", "c" ]
-                            && not (List.member name [ "cbrt" ])
+                            && not (List.member name [ "cbrt", "increment", "cosh", "is_even", "is_odd" ])
                     then
                         String.dropLeft 1 name
 
