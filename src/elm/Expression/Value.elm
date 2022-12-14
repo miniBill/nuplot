@@ -237,8 +237,8 @@ applyValue context name args =
         KnownFunction Floor ->
             unaryFunctionValue context args Floor Complex.floor
 
-        KnownFunction Ceiling ->
-            unaryFunctionValue context args Ceiling Complex.ceiling
+        KnownFunction Ceil ->
+            unaryFunctionValue context args Ceil Complex.ceil
 
         KnownFunction Round ->
             unaryFunctionValue context args Round Complex.round

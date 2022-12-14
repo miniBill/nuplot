@@ -1,7 +1,7 @@
-module UI.Glsl.Generator exposing (Constant, Context, Continue, ErrorValue(..), File, FunDecl, GlslValue(..), Mat3, Statement, TypedName, TypingFunction, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, break, by, by2, by3, byF, ceil_, constant, continue, cos_, cosh, cross, decl, def, div, div2, divConst, divF, dot, dotted1, dotted2, dotted3, dotted33, dotted4, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, mat3_3_3_3, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Constant, Context, Continue, ErrorValue(..), File, FunDecl, GlslValue(..), Mat3, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, break, by, by2, by3, byF, ceil_, constant, continue, cos_, cosh, cross, decl, def, div, div2, divF, dot, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
 
 import Dict exposing (Dict)
-import Glsl.Helper exposing (ComboOperation(..), Expr(..), Expression(..), Name(..), RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction)
+import Glsl.Helper exposing (BinaryOperation(..), ComboOperation(..), Expr(..), Expression(..), Name(..), RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction)
 import Set
 
 
@@ -1289,22 +1289,22 @@ mat3T n =
     TypedName (Type "mat3") (Name n)
 
 
-out : TypingFunction t r -> TypingFunction t r
+out : TypingFunction t -> TypingFunction t
 out inner n =
     let
-        (TypedName (Type t) name v) =
+        (TypedName (Type t) name) =
             inner n
     in
-    TypedName (Type <| "out " ++ t) name v
+    TypedName (Type <| "out " ++ t) name
 
 
-in_ : TypingFunction t r -> TypingFunction t r
+in_ : TypingFunction t -> TypingFunction t
 in_ inner n =
     let
-        ( TypedName (Type t) name v, c ) =
+        (TypedName (Type t) name) =
             inner n
     in
-    ( TypedName (Type <| "in " ++ t) name v, c )
+    TypedName (Type <| "in " ++ t) name
 
 
 
@@ -1363,7 +1363,7 @@ valueToString v =
 
 value : Context -> Expression t -> Result ErrorValue ( Context, GlslValue )
 value initialContext (Expression input) =
-    innerValue initialContext input
+    innerValue initialContext input.expr
 
 
 innerValue : Context -> Expr -> Result ErrorValue ( Context, GlslValue )
@@ -1437,13 +1437,13 @@ innerValue ctx e =
         Ternary _ _ _ ->
             Debug.todo "branch 'Ternary _ _ _' not implemented"
 
-        Add _ _ ->
+        BinaryOperation Add _ _ ->
             Debug.todo "branch 'Add _ _' not implemented"
 
-        Subtract _ _ ->
+        BinaryOperation Subtract _ _ ->
             Debug.todo "branch 'Subtract _ _' not implemented"
 
-        By l r ->
+        BinaryOperation By l r ->
             innerValue2 ctx l r <|
                 \ctx2 vl vr ->
                     case ( vl, vr ) of
@@ -1455,7 +1455,7 @@ innerValue ctx e =
                                 InvalidTypes
                                     ("Cannot calculate `*` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
-        Div _ _ ->
+        BinaryOperation Div _ _ ->
             Debug.todo "branch 'Div _ _' not implemented"
 
         Call "vec2" [ l, r ] ->

@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (expressionToGlsl, threshold)
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), toPrintExpression)
-import Glsl exposing (vec211)
+import Glsl exposing (cabs2, cacos2, carg2, casin2, catan2, catan222, cby22, cceil2, ccos2, ccosh2, cdiv22, cexp2, cfloor2, cim2, cln2, clog102, cmax22, cmbrot22, cmin22, cmod22, cpow22, cpw222, cre2, cround2, csign2, csin2, csinh2, csquare2, ctan2, ctanh2, vec21, vec211)
 import Glsl.Helper exposing (Expression)
 import UI.Glsl.Generator exposing (Vec2, abs2, add2, by, exp, expr, float, negate2, one, subtract, subtract2, vec2Zero, zero)
 
@@ -10,9 +10,11 @@ import UI.Glsl.Generator exposing (Vec2, abs2, add2, by, exp, expr, float, negat
 expressionToGlsl : List ( String, Expression Float ) -> Expression.Expression -> Expression Vec2
 expressionToGlsl context =
     let
+        ctx : Dict.Dict String (Expression Float)
         ctx =
             Dict.fromList context
 
+        variadic : (Expression Vec2 -> Expression Vec2 -> Expression Vec2) -> List PrintExpression -> Expression Vec2
         variadic f es =
             case List.map go es of
                 [] ->
@@ -21,6 +23,7 @@ expressionToGlsl context =
                 head :: tail ->
                     List.foldl (\e a -> f a e) head tail
 
+        go : PrintExpression -> Expression Vec2
         go expr =
             case expr of
                 PVariable "i" ->
@@ -38,7 +41,7 @@ expressionToGlsl context =
                             vec211 w zero
 
                         Nothing ->
-                            vec2Zero
+                            vec21 zero
 
                 PInteger v ->
                     vec211 (float <| toFloat v) zero
@@ -76,105 +79,105 @@ expressionToGlsl context =
                             subtract2 (go l) (go r)
 
                 PBy l r ->
-                    cby (go l) (go r)
+                    cby22 (go l) (go r)
 
                 PDiv l r ->
-                    cdiv (go l) (go r)
+                    cdiv22 (go l) (go r)
 
                 PPower (PVariable v) (PInteger 2) ->
                     case Dict.get v ctx of
                         Just w ->
-                            vec2 (by w w) zero
+                            vec211 (by w w) zero
 
                         Nothing ->
                             vec2Zero
 
                 PPower l (PInteger 2) ->
-                    csquare (go l)
+                    csquare2 (go l)
 
                 PPower l r ->
-                    cpow (go l) (go r)
+                    cpow22 (go l) (go r)
 
                 PApply (KnownFunction Simplify) [ e ] ->
                     go e
 
                 PApply (KnownFunction Sin) [ e ] ->
-                    csin (go e)
+                    csin2 (go e)
 
                 PApply (KnownFunction Cos) [ e ] ->
-                    ccos (go e)
+                    ccos2 (go e)
 
                 PApply (KnownFunction Tan) [ e ] ->
-                    ctan (go e)
+                    ctan2 (go e)
 
                 PApply (KnownFunction Asin) [ e ] ->
-                    casin (go e)
+                    casin2 (go e)
 
                 PApply (KnownFunction Acos) [ e ] ->
-                    cacos (go e)
+                    cacos2 (go e)
 
                 PApply (KnownFunction Atan) [ e ] ->
-                    catan (go e)
+                    catan2 (go e)
 
                 PApply (KnownFunction Atan2) [ l, r ] ->
-                    catan2 (go l) (go r)
+                    catan222 (go l) (go r)
 
                 PApply (KnownFunction Sinh) [ e ] ->
-                    csinh (go e)
+                    csinh2 (go e)
 
                 PApply (KnownFunction Cosh) [ e ] ->
-                    ccosh (go e)
+                    ccosh2 (go e)
 
                 PApply (KnownFunction Tanh) [ e ] ->
-                    ctanh (go e)
+                    ctanh2 (go e)
 
                 PApply (KnownFunction Abs) [ e ] ->
-                    cabs (go e)
+                    cabs2 (go e)
 
                 PApply (KnownFunction Ln) [ e ] ->
-                    cln (go e)
+                    cln2 (go e)
 
                 PApply (KnownFunction Log10) [ e ] ->
-                    clog10 (go e)
+                    clog102 (go e)
 
                 PApply (KnownFunction Exp) [ e ] ->
-                    cexp (go e)
+                    cexp2 (go e)
 
                 PApply (KnownFunction Sign) [ e ] ->
-                    csign (go e)
+                    csign2 (go e)
 
                 PApply (KnownFunction Re) [ e ] ->
-                    cre (go e)
+                    cre2 (go e)
 
                 PApply (KnownFunction Im) [ e ] ->
-                    cim (go e)
+                    cim2 (go e)
 
                 PApply (KnownFunction Arg) [ e ] ->
-                    carg (go e)
+                    carg2 (go e)
 
                 PApply (KnownFunction Round) [ e ] ->
-                    cround (go e)
+                    cround2 (go e)
 
                 PApply (KnownFunction Floor) [ e ] ->
-                    cfloor (go e)
+                    cfloor2 (go e)
 
-                PApply (KnownFunction Ceiling) [ e ] ->
-                    cceiling (go e)
+                PApply (KnownFunction Ceil) [ e ] ->
+                    cceil2 (go e)
 
                 PApply (KnownFunction Pw) [ c, t, f ] ->
-                    cpw (go c) (go t) (go f)
+                    cpw222 (go c) (go t) (go f)
 
                 PApply (KnownFunction Mod) [ l, r ] ->
-                    cmod (go l) (go r)
+                    cmod22 (go l) (go r)
 
                 PApply (KnownFunction Mbrot) [ x, y ] ->
-                    cmbrot (go x) (go y)
+                    cmbrot22 (go x) (go y)
 
                 PApply (KnownFunction Min) es ->
-                    variadic cmin es
+                    variadic cmin22 es
 
                 PApply (KnownFunction Max) es ->
-                    variadic cmax es
+                    variadic cmax22 es
 
                 PReplace var e ->
                     go (Expression.pfullSubstitute var e)

@@ -209,7 +209,7 @@ knownDerivative name x =
         Floor ->
             zero
 
-        Ceiling ->
+        Ceil ->
             zero
 
         Pw ->

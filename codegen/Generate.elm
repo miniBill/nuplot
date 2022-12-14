@@ -5,7 +5,6 @@ import Elm
 import Elm.Annotation as Type
 import Gen.CodeGen.Generate as Generate
 import Gen.Debug
-import Gen.Dict
 import Gen.Glsl.Helper
 import Glsl.Parser
 import Glsl.Types exposing (BinaryOperation(..), Expression(..), Function, Statement(..), Type(..))
@@ -19,7 +18,18 @@ main : Program String () ()
 main =
     Generate.fromText
         (\glsl ->
-            [ Elm.file [ "Glsl" ] (generate glsl)
+            [ Elm.fileWith [ "Glsl" ]
+                { docs =
+                    List.map
+                        (\{ group, members } ->
+                            Elm.docs
+                                { group = group
+                                , members = List.sort members
+                                }
+                        )
+                , aliases = []
+                }
+                (generate glsl)
             ]
         )
 
@@ -44,7 +54,10 @@ generate glsl =
                                 (List.map Tuple.first args)
                                 returnType
                         )
-                        { functionsEnv = builtinFunctions |> Dict.map (\_ -> Tuple.second)
+                        { functionsEnv =
+                            builtinFunctions
+                                |> Dict.map
+                                    (\_ { return } -> return)
                         , variablesEnv = builtinUniforms
                         }
                         functions
@@ -57,7 +70,7 @@ generate glsl =
             in
             case maybeDecls of
                 Ok decls ->
-                    declarationsDictionary functions :: List.concat decls ++ builtinDecls
+                    List.concat decls ++ builtinDecls
 
                 Err e ->
                     "Error generating file"
@@ -70,32 +83,6 @@ generate glsl =
 functionHasType : String -> List Type -> Type -> Env -> Env
 functionHasType baseName argTypes returnType env =
     { env | functionsEnv = Dict.insert (fullName baseName argTypes) returnType env.functionsEnv }
-
-
-declarationsDictionary : List Function -> Elm.Declaration
-declarationsDictionary functions =
-    functions
-        |> List.map
-            (\{ name, args, deps } ->
-                let
-                    fname : String
-                    fname =
-                        fullName name (List.map Tuple.first args)
-                in
-                Elm.tuple
-                    (Elm.string fname)
-                    (Elm.record
-                        [ ( "body"
-                          , Elm.withType Type.string <|
-                                Elm.val (fname ++ "Body")
-                          )
-                        , ( "deps", deps )
-                        ]
-                    )
-            )
-        |> Gen.Dict.fromList
-        |> Elm.declaration "declarationsDictionary"
-        |> Elm.expose
 
 
 errorToString : List Parser.DeadEnd -> String
@@ -162,17 +149,43 @@ type alias Env =
     }
 
 
-functionToDeclarations : Function -> List Elm.Declaration
-functionToDeclarations function =
-    [ Elm.string function.body
-        |> Elm.declaration (function.name ++ "Body")
-    , wrapFunction function.name function.args function.returnType function.deps
-    ]
-
-
-wrapFunction : String -> List ( Type, String ) -> Type -> Set String -> Elm.Declaration
-wrapFunction name args returnType deps =
+functionToDeclarations : Env -> Function -> Result String (List Elm.Declaration)
+functionToDeclarations env function =
     let
+        fname =
+            fullName function.name (List.map Tuple.first function.args)
+
+        envWithArgs : Env
+        envWithArgs =
+            List.foldl (\( type_, name ) -> variableHasType name type_) env function.args
+
+        maybeDeps : Result String (Set String)
+        maybeDeps =
+            findDepsStatement envWithArgs function.stat
+                |> Result.mapError (\e -> e ++ " while generating " ++ fname)
+    in
+    Result.map
+        (\deps ->
+            [ Elm.string function.body
+                |> Elm.declaration (fname ++ "Body")
+            , deps
+                |> Set.toList
+                |> List.map Elm.string
+                |> Elm.list
+                |> Elm.withType (Type.list Type.string)
+                |> Elm.declaration (fname ++ "Deps")
+            , wrapFunction function.name function.args function.returnType
+            ]
+        )
+        maybeDeps
+
+
+wrapFunction : String -> List ( Type, String ) -> Type -> Elm.Declaration
+wrapFunction name args returnType =
+    let
+        fname =
+            fullName name (List.map Tuple.first args)
+
         argDecls : List ( String, Maybe Type.Annotation )
         argDecls =
             List.map
@@ -183,7 +196,7 @@ wrapFunction name args returnType deps =
                 )
                 args
 
-        innerCall argValues _ =
+        innerCall argValues =
             case argValues of
                 [] ->
                     Gen.Glsl.Helper.unsafeCall0 name
@@ -207,16 +220,23 @@ wrapFunction name args returnType deps =
         expr argValues =
             innerCall
                 argValues
-                (deps
-                    |> Set.toList
-                    |> List.map Elm.string
-                    |> Elm.list
-                )
                 |> Elm.withType (Gen.Glsl.Helper.annotation_.expression (typeToAnnotation returnType))
     in
     Elm.function argDecls expr
-        |> Elm.declaration name
-        |> Elm.expose
+        |> Elm.declaration fname
+        |> Elm.exposeWith
+            { exposeConstructor = False
+            , group =
+                Just <|
+                    if
+                        List.member (String.left 1 name) [ "g", "i", "c" ]
+                            && not (List.member name [ "cbrt" ])
+                    then
+                        String.dropLeft 1 name
+
+                    else
+                        name
+            }
 
 
 typeToAnnotation : Type -> Type.Annotation
@@ -592,7 +612,7 @@ builtinUniforms =
         |> Dict.fromList
 
 
-builtinFunctions : Dict String ( List Type, Type )
+builtinFunctions : Dict String { baseName : String, args : List Type, return : Type }
 builtinFunctions =
     let
         overload : List String -> List ( List Type, Type ) -> List ( String, List Type, Type )
@@ -653,12 +673,15 @@ builtinFunctions =
             , ( "float", [ TInt ], TFloat )
             , ( "int", [ TFloat ], TInt )
             ]
+
+        builtTuple :
+            ( String, List Type, Type )
+            -> ( String, { baseName : String, args : List Type, return : Type } )
+        builtTuple ( name, inTypes, resultType ) =
+            ( fullName name inTypes, { baseName = name, args = inTypes, return = resultType } )
     in
     (regular ++ vecs ++ ivecs ++ others)
-        |> List.map
-            (\( name, inTypes, resultType ) ->
-                ( fullName name inTypes, ( inTypes, resultType ) )
-            )
+        |> List.map builtTuple
         |> Dict.fromList
 
 
@@ -680,7 +703,6 @@ builtin_v_v =
     ( [ -- Rounding
         "ceil"
       , "floor"
-      , "round"
       , "fract"
 
       -- Complex and power
@@ -848,16 +870,15 @@ builtinDecls =
     builtinFunctions
         |> Dict.toList
         |> List.map
-            (\( name, ( inTypes, resultType ) ) ->
+            (\( _, { baseName, args, return } ) ->
                 wrapFunction
-                    name
+                    baseName
                     (List.indexedMap
                         (\i type_ -> ( type_, indexedVar i ))
-                        inTypes
+                        args
                     )
-                    resultType
-                    Set.empty
-                    |> Elm.expose
+                    return
+                    |> Elm.exposeWith { exposeConstructor = False, group = Just baseName }
             )
 
 

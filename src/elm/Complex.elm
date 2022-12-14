@@ -1,4 +1,4 @@
-module Complex exposing (Complex(..), abs, acos, arg, asin, atan, atan2, by, ceiling, cos, cosh, div, exp, floor, fromReal, i, im, ln, max, min, minus, negate, one, plus, power, re, round, sign, sin, sinh, sqrt, tan, tanh, toString, zero)
+module Complex exposing (Complex(..), abs, acos, arg, asin, atan, atan2, by, ceil, cos, cosh, div, exp, floor, fromReal, i, im, ln, max, min, minus, negate, one, plus, power, re, round, sign, sin, sinh, sqrt, tan, tanh, toString, zero)
 
 
 type Complex
@@ -232,8 +232,8 @@ floor (Complex x y) =
     Complex (toFloat <| Basics.floor x) (toFloat <| Basics.floor y)
 
 
-ceiling : Complex -> Complex
-ceiling (Complex x y) =
+ceil : Complex -> Complex
+ceil (Complex x y) =
     Complex (toFloat <| Basics.ceiling x) (toFloat <| Basics.ceiling y)
 
 
