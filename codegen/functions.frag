@@ -227,7 +227,7 @@ vec2 carg(vec2 v) { return vec2(atan(v.y, v.x), 0); }
 vec2 cpw(vec2 c, vec2 t, vec2 f) { return c.x > 0. ? t : f; }
 
 // Rounding
-vec2 cceiling(vec2 z) { return ceil(z); }
+vec2 cceil(vec2 z) { return ceil(z); }
 vec2 cfloor(vec2 z) { return floor(z); }
 vec2 cround(vec2 z) { return floor(z + vec2(0.5, 0.5)); }
 
@@ -424,7 +424,7 @@ vec2 isquare(vec2 z) {
 vec2 isqrt(vec2 v) { return vec2(sqrt(max(0., v.x)), sqrt(max(0., v.y))); }
 vec2 icbrt(vec2 v) { return vec2(cbrt(v.x), cbrt(v.y)); }
 
-vec2 iceiling(vec2 z) { return ceil(z); }
+vec2 iceil(vec2 z) { return ceil(z); }
 vec2 ifloor(vec2 z) { return floor(z); }
 vec2 iround(vec2 z) { return round(z); }
 
@@ -499,6 +499,6 @@ vec4 gmod(vec4 l, vec4 r) { return vec4(mod(l.x, r.x), l.yzw); }
 
 vec4 gsign(vec4 v) { return gnum(sign(v.x)); }
 
-vec4 gceiling(vec4 z) { return gnum(ceil(z.x)); }
+vec4 gceil(vec4 z) { return gnum(ceil(z.x)); }
 vec4 gfloor(vec4 z) { return gnum(floor(z.x)); }
 vec4 ground(vec4 z) { return gnum(round(z.x)); }

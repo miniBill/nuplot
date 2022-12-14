@@ -106,7 +106,7 @@ type KnownFunction
     | Max
     | Round
     | Floor
-    | Ceiling
+    | Ceil
     | Pw
     | Plot
     | APlot
@@ -744,8 +744,7 @@ unaryFunctions =
             , ( "simplify", Simplify )
             , ( "stepsimplify", StepSimplify )
             , ( "floor", Floor )
-            , ( "ceil", Ceiling )
-            , ( "ceiling", Ceiling )
+            , ( "ceil", Ceil )
             , ( "round", Round )
             ]
     in
@@ -950,8 +949,8 @@ functionNameToString name =
         KnownFunction Floor ->
             "floor"
 
-        KnownFunction Ceiling ->
-            "ceiling"
+        KnownFunction Ceil ->
+            "ceil"
 
         KnownFunction Round ->
             "round"
