@@ -12,6 +12,7 @@ import List.Extra
 import Parser
 import Result.Extra
 import Set exposing (Set)
+import SortedSet exposing (SortedSet)
 
 
 main : Program String () ()
@@ -54,7 +55,12 @@ generate glsl =
                                 (List.map Tuple.first args)
                                 returnType
                         )
-                        { functionsEnv =
+                        { constantsEnv =
+                            Dict.fromList
+                                [ ( "P32M1", TInt )
+                                , ( "P31", TInt )
+                                ]
+                        , functionsEnv =
                             builtinFunctions
                                 |> Dict.map
                                     (\_ { return } -> return)
@@ -144,7 +150,8 @@ problemToString problem =
 
 
 type alias Env =
-    { functionsEnv : Dict String Type
+    { constantsEnv : Dict String Type
+    , functionsEnv : Dict String Type
     , variablesEnv : Dict String Type
     }
 
@@ -159,7 +166,7 @@ functionToDeclarations env function =
         envWithArgs =
             List.foldl (\( type_, name ) -> variableHasType name type_) env function.args
 
-        maybeDeps : Result String (Set String)
+        maybeDeps : Result String (SortedSet String)
         maybeDeps =
             findDepsStatement envWithArgs function.stat
                 |> Result.mapError (\e -> e ++ " while generating " ++ fname)
@@ -168,20 +175,14 @@ functionToDeclarations env function =
         (\deps ->
             [ Elm.string function.body
                 |> Elm.declaration (fname ++ "Body")
-            , deps
-                |> Set.toList
-                |> List.map Elm.string
-                |> Elm.list
-                |> Elm.withType (Type.list Type.string)
-                |> Elm.declaration (fname ++ "Deps")
-            , wrapFunction function.name function.args function.returnType
+            , wrapFunction function.name (SortedSet.insert fname deps) function.args function.returnType
             ]
         )
         maybeDeps
 
 
-wrapFunction : String -> List ( Type, String ) -> Type -> Elm.Declaration
-wrapFunction name args returnType =
+wrapFunction : String -> SortedSet String -> List ( Type, String ) -> Type -> Elm.Declaration
+wrapFunction name deps args returnType =
     let
         fname =
             fullName name (List.map Tuple.first args)
@@ -196,22 +197,29 @@ wrapFunction name args returnType =
                 )
                 args
 
+        depsExpr : Elm.Expression
+        depsExpr =
+            deps
+                |> SortedSet.toList
+                |> List.map (\dep -> Elm.val <| dep ++ "Body")
+                |> Elm.list
+
         innerCall argValues =
             case argValues of
                 [] ->
-                    Gen.Glsl.Helper.unsafeCall0 name
+                    Gen.Glsl.Helper.call_.unsafeCall0 (Elm.string name) depsExpr
 
                 [ arg0 ] ->
-                    Gen.Glsl.Helper.unsafeCall1 name arg0
+                    Gen.Glsl.Helper.call_.unsafeCall1 (Elm.string name) depsExpr arg0
 
                 [ arg0, arg1 ] ->
-                    Gen.Glsl.Helper.unsafeCall2 name arg0 arg1
+                    Gen.Glsl.Helper.call_.unsafeCall2 (Elm.string name) depsExpr arg0 arg1
 
                 [ arg0, arg1, arg2 ] ->
-                    Gen.Glsl.Helper.unsafeCall3 name arg0 arg1 arg2
+                    Gen.Glsl.Helper.call_.unsafeCall3 (Elm.string name) depsExpr arg0 arg1 arg2
 
                 [ arg0, arg1, arg2, arg3 ] ->
-                    Gen.Glsl.Helper.unsafeCall4 name arg0 arg1 arg2 arg3
+                    Gen.Glsl.Helper.call_.unsafeCall4 (Elm.string name) depsExpr arg0 arg1 arg2 arg3
 
                 _ :: _ :: _ ->
                     Elm.string "TODO"
@@ -281,12 +289,12 @@ variableHasType var type_ env =
     { env | variablesEnv = Dict.insert var type_ env.variablesEnv }
 
 
-union : List (Result String (Set comparable)) -> Result String (Set comparable)
+union : List (Result String (SortedSet comparable)) -> Result String (SortedSet comparable)
 union =
-    List.foldl (Result.map2 Set.union) (Ok Set.empty)
+    List.foldl (Result.map2 SortedSet.insertAll) (Ok SortedSet.empty)
 
 
-findDepsStatement : Env -> Statement -> Result String (Set String)
+findDepsStatement : Env -> Statement -> Result String (SortedSet String)
 findDepsStatement env statement =
     case statement of
         If cond true false ->
@@ -338,23 +346,23 @@ findDepsStatement env statement =
             findDepsStatement newEnv cont
 
         Nop ->
-            Ok Set.empty
+            Ok SortedSet.empty
 
 
-findDepsExpression : Env -> Expression -> Result String (Set String)
+findDepsExpression : Env -> Expression -> Result String (SortedSet String)
 findDepsExpression env =
     let
-        go : Expression -> Result String ( Type, Set String )
+        go : Expression -> Result String ( Type, SortedSet String )
         go expr =
             case expr of
                 Float _ ->
-                    Ok ( TFloat, Set.empty )
+                    Ok ( TFloat, SortedSet.empty )
 
                 Int _ ->
-                    Ok ( TInt, Set.empty )
+                    Ok ( TInt, SortedSet.empty )
 
                 Bool _ ->
-                    Ok ( TBool, Set.empty )
+                    Ok ( TBool, SortedSet.empty )
 
                 Dot e field ->
                     Result.andThen
@@ -390,13 +398,13 @@ findDepsExpression env =
                             Err <| "Couldn't find variable " ++ v
 
                         Just t ->
-                            Ok ( t, Set.empty )
+                            Ok ( t, SortedSet.empty )
 
                 Constant "P32M1" ->
-                    Ok ( TInt, Set.empty )
+                    Ok ( TInt, SortedSet.empty )
 
                 Constant "P31" ->
-                    Ok ( TInt, Set.empty )
+                    Ok ( TInt, SortedSet.empty )
 
                 Constant c ->
                     Err <| "TODO: findDepsExpression _ (Constant \"" ++ c ++ "\")"
@@ -410,10 +418,10 @@ findDepsExpression env =
                                 let
                                     deps =
                                         if Dict.member fname builtinFunctions then
-                                            List.foldl Set.union Set.empty argDeps
+                                            List.foldl SortedSet.insertAll SortedSet.empty argDeps
 
                                         else
-                                            List.foldl Set.union (Set.singleton fname) argDeps
+                                            List.foldl SortedSet.insertAll (SortedSet.singleton fname) argDeps
 
                                     fname =
                                         fullName f argTypes
@@ -433,7 +441,10 @@ findDepsExpression env =
                 Ternary c t f ->
                     Result.map3
                         (\( _, cd ) ( tt, td ) ( _, fd ) ->
-                            ( tt, Set.union cd td |> Set.union fd )
+                            ( tt
+                            , SortedSet.insertAll cd td
+                                |> SortedSet.insertAll fd
+                            )
                         )
                         (go c)
                         (go t)
@@ -446,7 +457,7 @@ findDepsExpression env =
                     Result.andThen
                         (\( ( lt, ld ), ( rt, rd ) ) ->
                             Result.map
-                                (\t -> ( t, Set.union ld rd ))
+                                (\t -> ( t, SortedSet.insertAll ld rd ))
                                 (if lt == rt then
                                     Ok lt
 
@@ -482,13 +493,13 @@ findDepsExpression env =
                                     ( _, deps ) =
                                         List.unzip res
                                 in
-                                ( TBool, List.foldl Set.union Set.empty deps )
+                                ( TBool, List.foldl SortedSet.insertAll SortedSet.empty deps )
                             )
 
                 RelationOperation _ l r ->
                     Result.map2
                         (\( _, ld ) ( _, rd ) ->
-                            ( TBool, Set.union ld rd )
+                            ( TBool, SortedSet.insertAll ld rd )
                         )
                         (go l)
                         (go r)
@@ -873,6 +884,7 @@ builtinDecls =
             (\( _, { baseName, args, return } ) ->
                 wrapFunction
                     baseName
+                    SortedSet.empty
                     (List.indexedMap
                         (\i type_ -> ( type_, indexedVar i ))
                         args
