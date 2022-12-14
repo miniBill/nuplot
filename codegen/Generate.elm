@@ -11,7 +11,6 @@ import Glsl.Types exposing (BinaryOperation(..), Expression(..), Function, State
 import List.Extra
 import Parser
 import Result.Extra
-import Set exposing (Set)
 import SortedSet exposing (SortedSet)
 
 
