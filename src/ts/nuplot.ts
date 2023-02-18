@@ -1,5 +1,3 @@
-import declarations from "../shaders/declarations.frag";
-
 declare var process: { env: { NODE_ENV: string } };
 
 declare class ClipboardItem {
@@ -171,7 +169,7 @@ export class NuPlot extends HTMLElement {
     if (!this.compileAndAttachShader(this.gl.VERTEX_SHADER, vertex_shader))
       return;
 
-    const fragment_shader = this.buildFragmentShader(this.src);
+    const fragment_shader = this.src;
     this.fragment_shader = this.compileAndAttachShader(
       this.gl.FRAGMENT_SHADER,
       fragment_shader
@@ -268,10 +266,6 @@ export class NuPlot extends HTMLElement {
     this.canvas.height = Math.round(height * (window.devicePixelRatio || 1));
     this.canvas.style.height = height + "px";
     this.reloadFragmentShader();
-  }
-
-  private buildFragmentShader(expr: string) {
-    return `${declarations}\n${expr}`;
   }
 
   compileAndAttachShader(type: number, src: string): WebGLShader | null {
@@ -563,7 +557,7 @@ export class NuPlot extends HTMLElement {
   reloadFragmentShader() {
     if (!this.gl || !this.program || !this.fragment_shader || !this.src) return;
 
-    const src = this.buildFragmentShader(this.src);
+    const src = this.src;
 
     this.sourceAndCompile(this.fragment_shader, src);
 
