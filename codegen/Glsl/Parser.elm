@@ -1,6 +1,6 @@
 module Glsl.Parser exposing (file, function, statement)
 
-import Glsl.Types exposing (BinaryOperation(..), BooleanOperation(..), Expression(..), ForDirection(..), Function, RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
+import Glsl exposing (BinaryOperation(..), Expr(..), Expression(..), ForDirection(..), Function, RelationOperation(..), Stat(..), Statement(..), Type(..), UnaryOperation(..))
 import Parser exposing ((|.), (|=), Parser, Step(..), Trailing(..), chompIf, chompWhile, getChompedString, loop, oneOf, problem, sequence, spaces, succeed, symbol)
 import Parser.Workaround
 
@@ -9,13 +9,18 @@ function : Parser Function
 function =
     succeed
         (\glsl begin returnType { name, hasSuffix } args stat end ->
-            { returnType = returnType
-            , name = name
-            , hasSuffix = hasSuffix
-            , args = args
-            , stat = stat
-            , body = String.slice begin end glsl
-            }
+            let
+                res : Function
+                res =
+                    { returnType = returnType
+                    , name = name
+                    , hasSuffix = hasSuffix
+                    , args = args
+                    , stat = stat
+                    , body = String.slice begin end glsl
+                    }
+            in
+            res
         )
         |= Parser.getSource
         |= Parser.getOffset
@@ -79,7 +84,7 @@ typeParser =
         |> oneOf
 
 
-statement : Parser Statement
+statement : Parser Stat
 statement =
     Parser.lazy <|
         \_ ->
@@ -94,9 +99,9 @@ statement =
                 ]
 
 
-expressionStatementParser : Parser Statement
+expressionStatementParser : Parser Stat
 expressionStatementParser =
-    Parser.succeed Expression
+    Parser.succeed ExpressionStatement
         |= expressionParser
         |. spaces
         |. symbol ";"
@@ -104,7 +109,7 @@ expressionStatementParser =
         |= maybeStatementParser
 
 
-ifParser : Parser Statement
+ifParser : Parser Stat
 ifParser =
     Parser.succeed If
         |. symbol "if"
@@ -120,24 +125,14 @@ ifParser =
         |= maybeStatementParser
 
 
-maybeStatementParser : Parser Statement
+maybeStatementParser : Parser Stat
 maybeStatementParser =
     oneOf [ statement, succeed Nop ]
 
 
-forParser : Parser Statement
+forParser : Parser Stat
 forParser =
-    Parser.succeed
-        (\var from op to direction step ->
-            For
-                { var = var
-                , from = from
-                , op = op
-                , to = to
-                , direction = direction
-                , step = step
-                }
-        )
+    Parser.succeed For
         |. symbol "for"
         |. spaces
         |. symbol "("
@@ -174,7 +169,7 @@ forParser =
         |= maybeStatementParser
 
 
-returnParser : Parser Statement
+returnParser : Parser Stat
 returnParser =
     Parser.succeed Return
         |. symbol "return"
@@ -184,7 +179,7 @@ returnParser =
         |. symbol ";"
 
 
-commentParser : Parser Statement
+commentParser : Parser Stat
 commentParser =
     Parser.succeed identity
         |. Parser.Workaround.lineCommentAfter "//"
@@ -192,7 +187,7 @@ commentParser =
         |= maybeStatementParser
 
 
-blockParser : Parser Statement
+blockParser : Parser Stat
 blockParser =
     Parser.succeed identity
         |. symbol "{"
@@ -202,15 +197,11 @@ blockParser =
         |. symbol "}"
 
 
-defParser : Parser Statement
+defParser : Parser Stat
 defParser =
     succeed
         (\type_ var val ->
-            Def
-                { type_ = type_
-                , var = var
-                , val = val
-                }
+            Decl type_ var (Just val)
         )
         |= typeParser
         |. spaces
@@ -225,18 +216,20 @@ defParser =
         |= maybeStatementParser
 
 
-expressionParser : Parser Expression
+expressionParser : Parser Expr
 expressionParser =
     ternaryParser
 
 
-ternaryParser : Parser Expression
+ternaryParser : Parser Expr
 ternaryParser =
-    Parser.succeed (\c f -> f c)
+    Parser.succeed (\k f -> f k)
         |= booleanParser
         |. spaces
         |= oneOf
             [ succeed (\t f c -> Ternary c t f)
+                -- c is passed in last in the lambda because it's passed
+                -- from above
                 |. symbol "?"
                 |. spaces
                 |= booleanParser
@@ -248,19 +241,19 @@ ternaryParser =
             ]
 
 
-booleanParser : Parser Expression
+booleanParser : Parser Expr
 booleanParser =
     multiSequence
         { separators =
-            [ ( \l r -> BooleanOperation Or [ l, r ], symbol "||" )
-            , ( \l r -> BooleanOperation And [ l, r ], symbol "&&" )
+            [ ( BinaryOperation Or, symbol "||" )
+            , ( BinaryOperation And, symbol "&&" )
             ]
         , item = relationParser
         , allowNegation = False
         }
 
 
-relationParser : Parser Expression
+relationParser : Parser Expr
 relationParser =
     let
         inner =
@@ -268,7 +261,7 @@ relationParser =
                 |= addsubtractionParser
                 |. spaces
                 |= oneOf
-                    [ succeed (\o r l -> succeed <| RelationOperation o l r)
+                    [ succeed (\o r l -> succeed <| Comparison o l r)
                         |= relationOperationParser
                         |. spaces
                         |= addsubtractionParser
@@ -291,7 +284,7 @@ relationOperationParser =
         ]
 
 
-addsubtractionParser : Parser Expression
+addsubtractionParser : Parser Expr
 addsubtractionParser =
     multiSequence
         { separators =
@@ -304,13 +297,13 @@ addsubtractionParser =
 
 
 type alias SequenceData =
-    { separators : List ( Expression -> Expression -> Expression, Parser () )
-    , item : Parser Expression
+    { separators : List ( Expr -> Expr -> Expr, Parser () )
+    , item : Parser Expr
     , allowNegation : Bool
     }
 
 
-multiSequence : SequenceData -> Parser Expression
+multiSequence : SequenceData -> Parser Expr
 multiSequence data =
     succeed identity
         |= data.item
@@ -323,8 +316,8 @@ multiSequence data =
 
 multiSequenceHelp :
     SequenceData
-    -> Expression
-    -> Parser (Step Expression Expression)
+    -> Expr
+    -> Parser (Step Expr Expr)
 multiSequenceHelp { allowNegation, separators, item } acc =
     let
         separated =
@@ -355,7 +348,7 @@ multiSequenceHelp { allowNegation, separators, item } acc =
         ]
 
 
-multidivisionParser : Parser Expression
+multidivisionParser : Parser Expr
 multidivisionParser =
     multiSequence
         { separators =
@@ -367,7 +360,7 @@ multidivisionParser =
         }
 
 
-unaryParser : Parser Expression
+unaryParser : Parser Expr
 unaryParser =
     Parser.oneOf
         [ succeed (UnaryOperation Negate)
@@ -377,7 +370,7 @@ unaryParser =
         ]
 
 
-atomParser : Parser Expression
+atomParser : Parser Expr
 atomParser =
     succeed (\a f -> f a)
         |= oneOf
@@ -403,13 +396,13 @@ atomParser =
                             , trailing = Forbidden
                             , spaces = spaces
                             }
-                    , succeed (\arg v -> Arr (toVariableOrConstant v) arg)
+                    , succeed (\arg v -> Array (Variable v) arg)
                         |. symbol "["
                         |. spaces
                         |= Parser.lazy (\_ -> expressionParser)
                         |. spaces
                         |. symbol "]"
-                    , succeed toVariableOrConstant
+                    , succeed Variable
                     ]
                 |= maybeDot
             , Parser.andThen tryParseNumber <|
@@ -428,16 +421,7 @@ atomParser =
             ]
 
 
-toVariableOrConstant : String -> Expression
-toVariableOrConstant s =
-    if String.toUpper s == s then
-        Constant s
-
-    else
-        Variable s
-
-
-maybeDot : Parser (Expression -> Expression)
+maybeDot : Parser (Expr -> Expr)
 maybeDot =
     oneOf
         [ succeed (\p v -> Dot v p)
@@ -447,7 +431,7 @@ maybeDot =
         ]
 
 
-tryParseNumber : String -> Parser Expression
+tryParseNumber : String -> Parser Expr
 tryParseNumber n =
     case String.toInt n of
         Just i ->

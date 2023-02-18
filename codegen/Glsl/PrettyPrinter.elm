@@ -217,7 +217,7 @@ prettyPrintType type_ =
 prettyPrintExpression : Expression -> String
 prettyPrintExpression e =
     let
-        lisp args =
+        parens args =
             "(" ++ String.join " " args ++ ")"
     in
     case e of
@@ -229,13 +229,13 @@ prettyPrintExpression e =
                 "one"
 
             else
-                lisp [ "float", String.fromFloat f ]
+                parens [ "float", String.fromFloat f ]
 
         Int i ->
-            lisp [ "int", String.fromInt i ]
+            parens [ "int", String.fromInt i ]
 
         Bool b ->
-            lisp
+            parens
                 [ "bool"
                 , if b then
                     "True"
@@ -268,7 +268,7 @@ prettyPrintExpression e =
                     "constants." ++ String.toLower h ++ String.concat (List.map toTitle t)
 
         Call "float" [ arg ] ->
-            lisp [ "floatCast", prettyPrintExpression arg ]
+            parens [ "floatCast", prettyPrintExpression arg ]
 
         Call n args ->
             if String.startsWith "vec" n then
@@ -276,7 +276,7 @@ prettyPrintExpression e =
                     n ++ "Zero"
 
                 else
-                    lisp <|
+                    parens <|
                         n
                             :: List.map
                                 (\c ->
@@ -291,31 +291,31 @@ prettyPrintExpression e =
 
             else if n == "atan" then
                 if List.length args == 2 then
-                    lisp <| "atan2_" :: List.map prettyPrintExpression args
+                    parens <| "atan2_" :: List.map prettyPrintExpression args
 
                 else
-                    lisp <| "atan_" :: List.map prettyPrintExpression args
+                    parens <| "atan_" :: List.map prettyPrintExpression args
 
             else if List.member n [ "sin", "cos", "radians", "round", "floor", "ceil", "sqrt" ] then
-                lisp <| (n ++ "_") :: List.map prettyPrintExpression args
+                parens <| (n ++ "_") :: List.map prettyPrintExpression args
 
             else
-                lisp <| n :: List.map prettyPrintExpression args
+                parens <| n :: List.map prettyPrintExpression args
 
         Arr l r ->
-            lisp [ "arr", prettyPrintExpression l, prettyPrintExpression r ]
+            parens [ "arr", prettyPrintExpression l, prettyPrintExpression r ]
 
         Ternary c l r ->
-            lisp [ "ternary\n", prettyPrintExpression c, prettyPrintExpression l, prettyPrintExpression r ]
+            parens [ "ternary\n", prettyPrintExpression c, prettyPrintExpression l, prettyPrintExpression r ]
 
         UnaryOperation Negate ex ->
-            lisp [ "negate_", prettyPrintExpression ex ]
+            parens [ "negate_", prettyPrintExpression ex ]
 
         BinaryOperation op l r ->
-            lisp [ prettyPrintBinaryOperation op, prettyPrintExpression l, prettyPrintExpression r ]
+            parens [ prettyPrintBinaryOperation op, prettyPrintExpression l, prettyPrintExpression r ]
 
         BooleanOperation op es ->
-            lisp
+            parens
                 [ prettyPrintBooleanOperation op
                 , "["
                 , String.join ", " <| List.map prettyPrintExpression es
@@ -323,13 +323,13 @@ prettyPrintExpression e =
                 ]
 
         RelationOperation rop l r ->
-            lisp [ prettyPrintRelationOperation rop, prettyPrintExpression l, prettyPrintExpression r ]
+            parens [ prettyPrintRelationOperation rop, prettyPrintExpression l, prettyPrintExpression r ]
 
         PostfixIncrement c ->
-            lisp [ "postfixIncrement", prettyPrintExpression c ]
+            parens [ "postfixIncrement", prettyPrintExpression c ]
 
         PostfixDecrement c ->
-            lisp [ "postfixDecrement", prettyPrintExpression c ]
+            parens [ "postfixDecrement", prettyPrintExpression c ]
 
 
 prettyPrintRelationOperation : RelationOperation -> String

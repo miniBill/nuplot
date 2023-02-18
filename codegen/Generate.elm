@@ -5,9 +5,9 @@ import Elm
 import Elm.Annotation as Type
 import Gen.CodeGen.Generate as Generate
 import Gen.Debug
-import Gen.Glsl.Helper
+import Gen.Glsl
+import Glsl exposing (BinaryOperation(..), Expr(..), Expression(..), Function, Stat(..), Statement(..), Type(..))
 import Glsl.Parser
-import Glsl.Types exposing (BinaryOperation(..), Expression(..), Function, Statement(..), Type(..))
 import List.Extra
 import Parser
 import Result.Extra
@@ -19,7 +19,7 @@ main =
     let
         file : String -> Elm.File
         file glsl =
-            Elm.fileWith [ "Glsl" ]
+            Elm.fileWith [ "Glsl", "Functions" ]
                 { docs =
                     List.map
                         (\{ group, members } ->
@@ -192,7 +192,7 @@ wrapFunction name deps args returnType =
             List.map
                 (\( type_, argName ) ->
                     ( argName
-                    , Just <| Gen.Glsl.Helper.annotation_.expression (typeToAnnotation type_)
+                    , Just <| Gen.Glsl.annotation_.expression (typeToAnnotation type_)
                     )
                 )
                 args
@@ -207,19 +207,19 @@ wrapFunction name deps args returnType =
         innerCall argValues =
             case argValues of
                 [] ->
-                    Gen.Glsl.Helper.call_.unsafeCall0 (Elm.string name) depsExpr
+                    Gen.Glsl.call_.unsafeCall0 (Elm.string name) depsExpr
 
                 [ arg0 ] ->
-                    Gen.Glsl.Helper.call_.unsafeCall1 (Elm.string name) depsExpr arg0
+                    Gen.Glsl.call_.unsafeCall1 (Elm.string name) depsExpr arg0
 
                 [ arg0, arg1 ] ->
-                    Gen.Glsl.Helper.call_.unsafeCall2 (Elm.string name) depsExpr arg0 arg1
+                    Gen.Glsl.call_.unsafeCall2 (Elm.string name) depsExpr arg0 arg1
 
                 [ arg0, arg1, arg2 ] ->
-                    Gen.Glsl.Helper.call_.unsafeCall3 (Elm.string name) depsExpr arg0 arg1 arg2
+                    Gen.Glsl.call_.unsafeCall3 (Elm.string name) depsExpr arg0 arg1 arg2
 
                 [ arg0, arg1, arg2, arg3 ] ->
-                    Gen.Glsl.Helper.call_.unsafeCall4 (Elm.string name) depsExpr arg0 arg1 arg2 arg3
+                    Gen.Glsl.call_.unsafeCall4 (Elm.string name) depsExpr arg0 arg1 arg2 arg3
 
                 _ :: _ :: _ ->
                     Elm.string "TODO"
@@ -228,7 +228,7 @@ wrapFunction name deps args returnType =
         expr argValues =
             innerCall
                 argValues
-                |> Elm.withType (Gen.Glsl.Helper.annotation_.expression (typeToAnnotation returnType))
+                |> Elm.withType (Gen.Glsl.annotation_.expression (typeToAnnotation returnType))
     in
     Elm.function argDecls expr
         |> Elm.declaration fname
@@ -260,28 +260,28 @@ typeToAnnotation type_ =
             Type.int
 
         TVec2 ->
-            Gen.Glsl.Helper.annotation_.vec2
+            Gen.Glsl.annotation_.vec2
 
         TIVec2 ->
-            Gen.Glsl.Helper.annotation_.iVec2
+            Gen.Glsl.annotation_.iVec2
 
         TVec3 ->
-            Gen.Glsl.Helper.annotation_.vec3
+            Gen.Glsl.annotation_.vec3
 
         TIVec3 ->
-            Gen.Glsl.Helper.annotation_.iVec3
+            Gen.Glsl.annotation_.iVec3
 
         TVec4 ->
-            Gen.Glsl.Helper.annotation_.vec4
+            Gen.Glsl.annotation_.vec4
 
         TIVec4 ->
-            Gen.Glsl.Helper.annotation_.iVec4
+            Gen.Glsl.annotation_.iVec4
 
         TMat3 ->
-            Gen.Glsl.Helper.annotation_.mat3
+            Gen.Glsl.annotation_.mat3
 
         TVoid ->
-            Gen.Glsl.Helper.annotation_.void
+            Gen.Glsl.annotation_.void
 
 
 variableHasType : String -> Type -> Env -> Env
@@ -294,23 +294,31 @@ union =
     List.foldl (Result.map2 SortedSet.insertAll) (Ok SortedSet.empty)
 
 
-findDepsStatement : Env -> Statement -> Result String (SortedSet String)
+findDepsStatement : Env -> Stat -> Result String (SortedSet String)
 findDepsStatement env statement =
     case statement of
-        If cond true false ->
+        If cond true cont ->
+            union
+                [ findDepsExpression env cond
+                , findDepsStatement env true
+                , findDepsStatement env cont
+                ]
+
+        IfElse cond true false cont ->
             union
                 [ findDepsExpression env cond
                 , findDepsStatement env true
                 , findDepsStatement env false
+                , findDepsStatement env cont
                 ]
 
-        Expression e cont ->
+        ExpressionStatement e cont ->
             union
                 [ findDepsExpression env e
                 , findDepsStatement env cont
                 ]
 
-        For { var, from, to, step } cont ->
+        For var from _ to _ step cont ->
             let
                 newEnv : Env
                 newEnv =
@@ -326,33 +334,33 @@ findDepsStatement env statement =
         Return e ->
             findDepsExpression env e
 
-        Def { type_, var, val } cont ->
+        Decl type_ var maybeVal cont ->
             let
                 newEnv : Env
                 newEnv =
                     variableHasType var type_ env
             in
             union
-                [ findDepsExpression env val
+                [ maybeVal
+                    |> Maybe.map (findDepsExpression env)
+                    |> Maybe.withDefault (Ok SortedSet.empty)
                 , findDepsStatement newEnv cont
                 ]
-
-        Decl { type_, var } cont ->
-            let
-                newEnv : Env
-                newEnv =
-                    variableHasType var type_ env
-            in
-            findDepsStatement newEnv cont
 
         Nop ->
             Ok SortedSet.empty
 
+        Break ->
+            Ok SortedSet.empty
 
-findDepsExpression : Env -> Expression -> Result String (SortedSet String)
+        Continue ->
+            Ok SortedSet.empty
+
+
+findDepsExpression : Env -> Expr -> Result String (SortedSet String)
 findDepsExpression env =
     let
-        go : Expression -> Result String ( Type, SortedSet String )
+        go : Expr -> Result String ( Type, SortedSet String )
         go expr =
             case expr of
                 Float _ ->
@@ -392,6 +400,12 @@ findDepsExpression env =
                         )
                         (go e)
 
+                Variable "P32M1" ->
+                    Ok ( TInt, SortedSet.empty )
+
+                Variable "P31" ->
+                    Ok ( TInt, SortedSet.empty )
+
                 Variable v ->
                     case Dict.get v env.variablesEnv of
                         Nothing ->
@@ -399,15 +413,6 @@ findDepsExpression env =
 
                         Just t ->
                             Ok ( t, SortedSet.empty )
-
-                Constant "P32M1" ->
-                    Ok ( TInt, SortedSet.empty )
-
-                Constant "P31" ->
-                    Ok ( TInt, SortedSet.empty )
-
-                Constant c ->
-                    Err <| "TODO: findDepsExpression _ (Constant \"" ++ c ++ "\")"
 
                 Call f args ->
                     args
@@ -434,9 +439,23 @@ findDepsExpression env =
                                         Ok ( to, deps )
                             )
 
-                Arr l r ->
-                    --union [ go l, go r ]
-                    Err "TODO: findDepsExpression _ (Arr _ _)"
+                Array l r ->
+                    Result.andThen
+                        (\( ( lt, ld ), ( rt, rd ) ) ->
+                            Result.map
+                                (\t -> ( t, SortedSet.insertAll ld rd ))
+                                (case ( lt, rt ) of
+                                    ( TVec3, TInt ) ->
+                                        Ok TFloat
+
+                                    _ ->
+                                        Err <| "Don't know what the result of " ++ typeToString lt ++ "[" ++ typeToString rt ++ "] is"
+                                )
+                        )
+                        (Result.map2 Tuple.pair
+                            (go l)
+                            (go r)
+                        )
 
                 Ternary c t f ->
                     Result.map3
@@ -484,19 +503,7 @@ findDepsExpression env =
                             (go r)
                         )
 
-                BooleanOperation _ es ->
-                    es
-                        |> Result.Extra.combineMap go
-                        |> Result.map
-                            (\res ->
-                                let
-                                    ( _, deps ) =
-                                        List.unzip res
-                                in
-                                ( TBool, List.foldl SortedSet.insertAll SortedSet.empty deps )
-                            )
-
-                RelationOperation _ l r ->
+                Comparison _ l r ->
                     Result.map2
                         (\( _, ld ) ( _, rd ) ->
                             ( TBool, SortedSet.insertAll ld rd )
@@ -509,6 +516,14 @@ findDepsExpression env =
 
                 PostfixDecrement e ->
                     go e
+
+                AssignCombo _ l r ->
+                    Result.map2
+                        (\( lt, ld ) ( _, rd ) ->
+                            ( lt, SortedSet.insertAll ld rd )
+                        )
+                        (go l)
+                        (go r)
     in
     go >> Result.map Tuple.second
 
@@ -564,6 +579,12 @@ binaryOperationToString bop =
 
         Div ->
             "/"
+
+        And ->
+            "&&"
+
+        Or ->
+            "||"
 
 
 fullName : String -> List Type -> String
