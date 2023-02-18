@@ -1,8 +1,11 @@
-module UI.Glsl.Generator exposing (Constant, Context, Continue, ErrorValue(..), File, FunDecl, GlslValue(..), Mat3, Vec2, Vec3, Vec4, abs2, abs4, abs_, acos2, acos_, add, add2, add3, add33, add4, adds2, adds3, adds4, and, ands, arr, assign, assignAdd, assignBy, atan2_, atan_, bool, boolT, break, by, by2, by3, byF, ceil_, constant, continue, cos_, cosh, cross, decl, def, div, div2, divF, dot, eq, exp, expr, expressionToGlsl, false, fileToGlsl, float, floatCast, floatT, floatToGlsl, floor_, for, forDown, forLeq, fract, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, fwidth, geq, gl_FragColor, gl_FragCoord, gt, hl2rgb, ifElse, if_, in_, int, intCast, intT, interpret, length, leq, log, log2, lt, mat3T, max3, max4, max_, min_, minusOne, mix, mod, negate2, negateConst, negate_, neq, normalize, normalize3, one, or, ors, out, postfixDecrement, postfixIncrement, pow, radians_, return, round_, sign, sin_, sinh, smoothstep, sqrt_, statementToGlsl, subtract, subtract2, subtract3, subtract4, subtractConst, tan_, ternary, ternary3, true, uniform, unknown, unsafeCall, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, vec4_1_3, vec4_3_1, voidT, zero)
+module UI.Glsl.Generator exposing (Context, Continue, ErrorValue(..), File, FunDecl, GlslValue(..), Mat3, Vec2, Vec3, Vec4, adds2, adds3, adds4, and, ands, assign, assignAdd, assignBy, boolT, break, continue, decl, def, expr, expressionToGlsl, fileToGlsl, floatT, floatToGlsl, for, forDown, forLeq, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, gl_FragColor, gl_FragCoord, ifElse, if_, in_, intT, interpret, mat3T, minusOne, one, or, ors, out, return, statementToGlsl, ternary, ternary3, value, valueToString, vec2T, vec2Zero, vec3T, vec3Zero, vec4T, vec4Zero, voidT, zero)
 
 import Dict exposing (Dict)
-import Glsl.Helper exposing (BinaryOperation(..), ComboOperation(..), Expr(..), Expression(..), Name(..), RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction)
+import Glsl exposing (BinaryOperation(..), ComboOperation(..), Expr(..), Expression(..), ForDirection(..), RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction, UnaryOperation(..), false, float, int, true, unsafeMap2, unsafeMap3)
+import Glsl.Functions exposing (vec211, vec3111, vec41111)
+import Glsl.Operations exposing (add11, add22, add33, add44)
 import Set
+import SortedSet
 
 
 type alias File =
@@ -41,7 +44,7 @@ funDeclToGlsl (FunDecl { body }) =
 
 statementToGlsl : Statement s -> String
 statementToGlsl (Statement r) =
-    statToGlsl 1 r
+    statToGlsl 1 r.stat
 
 
 statToGlsl : Int -> Stat -> String
@@ -83,8 +86,8 @@ statToGlsl i c =
             ]
                 |> String.join "\n"
 
-        For var from rel to step loop next ->
-            [ indent i ("for (int " ++ var ++ " = " ++ exprToGlsl (Expression from) ++ "; " ++ var ++ " " ++ relationToString rel ++ " " ++ exprToGlsl (Expression to) ++ "; " ++ exprToGlsl (Expression step) ++ ") {")
+        For var from rel to direction loop next ->
+            [ indent i ("for (int " ++ var ++ " = " ++ exprToGlsl from ++ "; " ++ var ++ " " ++ relationToString rel ++ " " ++ exprToGlsl to ++ "; " ++ var ++ directionToGlsl direction ++ ") {")
             , statToGlsl (i + 1) loop
             , indent i "}"
             , ""
@@ -92,11 +95,8 @@ statToGlsl i c =
             ]
                 |> String.join "\n"
 
-        Line l ->
-            indent i l ++ ";"
-
         Return e ->
-            indent i <| "return " ++ exprToGlsl (Expression e) ++ ";"
+            indent i <| "return " ++ exprToGlsl e ++ ";"
 
         Break ->
             indent i "break;"
@@ -105,25 +105,72 @@ statToGlsl i c =
             indent i "continue;"
 
         ExpressionStatement e Nop ->
-            indent i (exprToGlsl (Expression e) ++ ";")
+            indent i (exprToGlsl e ++ ";")
 
-        Decl t (Name n) (Just e) Nop ->
-            indent i (t ++ " " ++ n ++ " = " ++ exprToGlsl (Expression e) ++ ";")
+        Decl t n (Just e) Nop ->
+            indent i (typeToGlsl t ++ " " ++ n ++ " = " ++ exprToGlsl e ++ ";")
 
-        Decl t (Name n) Nothing Nop ->
-            indent i (t ++ " " ++ n ++ ";")
+        Decl t n Nothing Nop ->
+            indent i (typeToGlsl t ++ " " ++ n ++ ";")
 
         ExpressionStatement e next ->
-            indent i (exprToGlsl (Expression e) ++ ";\n") ++ statToGlsl i next
+            indent i (exprToGlsl e ++ ";\n") ++ statToGlsl i next
 
-        Decl t (Name n) (Just e) next ->
-            indent i (t ++ " " ++ n ++ " = " ++ exprToGlsl (Expression e) ++ ";\n") ++ statToGlsl i next
+        Decl t n (Just e) next ->
+            indent i (typeToGlsl t ++ " " ++ n ++ " = " ++ exprToGlsl e ++ ";\n") ++ statToGlsl i next
 
-        Decl t (Name n) Nothing next ->
-            indent i (t ++ " " ++ n ++ ";\n") ++ statToGlsl i next
+        Decl t n Nothing next ->
+            indent i (typeToGlsl t ++ " " ++ n ++ ";\n") ++ statToGlsl i next
 
         Nop ->
             ""
+
+
+directionToGlsl : ForDirection -> String
+directionToGlsl direction =
+    case direction of
+        PlusPlus ->
+            "++"
+
+        MinusMinus ->
+            "--"
+
+
+typeToGlsl : Type -> String
+typeToGlsl type_ =
+    case type_ of
+        TVoid ->
+            "void"
+
+        TFloat ->
+            "float"
+
+        TInt ->
+            "int"
+
+        TBool ->
+            "bool"
+
+        TVec2 ->
+            "vec2"
+
+        TVec3 ->
+            "vec3"
+
+        TVec4 ->
+            "vec4"
+
+        TIVec2 ->
+            "ivec2"
+
+        TIVec3 ->
+            "ivec3"
+
+        TIVec4 ->
+            "ivec4"
+
+        TMat3 ->
+            "mat3"
 
 
 relationToString : RelationOperation -> String
@@ -147,15 +194,18 @@ relationToString rel =
         GreaterThan ->
             ">"
 
+        Assign ->
+            "="
+
 
 nop : Continue ()
-nop () =
-    Statement Nop
+nop =
+    internalNop
 
 
 internalNop : Continue a
 internalNop () =
-    Statement Nop
+    Statement { stat = Nop, deps = Set.empty }
 
 
 expressionToGlsl : Expression t -> String
@@ -169,12 +219,11 @@ exprToGlsl tree =
         -- The numbers are precedence numbers from the GLSL spec
         go : Bool -> Expr -> String
         go rec e =
-            case e of
-                Unknown u ->
-                    u
-
-                _ ->
-                    go17 rec e
+            -- case e of
+            --     Unknown u ->
+            --         u
+            --     _ ->
+            go17 rec e
 
         go17 : Bool -> Expr -> String
         go17 rec e =
@@ -183,7 +232,7 @@ exprToGlsl tree =
         go16 : Bool -> Expr -> String
         go16 rec e =
             case e of
-                Assign l r ->
+                Comparison Assign l r ->
                     go15 False l ++ " = " ++ go15 False r
 
                 AssignCombo k l r ->
@@ -204,7 +253,7 @@ exprToGlsl tree =
         go14 : Bool -> Expr -> String
         go14 rec e =
             case e of
-                Or l r ->
+                BinaryOperation Or l r ->
                     go14 False l ++ " || " ++ go13 False r
 
                 _ ->
@@ -217,7 +266,7 @@ exprToGlsl tree =
         go12 : Bool -> Expr -> String
         go12 rec e =
             case e of
-                And l r ->
+                BinaryOperation And l r ->
                     go12 False l ++ " && " ++ go11 False r
 
                 _ ->
@@ -272,10 +321,10 @@ exprToGlsl tree =
         go5 : Bool -> Expr -> String
         go5 rec e =
             case e of
-                Add l r ->
+                BinaryOperation Add l r ->
                     go5 False l ++ " + " ++ go4 False r
 
-                Subtract l r ->
+                BinaryOperation Subtract l r ->
                     go5 False l ++ " - " ++ go4 False r
 
                 _ ->
@@ -284,10 +333,10 @@ exprToGlsl tree =
         go4 : Bool -> Expr -> String
         go4 rec e =
             case e of
-                By l r ->
+                BinaryOperation By l r ->
                     go4 False l ++ " * " ++ go3 False r
 
-                Div l r ->
+                BinaryOperation Div l r ->
                     go4 False l ++ " / " ++ go3 False r
 
                 _ ->
@@ -296,7 +345,7 @@ exprToGlsl tree =
         go3 : Bool -> Expr -> String
         go3 rec e =
             case e of
-                Negate c ->
+                UnaryOperation Negate c ->
                     "-" ++ go2 False c
 
                 PostfixIncrement c ->
@@ -377,19 +426,19 @@ indent i line =
 --EXPRESSIONS
 
 
-ternary : ExpressionXBool -> Expression t -> Expression t -> Expression t
+ternary : Expression Bool -> Expression t -> Expression t -> Expression t
 ternary =
-    expr3 Ternary
+    unsafeMap3 Ternary
 
 
-ternary3 : ExpressionX xa Bool -> ExpressionX xb Vec3 -> ExpressionX xc Vec3 -> Expression Vec3
+ternary3 : Expression Bool -> Expression Vec3 -> Expression Vec3 -> Expression Vec3
 ternary3 =
-    expr33 Ternary
+    unsafeMap3 Ternary
 
 
 and : Expression Bool -> Expression Bool -> Expression Bool
 and =
-    expr2 And
+    unsafeMap2 (BinaryOperation And)
 
 
 ands : List (Expression Bool) -> Expression Bool
@@ -399,12 +448,12 @@ ands es =
             true
 
         h :: t ->
-            List.foldl (\e a -> expr2 And a e) h t
+            List.foldl (\e a -> and a e) h t
 
 
 or : Expression Bool -> Expression Bool -> Expression Bool
 or =
-    expr2 Or
+    unsafeMap2 (BinaryOperation Or)
 
 
 ors : List (Expression Bool) -> Expression Bool
@@ -414,7 +463,7 @@ ors es =
             false
 
         h :: t ->
-            List.foldl (\e a -> expr2 Or a e) h t
+            List.foldl (\e a -> or a e) h t
 
 
 adds2 : List (Expression Vec2) -> Expression Vec2
@@ -424,7 +473,7 @@ adds2 es =
             vec2Zero
 
         h :: t ->
-            List.foldl (\e a -> add2 a e) h t
+            List.foldl (\e a -> add22 a e) h t
 
 
 adds3 : List (Expression Vec3) -> Expression Vec3
@@ -434,7 +483,7 @@ adds3 es =
             vec3Zero
 
         h :: t ->
-            List.foldl (\e a -> add3 a e) h t
+            List.foldl (\e a -> add33 a e) h t
 
 
 adds4 : List (Expression Vec4) -> Expression Vec4
@@ -444,372 +493,7 @@ adds4 es =
             vec4Zero
 
         h :: t ->
-            List.foldl (\e a -> add4 a e) h t
-
-
-pure : Expr -> Expression t
-pure e =
-    Expression { expr = e, deps = Set.empty }
-
-
-true : Expression Bool
-true =
-    pure <| Bool True
-
-
-false : Expression Bool
-false =
-    pure <| Bool False
-
-
-
-------------------------------
--- FUNCTIONS AND OPERATIONS --
-------------------------------
-
-
-add : Expression t -> Expression t -> Expression t
-add =
-    expr2 Add
-
-
-add2 : Expression Vec2 -> Expression Vec2 -> Expression Vec2
-add2 =
-    expr22 Add
-
-
-add3 : Expression Vec3 -> Expression Vec3 -> Expression Vec3
-add3 =
-    expr23 Add
-
-
-add4 : Expression Vec4 -> Expression Vec4 -> Expression Vec4
-add4 =
-    expr24 Add
-
-
-add33 : Expression Mat3 -> Expression Mat3 -> Expression Mat3
-add33 =
-    expr233 Add
-
-
-subtract : Expression t -> Expression t -> Expression t
-subtract =
-    expr2 Subtract
-
-
-subtractConst : ExpressionX { a | isConstant : Constant } t -> ExpressionX { b | isConstant : Constant } t -> ExpressionX { isConstant : Constant } t
-subtractConst l r =
-    { base = (expr2 Subtract l r).base
-    , isConstant = Constant
-    }
-
-
-subtract2 : ExpressionXVec2 -> Expression Vec2 -> Expression Vec2
-subtract2 =
-    expr22 Subtract
-
-
-subtract3 : Expression Vec3 -> Expression Vec3 -> Expression Vec3
-subtract3 =
-    expr23 Subtract
-
-
-subtract4 : Expression Vec4 -> Expression Vec4 -> Expression Vec4
-subtract4 =
-    expr24 Subtract
-
-
-negate_ : Expression t -> Expression t
-negate_ =
-    expr1 Negate
-
-
-negateConst : ExpressionX { a | isConstant : Constant } t -> ExpressionX { isConstant : Constant } t
-negateConst l =
-    { base = (expr1 Negate l).base
-    , isConstant = Constant
-    }
-
-
-negate2 : Expression Vec2 -> Expression Vec2
-negate2 e =
-    dotted2Internal (Negate <| unwrapExpression e)
-
-
-postfixIncrement : Expression t -> Expression t
-postfixIncrement =
-    expr1 PostfixIncrement
-
-
-postfixDecrement : Expression t -> Expression t
-postfixDecrement =
-    expr1 PostfixDecrement
-
-
-by : Expression t -> Expression t -> Expression t
-by =
-    expr2 By
-
-
-by2 : ExpressionXVec2 -> Expression Vec2 -> Expression Vec2
-by2 =
-    expr22 By
-
-
-by3 : Expression Vec3 -> Expression Vec3 -> Expression Vec3
-by3 =
-    expr23 By
-
-
-byF : Expression Float -> Expression t -> Expression t
-byF =
-    expr2 By
-
-
-divF : Expression t -> Expression Float -> Expression t
-divF =
-    expr2 Div
-
-
-div : Expression t -> Expression t -> Expression t
-div =
-    expr2 Div
-
-
-div2 : Expression Vec2 -> Expression Vec2 -> Expression Vec2
-div2 =
-    expr22 Div
-
-
-lt : Expression t -> Expression t -> Expression Bool
-lt =
-    expr2 (Comparison LessThan)
-
-
-leq : Expression t -> Expression t -> Expression Bool
-leq =
-    expr2 (Comparison LessThanOrEquals)
-
-
-eq : Expression t -> Expression t -> Expression Bool
-eq =
-    expr2 (Comparison Equals)
-
-
-neq : Expression t -> Expression t -> Expression Bool
-neq =
-    expr2 (Comparison NotEquals)
-
-
-geq : Expression t -> Expression t -> Expression Bool
-geq =
-    expr2 (Comparison GreaterThanOrEquals)
-
-
-gt : Expression t -> Expression t -> Expression Bool
-gt =
-    expr2 (Comparison GreaterThan)
-
-
-abs_ : Expression t -> Expression t
-abs_ =
-    call1Internal "abs"
-
-
-abs2 : Expression Vec2 -> Expression Vec2
-abs2 =
-    dotted2 << call1Internal "abs"
-
-
-abs4 : Expression Vec4 -> Expression Vec4
-abs4 =
-    dotted4 << call1Internal "abs"
-
-
-mix : Expression t -> Expression t -> Expression Float -> Expression t
-mix x y a =
-    dotted1 <| call3Internal "mix" x y a
-
-
-smoothstep : Expression Float -> Expression Float -> Expression Float -> Expression t
-smoothstep x y a =
-    dotted1 <| call3Internal "smoothstep" x y a
-
-
-exp : Expression t -> Expression t
-exp =
-    call1Internal "exp"
-
-
-sqrt_ : Expression t -> Expression t
-sqrt_ =
-    call1Internal "sqrt"
-
-
-sin_ : Expression t -> Expression t
-sin_ =
-    call1Internal "sin"
-
-
-cos_ : Expression t -> Expression t
-cos_ =
-    call1Internal "cos"
-
-
-tan_ : Expression t -> Expression t
-tan_ =
-    call1Internal "tan"
-
-
-acos_ : Expression t -> Expression t
-acos_ =
-    call1Internal "acos"
-
-
-acos2 : Expression Vec2 -> Expression Vec2
-acos2 =
-    dotted2 << call1Internal "acos"
-
-
-sinh : Expression t -> Expression t
-sinh =
-    call1Internal "sinh"
-
-
-cosh : Expression t -> Expression t
-cosh =
-    call1Internal "cosh"
-
-
-log : Expression t -> Expression t
-log =
-    call1Internal "log"
-
-
-mod : Expression t -> Expression t -> Expression t
-mod l r =
-    dotted1 (call2Internal "mod" l r)
-
-
-min_ : Expression t -> Expression t -> Expression t
-min_ l r =
-    dotted1 (call2Internal "min" l r)
-
-
-max_ : Expression t -> Expression t -> Expression t
-max_ l r =
-    dotted1 (call2Internal "max" l r)
-
-
-max3 : Expression Vec3 -> Expression Vec3 -> Expression Vec3
-max3 l r =
-    dotted3 (call2Internal "max" l r)
-
-
-max4 : Expression Vec4 -> Expression Vec4 -> Expression Vec4
-max4 l r =
-    dotted4 (call2Internal "max" l r)
-
-
-hl2rgb : ExpressionXFloat -> Expression Float -> Expression Vec3
-hl2rgb h l =
-    dotted3 (call2Internal "hl2rgb" h l)
-
-
-pow : Expression Float -> Expression Float -> Expression Float
-pow l r =
-    dotted1 (call2Internal "pow" l r)
-
-
-log2 : ExpressionXFloat -> Expression Float
-log2 =
-    call1Internal "log2"
-
-
-ceil_ : Expression t -> Expression t
-ceil_ =
-    call1Internal "ceil"
-
-
-floor_ : Expression t -> Expression t
-floor_ =
-    call1Internal "floor"
-
-
-round_ : Expression t -> Expression t
-round_ =
-    call1Internal "round"
-
-
-sign : Expression t -> Expression t
-sign =
-    call1Internal "sign"
-
-
-radians_ : Expression Float -> Expression Float
-radians_ =
-    call1Internal "radians"
-
-
-normalize : Expression t -> Expression t
-normalize =
-    call1Internal "normalize"
-
-
-normalize3 : ExpressionXVec3 -> Expression Vec3
-normalize3 =
-    dotted3 << call1Internal "normalize"
-
-
-length : Expression t -> Expression Float
-length =
-    call1Internal "length"
-
-
-fwidth : Expression t -> Expression t
-fwidth =
-    call1Internal "fwidth"
-
-
-cross : Expression Vec3 -> Expression Vec3 -> Expression Vec3
-cross l r =
-    dotted3 <| call2Internal "cross" l r
-
-
-atan_ : Expression Float -> Expression Float
-atan_ =
-    call1Internal "atan"
-
-
-atan2_ : ExpressionXFloat -> Expression Float -> Expression Float
-atan2_ l r =
-    dotted1 <| call2Internal "atan" l r
-
-
-intCast : Expression Float -> Expression Int
-intCast =
-    call1Internal "int"
-
-
-floatCast : ExpressionXInt -> Expression Float
-floatCast =
-    call1Internal "float"
-
-
-fract : Expression Float -> Expression Float
-fract =
-    call1Internal "fract"
-
-
-arr : ExpressionXMat3 -> Expression Int -> Expression Vec3
-arr =
-    expr2 Array
-
-
-dot : Expression t -> Expression t -> Expression Float
-dot l r =
-    dotted1 (call2Internal "dot" l r)
+            List.foldl (\e a -> add44 a e) h t
 
 
 
@@ -820,42 +504,33 @@ dot l r =
 
 vec2Zero : Expression Vec2
 vec2Zero =
-    vec2 zero zero
+    vec211 zero zero
 
 
 vec3Zero : Expression Vec3
 vec3Zero =
-    vec3 zero zero zero
+    vec3111 zero zero zero
 
 
 vec4Zero : Expression Vec4
 vec4Zero =
-    vec4 zero zero zero zero
+    vec41111 zero zero zero zero
 
 
 gl_FragColor : Expression Vec4
 gl_FragColor =
-    dottedVariable4 "gl_FragColor"
+    var "gl_FragColor"
 
 
 gl_FragCoord : Expression Vec4
 gl_FragCoord =
-    dottedVariable4 "gl_FragCoord"
+    var "gl_FragCoord"
 
 
 
 ----------------
 -- CALL UTILS --
 ----------------
-
-
-unsafeCall : String -> List (Expression t) -> Expression r
-unsafeCall name =
-    Expression << Call name << List.map (\(Expression e) -> e)
-
-
-type Constant
-    = Constant
 
 
 zero : Expression Float
@@ -873,34 +548,6 @@ minusOne =
     float -1
 
 
-float : Float -> Expression Float
-float f =
-    { base = Expression (Float f)
-    , isConstant = Constant
-    }
-
-
-int : Int -> Expression Int
-int i =
-    { base = Expression <| Int i
-    , isConstant = Constant
-    }
-
-
-bool : Bool -> Expression Bool
-bool b =
-    { base = Expression <| Bool b
-    , isConstant = Constant
-    }
-
-
-constant : TypingFunction t r -> String -> Expression t
-constant _ name =
-    { base = Expression <| Variable name
-    , isConstant = Constant
-    }
-
-
 floatToGlsl : Float -> String
 floatToGlsl f =
     let
@@ -915,11 +562,44 @@ floatToGlsl f =
 
 
 
+-- Utils
+
+
+unsafeExpr1 : (Expr -> Expr) -> Expression a -> Expression b
+unsafeExpr1 f (Expression l) =
+    Expression
+        { expr = f l.expr
+        , deps = l.deps
+        }
+
+
+unsafeExpr2 : (Expr -> Expr -> Expr) -> Expression a -> Expression b -> Expression c
+unsafeExpr2 f (Expression l) (Expression r) =
+    Expression
+        { expr = f l.expr r.expr
+        , deps =
+            l.deps
+                |> SortedSet.insertAll r.deps
+        }
+
+
+unsafeExpr3 : (Expr -> Expr -> Expr -> Expr) -> Expression a -> Expression b -> Expression c -> Expression d
+unsafeExpr3 f (Expression l) (Expression m) (Expression r) =
+    Expression
+        { expr = f l.expr m.expr r.expr
+        , deps =
+            l.deps
+                |> SortedSet.insertAll m.deps
+                |> SortedSet.insertAll r.deps
+        }
+
+
+
 -- STATEMENTS
 
 
 funInternal : TypedName t -> List ( String, String ) -> Statement t -> FunDecl
-funInternal (TypedName (Type rt) (Name name)) args body =
+funInternal (TypedName rt name) args body =
     let
         argsList =
             String.join ", " (List.map (\( t, n ) -> t ++ " " ++ n) args)
@@ -927,7 +607,7 @@ funInternal (TypedName (Type rt) (Name name)) args body =
     FunDecl
         { name = name
         , type_ =
-            (args ++ [ ( rt, "" ) ])
+            (args ++ [ ( typeToGlsl rt, "" ) ])
                 |> List.map Tuple.first
                 |> String.join " -> "
         , body =
@@ -940,17 +620,18 @@ funInternal (TypedName (Type rt) (Name name)) args body =
 
 
 argToString : TypedName t -> ( String, String )
-argToString (TypedName (Type t) (Name n)) =
-    ( t, n )
+argToString (TypedName t n) =
+    ( typeToGlsl t, n )
 
 
 toVar : TypedName t -> Expression t
-toVar (TypedName _ (Name n)) =
-    pure <| Variable n
+toVar (TypedName _ n) =
+    --pure <| Variable n
+    Debug.todo "toVar"
 
 
 fun0 :
-    TypingFunction t c
+    TypingFunction c
     -> String
     -> (Continue () -> Statement t)
     -> ( FunDecl, c )
@@ -960,18 +641,19 @@ fun0 typeF name body =
             typeF name
     in
     ( funInternal typed [] (body nop)
-    , dotter <| call0Internal name
+    , -- dotter <| call0Internal name
+      Debug.todo "fun0"
     )
 
 
 fun1 :
-    TypingFunction tr r
+    TypingFunction t
     -> String
-    -> ( TypedName ta a, Expression ta -> a )
-    -> (a -> Continue () -> Statement tr)
+    -> ( TypedName a, Expression a -> a )
+    -> (a -> Continue () -> Statement t)
     ->
         ( FunDecl
-        , ExpressionX xa ta -> r
+        , Expression a -> t
         )
 fun1 typeF name ( arg0, _ ) body =
     let
@@ -980,41 +662,43 @@ fun1 typeF name ( arg0, _ ) body =
     in
     ( funInternal typed [ argToString arg0 ] <|
         body (toVar arg0) nop
-    , dotter << call1Internal name
+    , --dotter << call1Internal name
+      Debug.todo "fun1"
     )
 
 
 fun2 :
-    TypingFunction tr r
+    TypingFunction tr
     -> String
-    -> ( TypedName ta a, Expression ta -> a )
-    -> ( TypedName tb b, Expression tb -> b )
+    -> ( TypedName a, Expression ta -> a )
+    -> ( TypedName b, Expression tb -> b )
     -> (a -> b -> Continue () -> Statement tr)
     ->
         ( FunDecl
-        , ExpressionX xa ta -> ExpressionX xb tb -> r
+        , Expression ta -> Expression tb -> tr
         )
 fun2 typeF name ( arg0, _ ) ( arg1, _ ) body =
     let
-        ( typed, dotter ) =
+        typed =
             typeF name
     in
     ( funInternal typed [ argToString arg0, argToString arg1 ] <|
         body (toVar arg0) (toVar arg1) nop
-    , \l r -> dotter (call2Internal name l r)
+    , -- \l r -> dotter (call2Internal name l r)
+      Debug.todo "fun2"
     )
 
 
 fun3 :
-    TypingFunction tr r
+    TypingFunction tr
     -> String
-    -> ( TypedName ta a, Expression ta -> a )
-    -> ( TypedName tb b, Expression tb -> b )
-    -> ( TypedName tc c, Expression tc -> c )
+    -> ( TypedName ta, Expression ta -> a )
+    -> ( TypedName tb, Expression tb -> b )
+    -> ( TypedName tc, Expression tc -> c )
     -> (a -> b -> c -> Continue () -> Statement tr)
     ->
         ( FunDecl
-        , ExpressionX xa ta -> ExpressionX xb tb -> ExpressionX xc tc -> r
+        , Expression ta -> Expression tb -> Expression tc -> r
         )
 fun3 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) body =
     let
@@ -1023,21 +707,22 @@ fun3 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) body =
     in
     ( funInternal typed [ argToString arg0, argToString arg1, argToString arg2 ] <|
         body (toVar arg0) (toVar arg1) (toVar arg2) nop
-    , \l m r -> dotter (call3Internal name l m r)
+    , --\l m r -> dotter (call3Internal name l m r)
+      Debug.todo "fun3"
     )
 
 
 fun4 :
-    TypingFunction tr r
+    TypingFunction tr
     -> String
-    -> ( TypedName ta a, Expression ta -> a )
-    -> ( TypedName tb b, Expression tb -> b )
-    -> ( TypedName tc c, Expression tc -> c )
-    -> ( TypedName td d, Expression td -> d )
+    -> ( TypedName ta, Expression ta -> a )
+    -> ( TypedName tb, Expression tb -> b )
+    -> ( TypedName tc, Expression tc -> c )
+    -> ( TypedName td, Expression td -> d )
     -> (a -> b -> c -> d -> Continue () -> Statement tr)
     ->
         ( FunDecl
-        , ExpressionX xa ta -> ExpressionX xb tb -> ExpressionX xc tc -> ExpressionX xd td -> r
+        , Expression ta -> Expression tb -> Expression tc -> Expression td -> r
         )
 fun4 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) body =
     let
@@ -1046,22 +731,23 @@ fun4 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) body =
     in
     ( funInternal typed [ argToString arg0, argToString arg1, argToString arg2, argToString arg3 ] <|
         body (toVar arg0) (toVar arg1) (toVar arg2) (toVar arg3) nop
-    , \l m n r -> dotter (call4Internal name l m n r)
+    , --\l m n r -> dotter (call4Internal name l m n r)
+      Debug.todo "fun4"
     )
 
 
 fun5 :
-    TypingFunction tr r
+    TypingFunction tr
     -> String
-    -> ( TypedName ta a, Expression ta -> a )
-    -> ( TypedName tb b, Expression tb -> b )
-    -> ( TypedName tc c, Expression tc -> c )
-    -> ( TypedName td d, Expression td -> d )
-    -> ( TypedName te e, Expression te -> e )
+    -> ( TypedName ta, Expression ta -> a )
+    -> ( TypedName tb, Expression tb -> b )
+    -> ( TypedName tc, Expression tc -> c )
+    -> ( TypedName td, Expression td -> d )
+    -> ( TypedName te, Expression te -> e )
     -> (a -> b -> c -> d -> e -> Continue () -> Statement tr)
     ->
         ( FunDecl
-        , ExpressionX xa ta -> ExpressionX xb tb -> ExpressionX xc tc -> ExpressionX xd td -> ExpressionX xe te -> r
+        , Expression ta -> Expression tb -> Expression tc -> Expression td -> Expression te -> r
         )
 fun5 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) ( arg4, _ ) body =
     let
@@ -1070,28 +756,9 @@ fun5 typeF name ( arg0, _ ) ( arg1, _ ) ( arg2, _ ) ( arg3, _ ) ( arg4, _ ) body
     in
     ( funInternal typed [ argToString arg0, argToString arg1, argToString arg2, argToString arg3, argToString arg4 ] <|
         body (toVar arg0) (toVar arg1) (toVar arg2) (toVar arg3) (toVar arg4) nop
-    , \l m c n r -> dotter (call5Internal name l m c n r)
+    , -- \l m c n r -> dotter (call5Internal name l m c n r)
+      Debug.todo "fun5"
     )
-
-
-dottedVariable1 : String -> Expression t
-dottedVariable1 v =
-    dotted1 (Expression (Variable v))
-
-
-dottedVariable2 : String -> Expression Vec2
-dottedVariable2 v =
-    dotted2 (Expression (Variable v))
-
-
-dottedVariable3 : String -> Expression Vec3
-dottedVariable3 v =
-    dotted3 (Expression (Variable v))
-
-
-dottedVariable4 : String -> Expression Vec4
-dottedVariable4 v =
-    dotted4 (Expression (Variable v))
 
 
 type alias Continue s =
@@ -1100,7 +767,8 @@ type alias Continue s =
 
 if_ : Expression Bool -> (Continue r -> Statement r) -> Continue r -> Statement r
 if_ cond ifTrue next =
-    Statement <| If (unwrapExpression cond) (unwrapStatement <| ifTrue internalNop) (unwrapLazyStatement next)
+    -- Statement <| If (unwrapExpression cond) (unwrapStatement <| ifTrue internalNop) (unwrapLazyStatement next)
+    Debug.todo "if_"
 
 
 ifElse : Expression Bool -> (Continue s -> Statement s) -> (Continue s -> Statement s) -> Continue s -> Statement s
@@ -1109,7 +777,7 @@ ifElse cond ifTrue ifFalse next =
 
 
 for :
-    ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
+    ( String, Expression Int, Expression Int )
     -> (Expression Int -> Continue r -> Statement r)
     -> Continue r
     -> Statement r
@@ -1125,7 +793,7 @@ for ( var, from, to ) loop next =
 
 
 forLeq :
-    ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
+    ( String, Expression Int, Expression Int )
     -> (Expression Int -> Continue r -> Statement r)
     -> Continue r
     -> Statement r
@@ -1141,7 +809,7 @@ forLeq ( var, from, to ) loop next =
 
 
 forDown :
-    ( String, ExpressionX { a | isConstant : Constant } Int, ExpressionX { b | isConstant : Constant } Int )
+    ( String, Expression Int, Expression Int )
     -> (Expression Int -> Continue r -> Statement r)
     -> Continue r
     -> Statement r

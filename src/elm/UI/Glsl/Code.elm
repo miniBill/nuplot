@@ -2,8 +2,7 @@ module UI.Glsl.Code exposing (expressionToGlsl, threshold)
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), toPrintExpression)
-import Glsl exposing (cabs2, cacos2, carg2, casin2, catan2, catan222, cby22, cceil2, ccos2, ccosh2, cdiv22, cexp2, cfloor2, cim2, cln2, clog102, cmax22, cmbrot22, cmin22, cmod22, cpow22, cpw222, cre2, cround2, csign2, csin2, csinh2, csquare2, ctan2, ctanh2, vec21, vec211)
-import Glsl.Helper exposing (Expression)
+import Glsl.Functions exposing (cabs2, cacos2, carg2, casin2, catan2, catan222, cby22, cceil2, ccos2, ccosh2, cdiv22, cexp2, cfloor2, cim2, cln2, clog102, cmax22, cmbrot22, cmin22, cmod22, cpow22, cpw222, cre2, cround2, csign2, csin2, csinh2, csquare2, ctan2, ctanh2, vec21, vec211)
 import UI.Glsl.Generator exposing (Vec2, abs2, add2, by, exp, expr, float, negate2, one, subtract, subtract2, vec2Zero, zero)
 
 

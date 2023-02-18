@@ -3,8 +3,9 @@ module UI.Glsl.Sphere exposing (Sphere, asSphere, toGlsl)
 import Dict exposing (Dict)
 import Expression exposing (Expression)
 import Expression.Polynomial exposing (Exponents)
+import Glsl exposing (dot33)
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, add, arr, assign, bool, boolT, by, byF, def, dot, expr, false, float, floatT, fun4, if_, int, lt, mat3T, mix, negate_, out, return, sqrt_, subtract, true, vec3, vec3T, zero)
+import UI.Glsl.Generator exposing (FunDecl, Mat3, Vec3, assign, bool, boolT, def, expr, float, floatT, fun4, if_, int, mat3T, out, return, vec3T, zero)
 import UI.Glsl.Polynomial as Polynomial
 
 
@@ -73,20 +74,30 @@ reduce poly =
             )
 
 
-toGlsl : String -> Sphere -> ( FunDecl, ExpressionX xa Vec3 -> ExpressionX xb Mat3 -> ExpressionX xc Float -> ExpressionX xd Vec3 -> Expression1 Bool )
+toGlsl : String -> Sphere -> ( FunDecl, Expression Vec3 -> Expression Mat3 -> Expression Float -> Expression Vec3 -> Expression Bool )
 toGlsl suffix (Sphere { center, radius }) =
-    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found nop ->
-    def vec3T "center" (vec3 (float center.x) (float center.y) (float center.z)) <| \centerVar ->
-    def vec3T "to_center" (subtract o centerVar) <| \to_center ->
-    def floatT "b" (dot to_center (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))) <| \b ->
-    def floatT "c" (subtract (dot to_center to_center) (float <| radius * radius)) <| \c ->
-    def floatT "delta" (subtract (by b b) c) <| \delta ->
-    if_ (lt delta zero)
-        (return <| bool False)
-    <| \_ ->
-    def floatT "x" (subtract (negate_ b) (sqrt_ delta)) <| \x ->
-    if_ (lt x <| threshold maxDistance)
-        (return false)
-    <| \_ ->
-    expr (assign found (add o (byF x (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))))) <| \_ ->
-    return true nop
+    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
+        \o d maxDistance found nop ->
+            def vec3T "center" (vec3 (float center.x) (float center.y) (float center.z)) <|
+                \centerVar ->
+                    def vec3T "to_center" (subtract o centerVar) <|
+                        \to_center ->
+                            def floatT "b" (dot33 to_center (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))) <|
+                                \b ->
+                                    def floatT "c" (subtract (dot33 to_center to_center) (float <| radius * radius)) <|
+                                        \c ->
+                                            def floatT "delta" (subtract (by b b) c) <|
+                                                \delta ->
+                                                    if_ (lt delta zero)
+                                                        (return <| bool False)
+                                                    <|
+                                                        \_ ->
+                                                            def floatT "x" (subtract (negate_ b) (sqrt_ delta)) <|
+                                                                \x ->
+                                                                    if_ (lt x <| threshold maxDistance)
+                                                                        (return false)
+                                                                    <|
+                                                                        \_ ->
+                                                                            expr (assign found (add o (byF x (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))))) <|
+                                                                                \_ ->
+                                                                                    return true nop

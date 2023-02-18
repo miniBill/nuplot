@@ -1,7 +1,50 @@
-module Glsl.Helper exposing (BinaryOperation(..), ComboOperation(..), Expr(..), Expression(..), IVec2, IVec3, IVec4, Mat3(..), Name(..), RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction, UnaryOperation(..), Vec2(..), Vec3(..), Vec4(..), Void, unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4)
+module Glsl exposing
+    ( Function
+    , Statement(..), Stat(..), ForDirection(..)
+    , Expression(..), Expr(..)
+    , BinaryOperation(..), UnaryOperation(..), RelationOperation(..), ComboOperation(..)
+    , true, false, int, float, var
+    , TypingFunction, TypedName(..), Type(..)
+    , Vec2(..), Vec3(..), Vec4(..), IVec2, IVec3, IVec4, Mat3(..), Void
+    , unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4
+    , unsafeMap, unsafeMap2, unsafeMap3
+    )
+
+{-|
+
+
+# Types
+
+@docs Function
+@docs Statement, Stat, ForDirection
+@docs Expression, ExprWithDeps, Expr
+@docs BinaryOperation, UnaryOperation, RelationOperation, ComboOperation
+
+
+# Utils
+
+@docs true, false, int, float, var
+
+
+# Typelevel types
+
+@docs TypingFunction, TypedName, Type
+@docs Vec2, Vec3, Vec4, IVec2, IVec3, IVec4, Mat3, Void
+
+
+# Escape hatches
+
+@docs unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4
+@docs unsafeMap, unsafeMap2, unsafeMap3
+
+-}
 
 import Set exposing (Set)
 import SortedSet exposing (SortedSet)
+
+
+
+-- UNSAFE --
 
 
 unsafeCall0 : String -> List String -> Expression r
@@ -43,8 +86,47 @@ unsafeCall name deps args =
         }
 
 
+unsafeMap : (Expr -> Expr) -> Expression a -> Expression b
+unsafeMap f (Expression l) =
+    Expression
+        { expr = f l.expr
+        , deps = l.deps
+        }
+
+
+unsafeMap2 : (Expr -> Expr -> Expr) -> Expression a -> Expression b -> Expression c
+unsafeMap2 f (Expression l) (Expression r) =
+    Expression
+        { expr = f l.expr r.expr
+        , deps =
+            l.deps
+                |> SortedSet.insertAll r.deps
+        }
+
+
+unsafeMap3 : (Expr -> Expr -> Expr -> Expr) -> Expression a -> Expression b -> Expression c -> Expression d
+unsafeMap3 f (Expression l) (Expression m) (Expression r) =
+    Expression
+        { expr = f l.expr m.expr r.expr
+        , deps =
+            l.deps
+                |> SortedSet.insertAll m.deps
+                |> SortedSet.insertAll r.deps
+        }
+
+
 
 -- Typed expressions
+
+
+type alias Function =
+    { returnType : Type
+    , name : String
+    , args : List ( Type, String )
+    , stat : Stat
+    , body : String
+    , hasSuffix : Bool
+    }
 
 
 type Expression t
@@ -62,8 +144,6 @@ type Expr
     | Int Int
     | Float Float
     | Variable String
-    | And Expr Expr
-    | Or Expr Expr
     | Comparison RelationOperation Expr Expr
     | Ternary Expr Expr Expr
     | UnaryOperation UnaryOperation Expr
@@ -71,10 +151,8 @@ type Expr
     | Call String (List Expr)
     | PostfixIncrement Expr
     | PostfixDecrement Expr
-    | Unknown String
     | Dot Expr String
     | Array Expr Expr
-    | Assign Expr Expr
     | AssignCombo ComboOperation Expr Expr
 
 
@@ -83,6 +161,8 @@ type BinaryOperation
     | Subtract
     | By
     | Div
+    | And
+    | Or
 
 
 type UnaryOperation
@@ -96,6 +176,7 @@ type RelationOperation
     | NotEquals
     | GreaterThanOrEquals
     | GreaterThan
+    | Assign
 
 
 type ComboOperation
@@ -119,14 +200,18 @@ type Statement r
 type Stat
     = If Expr Stat Stat
     | IfElse Expr Stat Stat Stat
-    | For String Expr RelationOperation Expr Expr Stat Stat
-    | Line String
+    | For String Expr RelationOperation Expr ForDirection Stat Stat
     | Return Expr
     | Break
     | Continue
     | ExpressionStatement Expr Stat
-    | Decl String Name (Maybe Expr) Stat
+    | Decl Type String (Maybe Expr) Stat
     | Nop
+
+
+type ForDirection
+    = PlusPlus
+    | MinusMinus
 
 
 type alias TypingFunction t =
@@ -134,15 +219,21 @@ type alias TypingFunction t =
 
 
 type TypedName t
-    = TypedName Type Name
+    = TypedName Type String
 
 
 type Type
-    = Type String
-
-
-type Name
-    = Name String
+    = TVoid
+    | TFloat
+    | TInt
+    | TBool
+    | TVec2
+    | TVec3
+    | TVec4
+    | TIVec2
+    | TIVec3
+    | TIVec4
+    | TMat3
 
 
 
@@ -179,3 +270,45 @@ type Mat3
 
 type Void
     = Void Void
+
+
+
+-- Utils
+
+
+true : Expression Bool
+true =
+    bool True
+
+
+false : Expression Bool
+false =
+    bool False
+
+
+bool : Bool -> Expression Bool
+bool b =
+    pure <| Bool b
+
+
+int : Int -> Expression Int
+int i =
+    pure <| Int i
+
+
+float : Float -> Expression Float
+float i =
+    pure <| Float i
+
+
+var : String -> Expression t
+var v =
+    pure <| Variable v
+
+
+pure : Expr -> Expression t
+pure e =
+    Expression
+        { expr = e
+        , deps = SortedSet.empty
+        }
