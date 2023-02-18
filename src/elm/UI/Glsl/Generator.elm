@@ -48,7 +48,7 @@ statToGlsl : Int -> Stat -> String
 statToGlsl i c =
     case c of
         If cond t n ->
-            [ indent i ("if (" ++ exprToGlsl (Expression cond) ++ ") {")
+            [ indent i ("if (" ++ exprToGlsl cond ++ ") {")
             , statToGlsl (i + 1) t
             , indent i "}"
             , ""
@@ -57,7 +57,7 @@ statToGlsl i c =
                 |> String.join "\n"
 
         IfElse cond t ((If _ _ _) as f) n ->
-            [ indent i ("if (" ++ exprToGlsl (Expression cond) ++ ") {")
+            [ indent i ("if (" ++ exprToGlsl cond ++ ") {")
             , statToGlsl (i + 1) t
             , indent i <| "} else " ++ String.trimLeft (statToGlsl i f)
             , statToGlsl i n
@@ -65,7 +65,7 @@ statToGlsl i c =
                 |> String.join "\n"
 
         IfElse cond t ((IfElse _ _ _ _) as f) n ->
-            [ indent i ("if (" ++ exprToGlsl (Expression cond) ++ ") {")
+            [ indent i ("if (" ++ exprToGlsl cond ++ ") {")
             , statToGlsl (i + 1) t
             , indent i <| "} else " ++ String.trimLeft (statToGlsl i f)
             , statToGlsl i n
@@ -73,7 +73,7 @@ statToGlsl i c =
                 |> String.join "\n"
 
         IfElse cond t f n ->
-            [ indent i ("if (" ++ exprToGlsl (Expression cond) ++ ") {")
+            [ indent i ("if (" ++ exprToGlsl cond ++ ") {")
             , statToGlsl (i + 1) t
             , indent i "} else {"
             , statToGlsl (i + 1) f
