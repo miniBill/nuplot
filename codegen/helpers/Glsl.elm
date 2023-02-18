@@ -5,8 +5,8 @@ module Glsl exposing
     , BinaryOperation(..), UnaryOperation(..), RelationOperation(..), ComboOperation(..)
     , true, false, int, float, var
     , TypingFunction, TypedName(..), Type(..)
-    , Vec2(..), Vec3(..), Vec4(..), IVec2, IVec3, IVec4, Mat3(..), Void
-    , unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4
+    , Vec2, Vec3, Vec4, IVec2, IVec3, IVec4, Mat3, Void, In, Out
+    , unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5
     , unsafeMap, unsafeMap2, unsafeMap3
     )
 
@@ -29,17 +29,16 @@ module Glsl exposing
 # Typelevel types
 
 @docs TypingFunction, TypedName, Type
-@docs Vec2, Vec3, Vec4, IVec2, IVec3, IVec4, Mat3, Void
+@docs Vec2, Vec3, Vec4, IVec2, IVec3, IVec4, Mat3, Void, In, Out
 
 
 # Escape hatches
 
-@docs unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4
+@docs unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5
 @docs unsafeMap, unsafeMap2, unsafeMap3
 
 -}
 
-import Set exposing (Set)
 import SortedSet exposing (SortedSet)
 
 
@@ -70,6 +69,11 @@ unsafeCall3 name deps (Expression arg0) (Expression arg1) (Expression arg2) =
 unsafeCall4 : String -> List String -> Expression t -> Expression u -> Expression v -> Expression w -> Expression r
 unsafeCall4 name deps (Expression arg0) (Expression arg1) (Expression arg2) (Expression arg3) =
     unsafeCall name deps [ arg0, arg1, arg2, arg3 ]
+
+
+unsafeCall5 : String -> List String -> Expression t -> Expression u -> Expression v -> Expression w -> Expression x -> Expression r
+unsafeCall5 name deps (Expression arg0) (Expression arg1) (Expression arg2) (Expression arg3) (Expression arg4) =
+    unsafeCall name deps [ arg0, arg1, arg2, arg3, arg4 ]
 
 
 unsafeCall : String -> List String -> List ExprWithDeps -> Expression t
@@ -193,7 +197,7 @@ type ComboOperation
 type Statement r
     = Statement
         { stat : Stat
-        , deps : Set String
+        , deps : SortedSet String
         }
 
 
@@ -234,6 +238,8 @@ type Type
     | TIVec3
     | TIVec4
     | TMat3
+    | TIn Type
+    | TOut Type
 
 
 
@@ -270,6 +276,14 @@ type Mat3
 
 type Void
     = Void Void
+
+
+type In t
+    = In (In t)
+
+
+type Out t
+    = Out (Out t)
 
 
 
