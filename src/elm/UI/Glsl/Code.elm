@@ -2,8 +2,10 @@ module UI.Glsl.Code exposing (expressionToGlsl, threshold)
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), toPrintExpression)
-import Glsl.Functions exposing (cabs2, cacos2, carg2, casin2, catan2, catan222, cby22, cceil2, ccos2, ccosh2, cdiv22, cexp2, cfloor2, cim2, cln2, clog102, cmax22, cmbrot22, cmin22, cmod22, cpow22, cpw222, cre2, cround2, csign2, csin2, csinh2, csquare2, ctan2, ctanh2, vec21, vec211)
-import UI.Glsl.Generator exposing (Vec2, abs2, add2, by, exp, expr, float, negate2, one, subtract, subtract2, vec2Zero, zero)
+import Glsl exposing (Expression, Vec2, float)
+import Glsl.Functions exposing (abs2, cabs2, cacos2, carg2, casin2, catan2, catan222, cby22, cceil2, ccos2, ccosh2, cdiv22, cexp2, cfloor2, cim2, cln2, clog102, cmax22, cmbrot22, cmin22, cmod22, cpow22, cpw222, cre2, cround2, csign2, csin2, csinh2, csquare2, ctan2, ctanh2, exp1, vec21, vec211)
+import Glsl.Operations exposing (add22, by11, negate2, subtract22)
+import UI.Glsl.Generator exposing (expr, one, vec2Zero, zero)
 
 
 expressionToGlsl : List ( String, Expression Float ) -> Expression.Expression -> Expression Vec2
@@ -29,10 +31,10 @@ expressionToGlsl context =
                     vec211 zero one
 
                 PVariable "pi" ->
-                    vec211 constants.pi zero
+                    vec211 (float pi) zero
 
                 PVariable "e" ->
-                    vec211 (exp one) zero
+                    vec211 (exp1 one) zero
 
                 PVariable v ->
                     case Dict.get v ctx of
@@ -52,30 +54,30 @@ expressionToGlsl context =
                     negate2 <| go expression
 
                 PAdd l (PNegate r) ->
-                    subtract2 (go l) (go r)
+                    subtract22 (go l) (go r)
 
                 PAdd l r ->
-                    add2 (go l) (go r)
+                    add22 (go l) (go r)
 
                 PRel op l r ->
                     case op of
                         LessThan ->
-                            subtract2 (go r) (go l)
+                            subtract22 (go r) (go l)
 
                         LessThanOrEquals ->
-                            subtract2 (go r) (go l)
+                            subtract22 (go r) (go l)
 
                         NotEquals ->
-                            abs2 <| subtract (go r) (go l)
+                            abs2 <| subtract22 (go r) (go l)
 
                         Equals ->
-                            abs2 <| subtract (go r) (go l)
+                            abs2 <| subtract22 (go r) (go l)
 
                         GreaterThanOrEquals ->
-                            subtract2 (go l) (go r)
+                            subtract22 (go l) (go r)
 
                         GreaterThan ->
-                            subtract2 (go l) (go r)
+                            subtract22 (go l) (go r)
 
                 PBy l r ->
                     cby22 (go l) (go r)
@@ -86,7 +88,7 @@ expressionToGlsl context =
                 PPower (PVariable v) (PInteger 2) ->
                     case Dict.get v ctx of
                         Just w ->
-                            vec211 (by w w) zero
+                            vec211 (by11 w w) zero
 
                         Nothing ->
                             vec2Zero
@@ -196,4 +198,4 @@ expressionToGlsl context =
 
 threshold : Expression Float -> Expression Float
 threshold max_distance =
-    by (float 0.000001) max_distance
+    by11 (float 0.000001) max_distance

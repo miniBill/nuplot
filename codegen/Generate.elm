@@ -8,6 +8,7 @@ import Gen.Debug
 import Gen.Glsl
 import Glsl exposing (BinaryOperation(..), Expr(..), Expression(..), Function, Stat(..), Statement(..), Type(..))
 import Glsl.Parser
+import Glsl.PrettyPrinter
 import List.Extra
 import Parser
 import Result.Extra
@@ -283,6 +284,12 @@ typeToAnnotation type_ =
         TVoid ->
             Gen.Glsl.annotation_.void
 
+        TIn tt ->
+            Gen.Glsl.annotation_.in_ (typeToAnnotation tt)
+
+        TOut tt ->
+            Gen.Glsl.annotation_.out (typeToAnnotation tt)
+
 
 variableHasType : String -> Type -> Env -> Env
 variableHasType var type_ env =
@@ -449,7 +456,7 @@ findDepsExpression env =
                                         Ok TFloat
 
                                     _ ->
-                                        Err <| "Don't know what the result of " ++ typeToString lt ++ "[" ++ typeToString rt ++ "] is"
+                                        Err <| "Don't know what the result of " ++ Glsl.PrettyPrinter.type_ lt ++ "[" ++ Glsl.PrettyPrinter.type_ rt ++ "] is"
                                 )
                         )
                         (Result.map2 Tuple.pair
@@ -495,7 +502,7 @@ findDepsExpression env =
                                             Ok lt
 
                                         _ ->
-                                            Err <| "Don't know what the result of " ++ typeToString lt ++ " " ++ binaryOperationToString bop ++ " " ++ typeToString rt
+                                            Err <| "Don't know what the result of " ++ Glsl.PrettyPrinter.type_ lt ++ " " ++ binaryOperationToString bop ++ " " ++ Glsl.PrettyPrinter.type_ rt
                                 )
                         )
                         (Result.map2 Tuple.pair
@@ -526,43 +533,6 @@ findDepsExpression env =
                         (go r)
     in
     go >> Result.map Tuple.second
-
-
-typeToString : Type -> String
-typeToString t =
-    case t of
-        TFloat ->
-            "float"
-
-        TInt ->
-            "int"
-
-        TVec2 ->
-            "vec2"
-
-        TIVec2 ->
-            "ivec2"
-
-        TVec3 ->
-            "vec3"
-
-        TIVec3 ->
-            "ivec3"
-
-        TVec4 ->
-            "vec4"
-
-        TIVec4 ->
-            "ivec4"
-
-        TMat3 ->
-            "mat3"
-
-        TVoid ->
-            "void"
-
-        TBool ->
-            "bool"
 
 
 binaryOperationToString : BinaryOperation -> String
@@ -627,6 +597,12 @@ typeToShort t =
 
         TBool ->
             "b1"
+
+        TIn tt ->
+            "n" ++ typeToShort tt
+
+        TOut tt ->
+            "o" ++ typeToShort tt
 
 
 builtinUniforms : Dict String Type
