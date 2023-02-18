@@ -16,9 +16,10 @@ import SortedSet exposing (SortedSet)
 
 main : Program String () ()
 main =
-    Generate.fromText
-        (\glsl ->
-            [ Elm.fileWith [ "Glsl" ]
+    let
+        file : String -> Elm.File
+        file glsl =
+            Elm.fileWith [ "Glsl" ]
                 { docs =
                     List.map
                         (\{ group, members } ->
@@ -30,8 +31,8 @@ main =
                 , aliases = []
                 }
                 (generate glsl)
-            ]
-        )
+    in
+    Generate.fromText (\glsl -> [ file glsl ])
 
 
 generate : String -> List Elm.Declaration
