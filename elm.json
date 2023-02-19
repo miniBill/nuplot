@@ -3,7 +3,8 @@
     "source-directories": [
         "src/elm",
         "src/elm-extra",
-        "generated"
+        "generated",
+        "codegen/helpers"
     ],
     "elm-version": "0.19.1",
     "dependencies": {
