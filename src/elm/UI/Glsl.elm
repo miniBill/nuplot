@@ -8,7 +8,7 @@ import Expression.Utils exposing (by, minus, plus, square)
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (constantToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, expr, fileToGlsl)
+import UI.Glsl.Generator as Generator exposing (FunDecl, expr, fileToGlsl)
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
 import UI.Glsl.Sphere as Sphere
