@@ -2,7 +2,7 @@ module UI.Glsl.Code exposing (expressionToGlsl, threshold)
 
 import Dict
 import Expression exposing (FunctionName(..), KnownFunction(..), PrintExpression(..), RelationOperation(..), toPrintExpression)
-import Glsl exposing (Expression, Vec2, float)
+import Glsl exposing (Expr, Expression, Vec2, float)
 import Glsl.Functions exposing (abs2, cabs2, cacos2, carg2, casin2, catan2, catan222, cby22, cceil2, ccos2, ccosh2, cdiv22, cexp2, cfloor2, cim2, cln2, clog102, cmax22, cmbrot22, cmin22, cmod22, cpow22, cpw222, cre2, cround2, csign2, csin2, csinh2, csquare2, ctan2, ctanh2, exp1, vec21, vec211)
 import Glsl.Operations exposing (add22, by11, negate2, subtract22)
 import UI.Glsl.Generator exposing (expr, one, vec2Zero, zero)
@@ -199,3 +199,37 @@ expressionToGlsl context =
 threshold : Expression Float -> Expression Float
 threshold max_distance =
     by11 (float 0.000001) max_distance
+
+
+toSrcImplicit : String -> Expr -> String
+toSrcImplicit suffix e =
+    let
+        antialiasingSamples =
+            7
+    in
+    """
+    float f_SUFFIX(float x, float y) {
+        vec2 complex = EXPRESSION;
+        if(abs(complex.y) > EPSILON) {
+            return 0.0;
+        }
+        return complex.x > 0.0 ? 1.0 : -1.0;
+    }
+
+    vec3 pixel_SUFFIX(float deltaX, float deltaY, float x, float y) {
+        float sum = 0.0;
+        float samples = ANTIALIASING_SAMPLES * 2.0 + 1.0;
+        samples *= samples;
+        float coeff = 0.0875;
+        for(int w = -ANTIALIASING_SAMPLES; w <= ANTIALIASING_SAMPLES; w++)
+            for(int h = -ANTIALIASING_SAMPLES; h <= ANTIALIASING_SAMPLES; h++) {
+                float piece = f_SUFFIX(x + deltaX * coeff * float(w), y + deltaX * coeff * float(h));
+                if(piece == 0.0)
+                    return vec3(0);
+                sum += piece;
+            }
+        float perc = (samples - abs(sum)) / samples;
+        perc = pow(perc, 0.2);
+        return perc * vec3(1,1,1);
+    }
+    """
