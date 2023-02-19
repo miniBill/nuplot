@@ -1,5 +1,5 @@
 ELM_FILES = $(wildcard src/**/*.elm)
-CODEGEN_FILES = $(wildcard codegen/*.elm) $(wildcard codegen/Glsl/*.elm) $(wildcard codegen/helpers/*.elm) $(wildcard codegen/helpers/*/*.elm)
+CODEGEN_FILES = $(wildcard codegen/src/*.elm) $(wildcard codegen/src/Glsl/*.elm) $(wildcard codegen/helpers/*.elm) $(wildcard codegen/helpers/*/*.elm)
 
 .PHONY: build
 build: generated/Glsl/Functions.elm src/optimized.js Makefile
@@ -8,12 +8,15 @@ build: generated/Glsl/Functions.elm src/optimized.js Makefile
 src/optimized.js: $(ELM_FILES) Makefile
 	elm-optimize-level-2 src/elm/UI.elm --output $@
 
-generated/Glsl/Functions.elm: codegen/functions.frag $(CODEGEN_FILES) codegen/Gen/Glsl.elm Makefile
+generated/Glsl/Functions.elm: codegen/functions.frag $(CODEGEN_FILES) codegen/bindings/Gen/Glsl.elm Makefile
 	rm -rf generated
-	elm-codegen run --flags-from $<
+	elm-codegen run --flags-from $< codegen/src/Generate.elm
 
-codegen/Gen/Glsl.elm: $(CODEGEN_FILES) codegen/elm.codegen.json Makefile
+codegen/bindings/Gen/Glsl.elm: $(CODEGEN_FILES) codegen/elm.codegen.json Makefile
+	rm -rf codegen/bindings
 	elm-codegen install
+	mkdir -p codegen/bindings
+	mv codegen/Gen codegen/bindings/
 
 
 .PHONY: clean
