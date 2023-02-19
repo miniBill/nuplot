@@ -5,6 +5,7 @@ import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expre
 import Expression.Graph exposing (Graph(..))
 import Expression.Polynomial exposing (asPolynomial)
 import Expression.Utils exposing (by, minus, plus, square)
+import Glsl exposing (BisectSignature, Mat3, Out, Vec3)
 import Maybe.Extra as Maybe
 import SortedAnySet as Set
 import UI.Glsl.Code exposing (constantToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
@@ -107,16 +108,7 @@ getGlsl rayDifferentials graph =
         ++ mainGlsl rayDifferentials pixel2D pixel3D
 
 
-get3DSource :
-    String
-    -> Expression
-    ->
-        (Glsl.Helper.Expression Vec3
-         -> Glsl.Helper.Expression Mat3
-         -> Glsl.Helper.Expression Float
-         -> Glsl.Helper.Expression Vec3
-         -> Glsl.Helper.Expression Bool
-        )
+get3DSource : String -> Expression -> BisectSignature
 get3DSource prefix e =
     case Sphere.asSphere e |> Maybe.map (Sphere.toGlsl prefix) of
         Just bisect ->
@@ -124,9 +116,8 @@ get3DSource prefix e =
 
         Nothing ->
             case Plane.asPlane e |> Maybe.map (Plane.toGlsl prefix) of
-                Just ( glsl, bisect ) ->
-                    { bisect = bisect
-                    }
+                Just bisect ->
+                    bisect
 
                 Nothing ->
                     case tryGlslFromPolynomial prefix e of
@@ -134,33 +125,10 @@ get3DSource prefix e =
                             o
 
                         Nothing ->
-                            let
-                                ( glsl, interval ) =
-                                    toSrc3D prefix e
-
-                                ( decl, bisect ) =
-                                    UI.Glsl.Code.suffixToBisect interval prefix
-                            in
-                            { expr = e
-                            , funDecls = glsl ++ [ decl ]
-                            , bisect = bisect
-                            }
+                            UI.Glsl.Code.suffixToBisect (toSrc3D prefix e) prefix
 
 
-tryGlslFromPolynomial :
-    String
-    -> Expression
-    ->
-        Maybe
-            { expr : Expression
-            , funDecls : List FunDecl
-            , bisect :
-                Glsl.Helper.Expression Vec3
-                -> Glsl.Helper.Expression Mat3
-                -> Glsl.Helper.Expression Float
-                -> Glsl.Helper.Expression Vec3
-                -> Glsl.Helper.Expression Bool
-            }
+tryGlslFromPolynomial : String -> Expression -> Maybe BisectSignature
 tryGlslFromPolynomial suffix e =
     let
         t =
@@ -208,11 +176,8 @@ tryGlslFromPolynomial suffix e =
                 |> Maybe.map Dict.fromList
                 |> Maybe.withDefault Dict.empty
     in
-    UI.Glsl.Polynomial.glslFromPolySolutions suffix { base = unknown "max_distance" } poly
+    UI.Glsl.Polynomial.glslFromPolySolutions suffix (var "max_distance") poly
         |> Maybe.map
-            (\{ funDecls, bisect } ->
-                { funDecls = funDecls
-                , expr = Expression.Utils.div Expression.Utils.one <| Expression.Utils.sqrt_ <| Expression.Utils.cbrt <| Expression.Utils.ipow e 3
-                , bisect = bisect
-                }
+            (\{ bisect } ->
+                bisect
             )

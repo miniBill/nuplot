@@ -1,9 +1,9 @@
-module UI.Glsl.Generator exposing (Context, Continue, ErrorValue(..), File, FunDecl, GlslValue(..), adds2, adds3, adds4, and, ands, assign, assignAdd, assignBy, boolT, break, continue, decl, def, expr, expressionToGlsl, fileToGlsl, floatT, floatToGlsl, for, forDown, forLeq, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, gl_FragColor, gl_FragCoord, ifElse, if_, in_, intT, interpret, mat3T, minusOne, one, or, ors, out, return, statementToGlsl, ternary, ternary3, value, valueToString, vec2T, vec2Zero, vec3T, vec3Zero, vec4T, vec4Zero, voidT, zero)
+module UI.Glsl.Generator exposing (Context, ErrorValue(..), File, FunDecl, GlslValue(..), adds2, adds3, adds4, and, ands, assign, assignAdd, assignBy, assignOut, boolT, break, continue, decl, def, def1, def2, def3, expr, expressionToGlsl, fileToGlsl, floatT, floatToGlsl, for, forDown, forLeq, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, gl_FragColor, gl_FragCoord, ifElse, if_, in_, intT, interpret, mat3T, minusOne, one, or, ors, out, return, statementToGlsl, ternary, ternary3, value, valueToString, vec2T, vec2Zero, vec3T, vec3Zero, vec4T, vec4Zero, voidT, zero)
 
 import Dict exposing (Dict)
-import Glsl exposing (BinaryOperation(..), ComboOperation(..), Expr(..), Expression(..), ForDirection(..), In, Mat3, Out, RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction, UnaryOperation(..), Vec2, Vec3, Vec4, false, float, int, true, unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5, unsafeMap2, unsafeMap3, var)
+import Glsl exposing (BinaryOperation(..), ComboOperation(..), Expr(..), Expression(..), ForDirection(..), In, Mat3, Out, RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction, UnaryOperation(..), Vec2, Vec3, Vec4, buildStatement, false, float, statement, true, unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5, unsafeExprStat, unsafeMap2, unsafeMap3, unsafeStat1, var, withExpression, withStatement)
 import Glsl.Functions exposing (vec211, vec3111, vec41111)
-import Glsl.Operations exposing (add11, add22, add33, add44)
+import Glsl.Operations exposing (add22, add33, add44)
 import Set
 import SortedSet
 
@@ -202,16 +202,6 @@ relationToString rel =
 
         Assign ->
             "="
-
-
-nop : Continue ()
-nop =
-    internalNop
-
-
-internalNop : Continue a
-internalNop () =
-    Statement { stat = Nop, deps = SortedSet.empty }
 
 
 expressionToGlsl : Expression t -> String
@@ -764,26 +754,29 @@ fun5 typeF name (TypedName t0 arg0) (TypedName t1 arg1) (TypedName t2 arg2) (Typ
         [ ( t0, arg0 ), ( t1, arg1 ), ( t2, arg2 ), ( t3, arg3 ), ( t4, arg4 ) ]
 
 
-type alias Continue s =
-    () -> Statement s
-
-
-if_ : Expression Bool -> (Continue r -> Statement r) -> Continue r -> Statement r
+if_ : Expression Bool -> Statement r -> Statement r -> Statement r
 if_ cond ifTrue next =
-    -- Statement <| If (unwrapExpression cond) (unwrapStatement <| ifTrue internalNop) (unwrapLazyStatement next)
-    Debug.todo "if_"
+    statement If
+        |> withExpression cond
+        |> withStatement ifTrue
+        |> withStatement next
+        |> buildStatement
 
 
-ifElse : Expression Bool -> (Continue s -> Statement s) -> (Continue s -> Statement s) -> Continue s -> Statement s
+ifElse : Expression Bool -> Statement s -> Statement s -> Statement s -> Statement s
 ifElse cond ifTrue ifFalse next =
-    --Statement <| IfElse (unwrapExpression cond) (unwrapStatement <| ifTrue internalNop) (unwrapStatement <| ifFalse internalNop) (unwrapLazyStatement next)
-    Debug.todo "ifElse"
+    statement IfElse
+        |> withExpression cond
+        |> withStatement ifTrue
+        |> withStatement ifFalse
+        |> withStatement next
+        |> buildStatement
 
 
 for :
     ( String, Expression Int, Expression Int )
-    -> (Expression Int -> Continue r -> Statement r)
-    -> Continue r
+    -> (Expression Int -> Statement r -> Statement r)
+    -> Statement r
     -> Statement r
 for ( var, from, to ) loop next =
     -- Statement <|
@@ -799,8 +792,8 @@ for ( var, from, to ) loop next =
 
 forLeq :
     ( String, Expression Int, Expression Int )
-    -> (Expression Int -> Continue r -> Statement r)
-    -> Continue r
+    -> (Expression Int -> Statement r -> Statement r)
+    -> Statement r
     -> Statement r
 forLeq ( var, from, to ) loop next =
     -- Statement <|
@@ -816,8 +809,8 @@ forLeq ( var, from, to ) loop next =
 
 forDown :
     ( String, Expression Int, Expression Int )
-    -> (Expression Int -> Continue r -> Statement r)
-    -> Continue r
+    -> (Expression Int -> Statement r -> Statement r)
+    -> Statement r
     -> Statement r
 forDown ( var, from, to ) loop next =
     -- Statement <|
@@ -831,22 +824,23 @@ forDown ( var, from, to ) loop next =
     Debug.todo "forDown"
 
 
-return : Expression r -> Continue x -> Statement r
-return e _ =
-    -- Statement <| Return <| unwrapExpression e
-    Debug.todo "return"
+return : Expression r -> Statement r
+return e =
+    statement Return
+        |> withExpression e
+        |> buildStatement
 
 
-break : Continue a -> Statement a
-break _ =
-    -- Statement Break
-    Debug.todo "break"
+break : Statement a
+break =
+    statement Break
+        |> buildStatement
 
 
-continue : Continue a -> Statement a
-continue _ =
-    -- Statement Continue
-    Debug.todo "continue"
+continue : Statement a
+continue =
+    statement Continue
+        |> buildStatement
 
 
 decl : TypingFunction t -> String -> (Expression t -> Statement r) -> Statement r
@@ -854,67 +848,85 @@ decl typeF name k =
     let
         (TypedName t n) =
             typeF name
-
-        (Statement ks) =
-            k (var n)
     in
-    Statement
-        { stat = Decl t n Nothing ks.stat
-        , deps = ks.deps
-        }
+    statement (Decl t n Nothing)
+        |> withStatement (k (var n))
+        |> buildStatement
 
 
 def : TypingFunction t -> String -> Expression t -> (Expression t -> Statement r) -> Statement r
-def typeF name (Expression v) k =
-    let
-        (TypedName t n) =
-            typeF name
+def typeF name val k =
+    def1 ( typeF name, val ) k
 
-        (Statement ks) =
-            k (var n)
+
+def1 :
+    ( TypedName a, Expression a )
+    -> (Expression a -> Statement r)
+    -> Statement r
+def1 ( tn0, val0 ) k =
+    let
+        (TypedName t0 n0) =
+            tn0
     in
-    Statement
-        { stat = Decl t n (Just v.expr) ks.stat
-        , deps =
-            ks.deps
-                |> SortedSet.insertAll v.deps
-        }
+    statement
+        (\v0 k0 -> Decl t0 n0 (Just v0) k0)
+        |> withExpression val0
+        |> withStatement (k (var n0))
+        |> buildStatement
+
+
+def2 :
+    ( TypedName a, Expression a )
+    -> ( TypedName b, Expression b )
+    -> (Expression a -> Expression b -> Statement r)
+    -> Statement r
+def2 ( tn0, val0 ) ( tn1, val1 ) k =
+    def1 ( tn0, val0 )
+        (\v0 ->
+            def1 ( tn1, val1 )
+                (\v1 -> k v0 v1)
+        )
+
+
+def3 :
+    ( TypedName a, Expression a )
+    -> ( TypedName b, Expression b )
+    -> ( TypedName c, Expression c )
+    -> (Expression a -> Expression b -> Expression c -> Statement r)
+    -> Statement r
+def3 ( tn0, val0 ) ( tn1, val1 ) ( tn2, val2 ) k =
+    def1 ( tn0, val0 )
+        (\v0 ->
+            def1 ( tn1, val1 )
+                (\v1 ->
+                    def1 ( tn2, val2 )
+                        (\v2 -> k v0 v1 v2)
+                )
+        )
 
 
 assign : Expression t -> Expression t -> Expression t
 assign name e =
-    -- dotted1Internal <| Assign (unwrapExpression name) (unwrapExpression e)
-    Debug.todo "assign"
+    unsafeMap2 (Comparison Assign) name e
 
 
-unwrapLazyStatement : Continue r -> Stat
-unwrapLazyStatement f =
-    let
-        (Statement next) =
-            f ()
-    in
-    -- next
-    Debug.todo "unwrapLazyStatement"
+assignOut : Expression (Out t) -> Expression t -> Expression t
+assignOut name e =
+    unsafeMap2 (Comparison Assign) name e
 
 
-unwrapStatement : Statement r -> Stat
-unwrapStatement (Statement { stat }) =
-    stat
+expr : Expression t -> Statement r -> Statement r
+expr =
+    unsafeExprStat ExpressionStatement
 
 
-expr : Expression t -> Continue q -> Statement q
-expr e next =
-    -- Statement <| ExpressionStatement (unwrapExpression e) (unwrapLazyStatement next)
-    Debug.todo "expr"
-
-
-assignAdd : Expression t -> Expression t -> Continue q -> Statement q
+assignAdd : Expression t -> Expression t -> Statement q -> Statement q
 assignAdd name e next =
     -- Statement <| ExpressionStatement (AssignCombo ComboAdd (unwrapExpression name) (unwrapExpression e)) (unwrapLazyStatement next)
     Debug.todo "assignAdd"
 
 
-assignBy : Expression t -> Expression t -> Continue q -> Statement q
+assignBy : Expression t -> Expression t -> Statement q -> Statement q
 assignBy name e next =
     -- Statement <| ExpressionStatement (AssignCombo ComboBy (unwrapExpression name) (unwrapExpression e)) (unwrapLazyStatement next)
     Debug.todo "assignBy"

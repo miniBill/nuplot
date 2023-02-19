@@ -2,10 +2,12 @@ module UI.Glsl.Plane exposing (Plane, asPlane, toGlsl)
 
 import Dict
 import Expression exposing (Expression)
-import Glsl exposing (dot33)
+import Glsl exposing (BisectSignature, float, int)
+import Glsl.Functions exposing (dot33, mix331, vec3111)
+import Glsl.Operations exposing (add11, add33, array33, by13, div11, gt, negate1)
 import Maybe
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator exposing (Expression1, ExpressionX, FunDecl, Mat3, Vec3, add, arr, assign, boolT, byF, def, div, expr, float, floatT, fun4, gt, int, mat3T, negate_, out, return, vec3, vec3T)
+import UI.Glsl.Generator exposing (assignOut, boolT, def, def2, expr, floatT, fun4, mat3T, out, return, vec3T)
 import UI.Glsl.Polynomial as Polynomial
 
 
@@ -36,10 +38,10 @@ asPlane e =
             )
 
 
-toGlsl : String -> Plane -> ( FunDecl, Expression Vec3 -> Expression Mat3 -> Expression Float -> Expression Vec3 -> Expression1 Bool )
+toGlsl : String -> Plane -> BisectSignature
 toGlsl suffix (Plane { x, y, z, known }) =
     fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
-        \o d maxDistance found nop ->
+        \o d maxDistance found ->
             -- a x + b y + c z + k = 0
             -- x = ox + t dx
             -- y = oy + t dy
@@ -47,18 +49,18 @@ toGlsl suffix (Plane { x, y, z, known }) =
             -- a ox + a t dx + b oy + b t dy + c oz + c t dz + k = 0
             -- t (a dx + b dy + c dy) = - k - (a ox + b oy + c oz)
             -- t = - (k + dot abc o) / (dot abc d)
-            def vec3T "coeffs" (vec3 (float x) (float y) (float z)) <|
-                \coeffs ->
-                    def vec3T "dsum" (byF (float 0.5) <| add (arr d <| int 0) (arr d <| int 1)) <|
-                        \dsum ->
-                            def floatT
-                                "t"
-                                (div
-                                    (negate_ <| add (float known) (dot coeffs o))
-                                    (dot33 coeffs dsum)
-                                )
-                            <|
-                                \t ->
-                                    expr (assign found <| add o <| byF t dsum) <|
-                                        \_ ->
-                                            return (gt t <| threshold maxDistance) nop
+            def2
+                ( vec3T "coeffs", vec3111 (float x) (float y) (float z) )
+                ( vec3T "dMix", mix331 (array33 d (int 0)) (array33 d (int 1)) (float 0.5) )
+            <|
+                \coeffs dMix ->
+                    def floatT
+                        "t"
+                        (div11
+                            (negate1 <| add11 (float known) (dot33 coeffs o))
+                            (dot33 coeffs dMix)
+                        )
+                    <|
+                        \t ->
+                            expr (assignOut found <| add33 o <| by13 t dMix) <|
+                                return (gt t <| threshold maxDistance)

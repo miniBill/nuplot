@@ -3,9 +3,11 @@ module UI.Glsl.Sphere exposing (Sphere, asSphere, toGlsl)
 import Dict exposing (Dict)
 import Expression exposing (Expression)
 import Expression.Polynomial exposing (Exponents)
-import Glsl exposing (dot33)
+import Glsl exposing (BisectSignature, false, float, int, true)
+import Glsl.Functions exposing (dot33, mix331, sqrt1, vec3111)
+import Glsl.Operations exposing (add33, array33, by11, by13, lt, negate1, subtract11, subtract33)
 import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator exposing (FunDecl, Mat3, Vec3, assign, bool, boolT, def, expr, float, floatT, fun4, if_, int, mat3T, out, return, vec3T, zero)
+import UI.Glsl.Generator exposing (assignOut, boolT, def, def2, expr, floatT, fun4, if_, mat3T, out, return, vec3T, zero)
 import UI.Glsl.Polynomial as Polynomial
 
 
@@ -74,30 +76,31 @@ reduce poly =
             )
 
 
-toGlsl : String -> Sphere -> ( FunDecl, Expression Vec3 -> Expression Mat3 -> Expression Float -> Expression Vec3 -> Expression Bool )
+toGlsl : String -> Sphere -> BisectSignature
 toGlsl suffix (Sphere { center, radius }) =
     fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
-        \o d maxDistance found nop ->
-            def vec3T "center" (vec3 (float center.x) (float center.y) (float center.z)) <|
-                \centerVar ->
-                    def vec3T "to_center" (subtract o centerVar) <|
+        \o d maxDistance found ->
+            def2
+                ( vec3T "center", vec3111 (float center.x) (float center.y) (float center.z) )
+                ( vec3T "dMix", mix331 (array33 d (int 0)) (array33 d (int 1)) (float 0.5) )
+            <|
+                \centerVar dMix ->
+                    def vec3T "to_center" (subtract33 o centerVar) <|
                         \to_center ->
-                            def floatT "b" (dot33 to_center (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))) <|
-                                \b ->
-                                    def floatT "c" (subtract (dot33 to_center to_center) (float <| radius * radius)) <|
-                                        \c ->
-                                            def floatT "delta" (subtract (by b b) c) <|
-                                                \delta ->
-                                                    if_ (lt delta zero)
-                                                        (return <| bool False)
-                                                    <|
-                                                        \_ ->
-                                                            def floatT "x" (subtract (negate_ b) (sqrt_ delta)) <|
-                                                                \x ->
-                                                                    if_ (lt x <| threshold maxDistance)
-                                                                        (return false)
-                                                                    <|
-                                                                        \_ ->
-                                                                            expr (assign found (add o (byF x (mix (arr d (int 0)) (arr d (int 1)) (float 0.5))))) <|
-                                                                                \_ ->
-                                                                                    return true nop
+                            def2
+                                ( floatT "b", dot33 to_center dMix )
+                                ( floatT "c", subtract11 (dot33 to_center to_center) (float <| radius * radius) )
+                            <|
+                                \b c ->
+                                    def floatT "delta" (subtract11 (by11 b b) c) <|
+                                        \delta ->
+                                            if_ (lt delta zero)
+                                                (return false)
+                                            <|
+                                                def floatT "x" (subtract11 (negate1 b) (sqrt1 delta)) <|
+                                                    \x ->
+                                                        if_ (lt x <| threshold maxDistance)
+                                                            (return false)
+                                                        <|
+                                                            expr (assignOut found (add33 o (by13 x dMix))) <|
+                                                                return true

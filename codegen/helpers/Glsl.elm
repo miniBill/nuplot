@@ -3,11 +3,14 @@ module Glsl exposing
     , Statement(..), Stat(..), ForDirection(..)
     , Expression(..), Expr(..)
     , BinaryOperation(..), UnaryOperation(..), RelationOperation(..), ComboOperation(..)
+    , BisectSignature
     , true, false, int, float, var
+    , unsafeDot, dot2X, dot2Y, dot3X, dot3Y, dot3Z
     , TypingFunction, TypedName(..), Type(..)
     , Vec2, Vec3, Vec4, IVec2, IVec3, IVec4, Mat3, Void, In, Out
     , unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5
     , unsafeMap, unsafeMap2, unsafeMap3
+    , buildStatement, statement, unsafeExprStat, unsafeStat1, withExpression, withStatement
     )
 
 {-|
@@ -19,11 +22,13 @@ module Glsl exposing
 @docs Statement, Stat, ForDirection
 @docs Expression, ExprWithDeps, Expr
 @docs BinaryOperation, UnaryOperation, RelationOperation, ComboOperation
+@docs BisectSignature
 
 
 # Utils
 
 @docs true, false, int, float, var
+@docs unsafeDot, dot2X, dot2Y, dot3X, dot3Y, dot3Z
 
 
 # Typelevel types
@@ -119,6 +124,53 @@ unsafeMap3 f (Expression l) (Expression m) (Expression r) =
         }
 
 
+unsafeStat1 : (Stat -> Stat) -> Statement r -> Statement r
+unsafeStat1 f (Statement stat) =
+    Statement
+        { stat = f stat.stat
+        , deps = stat.deps
+        }
+
+
+unsafeExprStat : (Expr -> Stat -> Stat) -> Expression a -> Statement s -> Statement t
+unsafeExprStat f (Expression l) (Statement r) =
+    Statement
+        { stat = f l.expr r.stat
+        , deps =
+            l.deps
+                |> SortedSet.insertAll r.deps
+        }
+
+
+type StatementBuilder k
+    = StatementBuilder k (SortedSet String)
+
+
+statement : k -> StatementBuilder k
+statement k =
+    StatementBuilder k SortedSet.empty
+
+
+withExpression : Expression e -> StatementBuilder (Expr -> k) -> StatementBuilder k
+withExpression (Expression e) (StatementBuilder k deps) =
+    StatementBuilder (k e.expr)
+        (deps |> SortedSet.insertAll e.deps)
+
+
+withStatement : Statement r -> StatementBuilder (Stat -> k) -> StatementBuilder k
+withStatement (Statement s) (StatementBuilder k deps) =
+    StatementBuilder (k s.stat)
+        (deps |> SortedSet.insertAll s.deps)
+
+
+buildStatement : StatementBuilder Stat -> Statement r
+buildStatement (StatementBuilder stat deps) =
+    Statement
+        { stat = stat
+        , deps = deps
+        }
+
+
 
 -- Typed expressions
 
@@ -188,6 +240,14 @@ type ComboOperation
     | ComboSubtract
     | ComboBy
     | ComboDiv
+
+
+type alias BisectSignature =
+    Expression Vec3
+    -> Expression Mat3
+    -> Expression Float
+    -> Expression (Out Vec3)
+    -> Expression Bool
 
 
 
@@ -318,6 +378,36 @@ float i =
 var : String -> Expression t
 var v =
     pure <| Variable v
+
+
+dot2X : Expression Vec2 -> Expression Float
+dot2X e =
+    unsafeDot e "x"
+
+
+dot2Y : Expression Vec2 -> Expression Float
+dot2Y e =
+    unsafeDot e "y"
+
+
+dot3X : Expression Vec3 -> Expression Float
+dot3X e =
+    unsafeDot e "x"
+
+
+dot3Y : Expression Vec3 -> Expression Float
+dot3Y e =
+    unsafeDot e "y"
+
+
+dot3Z : Expression Vec3 -> Expression Float
+dot3Z e =
+    unsafeDot e "z"
+
+
+unsafeDot : Expression t -> String -> Expression a
+unsafeDot ex v =
+    unsafeMap (\e -> Dot e v) ex
 
 
 pure : Expr -> Expression t
