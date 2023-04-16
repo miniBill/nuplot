@@ -310,6 +310,12 @@ vec2 ipow(vec2 b, int e) {
 vec2 iln(vec2 z) { return log(z); }
 vec2 iexp(vec2 z) { return exp(z); }
 
+vec2 ipow(vec2 b, float e) {
+  if (abs(e.x - round(e.x)) < .000001)
+    return ipow(b, int(e.x));
+  return iexp(e * iln(b));
+}
+
 vec2 ipow(vec2 b, vec2 e) {
   if (e.y - e.x < .000001 && abs(e.x - round(e.x)) < .000001)
     return ipow(b, int(e.x));
@@ -319,6 +325,7 @@ vec2 ipow(vec2 b, vec2 e) {
 // Relations
 vec2 ilt(vec2 l, vec2 r) { return vec2(r.x - l.y, r.y - l.x); }
 vec2 ileq(vec2 l, vec2 r) { return vec2(r.x - l.y, r.y - l.x); }
+vec2 ineq(vec2 l, vec2 r) { return vec2(r.x - l.y, r.y - l.x); }
 vec2 ieq(vec2 l, vec2 r) { return vec2(l.x - r.y, l.y - r.x); }
 vec2 igeq(vec2 l, vec2 r) { return vec2(l.x - r.y, l.y - r.x); }
 vec2 igt(vec2 l, vec2 r) { return vec2(l.x - r.y, l.y - r.x); }
