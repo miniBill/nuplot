@@ -28,6 +28,7 @@
     },
     "name": "nuplot",
     "description": "A small CAS and plotter",
+    "license": "MIT",
     "pwaManifest": {
         "name": "NuPlot",
         "shortName": "NuPlot",

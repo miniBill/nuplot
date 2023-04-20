@@ -1,5 +1,5 @@
 elm-stuff
-.cache
+.parcel-cache
 node_modules
 /dist
 /src/optimized.js
