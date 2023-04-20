@@ -22,8 +22,8 @@
     },
     "scripts": {
         "build": "make build",
-        "buildForBenchmark": "rm -rf .cache elm-stuff dist; elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js && parcel build --no-minify src/index.html --public-url .",
-        "start": "parcel src/dev.html",
+        "buildForBenchmark": "rm -rf .cache elm-stuff dist; elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js && yarn parcel build --no-minify src/index.html --public-url .",
+        "start": "yarn parcel src/dev.html",
         "test": "elm-test"
     },
     "name": "nuplot",
