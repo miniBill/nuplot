@@ -304,7 +304,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^4.0.0, chalk@npm:^4.1.0":
+"chalk@npm:^4.0.0, chalk@npm:^4.1.0, chalk@npm:^4.1.1":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
   dependencies:
@@ -314,7 +314,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:^3.5.2, chokidar@npm:^3.5.3":
+"chokidar@npm:^3.5.1, chokidar@npm:^3.5.2, chokidar@npm:^3.5.3":
   version: 3.5.3
   resolution: "chokidar@npm:3.5.3"
   dependencies:
@@ -402,6 +402,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"commander@npm:^8.3.0":
+  version: 8.3.0
+  resolution: "commander@npm:8.3.0"
+  checksum: 8b043bb8322ea1c39664a1598a95e0495bfe4ca2fad0d84a92d7d1d8d213e2a155b441d2470c8e08de7c4a28cf2bc6e169211c49e1b21d9f7edc6ae4d9356060
+  languageName: node
+  linkType: hard
+
 "concat-map@npm:0.0.1":
   version: 0.0.1
   resolution: "concat-map@npm:0.0.1"
@@ -474,6 +481,20 @@ __metadata:
   version: 0.2.0
   resolution: "eastasianwidth@npm:0.2.0"
   checksum: 26f364ebcdb6395f95124fda411f63137a4bfb5d3a06453f7f23dfe52502905bd84e0488172e0f9ec295fdc45f05c23d5d91baf16bd26f0fe9acd777a188dc39
+  languageName: node
+  linkType: hard
+
+"elm-codegen@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "elm-codegen@npm:0.5.0"
+  dependencies:
+    chalk: "npm:^4.1.1"
+    chokidar: "npm:^3.5.1"
+    commander: "npm:^8.3.0"
+    node-elm-compiler: "npm:^5.0.6"
+  bin:
+    elm-codegen: bin/elm-codegen
+  checksum: 5e4e2fa3a9502e2545ab52405c4e72d25941e4ae01d733f8742a8173e0d904ffab199001153f020a780f02eaf28967ce08bb5148e0ef7c819489356f4366e8e8
   languageName: node
   linkType: hard
 
@@ -1289,7 +1310,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-elm-compiler@npm:^5.0.4":
+"node-elm-compiler@npm:^5.0.4, node-elm-compiler@npm:^5.0.6":
   version: 5.0.6
   resolution: "node-elm-compiler@npm:5.0.6"
   dependencies:
@@ -1350,6 +1371,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "nuplot@workspace:."
   dependencies:
+    elm-codegen: "npm:^0.5.0"
     elm-optimize-level-2: "npm:^0.1.5"
     elm-review: "npm:^2.10.2"
     elm-watch: "npm:^1.1.2"
