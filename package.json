@@ -15,6 +15,7 @@
         ]
     },
     "devDependencies": {
+        "elm-codegen": "^0.5.0",
         "elm-optimize-level-2": "^0.1.5",
         "elm-review": "^2.10.2",
         "elm-watch": "^1.1.2",
