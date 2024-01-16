@@ -1,5 +1,6 @@
 # Todo
 
+- https://samuelj.li/complex-function-plotter/#1%2Fz
 - solve `x² - 3pi x² + 3 pi² x - pi³ = 0`
 - Fuzzy test the solver
 - User functions
