@@ -1,7 +1,7 @@
 module Expression.Derivative exposing (derivative)
 
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), UnaryOperation(..), filterContext, fullSubstitute)
-import Expression.Utils exposing (by, byShort, cos_, cosh_, div, e, exp, ipowShort, ln_, log10_, minus, negate_, one, plus, pow, sign, sin_, sinh_, sqrt_, square, tan_, zero)
+import Expression.Utils exposing (by, byShort, cos_, cosh_, div, exp, ipowShort, ln_, log10_, minus, negate_, one, plus, pow, sign, sin_, sinh_, sqrt_, square, tan_, zero)
 
 
 derivative : String -> Expression -> Expression
@@ -141,19 +141,15 @@ knownDerivative name x =
         Abs ->
             sign x
 
-        Root n ->
-            let
-                ni =
-                    Integer n
-            in
+        Sqrt ->
             div
-                (pow x
-                    (div
-                        (Integer (1 - n))
-                        ni
-                    )
-                )
-                ni
+                (Integer 1)
+                (by [ Integer 2, Apply (KnownFunction Sqrt) [ x ] ])
+
+        Cbrt ->
+            div
+                (Integer 1)
+                (by [ Integer 3, pow x (div (Integer 2) (Integer 3)) ])
 
         Ln ->
             div one x
@@ -212,15 +208,11 @@ knownDerivative name x =
         Ceil ->
             zero
 
-        Pw ->
+        Piecewise ->
             --TODO
             Variable "TODO"
 
         Plot ->
-            --TODO
-            Variable "TODO"
-
-        APlot ->
             --TODO
             Variable "TODO"
 

@@ -1,11 +1,11 @@
 module Glsl.Parser exposing (file, function, statement)
 
-import Glsl exposing (BinaryOperation(..), Expr(..), Expression(..), ForDirection(..), Function, RelationOperation(..), Stat(..), Statement(..), Type(..), UnaryOperation(..))
-import Parser exposing ((|.), (|=), Parser, Step(..), Trailing(..), chompIf, chompWhile, getChompedString, loop, oneOf, problem, sequence, spaces, succeed, symbol)
+import Glsl exposing (BinaryOperation(..), Declaration(..), Expr(..), Expression(..), ForDirection(..), Function, RelationOperation(..), Stat(..), Statement(..), Type(..), UnaryOperation(..))
+import Parser exposing ((|.), (|=), Parser, Step(..), Trailing(..), chompIf, chompWhile, getChompedString, keyword, loop, oneOf, problem, sequence, spaces, succeed, symbol)
 import Parser.Workaround
 
 
-function : Parser Function
+function : Parser Declaration
 function =
     succeed
         (\glsl begin returnType { name, hasSuffix } args stat end ->
@@ -20,7 +20,7 @@ function =
                     , body = String.slice begin end glsl
                     }
             in
-            res
+            FunctionDeclaration res
         )
         |= Parser.getSource
         |= Parser.getOffset
@@ -39,6 +39,24 @@ function =
         |. spaces
         |= statement
         |= Parser.getOffset
+
+
+uniform : Parser Declaration
+uniform =
+    succeed
+        (\tipe name ->
+            UniformDeclaration
+                { tipe = tipe
+                , name = name
+                }
+        )
+        |. symbol "uniform"
+        |. spaces
+        |= typeParser
+        |. spaces
+        |= identifierParser
+        |. spaces
+        |. symbol ";"
 
 
 argParser : Parser ( Type, String )
@@ -70,18 +88,32 @@ identifierParser =
 
 typeParser : Parser Type
 typeParser =
-    [ ( "void", TVoid )
-    , ( "bool", TBool )
-    , ( "float", TFloat )
-    , ( "int", TInt )
-    , ( "vec2", TVec2 )
-    , ( "ivec2", TIVec2 )
-    , ( "vec3", TVec3 )
-    , ( "vec4", TVec4 )
-    , ( "mat3", TMat3 )
-    ]
-        |> List.map (\( s, t ) -> succeed t |. symbol s)
-        |> oneOf
+    let
+        baseParser =
+            [ ( "void", TVoid )
+            , ( "bool", TBool )
+            , ( "float", TFloat )
+            , ( "int", TInt )
+            , ( "vec2", TVec2 )
+            , ( "ivec2", TIVec2 )
+            , ( "vec3", TVec3 )
+            , ( "vec4", TVec4 )
+            , ( "mat3", TMat3 )
+            ]
+                |> List.map (\( s, t ) -> succeed t |. keyword s)
+                |> oneOf
+    in
+    oneOf
+        [ succeed TOut
+            |. keyword "out"
+            |. spaces
+            |= baseParser
+        , succeed TIn
+            |. keyword "in"
+            |. spaces
+            |= baseParser
+        , baseParser
+        ]
 
 
 statement : Parser Stat
@@ -446,7 +478,7 @@ tryParseNumber n =
                     problem "Expected a number"
 
 
-file : Parser (List Function)
+file : Parser (List Declaration)
 file =
     Parser.succeed (List.filterMap identity)
         |= Parser.sequence
@@ -460,8 +492,8 @@ file =
                         |. Parser.Workaround.lineCommentAfter "#define"
                     , Parser.succeed Nothing
                         |. Parser.Workaround.lineCommentAfter "precision highp"
-                    , Parser.succeed Nothing
-                        |. Parser.Workaround.lineCommentAfter "uniform"
+                    , Parser.succeed Just
+                        |= uniform
                     , Parser.succeed Just
                         |= function
                     ]

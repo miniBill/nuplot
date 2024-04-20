@@ -8,7 +8,6 @@ import Expression
         , Expression(..)
         , FunctionName(..)
         , KnownFunction(..)
-        , RelationOperation(..)
         , UnaryOperation(..)
         , filterContext
         , fullSubstitute
@@ -216,16 +215,13 @@ stepList context { andThen, ifChanged } args =
 stepSimplifyApply : FunctionName -> List Expression -> Expression
 stepSimplifyApply fname sargs =
     case fname of
-        UserFunction _ ->
-            Apply fname sargs
-
         KnownFunction name ->
             case ( name, sargs ) of
-                ( Root 2, [ arg ] ) ->
+                ( Sqrt, [ arg ] ) ->
                     stepSimplifySqrt arg
                         |> Maybe.withDefault (sqrt_ arg)
 
-                ( Root 3, [ arg ] ) ->
+                ( Cbrt, [ arg ] ) ->
                     stepSimplifyCbrt arg
                         |> Maybe.withDefault (cbrt arg)
 
@@ -551,6 +547,9 @@ stepSimplifyCos sarg =
 stepSimplifyCbrt : Expression -> Maybe Expression
 stepSimplifyCbrt sarg =
     case sarg of
+        UnaryOperation Negate c ->
+            Just <| negate_ <| cbrt c
+
         Integer j ->
             cbrtInteger j
 
@@ -1679,9 +1678,6 @@ innerHoistLabmda expr =
         Apply fn args ->
             case ( fn, List.map hoistLambda args ) of
                 ( KnownFunction Plot, _ ) ->
-                    Nothing
-
-                ( KnownFunction APlot, _ ) ->
                     Nothing
 
                 ( _, [ Lambda x f ] ) ->

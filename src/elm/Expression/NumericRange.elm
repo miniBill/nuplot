@@ -87,10 +87,10 @@ getRange ctx e =
                         o ->
                             o
 
-                Apply (KnownFunction (Root 2)) [ c ] ->
+                Apply (KnownFunction Sqrt) [ c ] ->
                     sqrtRange <| getRange ctx c
 
-                Apply (KnownFunction (Root 3)) [ c ] ->
+                Apply (KnownFunction Cbrt) [ c ] ->
                     getRange ctx c
 
                 Apply (KnownFunction Re) [ _ ] ->
@@ -106,7 +106,7 @@ getRange ctx e =
                     else
                         Complex
 
-                Apply (KnownFunction Pw) [ _, t, f ] ->
+                Apply (KnownFunction Piecewise) [ _, t, f ] ->
                     union (getRange ctx t) (getRange ctx f)
 
                 Apply (KnownFunction Mbrot) _ ->
@@ -118,9 +118,6 @@ getRange ctx e =
 
                     else
                         Real
-
-                Apply _ _ ->
-                    Complex
 
                 Replace variables c ->
                     getRange

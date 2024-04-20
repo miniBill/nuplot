@@ -6,7 +6,7 @@ import Elm.Annotation as Type
 import Gen.CodeGen.Generate as Generate
 import Gen.Debug
 import Gen.Glsl
-import Glsl exposing (BinaryOperation(..), Expr(..), Expression(..), Function, Stat(..), Statement(..), Type(..))
+import Glsl exposing (BinaryOperation(..), Declaration(..), Expr(..), Expression(..), Function, Stat(..), Statement(..), Type(..), Uniform)
 import Glsl.Parser
 import Glsl.PrettyPrinter
 import List.Extra
@@ -45,8 +45,32 @@ generate glsl =
                 |> Elm.withDocumentation (errorToString e)
                 |> List.singleton
 
-        Ok functions ->
+        Ok declarations ->
             let
+                functions =
+                    List.filterMap
+                        (\declaration ->
+                            case declaration of
+                                FunctionDeclaration function ->
+                                    Just function
+
+                                UniformDeclaration _ ->
+                                    Nothing
+                        )
+                        declarations
+
+                uniforms =
+                    List.filterMap
+                        (\declaration ->
+                            case declaration of
+                                UniformDeclaration uniform ->
+                                    Just uniform
+
+                                FunctionDeclaration _ ->
+                                    Nothing
+                        )
+                        declarations
+
                 env : Env
                 env =
                     List.foldl
@@ -65,7 +89,10 @@ generate glsl =
                             builtinFunctions
                                 |> Dict.map
                                     (\_ { return } -> return)
-                        , variablesEnv = builtinUniforms
+                        , variablesEnv =
+                            uniforms
+                                |> List.map (\{ tipe, name } -> ( name, tipe ))
+                                |> Dict.fromList
                         }
                         functions
 
@@ -74,10 +101,14 @@ generate glsl =
                     Result.Extra.combineMap
                         (functionToDeclarations env)
                         functions
+
+                uniformDecls : List Elm.Declaration
+                uniformDecls =
+                    List.map uniformToDeclaration uniforms
             in
             case maybeDecls of
                 Ok decls ->
-                    List.concat decls ++ builtinDecls
+                    List.concat decls ++ builtinDecls ++ uniformDecls
 
                 Err e ->
                     "Error generating file"
@@ -85,6 +116,14 @@ generate glsl =
                         |> Elm.declaration "err"
                         |> Elm.withDocumentation e
                         |> List.singleton
+
+
+uniformToDeclaration : Uniform -> Elm.Declaration
+uniformToDeclaration { name, tipe } =
+    Gen.Glsl.var name
+        |> Elm.withType (Gen.Glsl.annotation_.expression (typeToAnnotation tipe))
+        |> Elm.declaration name
+        |> Elm.exposeWith { exposeConstructor = False, group = Just "uniforms" }
 
 
 functionHasType : String -> List Type -> Type -> Env -> Env
@@ -605,21 +644,6 @@ typeToShort t =
             "o" ++ typeToShort tt
 
 
-builtinUniforms : Dict String Type
-builtinUniforms =
-    [ ( "u_whiteLines", TFloat )
-    , ( "u_completelyReal", TFloat )
-    , ( "u_drawAxes", TFloat )
-    , ( "u_zoomCenter", TVec2 )
-    , ( "u_viewportWidth", TFloat )
-    , ( "u_canvasWidth", TFloat )
-    , ( "u_canvasHeight", TFloat )
-    , ( "u_phi", TFloat )
-    , ( "u_theta", TFloat )
-    ]
-        |> Dict.fromList
-
-
 builtinFunctions : Dict String { baseName : String, args : List Type, return : Type }
 builtinFunctions =
     let
@@ -660,8 +684,29 @@ builtinFunctions =
                             ([ TFloat, TInt ]
                                 |> List.repeat size
                                 |> List.Extra.cartesianProduct
-                                |> (++) [ [ TInt ], [ TFloat ], [ TFloat, TVec3 ] ]
+                                |> (++)
+                                    (if size == 4 then
+                                        [ [ TInt ]
+                                        , [ TFloat ]
+                                        , [ TFloat, TVec3 ]
+                                        , [ TVec3, TFloat ]
+                                        ]
+
+                                     else
+                                        [ [ TInt ], [ TFloat ] ]
+                                    )
                             )
+                    )
+
+        mats : List ( String, List Type, Type )
+        mats =
+            [ ( [ TVec3, TVec3, TVec3 ], 3, TMat3 ) ]
+                |> List.map
+                    (\( inTypes, size, type_ ) ->
+                        ( "mat" ++ String.fromInt size
+                        , inTypes
+                        , type_
+                        )
                     )
 
         ivecs : List ( String, List Type, Type )
@@ -688,7 +733,7 @@ builtinFunctions =
         builtTuple ( name, inTypes, resultType ) =
             ( fullName name inTypes, { baseName = name, args = inTypes, return = resultType } )
     in
-    (regular ++ vecs ++ ivecs ++ others)
+    (regular ++ vecs ++ ivecs ++ mats ++ others)
         |> List.map builtTuple
         |> Dict.fromList
 
@@ -708,8 +753,10 @@ builtin_v_s =
 
 builtin_v_v : ( List String, List ( List Type, Type ) )
 builtin_v_v =
-    ( [ -- Rounding
-        "ceil"
+    ( [ "fwidth"
+
+      -- Rounding
+      , "ceil"
       , "floor"
       , "fract"
 
@@ -896,6 +943,6 @@ indexedVar i =
     String.fromChar <| Char.fromCode <| Char.toCode 'a' + i
 
 
-parseFile : String -> Result (List Parser.DeadEnd) (List Function)
+parseFile : String -> Result (List Parser.DeadEnd) (List Declaration)
 parseFile glsl =
     Parser.run Glsl.Parser.file glsl
