@@ -7,7 +7,7 @@ module Glsl.Operations exposing
     , by31
     , div11, div22, div33, div44
     , array33
-    , lt, gt
+    , lt, eq, gt
     )
 
 {-|
@@ -47,12 +47,12 @@ module Glsl.Operations exposing
 
 # Comparison
 
-@docs lt, gt
+@docs lt, eq, gt
 
 -}
 
 import Expression exposing (BinaryOperation(..))
-import Glsl exposing (BinaryOperation(..), Expr(..), Expression(..), Mat3, RelationOperation(..), UnaryOperation(..), Vec2, Vec3, Vec4)
+import Glsl exposing (BinaryOperation(..), Expr(..), Expression, Mat3, RelationOperation(..), UnaryOperation(..), Vec2, Vec3, Vec4)
 
 
 
@@ -236,3 +236,8 @@ lt =
 gt : Expression Float -> Expression Float -> Expression Bool
 gt =
     Glsl.unsafeMap2 (Comparison GreaterThan)
+
+
+eq : Expression t -> Expression t -> Expression Bool
+eq =
+    Glsl.unsafeMap2 (Comparison Equals)

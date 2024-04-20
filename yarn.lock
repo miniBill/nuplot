@@ -2,6 +2,31 @@
 # yarn lockfile v1
 
 
+"@avh4/elm-format-darwin-arm64@0.8.7-2":
+  version "0.8.7-2"
+  resolved "https://registry.yarnpkg.com/@avh4/elm-format-darwin-arm64/-/elm-format-darwin-arm64-0.8.7-2.tgz#7ef272e77ed22804c3d18e99cffdf8952b88cf6a"
+  integrity sha512-F5JD44mJ3KX960J5GkXMfh1/dtkXuPcQpX2EToHQKjLTZUfnhZ++ytQQt0gAvrJ0bzoOvhNzjNjUHDA1ruTVbg==
+
+"@avh4/elm-format-darwin-x64@0.8.7-2":
+  version "0.8.7-2"
+  resolved "https://registry.yarnpkg.com/@avh4/elm-format-darwin-x64/-/elm-format-darwin-x64-0.8.7-2.tgz#c43eb3af88edec45aae405fda7d703e343614965"
+  integrity sha512-4pfF1cl0KyTion+7Mg4XKM3yi4Yc7vP76Kt/DotLVGJOSag4ISGic1og2mt8RZZ7XArybBmHNyYkiUbe/cEiCw==
+
+"@avh4/elm-format-linux-arm64@0.8.7-2":
+  version "0.8.7-2"
+  resolved "https://registry.yarnpkg.com/@avh4/elm-format-linux-arm64/-/elm-format-linux-arm64-0.8.7-2.tgz#e01a088c051aa5734453f83e9f63aa572ffb7439"
+  integrity sha512-WkVmuce2zU6s9dupHhqPc886Vaqpea8dZlxv2fpZ4wSzPUbiiKHoHZzoVndMIMTUL0TZukP3Ps0n/lWO5R5+FA==
+
+"@avh4/elm-format-linux-x64@0.8.7-2":
+  version "0.8.7-2"
+  resolved "https://registry.yarnpkg.com/@avh4/elm-format-linux-x64/-/elm-format-linux-x64-0.8.7-2.tgz#50f60f3bfb11223d9e72a34a0cc28640726f5bae"
+  integrity sha512-kmncfJrTBjVT94JtQvMf4M5Pn2Yl0sZt3wo7AzgFiDnB/CiZ+KjJyXuWM64NeGiv4MQqzPq65tsFXUH1CIJeiQ==
+
+"@avh4/elm-format-win32-x64@0.8.7-2":
+  version "0.8.7-2"
+  resolved "https://registry.yarnpkg.com/@avh4/elm-format-win32-x64/-/elm-format-win32-x64-0.8.7-2.tgz#4a4e7489a7b519a810a8a89798c4aab3805626ab"
+  integrity sha512-sBdMBGq/8mD8Y5C+fIr5vlb3N50yB7S1MfgeAq2QEbvkr/sKrCZI540i43lZDH9gWsfA1w2W8wCe0penFYzsGw==
+
 "@sindresorhus/is@^4.0.0":
   version "4.6.0"
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-4.6.0.tgz#3c7c9c46e678feefe7a2e5bb609d3dbd665ffb3f"
@@ -289,6 +314,17 @@ elm-codegen@^0.5.3:
     chokidar "^3.5.1"
     commander "^8.3.0"
     node-elm-compiler "^5.0.6"
+
+elm-format@^0.8.7:
+  version "0.8.7"
+  resolved "https://registry.yarnpkg.com/elm-format/-/elm-format-0.8.7.tgz#23d8a320ef896400b01b26609f99f579b2ed2d84"
+  integrity sha512-sVzFXfWnb+6rzXK+q3e3Ccgr6/uS5mFbFk1VSmigC+x2XZ28QycAa7lS8owl009ALPhRQk+pZ95Eq5ANjpEZsQ==
+  optionalDependencies:
+    "@avh4/elm-format-darwin-arm64" "0.8.7-2"
+    "@avh4/elm-format-darwin-x64" "0.8.7-2"
+    "@avh4/elm-format-linux-arm64" "0.8.7-2"
+    "@avh4/elm-format-linux-x64" "0.8.7-2"
+    "@avh4/elm-format-win32-x64" "0.8.7-2"
 
 elm-optimize-level-2@^0.3.5:
   version "0.3.5"

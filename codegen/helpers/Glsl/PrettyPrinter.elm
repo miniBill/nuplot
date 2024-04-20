@@ -1,7 +1,6 @@
-module Glsl.PrettyPrinter exposing (type_)
+module Glsl.PrettyPrinter exposing (float, type_)
 
-import Glsl exposing (BinaryOperation(..), Expression(..), ForDirection(..), RelationOperation(..), Statement(..), Type(..), UnaryOperation(..))
-import Parser exposing ((|.), (|=), Step(..), Trailing(..))
+import Glsl exposing (Type(..))
 
 
 
@@ -54,7 +53,7 @@ import Parser exposing ((|.), (|=), Step(..), Trailing(..))
 --     case stat of
 --         Expression e next ->
 --             "expr "
---                 ++ prettyPrintExpression e
+--                 ++ prettyToGlslExpression e
 --                 ++ " <| \\_ ->\n"
 --                 ++ statement next
 --         For { var, from, op, to, step, direction } next ->
@@ -67,9 +66,9 @@ import Parser exposing ((|.), (|=), Step(..), Trailing(..))
 --                     )
 --                         ++ var
 --                         ++ "\", "
---                         ++ prettyPrintExpression from
+--                         ++ prettyToGlslExpression from
 --                         ++ ", "
---                         ++ prettyPrintExpression to
+--                         ++ prettyToGlslExpression to
 --                         ++ ") (\\"
 --                         ++ var
 --                         ++ " ->\n"
@@ -84,9 +83,9 @@ import Parser exposing ((|.), (|=), Step(..), Trailing(..))
 --                     )
 --                         ++ var
 --                         ++ ", "
---                         ++ prettyPrintExpression from
+--                         ++ prettyToGlslExpression from
 --                         ++ ", "
---                         ++ prettyPrintExpression to
+--                         ++ prettyToGlslExpression to
 --                         ++ ") (\\"
 --                         ++ var
 --                         ++ " ->\n"
@@ -101,9 +100,9 @@ import Parser exposing ((|.), (|=), Step(..), Trailing(..))
 --                     )
 --                         ++ var
 --                         ++ "\", "
---                         ++ prettyPrintExpression from
+--                         ++ prettyToGlslExpression from
 --                         ++ ", "
---                         ++ prettyPrintExpression to
+--                         ++ prettyToGlslExpression to
 --                         ++ ") (\\"
 --                         ++ var
 --                         ++ " ->\n"
@@ -118,9 +117,9 @@ import Parser exposing ((|.), (|=), Step(..), Trailing(..))
 --                     )
 --                         ++ var
 --                         ++ ", "
---                         ++ prettyPrintExpression from
+--                         ++ prettyToGlslExpression from
 --                         ++ ", "
---                         ++ prettyPrintExpression to
+--                         ++ prettyToGlslExpression to
 --                         ++ ") (\\"
 --                         ++ var
 --                         ++ " ->\n"
@@ -135,13 +134,13 @@ import Parser exposing ((|.), (|=), Step(..), Trailing(..))
 --                     "TODO branch 'Assign' not implemented"
 --         If cond ifTrue next ->
 --             "if_ "
---                 ++ prettyPrintExpression cond
+--                 ++ prettyToGlslExpression cond
 --                 ++ "(\n"
 --                 ++ statement ifTrue
 --                 ++ ") <| \\_ ->\n"
 --                 ++ statement next
 --         Return e ->
---             "(return <| " ++ prettyPrintExpression e ++ ")\n"
+--             "(return <| " ++ prettyToGlslExpression e ++ ")\n"
 --         Nop ->
 --             "nop\n"
 --         Def { type_, var, val } next ->
@@ -150,7 +149,7 @@ import Parser exposing ((|.), (|=), Step(..), Trailing(..))
 --                 ++ "T \""
 --                 ++ var
 --                 ++ "\" ("
---                 ++ prettyPrintExpression val
+--                 ++ prettyToGlslExpression val
 --                 ++ ") <| \\"
 --                 ++ var
 --                 ++ " -> \n"
@@ -203,8 +202,8 @@ type_ t =
 
 
 
--- prettyPrintExpression : Expression -> String
--- prettyPrintExpression e =
+-- prettyToGlslExpression : Expression -> String
+-- prettyToGlslExpression e =
 --     let
 --         parens args =
 --             "(" ++ String.join " " args ++ ")"
@@ -228,7 +227,7 @@ type_ t =
 --                     "False"
 --                 ]
 --         Dot v sw ->
---             prettyPrintExpression v ++ "." ++ sw
+--             prettyToGlslExpression v ++ "." ++ sw
 --         Variable v ->
 --             v
 --         Constant c ->
@@ -246,7 +245,7 @@ type_ t =
 --                     in
 --                     "constants." ++ String.toLower h ++ String.concat (List.map toTitle t)
 --         Call "float" [ arg ] ->
---             parens [ "floatCast", prettyPrintExpression arg ]
+--             parens [ "floatCast", prettyToGlslExpression arg ]
 --         Call n args ->
 --             if String.startsWith "vec" n then
 --                 if List.all ((==) (Int 0)) args then
@@ -258,41 +257,41 @@ type_ t =
 --                                 (\c ->
 --                                     case c of
 --                                         Int i ->
---                                             prettyPrintExpression (Float <| toFloat i)
+--                                             prettyToGlslExpression (Float <| toFloat i)
 --                                         _ ->
---                                             prettyPrintExpression c
+--                                             prettyToGlslExpression c
 --                                 )
 --                                 args
 --             else if n == "atan" then
 --                 if List.length args == 2 then
---                     parens <| "atan2_" :: List.map prettyPrintExpression args
+--                     parens <| "atan2_" :: List.map prettyToGlslExpression args
 --                 else
---                     parens <| "atan_" :: List.map prettyPrintExpression args
+--                     parens <| "atan_" :: List.map prettyToGlslExpression args
 --             else if List.member n [ "sin", "cos", "radians", "round", "floor", "ceil", "sqrt" ] then
---                 parens <| (n ++ "_") :: List.map prettyPrintExpression args
+--                 parens <| (n ++ "_") :: List.map prettyToGlslExpression args
 --             else
---                 parens <| n :: List.map prettyPrintExpression args
+--                 parens <| n :: List.map prettyToGlslExpression args
 --         Arr l r ->
---             parens [ "arr", prettyPrintExpression l, prettyPrintExpression r ]
+--             parens [ "arr", prettyToGlslExpression l, prettyToGlslExpression r ]
 --         Ternary c l r ->
---             parens [ "ternary\n", prettyPrintExpression c, prettyPrintExpression l, prettyPrintExpression r ]
+--             parens [ "ternary\n", prettyToGlslExpression c, prettyToGlslExpression l, prettyToGlslExpression r ]
 --         UnaryOperation Negate ex ->
---             parens [ "negate_", prettyPrintExpression ex ]
+--             parens [ "negate_", prettyToGlslExpression ex ]
 --         BinaryOperation op l r ->
---             parens [ prettyPrintBinaryOperation op, prettyPrintExpression l, prettyPrintExpression r ]
+--             parens [ prettyPrintBinaryOperation op, prettyToGlslExpression l, prettyToGlslExpression r ]
 --         BooleanOperation op es ->
 --             parens
 --                 [ prettyPrintBooleanOperation op
 --                 , "["
---                 , String.join ", " <| List.map prettyPrintExpression es
+--                 , String.join ", " <| List.map prettyToGlslExpression es
 --                 , "]"
 --                 ]
 --         RelationOperation rop l r ->
---             parens [ prettyPrintRelationOperation rop, prettyPrintExpression l, prettyPrintExpression r ]
+--             parens [ prettyPrintRelationOperation rop, prettyToGlslExpression l, prettyToGlslExpression r ]
 --         PostfixIncrement c ->
---             parens [ "postfixIncrement", prettyPrintExpression c ]
+--             parens [ "postfixIncrement", prettyToGlslExpression c ]
 --         PostfixDecrement c ->
---             parens [ "postfixDecrement", prettyPrintExpression c ]
+--             parens [ "postfixDecrement", prettyToGlslExpression c ]
 -- prettyPrintRelationOperation : RelationOperation -> String
 -- prettyPrintRelationOperation op =
 --     case op of
@@ -328,3 +327,17 @@ type_ t =
 --             "by"
 --         Div ->
 --             "div"
+
+
+float : Float -> String
+float f =
+    let
+        s : String
+        s =
+            String.fromFloat f
+    in
+    if String.contains "." s || String.contains "e" s then
+        s
+
+    else
+        s ++ "."

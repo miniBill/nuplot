@@ -220,8 +220,7 @@ init ({ saved, hasClipboard, hasFullscreen, languages } as flags) url key =
                 , isFullscreen = False
                 , language =
                     languages
-                        |> List.map parseLanguage
-                        |> List.filterMap identity
+                        |> List.filterMap parseLanguage
                         |> List.head
                         |> Maybe.withDefault En
                 , rayDifferentials = True

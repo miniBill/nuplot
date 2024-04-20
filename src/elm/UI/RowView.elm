@@ -506,7 +506,7 @@ outputBlock blockId size output =
                             )
 
                         GraphValue g ->
-                            ( draw size (CanvasId id) coeffs g, True )
+                            ( draw size (CanvasId id) coeffs { axes = True, graph = g }, True )
 
                         ComplexValue c ->
                             ( text <| invariant <| Complex.toString c, False )

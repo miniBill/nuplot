@@ -1,9 +1,10 @@
-module UI.Glsl.Generator exposing (Context, ErrorValue(..), File, FunDecl, GlslValue(..), adds2, adds3, adds4, and, ands, assign, assignAdd, assignBy, assignOut, boolT, break, continue, decl, def, def1, def2, def3, expr, expressionToGlsl, fileToGlsl, floatT, floatToGlsl, for, forDown, forLeq, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, gl_FragColor, gl_FragCoord, ifElse, if_, in_, intT, interpret, mat3T, minusOne, one, or, ors, out, return, statementToGlsl, ternary, ternary3, value, valueToString, vec2T, vec2Zero, vec3T, vec3Zero, vec4T, vec4Zero, voidT, zero)
+module UI.Glsl.Generator exposing (Context, ErrorValue(..), File, FunDecl, GlslValue(..), adds2, adds3, adds4, and, ands, assign, assignAdd, assignBy, assignOut, boolT, break, continue, decl, def, def1, def2, def3, expr, expressionToGlsl, fileToGlsl, float, floatT, for, forDown, forLeq, fun0, fun1, fun2, fun3, fun4, fun5, funDeclToGlsl, gl_FragColor, gl_FragCoord, ifElse, if_, in_, intT, interpret, main_, mat3, mat3T, minusOne, nop, one, or, ors, out, return, statementToGlsl, ternary, ternary3, value, valueToString, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4, vec4T, vec4Zero, voidT, zero)
 
 import Dict exposing (Dict)
-import Glsl exposing (BinaryOperation(..), ComboOperation(..), Expr(..), Expression(..), ForDirection(..), In, Mat3, Out, RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction, UnaryOperation(..), Vec2, Vec3, Vec4, buildStatement, false, float, statement, true, unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5, unsafeExprStat, unsafeMap2, unsafeMap3, unsafeStat1, var, withExpression, withStatement)
+import Glsl exposing (BinaryOperation(..), ComboOperation(..), Expr(..), Expression(..), ForDirection(..), In, Mat3, Out, RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction, UnaryOperation(..), Vec2, Vec3, Vec4, build, buildStatement, false, float1, true, unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5, unsafeMap2, unsafeMap3, var, withExpression, withStatement)
 import Glsl.Functions exposing (vec211, vec3111, vec41111)
 import Glsl.Operations exposing (add22, add33, add44)
+import Glsl.PrettyPrinter
 import Set
 import SortedSet
 
@@ -379,7 +380,7 @@ exprToGlsl tree =
                         "false"
 
                 Float f ->
-                    floatToGlsl f
+                    Glsl.PrettyPrinter.float f
 
                 Int i ->
                     String.fromInt i
@@ -531,63 +532,17 @@ gl_FragCoord =
 
 zero : Expression Float
 zero =
-    float 0
+    float1 0
 
 
 one : Expression Float
 one =
-    float 1
+    float1 1
 
 
 minusOne : Expression Float
 minusOne =
-    float -1
-
-
-floatToGlsl : Float -> String
-floatToGlsl f =
-    let
-        s =
-            String.fromFloat f
-    in
-    if String.contains "." s || String.contains "e" s then
-        s
-
-    else
-        s ++ "."
-
-
-
--- Utils
-
-
-unsafeExpr1 : (Expr -> Expr) -> Expression a -> Expression b
-unsafeExpr1 f (Expression l) =
-    Expression
-        { expr = f l.expr
-        , deps = l.deps
-        }
-
-
-unsafeExpr2 : (Expr -> Expr -> Expr) -> Expression a -> Expression b -> Expression c
-unsafeExpr2 f (Expression l) (Expression r) =
-    Expression
-        { expr = f l.expr r.expr
-        , deps =
-            l.deps
-                |> SortedSet.insertAll r.deps
-        }
-
-
-unsafeExpr3 : (Expr -> Expr -> Expr -> Expr) -> Expression a -> Expression b -> Expression c -> Expression d
-unsafeExpr3 f (Expression l) (Expression m) (Expression r) =
-    Expression
-        { expr = f l.expr m.expr r.expr
-        , deps =
-            l.deps
-                |> SortedSet.insertAll m.deps
-                |> SortedSet.insertAll r.deps
-        }
+    float1 -1
 
 
 
@@ -646,16 +601,27 @@ funX call typeF name body args =
         )
 
 
+main_ : Expression Vec4 -> List FunDecl
+main_ e =
+    let
+        _ =
+            fun0 voidT "main" <| \_ ->
+            expr (assign gl_FragColor e) <| \_ ->
+            nop
+    in
+    Debug.todo "Generator.main_"
+
+
 fun0 :
     TypingFunction t
     -> String
-    -> Statement t
+    -> (() -> Statement t)
     -> Expression t
 fun0 typeF name body =
     funX unsafeCall0
         typeF
         name
-        body
+        (body ())
         []
 
 
@@ -754,22 +720,22 @@ fun5 typeF name (TypedName t0 arg0) (TypedName t1 arg1) (TypedName t2 arg2) (Typ
         [ ( t0, arg0 ), ( t1, arg1 ), ( t2, arg2 ), ( t3, arg3 ), ( t4, arg4 ) ]
 
 
-if_ : Expression Bool -> Statement r -> Statement r -> Statement r
+if_ : Expression Bool -> Statement r -> (() -> Statement r) -> Statement r
 if_ cond ifTrue next =
-    statement If
+    build If
         |> withExpression cond
         |> withStatement ifTrue
-        |> withStatement next
+        |> withStatement (next ())
         |> buildStatement
 
 
-ifElse : Expression Bool -> Statement s -> Statement s -> Statement s -> Statement s
+ifElse : Expression Bool -> Statement s -> Statement s -> (() -> Statement s) -> Statement s
 ifElse cond ifTrue ifFalse next =
-    statement IfElse
+    build IfElse
         |> withExpression cond
         |> withStatement ifTrue
         |> withStatement ifFalse
-        |> withStatement next
+        |> withStatement (next ())
         |> buildStatement
 
 
@@ -779,15 +745,12 @@ for :
     -> Statement r
     -> Statement r
 for ( var, from, to ) loop next =
-    -- Statement <|
-    --     For var
-    --         (unwrapExpression from)
-    --         LessThan
-    --         (unwrapExpression to)
-    --         (PostfixIncrement (Variable var))
-    --         (unwrapStatement <| loop (dottedVariable1 var) internalNop)
-    --         (unwrapLazyStatement next)
-    Debug.todo "for"
+    build (\f t -> For var f LessThan t PlusPlus)
+        |> withExpression from
+        |> withExpression to
+        |> withStatement (loop (Glsl.var var) unsafeNop)
+        |> withStatement next
+        |> buildStatement
 
 
 forLeq :
@@ -796,15 +759,12 @@ forLeq :
     -> Statement r
     -> Statement r
 forLeq ( var, from, to ) loop next =
-    -- Statement <|
-    --     For var
-    --         (unwrapExpression from)
-    --         LessThanOrEquals
-    --         (unwrapExpression to)
-    --         (PostfixIncrement (Variable var))
-    --         (unwrapStatement <| loop (dottedVariable1 var) internalNop)
-    --         (unwrapLazyStatement next)
-    Debug.todo "forLeq"
+    build (\f t -> For var f LessThanOrEquals t PlusPlus)
+        |> withExpression from
+        |> withExpression to
+        |> withStatement (loop (Glsl.var var) unsafeNop)
+        |> withStatement next
+        |> buildStatement
 
 
 forDown :
@@ -813,33 +773,30 @@ forDown :
     -> Statement r
     -> Statement r
 forDown ( var, from, to ) loop next =
-    -- Statement <|
-    --     For var
-    --         (unwrapExpression from)
-    --         GreaterThan
-    --         (unwrapExpression to)
-    --         (PostfixDecrement (Variable var))
-    --         (unwrapStatement <| loop (dottedVariable1 var) internalNop)
-    --         (unwrapLazyStatement next)
-    Debug.todo "forDown"
+    build (\f t -> For var f GreaterThan t MinusMinus)
+        |> withExpression from
+        |> withExpression to
+        |> withStatement (loop (Glsl.var var) unsafeNop)
+        |> withStatement next
+        |> buildStatement
 
 
 return : Expression r -> Statement r
 return e =
-    statement Return
+    build Return
         |> withExpression e
         |> buildStatement
 
 
 break : Statement a
 break =
-    statement Break
+    build Break
         |> buildStatement
 
 
 continue : Statement a
 continue =
-    statement Continue
+    build Continue
         |> buildStatement
 
 
@@ -849,7 +806,7 @@ decl typeF name k =
         (TypedName t n) =
             typeF name
     in
-    statement (Decl t n Nothing)
+    build (Decl t n Nothing)
         |> withStatement (k (var n))
         |> buildStatement
 
@@ -857,6 +814,31 @@ decl typeF name k =
 def : TypingFunction t -> String -> Expression t -> (Expression t -> Statement r) -> Statement r
 def typeF name val k =
     def1 ( typeF name, val ) k
+
+
+float : String -> Expression Float -> (Expression Float -> Statement r) -> Statement r
+float =
+    def floatT
+
+
+vec2 : String -> Expression Vec2 -> (Expression Vec2 -> Statement r) -> Statement r
+vec2 =
+    def vec2T
+
+
+vec3 : String -> Expression Vec3 -> (Expression Vec3 -> Statement r) -> Statement r
+vec3 =
+    def vec3T
+
+
+vec4 : String -> Expression Vec4 -> (Expression Vec4 -> Statement r) -> Statement r
+vec4 =
+    def vec4T
+
+
+mat3 : String -> Expression Mat3 -> (Expression Mat3 -> Statement r) -> Statement r
+mat3 =
+    def mat3T
 
 
 def1 :
@@ -868,7 +850,7 @@ def1 ( tn0, val0 ) k =
         (TypedName t0 n0) =
             tn0
     in
-    statement
+    build
         (\v0 k0 -> Decl t0 n0 (Just v0) k0)
         |> withExpression val0
         |> withStatement (k (var n0))
@@ -915,21 +897,32 @@ assignOut name e =
     unsafeMap2 (Comparison Assign) name e
 
 
-expr : Expression t -> Statement r -> Statement r
-expr =
-    unsafeExprStat ExpressionStatement
+expr : Expression t -> (() -> Statement r) -> Statement r
+expr e s =
+    build ExpressionStatement
+        |> withExpression e
+        |> withStatement (s ())
+        |> buildStatement
 
 
-assignAdd : Expression t -> Expression t -> Statement q -> Statement q
-assignAdd name e next =
-    -- Statement <| ExpressionStatement (AssignCombo ComboAdd (unwrapExpression name) (unwrapExpression e)) (unwrapLazyStatement next)
-    Debug.todo "assignAdd"
+nop : Statement ()
+nop =
+    Statement { stat = Nop, deps = SortedSet.empty }
 
 
-assignBy : Expression t -> Expression t -> Statement q -> Statement q
-assignBy name e next =
-    -- Statement <| ExpressionStatement (AssignCombo ComboBy (unwrapExpression name) (unwrapExpression e)) (unwrapLazyStatement next)
-    Debug.todo "assignBy"
+unsafeNop : Statement r
+unsafeNop =
+    Statement { stat = Nop, deps = SortedSet.empty }
+
+
+assignAdd : Expression t -> Expression t -> (() -> Statement q) -> Statement q
+assignAdd name val =
+    expr <| unsafeMap2 (AssignCombo ComboAdd) name val
+
+
+assignBy : Expression t -> Expression t -> (() -> Statement q) -> Statement q
+assignBy name val =
+    expr <| unsafeMap2 (AssignCombo ComboBy) name val
 
 
 
@@ -1088,52 +1081,49 @@ innerValue ctx e =
                     )
 
         BinaryOperation And l r ->
-            innerValue2 ctx l r <|
-                \ctx2 vl vr ->
-                    case ( vl, vr ) of
-                        ( VBool bl, VBool br ) ->
-                            Ok ( ctx2, VBool <| bl && br )
+            innerValue2 ctx l r <| \ctx2 vl vr ->
+            case ( vl, vr ) of
+                ( VBool bl, VBool br ) ->
+                    Ok ( ctx2, VBool <| bl && br )
 
-                        _ ->
-                            Err <|
-                                InvalidTypes
-                                    ("Cannot calculate `and` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                _ ->
+                    Err <|
+                        InvalidTypes
+                            ("Cannot calculate `and` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         BinaryOperation Or l r ->
-            innerValue2 ctx l r <|
-                \ctx2 vl vr ->
-                    case ( vl, vr ) of
-                        ( VBool bl, VBool br ) ->
-                            Ok ( ctx2, VBool <| bl || br )
+            innerValue2 ctx l r <| \ctx2 vl vr ->
+            case ( vl, vr ) of
+                ( VBool bl, VBool br ) ->
+                    Ok ( ctx2, VBool <| bl || br )
 
-                        _ ->
-                            Err <|
-                                InvalidTypes
-                                    ("Cannot calculate `or` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                _ ->
+                    Err <|
+                        InvalidTypes
+                            ("Cannot calculate `or` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Comparison k l r ->
-            innerValue2 ctx l r <|
-                \ctx2 vl vr ->
-                    case ( vl, vr, k ) of
-                        ( VFloat fl, VFloat fr, LessThan ) ->
-                            Ok ( ctx2, VBool (fl < fr) )
+            innerValue2 ctx l r <| \ctx2 vl vr ->
+            case ( vl, vr, k ) of
+                ( VFloat fl, VFloat fr, LessThan ) ->
+                    Ok ( ctx2, VBool (fl < fr) )
 
-                        ( VFloat fl, VFloat fr, LessThanOrEquals ) ->
-                            Ok ( ctx2, VBool (fl <= fr) )
+                ( VFloat fl, VFloat fr, LessThanOrEquals ) ->
+                    Ok ( ctx2, VBool (fl <= fr) )
 
-                        ( VFloat fl, VFloat fr, Equals ) ->
-                            Ok ( ctx2, VBool (fl == fr) )
+                ( VFloat fl, VFloat fr, Equals ) ->
+                    Ok ( ctx2, VBool (fl == fr) )
 
-                        ( VFloat fl, VFloat fr, GreaterThanOrEquals ) ->
-                            Ok ( ctx2, VBool (fl >= fr) )
+                ( VFloat fl, VFloat fr, GreaterThanOrEquals ) ->
+                    Ok ( ctx2, VBool (fl >= fr) )
 
-                        ( VFloat fl, VFloat fr, GreaterThan ) ->
-                            Ok ( ctx2, VBool (fl > fr) )
+                ( VFloat fl, VFloat fr, GreaterThan ) ->
+                    Ok ( ctx2, VBool (fl > fr) )
 
-                        _ ->
-                            Err <|
-                                InvalidTypes
-                                    ("Cannot compare " ++ valueToString vl ++ " and " ++ valueToString vr)
+                _ ->
+                    Err <|
+                        InvalidTypes
+                            ("Cannot compare " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Ternary _ _ _ ->
             Debug.todo "branch 'Ternary _ _ _' not implemented"
@@ -1145,31 +1135,29 @@ innerValue ctx e =
             Debug.todo "branch 'Subtract _ _' not implemented"
 
         BinaryOperation By l r ->
-            innerValue2 ctx l r <|
-                \ctx2 vl vr ->
-                    case ( vl, vr ) of
-                        ( VFloat fl, VFloat fr ) ->
-                            Ok ( ctx2, VFloat <| fl * fr )
+            innerValue2 ctx l r <| \ctx2 vl vr ->
+            case ( vl, vr ) of
+                ( VFloat fl, VFloat fr ) ->
+                    Ok ( ctx2, VFloat <| fl * fr )
 
-                        _ ->
-                            Err <|
-                                InvalidTypes
-                                    ("Cannot calculate `*` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                _ ->
+                    Err <|
+                        InvalidTypes
+                            ("Cannot calculate `*` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         BinaryOperation Div _ _ ->
             Debug.todo "branch 'Div _ _' not implemented"
 
         Call "vec2" [ l, r ] ->
-            innerValue2 ctx l r <|
-                \ctx2 vl vr ->
-                    case ( vl, vr ) of
-                        ( VFloat fl, VFloat fr ) ->
-                            Ok ( ctx2, VVec2 fl fr )
+            innerValue2 ctx l r <| \ctx2 vl vr ->
+            case ( vl, vr ) of
+                ( VFloat fl, VFloat fr ) ->
+                    Ok ( ctx2, VVec2 fl fr )
 
-                        _ ->
-                            Err <|
-                                InvalidTypes
-                                    ("Cannot calculate `vec2` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                _ ->
+                    Err <|
+                        InvalidTypes
+                            ("Cannot calculate `vec2` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Call "exp" [ l ] ->
             autovectorizingFloatOp ctx "exp" (\fv -> Basics.e ^ fv) l

@@ -23,6 +23,10 @@ uniform float u_theta;
 // Utils //
 ///////////
 
+float log10(float x) {
+  return log(x) / log(10.0);
+}
+
 float sinh(float x) { return 0.5 * (exp(x) - exp(-x)); }
 float cosh(float x) { return 0.5 * (exp(x) + exp(-x)); }
 float tanh(float x) {
@@ -65,6 +69,18 @@ float thetaDelta(float theta) {
   float thetaSix = theta * u_whiteLines + .5;
   float thetaNeigh = .05;
   return abs(fract(thetaSix) - .5) / thetaNeigh;
+}
+
+float axis(float coord, float otherCoord, float maxDelta) {
+  float across = 1.0 - abs(coord/maxDelta);
+  if(across < -12.0)
+    return 0.0;
+  float smallUnit = pow(10.0, ceil(log10(maxDelta)));
+  if(across < 0.0 && abs(otherCoord) < maxDelta * 2.0)
+    return 0.0;
+  float unit = across < -6.0 ? smallUnit * 100.0 : across < -0.1 ? smallUnit * 10.0 : smallUnit * 5.0;
+  float parallel = mod(abs(otherCoord), unit) < maxDelta ? 1.0 : 0.0;
+  return max(0.0, max(across, parallel));
 }
 
 // Shifts for the recursive algorithm
@@ -311,8 +327,8 @@ vec2 iln(vec2 z) { return log(z); }
 vec2 iexp(vec2 z) { return exp(z); }
 
 vec2 ipow(vec2 b, float e) {
-  if (abs(e.x - round(e.x)) < .000001)
-    return ipow(b, int(e.x));
+  if (abs(e - round(e)) < .000001)
+    return ipow(b, int(e));
   return iexp(e * iln(b));
 }
 
@@ -509,3 +525,76 @@ vec4 gsign(vec4 v) { return gnum(sign(v.x)); }
 vec4 gceil(vec4 z) { return gnum(ceil(z.x)); }
 vec4 gfloor(vec4 z) { return gnum(floor(z.x)); }
 vec4 ground(vec4 z) { return gnum(round(z.x)); }
+
+//////////////////////
+// Bisect, raytrace //
+//////////////////////
+
+// bool bisect${suffix}(vec3 o, mat3 d, float max_distance, out vec3 found) {
+//     mat3 from = mat3(o, o, vec3(0));
+//     mat3 to = from + max_distance * d;
+//     float ithreshold = ${threshold};
+//     int depth = 0;
+//     int choices = 0;
+//     for(int it = 0; it < ${max_iterations}; it++) {
+//         mat3 midpoint = 0.5 * (from + to);
+//         vec2 front = interval${suffix}(from, midpoint);
+//         vec2 back = interval${suffix}(midpoint, to);
+//         if(depth >= ${max_depth}
+//             || (front.y - front.x < ithreshold && front.x <= 0.0 && front.y >= 0.0)
+//             || (back.y - back.x < ithreshold && back.x <= 0.0 && back.y >= 0.0)
+//             ) {
+//                 found = mix(midpoint[0], midpoint[1], 0.5);
+//                 return true;
+//             }
+//         if(front.x <= 0.0 && front.y >= 0.0) {
+//             to = midpoint;
+//             depth++;
+//             choices = left_shift(choices);
+//         } else if(back.x <= 0.0 && back.y >= 0.0) {
+//             from = midpoint;
+//             depth++;
+//             choices = left_shift_increment(choices);
+//         } else {
+//             // This could be possibly helped by https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
+//             for(int j = ${max_depth} - 1; j > 0; j--) {
+//                 if(j > depth)
+//                     continue;
+//                 depth--;
+//                 choices = right_shift(choices);
+//                 if(is_even(choices)) {
+//                     midpoint = to;
+//                     to = to + (to - from);
+//                     vec2 back = interval${suffix}(midpoint, to);
+//                     if(back.x <= 0.0 && back.y >= 0.0) {
+//                         from = midpoint;
+//                         depth++;
+//                         choices = left_shift_increment(choices);
+//                         break;
+//                     }
+//                 } else {
+//                     from = from - (to - from);
+//                 }
+//             }
+//             if(depth == 0)
+//                 return false;
+//         }
+//     }
+//     return false;
+// }
+
+// bool sphere_bisect${suffix}(vec3 o, mat3 d, float max_distance, out vec3 found) {
+//   vec3 center = vec3(${center.x},${center.y},${center.z});
+
+//   vec3 to_center = o - center;
+//   float b = dot(to_center, 0.5 * (d[0] + d[1]));
+//   float c = dot(to_center, to_center) - ${radius} * ${radius};
+//   float delta = b*b - c;
+//   if(delta < 0.0)
+//       return false;
+//   float x = -b - sqrt(delta);
+//   if(x < ${threshold})
+//       return false;
+//   found = o + x * 0.5 * (d[0] + d[1]);
+//   return true;
+// }

@@ -1,16 +1,17 @@
 module Glsl exposing
     ( Function
     , Statement(..), Stat(..), ForDirection(..)
-    , Expression(..), Expr(..)
+    , Expression(..), ExprWithDeps, Expr(..)
     , BinaryOperation(..), UnaryOperation(..), RelationOperation(..), ComboOperation(..)
     , BisectSignature
-    , true, false, int, float, var
+    , true, false, var
     , unsafeDot, dot2X, dot2Y, dot3X, dot3Y, dot3Z
     , TypingFunction, TypedName(..), Type(..)
     , Vec2, Vec3, Vec4, IVec2, IVec3, IVec4, Mat3, Void, In, Out
     , unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5
     , unsafeMap, unsafeMap2, unsafeMap3
-    , buildStatement, statement, unsafeExprStat, unsafeStat1, withExpression, withStatement
+    , build, withExpression, withStatement, buildExpression, buildStatement
+    , Declaration(..), Uniform, WithDepsBuilder, dot4XY, float1, int1, unsafeTypecast
     )
 
 {-|
@@ -41,6 +42,12 @@ module Glsl exposing
 
 @docs unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5
 @docs unsafeMap, unsafeMap2, unsafeMap3
+@docs unsafeTypecase
+
+
+# Building while tracking dependencies
+
+@docs build, withExpression, withStatement, buildExpression, buildStatement
 
 -}
 
@@ -53,126 +60,140 @@ import SortedSet exposing (SortedSet)
 
 unsafeCall0 : String -> List String -> Expression r
 unsafeCall0 name deps =
-    unsafeCall name deps []
+    build (Call name [])
+        |> withDependencies deps
+        |> buildExpression
 
 
 unsafeCall1 : String -> List String -> Expression t -> Expression r
-unsafeCall1 name deps (Expression arg0) =
-    unsafeCall name deps [ arg0 ]
+unsafeCall1 name deps arg0 =
+    build (\a0 -> Call name [ a0 ])
+        |> withDependencies deps
+        |> withExpression arg0
+        |> buildExpression
 
 
 unsafeCall2 : String -> List String -> Expression t -> Expression u -> Expression r
-unsafeCall2 name deps (Expression arg0) (Expression arg1) =
-    unsafeCall name deps [ arg0, arg1 ]
+unsafeCall2 name deps arg0 arg1 =
+    build (\a0 a1 -> Call name [ a0, a1 ])
+        |> withDependencies deps
+        |> withExpression arg0
+        |> withExpression arg1
+        |> buildExpression
 
 
 unsafeCall3 : String -> List String -> Expression t -> Expression u -> Expression v -> Expression r
-unsafeCall3 name deps (Expression arg0) (Expression arg1) (Expression arg2) =
-    unsafeCall name deps [ arg0, arg1, arg2 ]
+unsafeCall3 name deps arg0 arg1 arg2 =
+    build (\a0 a1 a2 -> Call name [ a0, a1, a2 ])
+        |> withDependencies deps
+        |> withExpression arg0
+        |> withExpression arg1
+        |> withExpression arg2
+        |> buildExpression
 
 
 unsafeCall4 : String -> List String -> Expression t -> Expression u -> Expression v -> Expression w -> Expression r
-unsafeCall4 name deps (Expression arg0) (Expression arg1) (Expression arg2) (Expression arg3) =
-    unsafeCall name deps [ arg0, arg1, arg2, arg3 ]
+unsafeCall4 name deps arg0 arg1 arg2 arg3 =
+    build (\a0 a1 a2 a3 -> Call name [ a0, a1, a2, a3 ])
+        |> withDependencies deps
+        |> withExpression arg0
+        |> withExpression arg1
+        |> withExpression arg2
+        |> withExpression arg3
+        |> buildExpression
 
 
 unsafeCall5 : String -> List String -> Expression t -> Expression u -> Expression v -> Expression w -> Expression x -> Expression r
-unsafeCall5 name deps (Expression arg0) (Expression arg1) (Expression arg2) (Expression arg3) (Expression arg4) =
-    unsafeCall name deps [ arg0, arg1, arg2, arg3, arg4 ]
-
-
-unsafeCall : String -> List String -> List ExprWithDeps -> Expression t
-unsafeCall name deps args =
-    Expression
-        { expr =
-            args
-                |> List.map .expr
-                |> Call name
-        , deps =
-            args
-                |> List.map .deps
-                |> List.foldl SortedSet.insertAll (SortedSet.fromList deps)
-        }
+unsafeCall5 name deps arg0 arg1 arg2 arg3 arg4 =
+    build (\a0 a1 a2 a3 a4 -> Call name [ a0, a1, a2, a3, a4 ])
+        |> withDependencies deps
+        |> withExpression arg0
+        |> withExpression arg1
+        |> withExpression arg2
+        |> withExpression arg3
+        |> withExpression arg4
+        |> buildExpression
 
 
 unsafeMap : (Expr -> Expr) -> Expression a -> Expression b
-unsafeMap f (Expression l) =
-    Expression
-        { expr = f l.expr
-        , deps = l.deps
-        }
+unsafeMap f l =
+    build f
+        |> withExpression l
+        |> buildExpression
 
 
 unsafeMap2 : (Expr -> Expr -> Expr) -> Expression a -> Expression b -> Expression c
-unsafeMap2 f (Expression l) (Expression r) =
-    Expression
-        { expr = f l.expr r.expr
-        , deps =
-            l.deps
-                |> SortedSet.insertAll r.deps
-        }
+unsafeMap2 f l r =
+    build f
+        |> withExpression l
+        |> withExpression r
+        |> buildExpression
 
 
 unsafeMap3 : (Expr -> Expr -> Expr -> Expr) -> Expression a -> Expression b -> Expression c -> Expression d
-unsafeMap3 f (Expression l) (Expression m) (Expression r) =
-    Expression
-        { expr = f l.expr m.expr r.expr
-        , deps =
-            l.deps
-                |> SortedSet.insertAll m.deps
-                |> SortedSet.insertAll r.deps
-        }
+unsafeMap3 f l m r =
+    build f
+        |> withExpression l
+        |> withExpression m
+        |> withExpression r
+        |> buildExpression
 
 
-unsafeStat1 : (Stat -> Stat) -> Statement r -> Statement r
-unsafeStat1 f (Statement stat) =
-    Statement
-        { stat = f stat.stat
-        , deps = stat.deps
-        }
+unsafeTypecast : Expression a -> Expression b
+unsafeTypecast (Expression a) =
+    Expression a
 
 
-unsafeExprStat : (Expr -> Stat -> Stat) -> Expression a -> Statement s -> Statement t
-unsafeExprStat f (Expression l) (Statement r) =
-    Statement
-        { stat = f l.expr r.stat
-        , deps =
-            l.deps
-                |> SortedSet.insertAll r.deps
-        }
+type WithDepsBuilder k
+    = WithDepsBuilder k (SortedSet String)
 
 
-type StatementBuilder k
-    = StatementBuilder k (SortedSet String)
+build : k -> WithDepsBuilder k
+build k =
+    WithDepsBuilder k SortedSet.empty
 
 
-statement : k -> StatementBuilder k
-statement k =
-    StatementBuilder k SortedSet.empty
-
-
-withExpression : Expression e -> StatementBuilder (Expr -> k) -> StatementBuilder k
-withExpression (Expression e) (StatementBuilder k deps) =
-    StatementBuilder (k e.expr)
+withExpression : Expression e -> WithDepsBuilder (Expr -> k) -> WithDepsBuilder k
+withExpression (Expression e) (WithDepsBuilder k deps) =
+    WithDepsBuilder (k e.expr)
         (deps |> SortedSet.insertAll e.deps)
 
 
-withStatement : Statement r -> StatementBuilder (Stat -> k) -> StatementBuilder k
-withStatement (Statement s) (StatementBuilder k deps) =
-    StatementBuilder (k s.stat)
+withStatement : Statement r -> WithDepsBuilder (Stat -> k) -> WithDepsBuilder k
+withStatement (Statement s) (WithDepsBuilder k deps) =
+    WithDepsBuilder (k s.stat)
         (deps |> SortedSet.insertAll s.deps)
 
 
-buildStatement : StatementBuilder Stat -> Statement r
-buildStatement (StatementBuilder stat deps) =
+withDependencies : List String -> WithDepsBuilder k -> WithDepsBuilder k
+withDependencies additionalDeps (WithDepsBuilder k deps) =
+    WithDepsBuilder k
+        (deps |> SortedSet.insertAll (SortedSet.fromList additionalDeps))
+
+
+buildStatement : WithDepsBuilder Stat -> Statement r
+buildStatement (WithDepsBuilder stat deps) =
     Statement
         { stat = stat
         , deps = deps
         }
 
 
+buildExpression : WithDepsBuilder Expr -> Expression t
+buildExpression (WithDepsBuilder expr deps) =
+    Expression
+        { expr = expr
+        , deps = deps
+        }
+
+
 
 -- Typed expressions
+
+
+type Declaration
+    = FunctionDeclaration Function
+    | UniformDeclaration Uniform
 
 
 type alias Function =
@@ -182,6 +203,12 @@ type alias Function =
     , stat : Stat
     , body : String
     , hasSuffix : Bool
+    }
+
+
+type alias Uniform =
+    { tipe : Type
+    , name : String
     }
 
 
@@ -352,26 +379,26 @@ type Out t
 
 true : Expression Bool
 true =
-    bool True
+    bool1 True
 
 
 false : Expression Bool
 false =
-    bool False
+    bool1 False
 
 
-bool : Bool -> Expression Bool
-bool b =
+bool1 : Bool -> Expression Bool
+bool1 b =
     pure <| Bool b
 
 
-int : Int -> Expression Int
-int i =
+int1 : Int -> Expression Int
+int1 i =
     pure <| Int i
 
 
-float : Float -> Expression Float
-float i =
+float1 : Float -> Expression Float
+float1 i =
     pure <| Float i
 
 
@@ -403,6 +430,11 @@ dot3Y e =
 dot3Z : Expression Vec3 -> Expression Float
 dot3Z e =
     unsafeDot e "z"
+
+
+dot4XY : Expression Vec4 -> Expression Vec2
+dot4XY e =
+    unsafeDot e "xy"
 
 
 unsafeDot : Expression t -> String -> Expression a

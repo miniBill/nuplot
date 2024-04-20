@@ -244,12 +244,12 @@ ipow base exponent =
 
 cbrt : Expression -> Expression
 cbrt =
-    unaryFunc (Root 3)
+    unaryFunc Cbrt
 
 
 sqrt_ : Expression -> Expression
 sqrt_ =
-    unaryFunc (Root 2)
+    unaryFunc Sqrt
 
 
 re : Expression -> Expression

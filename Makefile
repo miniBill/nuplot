@@ -11,6 +11,7 @@ src/optimized.js: $(ELM_FILES) Makefile
 generated/Glsl/Functions.elm: codegen/functions.frag $(CODEGEN_FILES) codegen/bindings/Gen/Glsl.elm Makefile
 	rm -rf generated
 	yarn elm-codegen run --flags-from $< codegen/src/Generate.elm
+	elm-format --yes $@
 
 codegen/bindings/Gen/Glsl.elm: $(CODEGEN_FILES) codegen/elm.codegen.json Makefile
 	rm -rf codegen/bindings

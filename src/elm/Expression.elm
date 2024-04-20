@@ -3,11 +3,16 @@ module Expression exposing
     , BinaryOperation(..)
     , Context
     , Expression(..)
+    , Function1(..)
+    , Function2(..)
+    , Function3(..)
     , FunctionName(..)
     , KnownFunction(..)
-    , PrintExpression(..)
     , RelationOperation(..)
     , SolutionTree(..)
+    , TGApply(..)
+    , ToGlslExpression(..)
+    , TypecheckError(..)
     , UnaryOperation(..)
     , VariableStatus(..)
     , asMatrix
@@ -27,9 +32,9 @@ module Expression exposing
     , relationToString
     , solutionTreeToString
     , toDebugTree
-    , toPrintExpression
     , toString
     , toTeXString
+    , typecheck
     , variadicFunctions
     , visit
     )
@@ -39,6 +44,7 @@ import Dict exposing (Dict)
 import Element.WithContext as Element exposing (Element)
 import Element.WithContext.Border as Border
 import Element.WithContext.Font
+import Result.Extra
 import Set exposing (Set)
 import Trie exposing (Trie)
 import UI.L10N exposing (L10N, invariant)
@@ -69,7 +75,6 @@ type SolutionTree
 
 type FunctionName
     = KnownFunction KnownFunction
-    | UserFunction String
 
 
 type KnownFunction
@@ -86,7 +91,8 @@ type KnownFunction
     | Tanh
       -- Power
     | Abs
-    | Root Int
+    | Sqrt
+    | Cbrt
     | Ln
     | Log10
     | Exp
@@ -107,9 +113,8 @@ type KnownFunction
     | Round
     | Floor
     | Ceil
-    | Pw
+    | Piecewise
     | Plot
-    | APlot
     | Simplify
     | StepSimplify
     | Solve
@@ -206,7 +211,7 @@ visit f expr =
                     List <| List.map (visit f) es
 
 
-pvisit : (PrintExpression -> Maybe PrintExpression) -> PrintExpression -> PrintExpression
+pvisit : (ToGlslExpression -> Maybe ToGlslExpression) -> ToGlslExpression -> ToGlslExpression
 pvisit f expr =
     case f expr of
         Just r ->
@@ -214,44 +219,44 @@ pvisit f expr =
 
         Nothing ->
             case expr of
-                PVariable s ->
-                    PVariable s
+                TGVariable s ->
+                    TGVariable s
 
-                PInteger i ->
-                    PInteger i
+                TGInteger i ->
+                    TGInteger i
 
-                PFloat f_ ->
-                    PFloat f_
+                TGFloat f_ ->
+                    TGFloat f_
 
-                PNegate l ->
-                    PNegate (pvisit f l)
+                TGNegate l ->
+                    TGNegate (pvisit f l)
 
-                PLambda x e ->
-                    PLambda x (pvisit f e)
+                TGAdd l r ->
+                    TGAdd (pvisit f l) (pvisit f r)
 
-                PAdd l r ->
-                    PAdd (pvisit f l) (pvisit f r)
+                TGBy l r ->
+                    TGBy (pvisit f l) (pvisit f r)
 
-                PBy l r ->
-                    PBy (pvisit f l) (pvisit f r)
+                TGDiv l r ->
+                    TGDiv (pvisit f l) (pvisit f r)
 
-                PDiv l r ->
-                    PDiv (pvisit f l) (pvisit f r)
+                TGPower l r ->
+                    TGPower (pvisit f l) (pvisit f r)
 
-                PPower l r ->
-                    PPower (pvisit f l) (pvisit f r)
+                TGRel o l r ->
+                    TGRel o (pvisit f l) (pvisit f r)
 
-                PRel o l r ->
-                    PRel o (pvisit f l) (pvisit f r)
+                TGApply (TGApply1 func l) ->
+                    TGApply (TGApply1 func (pvisit f l))
 
-                PApply func e ->
-                    PApply func <| List.map (pvisit f) e
+                TGApply (TGApply2 func l m) ->
+                    TGApply (TGApply2 func (pvisit f l) (pvisit f m))
 
-                PReplace vars e ->
-                    PReplace (Dict.map (\_ -> Maybe.map <| pvisit f) vars) (pvisit f e)
+                TGApply (TGApply3 func l m r) ->
+                    TGApply (TGApply3 func (pvisit f l) (pvisit f m) (pvisit f r))
 
-                PList es ->
-                    PList <| List.map (pvisit f) es
+                TGList es ->
+                    TGList <| List.map (pvisit f) es
 
 
 partialSubstitute : String -> Expression -> Expression -> Expression
@@ -397,8 +402,9 @@ listEquals ls rs =
 
 toString : Expression -> String
 toString =
-    toPrintExpression
-        >> toStringPrec 0
+    typecheck
+        >> Result.map (toStringPrec 0)
+        >> Result.withDefault "Typecheck error"
 
 
 solutionTreeToString : SolutionTree -> L10N String
@@ -425,68 +431,236 @@ solutionTreeToString tree =
             UI.L10N.map (\ps -> "(" ++ String.join ") (" ps ++ ")") (UI.L10N.traverse solutionTreeToString ls)
 
 
-type PrintExpression
-    = PInteger Int
-    | PFloat Float
-    | PVariable String
-    | PLambda String PrintExpression
-    | PAdd PrintExpression PrintExpression
-    | PNegate PrintExpression
-    | PBy PrintExpression PrintExpression
-    | PDiv PrintExpression PrintExpression
-    | PRel RelationOperation PrintExpression PrintExpression
-    | PPower PrintExpression PrintExpression
-    | PReplace (Dict String (Maybe PrintExpression)) PrintExpression
-    | PList (List PrintExpression)
-    | PApply FunctionName (List PrintExpression)
+type ToGlslExpression
+    = TGInteger Int
+    | TGFloat Float
+    | TGVariable String
+    | TGAdd ToGlslExpression ToGlslExpression
+    | TGNegate ToGlslExpression
+    | TGBy ToGlslExpression ToGlslExpression
+    | TGDiv ToGlslExpression ToGlslExpression
+    | TGRel RelationOperation ToGlslExpression ToGlslExpression
+    | TGPower ToGlslExpression ToGlslExpression
+    | TGList (List ToGlslExpression)
+    | TGApply TGApply
 
 
-toPrintExpression : Expression -> PrintExpression
-toPrintExpression e =
+type TGApply
+    = TGApply1 Function1 ToGlslExpression
+    | TGApply2 Function2 ToGlslExpression ToGlslExpression
+    | TGApply3 Function3 ToGlslExpression ToGlslExpression ToGlslExpression
+
+
+type Function1
+    = -- Trig
+      PSin
+    | PCos
+    | PTan
+    | PAsin
+    | PAcos
+    | PAtan
+    | PSinh
+    | PCosh
+    | PTanh
+      -- Power
+    | PAbs
+    | PSqrt
+    | PCbrt
+    | PLn
+    | PLog10
+    | PExp
+    | PSign
+      -- Complex
+    | PRe
+    | PIm
+    | PArg
+      -- Matrix
+    | PGra
+    | PDet
+      -- Misc
+    | PRound
+    | PFloor
+    | PCeil
+
+
+type Function2
+    = -- Trig
+      PAtan2
+      -- Misc
+    | PMin
+    | PMax
+    | PMod
+    | PMbrot
+
+
+type Function3
+    = -- Misc
+      PPiecewise
+
+
+type TypecheckError
+    = InvalidArgCount KnownFunction Int
+    | FoundLambda
+
+
+typecheck : Expression -> Result TypecheckError ToGlslExpression
+typecheck e =
     case e of
         Variable v ->
-            PVariable v
+            Ok (TGVariable v)
 
-        Lambda x f ->
-            PLambda x <| toPrintExpression f
+        Lambda _ _ ->
+            Err FoundLambda
 
         Integer i ->
-            PInteger i
+            Ok (TGInteger i)
 
         Float f ->
-            PFloat f
+            Ok (TGFloat f)
 
         UnaryOperation Negate expression ->
-            PNegate <| toPrintExpression expression
+            Result.map TGNegate <| typecheck expression
 
         BinaryOperation Power l r ->
-            PPower (toPrintExpression l) (toPrintExpression r)
+            Result.map2 TGPower (typecheck l) (typecheck r)
 
         BinaryOperation Division l r ->
-            PDiv (toPrintExpression l) (toPrintExpression r)
+            Result.map2 TGDiv (typecheck l) (typecheck r)
 
         RelationOperation op l r ->
-            PRel op (toPrintExpression l) (toPrintExpression r)
+            Result.map2 (TGRel op) (typecheck l) (typecheck r)
 
         AssociativeOperation Addition l r o ->
-            List.foldl (\el a -> PAdd a el)
-                (PAdd (toPrintExpression l) (toPrintExpression r))
-                (List.map toPrintExpression o)
+            List.foldl (\el a -> Result.map2 TGAdd a el)
+                (typecheck l)
+                (List.map typecheck (r :: o))
 
         AssociativeOperation Multiplication l r o ->
-            List.foldl (\el a -> PBy a el)
-                (PBy (toPrintExpression l) (toPrintExpression r))
-                (List.map toPrintExpression o)
-
-        Replace vars expr ->
-            PReplace (Dict.map (\_ -> Maybe.map toPrintExpression) vars) <|
-                toPrintExpression expr
+            List.foldl (\el a -> Result.map2 TGBy a el)
+                (typecheck l)
+                (List.map typecheck (r :: o))
 
         List es ->
-            PList <| List.map toPrintExpression es
+            es
+                |> Result.Extra.combineMap typecheck
+                |> Result.map TGList
 
-        Apply f es ->
-            PApply f <| List.map toPrintExpression es
+        Apply (KnownFunction Sin) [ a0 ] ->
+            Result.map (TGApply << TGApply1 PSin) (typecheck a0)
+
+        Apply (KnownFunction Sin) args ->
+            Err <| InvalidArgCount Sin (List.length args)
+
+        Apply (KnownFunction Cos) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Cos) _' not implemented"
+
+        Apply (KnownFunction Tan) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Tan) _' not implemented"
+
+        Apply (KnownFunction Asin) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Asin) _' not implemented"
+
+        Apply (KnownFunction Acos) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Acos) _' not implemented"
+
+        Apply (KnownFunction Atan) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Atan) _' not implemented"
+
+        Apply (KnownFunction Atan2) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Atan2) _' not implemented"
+
+        Apply (KnownFunction Sinh) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Sinh) _' not implemented"
+
+        Apply (KnownFunction Cosh) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Cosh) _' not implemented"
+
+        Apply (KnownFunction Tanh) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Tanh) _' not implemented"
+
+        Apply (KnownFunction Abs) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Abs) _' not implemented"
+
+        Apply (KnownFunction Ln) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Ln) _' not implemented"
+
+        Apply (KnownFunction Log10) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Log10) _' not implemented"
+
+        Apply (KnownFunction Exp) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Exp) _' not implemented"
+
+        Apply (KnownFunction Sign) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Sign) _' not implemented"
+
+        Apply (KnownFunction Re) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Re) _' not implemented"
+
+        Apply (KnownFunction Im) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Im) _' not implemented"
+
+        Apply (KnownFunction Arg) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Arg) _' not implemented"
+
+        Apply (KnownFunction Gra) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Gra) _' not implemented"
+
+        Apply (KnownFunction Det) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Det) _' not implemented"
+
+        Apply (KnownFunction Dd) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Dd) _' not implemented"
+
+        Apply (KnownFunction Ii) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Ii) _' not implemented"
+
+        Apply (KnownFunction Min) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Min) _' not implemented"
+
+        Apply (KnownFunction Max) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Max) _' not implemented"
+
+        Apply (KnownFunction Round) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Round) _' not implemented"
+
+        Apply (KnownFunction Floor) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Floor) _' not implemented"
+
+        Apply (KnownFunction Ceil) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Ceil) _' not implemented"
+
+        Apply (KnownFunction Piecewise) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Piecewise) _' not implemented"
+
+        Apply (KnownFunction Plot) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Plot) _' not implemented"
+
+        Apply (KnownFunction Simplify) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Simplify) _' not implemented"
+
+        Apply (KnownFunction StepSimplify) _ ->
+            Debug.todo "branch 'Apply (KnownFunction StepSimplify) _' not implemented"
+
+        Apply (KnownFunction Solve) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Solve) _' not implemented"
+
+        Apply (KnownFunction Mod) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Mod) _' not implemented"
+
+        Apply (KnownFunction Mbrot) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Mbrot) _' not implemented"
+
+        Apply (KnownFunction For) _ ->
+            Debug.todo "branch 'Apply (KnownFunction For) _' not implemented"
+
+        Apply (KnownFunction Sqrt) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Sqrt) _' not implemented"
+
+        Apply (KnownFunction Cbrt) _ ->
+            Debug.todo "branch 'Apply (KnownFunction Cbrt) _' not implemented"
+
+        Replace _ _ ->
+            Debug.todo "branch 'Replace _ _' not implemented"
 
 
 
@@ -495,7 +669,7 @@ toPrintExpression e =
 -- 7 * /
 
 
-toStringPrec : Int -> PrintExpression -> String
+toStringPrec : Int -> ToGlslExpression -> String
 toStringPrec p e =
     let
         paren b c =
@@ -521,7 +695,7 @@ toStringPrec p e =
                         |> List.filterMap
                             (\el ->
                                 case el of
-                                    PList [ x ] ->
+                                    TGList [ x ] ->
                                         Just x
 
                                     _ ->
@@ -535,87 +709,77 @@ toStringPrec p e =
                 Nothing
     in
     case e of
-        PVariable v ->
+        TGVariable v ->
             v
 
-        PFloat f ->
+        TGFloat f ->
             String.fromFloat f
 
-        PInteger v ->
+        TGInteger v ->
             String.fromInt v
 
-        PNegate expression ->
+        TGNegate expression ->
             noninfix "-" expression
 
-        PAdd l (PNegate r) ->
+        TGAdd l (TGNegate r) ->
             infixl_ 6 " - " l r
 
-        PAdd l (PFloat pf) ->
+        TGAdd l (TGFloat pf) ->
             if pf < 0 then
-                infixl_ 6 " - " l (PFloat -pf)
+                infixl_ 6 " - " l (TGFloat -pf)
 
             else
-                infixl_ 6 " + " l (PFloat pf)
+                infixl_ 6 " + " l (TGFloat pf)
 
-        PAdd l (PInteger pi) ->
+        TGAdd l (TGInteger pi) ->
             if pi < 0 then
-                infixl_ 6 " - " l (PInteger -pi)
+                infixl_ 6 " - " l (TGInteger -pi)
 
             else
-                infixl_ 6 " + " l (PInteger pi)
+                infixl_ 6 " + " l (TGInteger pi)
 
-        PAdd l r ->
+        TGAdd l r ->
             infixl_ 6 " + " l r
 
-        PRel rel l r ->
+        TGRel rel l r ->
             infixl_ 5 (" " ++ relationToString rel ++ " ") l r
 
-        PBy ((PInteger _) as l) r ->
+        TGBy ((TGInteger _) as l) r ->
             case r of
-                PPower _ _ ->
+                TGPower _ _ ->
                     infixl_ 7 "" l r
 
-                PVariable _ ->
+                TGVariable _ ->
                     infixl_ 7 "" l r
 
-                PApply _ _ ->
+                TGApply _ ->
                     infixl_ 7 "" l r
 
                 _ ->
                     infixl_ 7 "*" l r
 
-        PBy l r ->
+        TGBy l r ->
             infixl_ 7 "*" l r
 
-        PDiv l r ->
+        TGDiv l r ->
             infixl_ 7 "/" l r
 
-        PPower l (PInteger 2) ->
+        TGPower l (TGInteger 2) ->
             paren (p > 8) <| toStringPrec 9 l ++ "²"
 
-        PPower l (PInteger 3) ->
+        TGPower l (TGInteger 3) ->
             paren (p > 8) <| toStringPrec 9 l ++ "³"
 
-        PPower l r ->
+        TGPower l r ->
             infixr_ 8 "^" l r
 
-        PLambda x ((PApply fn [ PVariable v ]) as f) ->
-            if v == x then
-                functionNameToString fn
+        TGApply (TGApply1 name ((TGList _) as ex)) ->
+            paren (p > 10) <| functionNameToString (toFunctionName1 name) ++ toStringPrec 0 ex
 
-            else
-                paren (p > 0) <| x ++ " => " ++ toStringPrec 0 f
+        TGApply (TGApply1 name ex) ->
+            paren (p > 10) <| functionNameToString (toFunctionName1 name) ++ "(" ++ toStringPrec 0 ex ++ ")"
 
-        PLambda x f ->
-            paren (p > 0) <| x ++ " => " ++ toStringPrec 0 f
-
-        PApply name [ (PList _) as ex ] ->
-            paren (p > 10) <| functionNameToString name ++ toStringPrec 0 ex
-
-        PApply name ex ->
-            paren (p > 10) <| functionNameToString name ++ "(" ++ String.join ", " (List.map (toStringPrec 0) ex) ++ ")"
-
-        PList es ->
+        TGList es ->
             case asVector es of
                 Nothing ->
                     "{" ++ String.join ", " (List.map (toStringPrec 0) es) ++ "}"
@@ -623,34 +787,88 @@ toStringPrec p e =
                 Just rs ->
                     "(" ++ String.join ", " (List.map (toStringPrec 0) rs) ++ ")"
 
-        PReplace var expr ->
-            "["
-                ++ String.join "; "
-                    (List.map
-                        (\( k, mv ) ->
-                            case mv of
-                                Nothing ->
-                                    "!" ++ k
+        TGApply (TGApply2 _ _ _) ->
+            Debug.todo "branch 'TGApply (TGApply2 _ _ _)' not implemented"
 
-                                Just v ->
-                                    let
-                                        r =
-                                            toStringPrec 0 v
-                                    in
-                                    String.join
-                                        (if String.contains " " r then
-                                            " "
+        TGApply (TGApply3 _ _ _ _) ->
+            Debug.todo "branch 'TGApply (TGApply3 _ _ _ _)' not implemented"
 
-                                         else
-                                            ""
-                                        )
-                                        [ k, "=", r ]
-                        )
-                     <|
-                        Dict.toList var
-                    )
-                ++ "] "
-                ++ toStringPrec 0 expr
+
+toFunctionName1 : Function1 -> FunctionName
+toFunctionName1 pf =
+    KnownFunction <|
+        case pf of
+            PSin ->
+                Sin
+
+            PCos ->
+                Cos
+
+            PTan ->
+                Tan
+
+            PAsin ->
+                Asin
+
+            PAcos ->
+                Acos
+
+            PAtan ->
+                Atan
+
+            PSinh ->
+                Sinh
+
+            PCosh ->
+                Cosh
+
+            PTanh ->
+                Tanh
+
+            PAbs ->
+                Abs
+
+            PSqrt ->
+                Sqrt
+
+            PCbrt ->
+                Cbrt
+
+            PLn ->
+                Ln
+
+            PLog10 ->
+                Log10
+
+            PExp ->
+                Exp
+
+            PSign ->
+                Sign
+
+            PRe ->
+                Re
+
+            PIm ->
+                Im
+
+            PArg ->
+                Arg
+
+            PGra ->
+                Gra
+
+            PDet ->
+                Det
+
+            PRound ->
+                Round
+
+            PFloor ->
+                Floor
+
+            PCeil ->
+                Ceil
 
 
 greeks : Dict String String
@@ -720,8 +938,8 @@ unaryFunctions =
         power =
             [ ( "abs", Abs )
             , ( "sign", Sign )
-            , ( "sqrt", Root 2 )
-            , ( "cbrt", Root 3 )
+            , ( "sqrt", Sqrt )
+            , ( "cbrt", Cbrt )
             , ( "ln", Ln )
             , ( "log10", Log10 )
             , ( "exp", Exp )
@@ -740,7 +958,6 @@ unaryFunctions =
 
         other =
             [ ( "plot", Plot )
-            , ( "aplot", APlot )
             , ( "simplify", Simplify )
             , ( "stepsimplify", StepSimplify )
             , ( "floor", Floor )
@@ -769,7 +986,7 @@ binaryFunctions =
 
 ternaryFunctions : List ( String, KnownFunction )
 ternaryFunctions =
-    [ ( "pw", Pw ) ]
+    [ ( "pw", Piecewise ) ]
 
 
 quaternaryFunctions : List ( String, KnownFunction )
@@ -889,14 +1106,11 @@ functionNameToString name =
         KnownFunction Sign ->
             "sign"
 
-        KnownFunction (Root 2) ->
+        KnownFunction Sqrt ->
             "sqrt"
 
-        KnownFunction (Root 3) ->
+        KnownFunction Cbrt ->
             "cbrt"
-
-        KnownFunction (Root n) ->
-            "root" ++ String.fromInt n
 
         KnownFunction Ln ->
             "ln"
@@ -928,14 +1142,11 @@ functionNameToString name =
         KnownFunction Ii ->
             "ii"
 
-        KnownFunction Pw ->
+        KnownFunction Piecewise ->
             "pw"
 
         KnownFunction Plot ->
             "plot"
-
-        KnownFunction APlot ->
-            "aplot"
 
         KnownFunction Simplify ->
             "simplify"
@@ -970,29 +1181,13 @@ functionNameToString name =
         KnownFunction For ->
             "for"
 
-        UserFunction u ->
-            u
 
-
-pfullSubstitute : Dict String (Maybe PrintExpression) -> PrintExpression -> PrintExpression
+pfullSubstitute : Dict String (Maybe ToGlslExpression) -> ToGlslExpression -> ToGlslExpression
 pfullSubstitute dict =
     pvisit <|
         \expr ->
             case expr of
-                PReplace vars e ->
-                    Just <|
-                        PReplace (Dict.map (\_ -> Maybe.map <| pfullSubstitute dict) vars) <|
-                            let
-                                reduced =
-                                    Dict.filter (\k _ -> not <| Dict.member k vars) dict
-                            in
-                            if Dict.isEmpty reduced then
-                                e
-
-                            else
-                                pfullSubstitute dict e
-
-                PVariable string ->
+                TGVariable string ->
                     Dict.get string dict
                         |> Maybe.andThen identity
                         |> Maybe.withDefault expr
@@ -1004,7 +1199,8 @@ pfullSubstitute dict =
 
 toTeXString : Expression -> String
 toTeXString =
-    toPrintExpression
+    typecheck
+        >> Result.withDefault (TGInteger 0)
         >> toTeXStringPrec 0
 
 
@@ -1123,12 +1319,12 @@ toDebugTree todo e =
             goRec "list" ls
 
 
-asMatrixPrint : PrintExpression -> Maybe (List (List PrintExpression))
+asMatrixPrint : ToGlslExpression -> Maybe (List (List ToGlslExpression))
 asMatrixPrint =
     genericAsMatrix
         (\l ->
             case l of
-                PList u ->
+                TGList u ->
                     Just u
 
                 _ ->
@@ -1333,7 +1529,7 @@ genericDeterminant { plus, negate, by } mat =
             Nothing
 
 
-toTeXStringPrec : Int -> PrintExpression -> String
+toTeXStringPrec : Int -> ToGlslExpression -> String
 toTeXStringPrec p e =
     let
         paren b c =
@@ -1358,135 +1554,130 @@ toTeXStringPrec p e =
     in
     wrp <|
         case e of
-            PVariable v ->
+            TGVariable v ->
                 if Dict.member v greeks then
                     "\\" ++ v
 
                 else
                     v
 
-            PFloat f ->
+            TGFloat f ->
                 String.fromFloat f
 
-            PInteger v ->
+            TGInteger v ->
                 String.fromInt v
 
-            PNegate expression ->
+            TGNegate expression ->
                 noninfix "-" expression
 
-            PAdd l (PNegate r) ->
+            TGAdd l (TGNegate r) ->
                 infixl_ 6 " - " l r
 
-            PAdd l (PBy (PInteger m) r) ->
+            TGAdd l (TGBy (TGInteger m) r) ->
                 if m < 0 then
-                    infixl_ 6 " - " l (PBy (PInteger -m) r)
+                    infixl_ 6 " - " l (TGBy (TGInteger -m) r)
 
                 else
-                    infixl_ 6 " + " l (PBy (PInteger m) r)
+                    infixl_ 6 " + " l (TGBy (TGInteger m) r)
 
-            PAdd l (PFloat pf) ->
+            TGAdd l (TGFloat pf) ->
                 if pf < 0 then
-                    infixl_ 6 " - " l (PFloat -pf)
+                    infixl_ 6 " - " l (TGFloat -pf)
 
                 else
-                    infixl_ 6 " + " l (PFloat pf)
+                    infixl_ 6 " + " l (TGFloat pf)
 
-            PAdd l (PInteger pi) ->
+            TGAdd l (TGInteger pi) ->
                 if pi < 0 then
-                    infixl_ 6 " - " l (PInteger -pi)
+                    infixl_ 6 " - " l (TGInteger -pi)
 
                 else
-                    infixl_ 6 " + " l (PInteger pi)
+                    infixl_ 6 " + " l (TGInteger pi)
 
-            PAdd l r ->
+            TGAdd l r ->
                 infixl_ 6 " + " l r
 
-            PRel rel l r ->
+            TGRel rel l r ->
                 infixl_ 5 (" " ++ relationToString rel ++ " ") l r
 
-            PLambda x ((PApply fn [ PVariable v ]) as f) ->
-                if v == x then
-                    functionNameToString fn
-
-                else
-                    paren (p > 0) <| x ++ " \\RightArrow " ++ toTeXStringPrec 0 f
-
-            PLambda x f ->
-                paren (p > 0) <| x ++ " \\RightArrow " ++ toTeXStringPrec 0 f
-
-            PBy ((PInteger _) as l) r ->
+            TGBy ((TGInteger _) as l) r ->
                 case r of
-                    PPower _ _ ->
+                    TGPower _ _ ->
                         infixl_ 7 "" l r
 
-                    PVariable _ ->
+                    TGVariable _ ->
                         infixl_ 7 "" l r
 
-                    PApply (KnownFunction Abs) _ ->
+                    TGApply (TGApply1 PAbs _) ->
                         infixl_ 7 "\\cdot" l r
 
-                    PApply _ _ ->
+                    TGApply (TGApply1 _ _) ->
+                        infixl_ 7 "" l r
+
+                    TGApply (TGApply2 _ _ _) ->
+                        infixl_ 7 "" l r
+
+                    TGApply (TGApply3 _ _ _ _) ->
                         infixl_ 7 "" l r
 
                     _ ->
                         infixl_ 7 "\\cdot" l r
 
-            PBy l r ->
+            TGBy l r ->
                 infixl_ 7 "\\cdot" l r
 
-            PDiv l r ->
+            TGDiv l r ->
                 paren (p > 7) <| "\\frac" ++ toTeXStringPrec 7 l ++ toTeXStringPrec 8 r
 
-            PPower l (PDiv (PInteger 1) (PInteger 2)) ->
+            TGPower l (TGDiv (TGInteger 1) (TGInteger 2)) ->
                 paren (p > 8) <| "\\sqrt{" ++ toTeXStringPrec 0 l ++ "}"
 
-            PPower l (PDiv (PInteger 1) s) ->
+            TGPower l (TGDiv (TGInteger 1) s) ->
                 paren (p > 8) <| "\\sqrt[" ++ toTeXStringPrec 0 s ++ "]{" ++ toTeXStringPrec 0 l ++ "}"
 
-            PPower (PApply name args) (PFloat i) ->
+            TGPower (TGApply (TGApply1 name arg)) (TGFloat i) ->
                 paren (p > 10) <|
                     "\\mathrm{"
-                        ++ functionNameToString name
+                        ++ functionNameToString (toFunctionName1 name)
                         ++ "}^{"
                         ++ String.fromFloat i
                         ++ "}\\left("
-                        ++ String.join ", " (List.map (toTeXStringPrec 0) args)
+                        ++ toTeXStringPrec 0 arg
                         ++ "\\right)"
 
-            PPower (PApply name args) (PInteger i) ->
+            TGPower (TGApply (TGApply1 name args)) (TGInteger i) ->
                 paren (p > 10) <|
                     "\\mathrm{"
-                        ++ functionNameToString name
+                        ++ functionNameToString (toFunctionName1 name)
                         ++ "}^{"
                         ++ String.fromInt i
                         ++ "}\\left("
-                        ++ String.join ", " (List.map (toTeXStringPrec 0) args)
+                        ++ toTeXStringPrec 0 args
                         ++ "\\right)"
 
-            PPower l r ->
+            TGPower l r ->
                 paren (p > 8) <| toTeXStringPrec 9 l ++ "^{" ++ toTeXStringPrec 0 r ++ "}"
 
-            PApply (KnownFunction Abs) [ ex ] ->
+            TGApply (TGApply1 PAbs ex) ->
                 paren (p > 10) <| "\\left|" ++ toTeXStringPrec 0 ex ++ "\\right|"
 
-            PApply (KnownFunction (Root 2)) [ ex ] ->
+            TGApply (TGApply1 PSqrt ex) ->
                 paren (p > 10) <| "\\sqrt{" ++ toTeXStringPrec 0 ex ++ "}"
 
-            PApply (KnownFunction (Root n)) [ ex ] ->
-                paren (p > 10) <| "\\sqrt[" ++ String.fromInt n ++ "]{" ++ toTeXStringPrec 0 ex ++ "}"
+            -- TGApply (KnownFunction (Root n)) [ ex ] ->
+            --     paren (p > 10) <| "\\sqrt[" ++ String.fromInt n ++ "]{" ++ toTeXStringPrec 0 ex ++ "}"
+            TGApply (TGApply1 name ((TGList _) as ex)) ->
+                paren (p > 10) <| "\\mathrm{" ++ functionNameToString (toFunctionName1 name) ++ "}" ++ toTeXStringPrec 0 ex
 
-            PApply name [ (PList _) as ex ] ->
-                paren (p > 10) <| "\\mathrm{" ++ functionNameToString name ++ "}" ++ toTeXStringPrec 0 ex
-
-            PApply name ex ->
+            TGApply (TGApply1 name ex) ->
                 paren (p > 10) <|
                     "\\mathrm{"
-                        ++ functionNameToString name
+                        ++ functionNameToString (toFunctionName1 name)
                         ++ "}\\left("
-                        ++ String.join ", " (List.map (toTeXStringPrec 0) ex)
+                        ++ toTeXStringPrec 0 ex
                         ++ "\\right)"
 
-            PList es ->
+            TGList es ->
                 case asMatrixPrint e of
                     Just childLists ->
                         let
@@ -1498,34 +1689,8 @@ toTeXStringPrec p e =
                     Nothing ->
                         "\\begin{Bmatrix}" ++ String.join ", & " (List.map (\cell -> "{" ++ toTeXStringPrec 0 cell ++ "}") es) ++ " \\end{Bmatrix}"
 
-            PReplace var expr ->
-                "\\begin{bmatrix}"
-                    ++ String.join " \\\\ "
-                        (List.map
-                            (\( k, mv ) ->
-                                case mv of
-                                    Nothing ->
-                                        "!" ++ k
-
-                                    Just v ->
-                                        let
-                                            r =
-                                                toTeXStringPrec 0 v
-                                        in
-                                        String.join
-                                            (if String.contains " " r then
-                                                " "
-
-                                             else
-                                                ""
-                                            )
-                                            [ k, "=", r ]
-                            )
-                         <|
-                            Dict.toList var
-                        )
-                    ++ "\\end{bmatrix} "
-                    ++ toTeXStringPrec 0 expr
+            TGApply _ ->
+                Debug.todo "branch 'TGApply _' not implemented"
 
 
 filterContext : Dict comparable (Maybe v) -> Dict comparable v

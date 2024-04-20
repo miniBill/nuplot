@@ -120,9 +120,11 @@ problemGroupToString :
     -> L10N String
 problemGroupToString ( { col, contextStack, problem }, problems ) =
     let
+        allProblems : List Problem
         allProblems =
             problem :: List.map .problem problems
 
+        prefix : L10N String
         prefix =
             case contextStack of
                 [] ->
@@ -441,7 +443,7 @@ multidivisionParser context =
                 ]
     in
     Parser.inContext MultiDivisionContext <|
-        Parser.succeed (\maybeNegate md -> maybeNegate md)
+        Parser.succeed identity
             |= Parser.loop False signLoopStep
             |. whitespace
             |= multiSequence

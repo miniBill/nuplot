@@ -1,15 +1,14 @@
 module UI.Glsl exposing (getGlsl)
 
 import Dict
-import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), FunctionName(..), KnownFunction(..), RelationOperation(..))
+import Expression exposing (Expression(..), RelationOperation(..))
 import Expression.Graph exposing (Graph(..))
 import Expression.Polynomial exposing (asPolynomial)
-import Expression.Utils exposing (by, minus, plus, square)
-import Glsl exposing (BisectSignature, Mat3, Out, Vec3)
+import Expression.Utils exposing (by, minus, plus)
+import Glsl exposing (BisectSignature, ExprWithDeps)
 import Maybe.Extra as Maybe
-import SortedAnySet as Set
-import UI.Glsl.Code exposing (constantToGlsl, intervalFunctionToGlsl, intervalOperationToGlsl, mainGlsl, straightFunctionToGlsl, straightOperationToGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (FunDecl, expr, fileToGlsl)
+import UI.Glsl.Code exposing (mainGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+import UI.Glsl.Generator as Generator exposing (expr)
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
 import UI.Glsl.Sphere as Sphere
@@ -21,86 +20,90 @@ getGlsl rayDifferentials graph =
         { expr, funDecls, usesThetaDelta, pixel2D, pixel3D } =
             extract "" graph
 
+        build2d :
+            (Expression.Expression -> ExprWithDeps)
+            -> Expression.Expression
+            ->
+                { expr : ExprWithDeps
+                , funDecls : a
+                , usesThetaDelta : Bool
+                , pixel2D : List { call : b, color : Bool }
+                , pixel3D : List c
+                }
         build2d toSrc e =
-            let
-                ( decl, call ) =
-                    toSrc e
-            in
-            { expr = e
-            , funDecls = decl
+            { expr = toSrc e
             , usesThetaDelta = False
             , pixel2D = [ { call = call, color = True } ]
             , pixel3D = []
             }
 
-        extract prefix g =
+        extract : String -> Graph -> { pixel2D : List { call : String, color : Bool }, pixel3D : List a }
+        extract suffix g =
             case g of
                 Explicit2D c ->
-                    build2d (toSrcImplicit prefix) <|
-                        minus Expression.Utils.y c
+                    -- build2d (toSrcImplicit suffix) <|
+                    --     minus Expression.Utils.y c
+                    Debug.todo "Explicit2D"
 
                 Implicit2D l r ->
-                    build2d (toSrcImplicit prefix) <|
-                        minus l r
+                    -- build2d (toSrcImplicit suffix) <|
+                    --     minus l r
+                    Debug.todo "Implicit2D"
 
                 Polar2D e ->
-                    build2d (toSrcPolar prefix) e
+                    -- build2d (toSrcPolar suffix) e
+                    Debug.todo "Polar2D"
 
                 Parametric2D x y ->
-                    { pixel2D =
-                        [ { call = toSrcParametric prefix e
-                          , color = True
-                          }
-                        ]
-                    , pixel3D = []
-                    }
+                    -- { pixel2D =
+                    --     [ { call = toSrcParametric suffix e
+                    --       , color = True
+                    --       }
+                    --     ]
+                    -- , pixel3D = []
+                    -- }
+                    Debug.todo "Parametric2D"
 
                 Relation2D e ->
-                    build2d (toSrcRelation prefix) e
+                    -- build2d (toSrcRelation suffix) e
+                    Debug.todo "Relation2D"
 
                 Contour e ->
-                    { pixel2D = [ { call = toSrcContour prefix e, color = False } ]
-                    , pixel3D = []
-                    }
+                    -- { pixel2D = [ { call = toSrcContour suffix e, color = False } ]
+                    -- , pixel3D = []
+                    -- }
+                    Debug.todo "Countour"
 
                 Implicit3D e ->
-                    let
-                        f =
-                            get3DSource prefix e
-                    in
-                    { expr = f.expr
-                    , pixel2D = []
-                    , pixel3D = [ f.bisect ]
-                    }
+                    -- let
+                    --     f =
+                    --         get3DSource suffix e
+                    -- in
+                    -- { expr = f.expr
+                    -- , pixel2D = []
+                    -- , pixel3D = [ f.bisect ]
+                    -- }
+                    Debug.todo "Implicit3D"
 
                 GraphList children ->
                     let
-                        prefix_ i =
-                            prefix ++ "_" ++ String.fromInt i
+                        suffix_ i =
+                            suffix ++ "_" ++ String.fromInt i
 
                         extracted =
-                            List.indexedMap (extract << prefix_) children
+                            List.indexedMap (extract << suffix_) children
                     in
                     { pixel2D = List.concatMap .pixel2D extracted
                     , pixel3D = List.concatMap .pixel3D extracted
                     }
 
                 VectorField2D x y ->
-                    { pixel2D = [ { call = toSrcVectorField2D prefix x y, color = False } ]
+                    { pixel2D = [ { call = toSrcVectorField2D suffix x y, color = False } ]
                     , pixel3D = []
                     }
 
         reqs =
-            let
-                _ =
-                    -- Can remove in the future
-                    Debug.todo
-            in
-            expr
-                |> expressionToRequirements
-                |> List.sortWith requirementSort
-                |> List.map (requirementToGlsl interval)
-                |> String.join "\n"
+            expr.deps
     in
     reqs
         ++ "\n/* Expression */\n"
@@ -109,23 +112,24 @@ getGlsl rayDifferentials graph =
 
 
 get3DSource : String -> Expression -> BisectSignature
-get3DSource prefix e =
-    case Sphere.asSphere e |> Maybe.map (Sphere.toGlsl prefix) of
+get3DSource suffix e =
+    case Sphere.asSphere e |> Maybe.map (Sphere.toGlsl suffix) of
         Just bisect ->
             bisect
 
         Nothing ->
-            case Plane.asPlane e |> Maybe.map (Plane.toGlsl prefix) of
+            case Plane.asPlane e |> Maybe.map (Plane.toGlsl suffix) of
                 Just bisect ->
                     bisect
 
                 Nothing ->
-                    case tryGlslFromPolynomial prefix e of
+                    case tryGlslFromPolynomial suffix e of
                         Just o ->
                             o
 
                         Nothing ->
-                            UI.Glsl.Code.suffixToBisect (toSrc3D prefix e) prefix
+                            -- UI.Glsl.Code.suffixToBisect (toSrc3D suffix e) suffix
+                            Debug.todo ""
 
 
 tryGlslFromPolynomial : String -> Expression -> Maybe BisectSignature
@@ -176,8 +180,4 @@ tryGlslFromPolynomial suffix e =
                 |> Maybe.map Dict.fromList
                 |> Maybe.withDefault Dict.empty
     in
-    UI.Glsl.Polynomial.glslFromPolySolutions suffix (var "max_distance") poly
-        |> Maybe.map
-            (\{ bisect } ->
-                bisect
-            )
+    UI.Glsl.Polynomial.glslFromPolySolutions suffix (Glsl.var "max_distance") poly

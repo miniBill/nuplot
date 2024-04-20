@@ -4,7 +4,6 @@ import Complex exposing (Complex(..))
 import Dict
 import Expect exposing (Expectation)
 import Test exposing (Test)
-import UI.Glsl.Code exposing (cexpFunction)
 import UI.Glsl.Generator as Generator exposing (Context, ErrorValue, Expression2, GlslValue, Statement, Vec2, float, one, vec2, zero)
 
 
@@ -53,10 +52,11 @@ test1 name function cases =
     cases
         |> List.map
             (\( input, output ) ->
-                Test.test (Debug.toString input) <| \_ ->
-                check
-                    (Generator.interpret Dict.empty <| function input)
-                    (Generator.value Dict.empty output.base)
+                Test.test (Debug.toString input) <|
+                    \_ ->
+                        check
+                            (Generator.interpret Dict.empty <| function input)
+                            (Generator.value Dict.empty output.base)
             )
         |> Test.describe name
 
