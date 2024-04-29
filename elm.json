@@ -4,7 +4,8 @@
         "src/elm",
         "src/elm-extra",
         "generated",
-        "codegen/helpers"
+        "codegen/helpers",
+        "vendored/miniBill/elm-glsl-dsl/1.0.0/src"
     ],
     "elm-version": "0.19.1",
     "dependencies": {

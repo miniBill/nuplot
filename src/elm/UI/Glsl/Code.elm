@@ -3,9 +3,9 @@ module UI.Glsl.Code exposing (expressionToGlsl, expressionToGlslComplex, mainGls
 import Expression exposing (Function1(..), Function2(..), Function3(..), RelationOperation(..), TGApply(..), ToGlslExpression(..))
 import Glsl exposing (Expr, Expression, Vec2, Vec3, Vec4, dot2X, dot2Y, dot4XY, float1, unsafeCall0, unsafeTypecast, var)
 import Glsl.Functions exposing (abs2, abs3, abs4, axis111, cabs2, cacos2, carg2, casin2, catan2, catan222, cby22, ccbrt2, cceil2, ccos2, ccosh2, cdiv22, cexp2, cfloor2, cim2, cln2, clog102, cmax22, cmbrot22, cmin22, cmod22, cos1, cpow22, cpw222, cre2, cross33, cround2, csign2, csin2, csinh2, csqrt2, ctan2, ctanh2, dup1, exp1, fwidth3, gby44, gdiv44, gneg4, gnum1, gpow41, gpow44, gsquare4, hl2rgb11, iabs2, iacos2, iarg2, iasin2, iatan2, iby22, icbrt2, iceil2, icos2, icosh2, idiv22, ieq22, iexp2, iexpand2, ifloor2, igeq22, igt22, iim2, ileq22, iln2, ilog102, ilt22, ineg2, ineq22, ipow21, ipow22, ire2, iround2, isign2, isin2, isinh2, isqrt2, isquare2, itan2, itanh2, mat3333, max11, max33, max44, normalize3, pow11, radians1, sin1, u_canvasHeight, u_canvasWidth, u_drawAxes, u_phi, u_theta, u_viewportWidth, u_zoomCenter, vec211, vec3111, vec41111, vec431)
+import Glsl.Generator as Generator exposing (adds3, assign, decl, def, expr, float, fun0, gl_FragColor, gl_FragCoord, main_, mat3, one, return, ternary3, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4T, vec4Zero, zero)
 import Glsl.Operations exposing (add11, add22, add33, add44, by11, by12, by13, by22, by31, by33, div11, div22, eq, lt, negate1, negate2, subtract11, subtract22, subtract33, subtract44)
 import Glsl.PrettyPrinter
-import UI.Glsl.Generator as Generator exposing (adds3, assign, decl, def, expr, float, floatT, fun0, gl_FragColor, gl_FragCoord, main_, mat3, nop, one, return, ternary3, vec2, vec2T, vec2Zero, vec3, vec3T, vec3Zero, vec4T, vec4Zero, voidT, zero)
 
 
 expressionToGlslComplex : ToGlslExpression -> Glsl.Expression Vec2
@@ -612,19 +612,6 @@ toSrcParametric expandIntervals suffix e =
     ""
 
 
-thetaDelta : String
-thetaDelta =
-    """
-    float thetaDelta(float theta) {
-        if(u_whiteLines < 1.0)
-            return 100.0;
-        float thetaSix = theta * u_whiteLines + 0.5;
-        float thetaNeigh = 0.05;
-        return abs(fract(thetaSix) - 0.5) / thetaNeigh;
-    }
-    """
-
-
 toSrcVectorField2D : String -> Expression.Expression -> Expression.Expression -> String
 toSrcVectorField2D suffix x y =
     -- """
@@ -766,22 +753,22 @@ mainGlsl :
 mainGlsl rayDifferentials pixel2 pixel3 =
     (case ( pixel2, pixel3 ) of
         ( [], [] ) ->
-            main_ vec4Zero
+            vec4Zero
 
         ( _ :: _, [] ) ->
-            main_ (main2D pixel2)
+            main2D pixel2
 
         ( [], _ :: _ ) ->
-            main_ (main3D rayDifferentials pixel3)
+            main3D rayDifferentials pixel3
 
         ( _ :: _, _ :: _ ) ->
-            main_
-                (max44
-                    (main2D pixel2)
-                    (main3D rayDifferentials pixel3)
-                )
+            max44
+                (main2D pixel2)
+                (main3D rayDifferentials pixel3)
     )
-        |> Generator.fileToGlsl
+        |> assign gl_FragColor
+        |> main_
+        |> Generator.toGlsl
 
 
 main2D :
