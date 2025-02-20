@@ -8,6 +8,6 @@
         "sourceMap": true,
         "allowSyntheticDefaultImports": true,
         "moduleResolution": "node",
-        "lib": ["ES2017","DOM"]
+        "lib": ["ES2017", "DOM", "WebWorker"]
     }
 }
