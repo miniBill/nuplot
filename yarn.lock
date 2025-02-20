@@ -305,10 +305,10 @@ diff-sequences@^27.5.1:
   resolved "https://registry.yarnpkg.com/diff-sequences/-/diff-sequences-27.5.1.tgz#eaecc0d327fd68c8d9672a1e64ab8dccb2ef5327"
   integrity sha512-k1gCAXAsNgLwEL+Y8Wvl+M6oEFj5bgazfZULpS5CneoPPXRaCCW7dm+q21Ky2VEE5X+VeRDBVg1Pcvvsr4TtNQ==
 
-elm-codegen@^0.5.3:
-  version "0.5.3"
-  resolved "https://registry.yarnpkg.com/elm-codegen/-/elm-codegen-0.5.3.tgz#28ab430fe6addd7e3938a346d4d0c3bfd8ca4917"
-  integrity sha512-LKscQHnDeNGQsvaoDXq1nxlm9XlsWaIQCUiqBgJjXk/gPU6PtcXVC0ji1ytmmSW+/N0zb+DWegSbPPYGeV4eew==
+elm-codegen@^0.6.1:
+  version "0.6.1"
+  resolved "https://registry.yarnpkg.com/elm-codegen/-/elm-codegen-0.6.1.tgz#396bb401e05a0ea911ea289d688f247daa43b60a"
+  integrity sha512-mbVmK4fqW+wtYzTZhJSuT42KrQZMRTueYerCvo09sO5v7QdDGw3qeG/rL1vLH0q2GJF44lXhyBo4lv6azSBOQQ==
   dependencies:
     chalk "^4.1.1"
     chokidar "^3.5.1"
@@ -338,7 +338,7 @@ elm-optimize-level-2@^0.3.5:
     ts-union "^2.2.1"
     typescript "^4.5.5"
 
-elm-review@^2.11.1:
+elm-review@^2.13.1:
   version "2.13.1"
   resolved "https://registry.yarnpkg.com/elm-review/-/elm-review-2.13.1.tgz#33064b3a2baf2af8d20fb7e9a382fd6240c585a2"
   integrity sha512-okkw5Mfmjkjy2ZggFyWfz5bpcd81fsQXGyNIDgZRFBU2vXao+xdt5/AN6L1tt6KWgjSyBJD94RXeyd5e3AhPKw==
@@ -367,7 +367,7 @@ elm-review@^2.11.1:
   resolved "https://registry.yarnpkg.com/elm-solve-deps-wasm/-/elm-solve-deps-wasm-2.0.0.tgz#8214705876fbcd9789cf6ab2db45ec781b5c1234"
   integrity sha512-11OV8FgB9qsth/F94q2SJjb1MoEgbworSyNM1L+YlxVoaxp7wtWPyA8cNcPEkSoIKG1B8Tqg68ED1P6dVamHSg==
 
-elm-watch@^2.0.0-beta.2:
+elm-watch@^2.0.0-beta.6:
   version "2.0.0-beta.6"
   resolved "https://registry.yarnpkg.com/elm-watch/-/elm-watch-2.0.0-beta.6.tgz#33b31856de19276690715c3f8a495f1e312630d2"
   integrity sha512-pb3qZVfoBMEWsfrP4mN760z85n5XC0cXg1JRR4ojAVZVjFMeDczYojLaKDQgP+qNeMAK52xj7s31+bCevT+X2Q==
@@ -1020,7 +1020,7 @@ typescript@^4.5.5:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.9.5.tgz#095979f9bcc0d09da324d58d03ce8f8374cbe65a"
   integrity sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==
 
-typescript@^5.4.4:
+typescript@^5.7.3:
   version "5.7.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.7.3.tgz#919b44a7dbb8583a9b856d162be24a54bf80073e"
   integrity sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==
