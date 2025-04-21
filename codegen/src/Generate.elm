@@ -1,12 +1,12 @@
 module Generate exposing (run)
 
+import Ansi.Color
 import BackendTask exposing (BackendTask)
 import BackendTask.File as File
 import Dict exposing (Dict)
 import Elm
 import Elm.Annotation as Type
 import FatalError exposing (FatalError)
-import Gen.Debug
 import Gen.Glsl
 import Glsl exposing (BinaryOperation(..), Declaration(..), Expr(..), Expression(..), Function, RelationOperation(..), Stat(..), Statement(..), Type(..), Uniform)
 import Glsl.Parser
@@ -29,45 +29,50 @@ task =
         |> BackendTask.allowFatal
         |> BackendTask.andThen
             (\glsl ->
-                let
-                    file =
-                        generate glsl
-                            |> List.Extra.gatherEqualsBy Tuple.first
-                            |> List.map
-                                (\( head, tail ) ->
-                                    let
-                                        group : List Elm.Declaration
-                                        group =
-                                            List.map Tuple.second (head :: tail)
-                                    in
-                                    case Tuple.first head of
-                                        Just groupName ->
-                                            Elm.group (Elm.docs ("#" ++ groupName) :: group)
+                case generate glsl of
+                    Err msg ->
+                        let
+                            coloredMsg : String
+                            coloredMsg =
+                                Ansi.Color.fontColor Ansi.Color.red "Error:" ++ " " ++ msg
+                        in
+                        BackendTask.fail (FatalError.fromString coloredMsg)
 
-                                        Nothing ->
-                                            Elm.group group
-                                )
-                            |> Elm.file
-                                [ "Glsl", "Functions", "NuPlot" ]
-                in
-                Script.writeFile
-                    { path = "generated/" ++ file.path
-                    , body = file.contents
-                    }
-                    |> BackendTask.allowFatal
+                    Ok declarations ->
+                        let
+                            file =
+                                declarations
+                                    |> List.Extra.gatherEqualsBy Tuple.first
+                                    |> List.map
+                                        (\( head, tail ) ->
+                                            let
+                                                group : List Elm.Declaration
+                                                group =
+                                                    List.map Tuple.second (head :: tail)
+                                            in
+                                            case Tuple.first head of
+                                                Just groupName ->
+                                                    Elm.group (Elm.docs ("#" ++ groupName) :: group)
+
+                                                Nothing ->
+                                                    Elm.group group
+                                        )
+                                    |> Elm.file
+                                        [ "Glsl", "Functions", "NuPlot" ]
+                        in
+                        Script.writeFile
+                            { path = "generated/" ++ file.path
+                            , body = file.contents
+                            }
+                            |> BackendTask.allowFatal
             )
 
 
-generate : String -> List ( Maybe String, Elm.Declaration )
+generate : String -> Result String (List ( Maybe String, Elm.Declaration ))
 generate glsl =
     case Parser.run Glsl.Parser.file glsl of
         Err e ->
-            [ ( Nothing
-              , Gen.Debug.todo "Error parsing file"
-                    |> Elm.declaration "err"
-                    |> Elm.withDocumentation (errorToString e)
-              )
-            ]
+            Err (errorToString e)
 
         Ok ( _, declarations ) ->
             let
@@ -155,16 +160,10 @@ generate glsl =
             in
             case maybeDecls of
                 Ok decls ->
-                    decls ++ builtinDecls ++ uniformDecls
+                    Ok (decls ++ builtinDecls ++ uniformDecls)
 
                 Err e ->
-                    [ ( Nothing
-                      , "Error generating file"
-                            |> Gen.Debug.todo
-                            |> Elm.declaration "err"
-                            |> Elm.withDocumentation e
-                      )
-                    ]
+                    Err ("Error generating file: " ++ e)
 
 
 uniformToDeclaration : Uniform -> ( Maybe String, Elm.Declaration )

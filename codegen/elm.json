@@ -18,7 +18,8 @@
             "elm-community/result-extra": "2.4.0",
             "mdgriffith/elm-codegen": "5.2.0",
             "mdgriffith/elm-ui": "1.1.8",
-            "pithub/elm-parser-bug-workaround": "1.0.0"
+            "pithub/elm-parser-bug-workaround": "1.0.0",
+            "wolfadex/elm-ansi": "3.0.0"
         },
         "indirect": {
             "Chadtech/elm-bool-extra": "2.4.2",
@@ -54,8 +55,7 @@
             "stil4m/elm-syntax": "7.3.8",
             "stil4m/structured-writer": "1.0.3",
             "the-sett/elm-pretty-printer": "3.1.1",
-            "the-sett/elm-syntax-dsl": "6.0.3",
-            "wolfadex/elm-ansi": "3.0.0"
+            "the-sett/elm-syntax-dsl": "6.0.3"
         }
     },
     "test-dependencies": {
