@@ -8,14 +8,16 @@ build: generated/Glsl/Functions/NuPlot.elm src/optimized.js Makefile
 src/optimized.js: $(ELM_FILES) Makefile
 	yarn elm-optimize-level-2 src/elm/UI.elm --output $@
 
-generated/Glsl/Functions/NuPlot.elm: codegen/functions.frag codegen/Generate.elm codegen/Gen/Glsl.elm Makefile
+generated/Glsl/Functions/NuPlot.elm: codegen/functions.frag codegen/src/Generate.elm codegen/bindings/Gen/Glsl.elm Makefile
 	rm -rf generated
-	yarn elm-codegen run --flags-from $< codegen/Generate.elm
-	elm-format --yes $@
+	yarn elm-pages run codegen/src/Generate.elm
+	elm-format --yes generated
 
-codegen/Gen/Glsl.elm: codegen/Generate.elm codegen/elm.codegen.json Makefile
-	rm -rf codegen/Gen
+codegen/bindings/Gen/Glsl.elm: codegen/elm.codegen.json Makefile
+	rm -rf codegen/bindings
 	yarn elm-codegen install
+	mkdir -p codegen/bindings
+	mv codegen/Gen codegen/bindings
 
 
 .PHONY: clean

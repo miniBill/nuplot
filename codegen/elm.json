@@ -1,7 +1,8 @@
 {
     "type": "application",
     "source-directories": [
-        ".",
+        "src",
+        "bindings",
         "../vendored/miniBill/elm-glsl/1.0.0/src"
     ],
     "elm-version": "0.19.1",

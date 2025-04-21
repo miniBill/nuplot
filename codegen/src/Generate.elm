@@ -51,7 +51,7 @@ task =
                                 [ "Glsl", "Functions", "NuPlot" ]
                 in
                 Script.writeFile
-                    { path = file.path
+                    { path = "generated/" ++ file.path
                     , body = file.contents
                     }
                     |> BackendTask.allowFatal
