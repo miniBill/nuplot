@@ -1,3 +1,4 @@
 {
-    "elmLS.elmFormatPath": "elm-format-hack"
+    "elmLS.elmFormatPath": "elm-format-hack",
+    "cSpell.words": ["Glsl"]
 }

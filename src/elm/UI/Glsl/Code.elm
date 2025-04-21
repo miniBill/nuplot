@@ -767,8 +767,9 @@ mainGlsl rayDifferentials pixel2 pixel3 =
                 (main3D rayDifferentials pixel3)
     )
         |> assign gl_FragColor
+        |> expr
         |> main_
-        |> Generator.toGlsl
+        |> Generator.fileToGlsl
 
 
 main2D :

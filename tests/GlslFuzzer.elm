@@ -3,64 +3,64 @@ module GlslFuzzer exposing (suite)
 import Complex exposing (Complex(..))
 import Dict
 import Expect exposing (Expectation)
+import Glsl exposing (Expression, Vec2, float1)
+import Glsl.Eval exposing (Context, Error, Value)
+import Glsl.Functions exposing (cexp2, vec211)
+import Glsl.Generator exposing (one, zero)
 import Test exposing (Test)
-import UI.Glsl.Generator as Generator exposing (Context, ErrorValue, Expression2, GlslValue, Statement, Vec2, float, one, vec2, zero)
 
 
 suite : Test
 suite =
     Test.describe "Glsl"
-        [ Test.test "NOP" <| \_ -> Expect.true "True" True
-
-        -- test1 "cexp"
-        -- cexpFunction
-        -- [ ( zeroC, oneC )
-        -- , ( oneC, real e )
-        -- , ( real 2, real <| e * e )
-        -- , ( real -1, real <| 1 / e )
-        -- , ( complex Complex.i, complex <| Complex.exp Complex.i )
-        -- ]
+        [ test1 "cexp"
+            cexp2
+            [ ( zeroC, oneC )
+            , ( oneC, real e )
+            , ( real 2, real <| e * e )
+            , ( real -1, real <| 1 / e )
+            , ( complex Complex.i, complex <| Complex.exp Complex.i )
+            ]
         ]
 
 
-complex : Complex -> Expression2
+complex : Complex -> Expression Vec2
 complex (Complex r i) =
-    vec2 (float r) (float i)
+    vec211 (float1 r) (float1 i)
 
 
-real : Float -> Expression2
+real : Float -> Expression Vec2
 real r =
-    vec2 (float r) zero
+    vec211 (float1 r) zero
 
 
-oneC : Expression2
+oneC : Expression Vec2
 oneC =
-    vec2 one zero
+    vec211 one zero
 
 
-zeroC : Expression2
+zeroC : Expression Vec2
 zeroC =
-    vec2 zero zero
+    vec211 zero zero
 
 
 test1 :
     String
-    -> (Expression2 -> Statement Vec2)
-    -> List ( Expression2, Expression2 )
+    -> (Expression Vec2 -> Expression Vec2)
+    -> List ( Expression Vec2, Expression Vec2 )
     -> Test
 test1 name function cases =
     cases
         |> List.map
             (\( input, output ) ->
-                Test.test (Debug.toString input) <|
-                    \_ ->
-                        check
-                            (Generator.interpret Dict.empty <| function input)
-                            (Generator.value Dict.empty output.base)
+                Test.test (Debug.toString input) <| \_ ->
+                check
+                    (Glsl.Eval.value Dict.empty <| function input)
+                    (Glsl.Eval.value Dict.empty output)
             )
         |> Test.describe name
 
 
-check : Result ErrorValue ( Context, GlslValue ) -> Result ErrorValue ( Context, GlslValue ) -> Expectation
+check : Result Error ( Context, Value ) -> Result Error ( Context, Value ) -> Expectation
 check actual expected =
     Expect.equal expected actual

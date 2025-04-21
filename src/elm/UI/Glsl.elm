@@ -6,9 +6,9 @@ import Expression.Graph exposing (Graph(..))
 import Expression.Polynomial exposing (asPolynomial)
 import Expression.Utils exposing (by, minus, plus)
 import Glsl exposing (BisectSignature, ExprWithDeps)
+import Glsl.Generator as Generator
 import Maybe.Extra as Maybe
 import UI.Glsl.Code exposing (mainGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
-import UI.Glsl.Generator as Generator exposing (expr)
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
 import UI.Glsl.Sphere as Sphere

@@ -266,29 +266,28 @@ partialSubstitute var val =
 
 fullSubstitute : Dict String Expression -> Expression -> Expression
 fullSubstitute dict =
-    visit <|
-        \expr ->
-            case expr of
-                Replace vars e ->
-                    Just <|
-                        Replace (Dict.map (\_ -> Maybe.map <| fullSubstitute dict) vars) <|
-                            let
-                                reduced =
-                                    Dict.filter (\k _ -> not <| Dict.member k vars) dict
-                            in
-                            if Dict.isEmpty reduced then
-                                e
+    visit <| \expr ->
+    case expr of
+        Replace vars e ->
+            Just <|
+                Replace (Dict.map (\_ -> Maybe.map <| fullSubstitute dict) vars) <|
+                    let
+                        reduced =
+                            Dict.filter (\k _ -> not <| Dict.member k vars) dict
+                    in
+                    if Dict.isEmpty reduced then
+                        e
 
-                            else
-                                fullSubstitute dict e
+                    else
+                        fullSubstitute dict e
 
-                Variable string ->
-                    Dict.get string dict
-                        |> Maybe.withDefault expr
-                        |> Just
+        Variable string ->
+            Dict.get string dict
+                |> Maybe.withDefault expr
+                |> Just
 
-                _ ->
-                    Nothing
+        _ ->
+            Nothing
 
 
 equals : Expression -> Expression -> Bool
@@ -1184,17 +1183,16 @@ functionNameToString name =
 
 pfullSubstitute : Dict String (Maybe ToGlslExpression) -> ToGlslExpression -> ToGlslExpression
 pfullSubstitute dict =
-    pvisit <|
-        \expr ->
-            case expr of
-                TGVariable string ->
-                    Dict.get string dict
-                        |> Maybe.andThen identity
-                        |> Maybe.withDefault expr
-                        |> Just
+    pvisit <| \expr ->
+    case expr of
+        TGVariable string ->
+            Dict.get string dict
+                |> Maybe.andThen identity
+                |> Maybe.withDefault expr
+                |> Just
 
-                _ ->
-                    Nothing
+        _ ->
+            Nothing
 
 
 toTeXString : Expression -> String
@@ -1334,14 +1332,13 @@ asMatrixPrint =
 
 asMatrix : Expression -> Maybe (List (List Expression))
 asMatrix =
-    genericAsMatrix <|
-        \e ->
-            case e of
-                List es ->
-                    Just es
+    genericAsMatrix <| \e ->
+    case e of
+        List es ->
+            Just es
 
-                _ ->
-                    Nothing
+        _ ->
+            Nothing
 
 
 genericAsMatrix : (a -> Maybe (List a)) -> a -> Maybe (List (List a))
