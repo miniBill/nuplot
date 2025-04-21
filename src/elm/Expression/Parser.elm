@@ -150,7 +150,7 @@ problemGroupToString ( { col, contextStack, problem }, problems ) =
     in
     UI.L10N.concat
         [ prefix
-        , if List.any ((==) Unexpected) allProblems then
+        , if List.member Unexpected allProblems then
             if List.all ((==) Unexpected) allProblems then
                 { en = "Unexpected"
                 , it = "Inatteso"
@@ -672,8 +672,9 @@ variableParser context =
 getFirstFree : Trie VariableStatus -> String
 getFirstFree trie =
     let
-        alphabeth =
-            List.map (String.fromChar << Char.fromCode) <| List.range (Char.toCode 'a') (Char.toCode 'z')
+        alphabet : List String
+        alphabet =
+            List.map (\c -> String.fromChar (Char.fromCode c)) <| List.range (Char.toCode 'a') (Char.toCode 'z')
 
         go : List String -> String
         go lst =
@@ -682,9 +683,9 @@ getFirstFree trie =
                     p
 
                 Nothing ->
-                    go (List.concatMap (\l -> List.map (\r -> l ++ r) alphabeth) lst)
+                    go (List.concatMap (\l -> List.map (\r -> l ++ r) alphabet) lst)
     in
-    go alphabeth
+    go alphabet
 
 
 parseArgs : Maybe Int -> Bool -> ExpressionParser (List Expression)

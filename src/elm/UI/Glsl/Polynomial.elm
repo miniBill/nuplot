@@ -4,12 +4,11 @@ import Dict exposing (Dict)
 import Expression exposing (AssociativeOperation(..), BinaryOperation(..), Expression(..), RelationOperation(..), UnaryOperation(..))
 import Expression.Polynomial exposing (Exponents)
 import Expression.Utils
-import Glsl exposing (BisectSignature, Statement, Vec3, dot2X, dot2Y, dot3X, dot3Y, dot3Z, float1, int)
-import Glsl.Functions exposing (abs1, cby22, cdiv22, csqrt2, min11, mix331)
-import Glsl.Operations exposing (add22, add33, array33, by11, by12, by13, gt, lt, negate2, subtract22)
+import Glsl exposing (BisectSignature, Statement, Vec3, float1, int1)
+import Glsl.Functions exposing (mix331)
+import Glsl.Generator exposing (ands, assignOut, boolT, def, expr, floatT, fun4, mat3T, out, return, vec3, vec3T, zero)
+import Glsl.Operations exposing (add33, array33, by11, by13, gt, lt)
 import Maybe.Extra as Maybe
-import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator exposing (ands, assign, assignOut, boolT, def, def2, def3, expr, floatT, fun4, mat3T, or, out, return, ternary, vec2T, vec3T, zero)
 
 
 getDegree : Dict (List ( a, number )) b -> number
@@ -195,10 +194,10 @@ glslFromSolutions :
     -> BisectSignature
 glslFromSolutions suffix sols =
     fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
-    vec3 "dMix" (mix331 (array33 d (int 0)) (array33 d (int 1)) (float1 0.5)) <| \dMix ->
+    vec3 "dMix" (mix331 (array33 d (int1 0)) (array33 d (int1 1)) (float1 0.5)) <| \dMix ->
     def floatT "t" (by11 maxDistance <| float1 2) <| \t ->
     sols { dMix = dMix, o = o, t = t } <| \_ ->
-    expr (assignOut found (add33 o (by13 t (mix331 (array33 d (int 0)) (array33 d (int 1)) (float1 0.5))))) <| \_ ->
+    expr (assignOut found (add33 o (by13 t (mix331 (array33 d (int1 0)) (array33 d (int1 1)) (float1 0.5))))) <| \_ ->
     return (ands [ lt t maxDistance, gt t zero ])
 
 

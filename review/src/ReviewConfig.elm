@@ -28,6 +28,7 @@ import NoUnused.Patterns
 import NoUnused.Variables
 import NoUnusedPorts
 import Review.Rule as Rule exposing (Rule)
+import ReviewPipelineStyles
 import Simplify
 
 
@@ -41,10 +42,11 @@ config =
     , NoDebug.TodoOrToString.rule
         |> Rule.ignoreErrorsForDirectories [ "tests/" ]
     , NoDuplicatePorts.rule
-    , NoEtaReducibleLambdas.rule
-        { lambdaReduceStrategy = NoEtaReducibleLambdas.AlwaysRemoveLambdaWhenPossible
-        , argumentNamePredicate = always True
-        }
+
+    -- , NoEtaReducibleLambdas.rule
+    --     { lambdaReduceStrategy = NoEtaReducibleLambdas.AlwaysRemoveLambdaWhenPossible
+    --     , argumentNamePredicate = always True
+    --     }
     , NoExposingEverything.rule
     , NoImportingEverything.rule []
     , NoMissingTypeAnnotation.rule
@@ -65,4 +67,10 @@ config =
     , NoUnused.Variables.rule
     , NoUnusedPorts.rule
     , Simplify.rule Simplify.defaults
+    , ReviewPipelineStyles.rule
+        [ ReviewPipelineStyles.forbid ReviewPipelineStyles.leftCompositionPipelines
+            |> ReviewPipelineStyles.andCallThem "forbidden << composition"
+        , ReviewPipelineStyles.forbid ReviewPipelineStyles.rightCompositionPipelines
+            |> ReviewPipelineStyles.andCallThem "forbidden >> composition"
+        ]
     ]

@@ -19,7 +19,7 @@ type Graph
 
 
 fromExpression : Expression -> Graph
-fromExpression =
+fromExpression input =
     let
         go expr =
             let
@@ -87,7 +87,7 @@ fromExpression =
                     else
                         Explicit2D expr
     in
-    go << Expression.Simplify.hoistLambda
+    go (Expression.Simplify.hoistLambda input)
 
 
 toString : Graph -> String

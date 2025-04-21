@@ -26,111 +26,107 @@ get =
 
 getRange : Dict String NumericRange -> Expression -> NumericRange
 getRange ctx e =
-    let
-        result =
-            case e of
-                Variable v ->
-                    Dict.get v ctx |> Maybe.withDefault Real
+    case e of
+        Variable v ->
+            Dict.get v ctx |> Maybe.withDefault Real
 
-                Integer j ->
-                    sign j
+        Integer j ->
+            sign j
 
-                Float j ->
-                    sign j
+        Float j ->
+            sign j
 
-                UnaryOperation Negate c ->
-                    negateRange <| getRange ctx c
+        UnaryOperation Negate c ->
+            negateRange <| getRange ctx c
 
-                BinaryOperation Power b ex ->
-                    powerRange ctx (getRange ctx b) ex
+        BinaryOperation Power b ex ->
+            powerRange ctx (getRange ctx b) ex
 
-                BinaryOperation Division n d ->
-                    multiplyRange (getRange ctx n) (getRange ctx d)
+        BinaryOperation Division n d ->
+            multiplyRange (getRange ctx n) (getRange ctx d)
 
-                RelationOperation _ _ _ ->
+        RelationOperation _ _ _ ->
+            Nonnegative
+
+        AssociativeOperation Addition l m o ->
+            List.foldl addRange (getRange ctx l) <| List.map (getRange ctx) (m :: o)
+
+        AssociativeOperation Multiplication l m o ->
+            List.foldl multiplyRange (getRange ctx l) <| List.map (getRange ctx) (m :: o)
+
+        List es ->
+            case es of
+                [] ->
+                    Zero
+
+                h :: t ->
+                    List.foldl union (getRange ctx h) <| List.map (getRange ctx) t
+
+        Apply (KnownFunction Abs) [ c ] ->
+            case getRange ctx c of
+                Positive ->
+                    Positive
+
+                Negative ->
+                    Positive
+
+                Zero ->
+                    Zero
+
+                _ ->
                     Nonnegative
 
-                AssociativeOperation Addition l m o ->
-                    List.foldl addRange (getRange ctx l) <| List.map (getRange ctx) (m :: o)
-
-                AssociativeOperation Multiplication l m o ->
-                    List.foldl multiplyRange (getRange ctx l) <| List.map (getRange ctx) (m :: o)
-
-                List es ->
-                    case es of
-                        [] ->
-                            Zero
-
-                        h :: t ->
-                            List.foldl union (getRange ctx h) <| List.map (getRange ctx) t
-
-                Apply (KnownFunction Abs) [ c ] ->
-                    case getRange ctx c of
-                        Positive ->
-                            Positive
-
-                        Negative ->
-                            Positive
-
-                        Zero ->
-                            Zero
-
-                        _ ->
-                            Nonnegative
-
-                Apply (KnownFunction Arg) [ c ] ->
-                    case getRange ctx c of
-                        Complex ->
-                            Real
-
-                        -- monotone with arg(0) = 0
-                        o ->
-                            o
-
-                Apply (KnownFunction Sqrt) [ c ] ->
-                    sqrtRange <| getRange ctx c
-
-                Apply (KnownFunction Cbrt) [ c ] ->
-                    getRange ctx c
-
-                Apply (KnownFunction Re) [ _ ] ->
+        Apply (KnownFunction Arg) [ c ] ->
+            case getRange ctx c of
+                Complex ->
                     Real
 
-                Apply (KnownFunction Im) [ _ ] ->
-                    Real
+                -- monotone with arg(0) = 0
+                o ->
+                    o
 
-                Apply (KnownFunction Atan2) [ y, x ] ->
-                    if getRange ctx y /= Complex && getRange ctx x /= Complex then
-                        Real
+        Apply (KnownFunction Sqrt) [ c ] ->
+            sqrtRange <| getRange ctx c
 
-                    else
-                        Complex
+        Apply (KnownFunction Cbrt) [ c ] ->
+            getRange ctx c
 
-                Apply (KnownFunction Piecewise) [ _, t, f ] ->
-                    union (getRange ctx t) (getRange ctx f)
+        Apply (KnownFunction Re) [ _ ] ->
+            Real
 
-                Apply (KnownFunction Mbrot) _ ->
-                    Complex
+        Apply (KnownFunction Im) [ _ ] ->
+            Real
 
-                Apply (KnownFunction _) args ->
-                    if List.any (\c -> getRange ctx c == Complex) args then
-                        Complex
+        Apply (KnownFunction Atan2) [ y, x ] ->
+            if getRange ctx y /= Complex && getRange ctx x /= Complex then
+                Real
 
-                    else
-                        Real
+            else
+                Complex
 
-                Replace variables c ->
-                    getRange
-                        (List.foldl (\( k, v ) -> Dict.insert k (getRange ctx v))
-                            ctx
-                            (Dict.toList <| filterContext variables)
-                        )
-                        c
+        Apply (KnownFunction Piecewise) [ _, t, f ] ->
+            union (getRange ctx t) (getRange ctx f)
 
-                Lambda x f ->
-                    getRange (Dict.remove x ctx) f
-    in
-    result
+        Apply (KnownFunction Mbrot) _ ->
+            Complex
+
+        Apply (KnownFunction _) args ->
+            if List.any (\c -> getRange ctx c == Complex) args then
+                Complex
+
+            else
+                Real
+
+        Replace variables c ->
+            getRange
+                (List.foldl (\( k, v ) -> Dict.insert k (getRange ctx v))
+                    ctx
+                    (Dict.toList <| filterContext variables)
+                )
+                c
+
+        Lambda x f ->
+            getRange (Dict.remove x ctx) f
 
 
 powerRange : Dict String NumericRange -> NumericRange -> Expression -> NumericRange

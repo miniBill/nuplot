@@ -18,61 +18,57 @@ type alias Polynomial =
 
 asPolynomial : List String -> Expression -> Maybe Polynomial
 asPolynomial vars e =
-    let
-        res =
-            case e of
-                Integer _ ->
-                    Just <| Dict.singleton [] e
+    case e of
+        Integer _ ->
+            Just <| Dict.singleton [] e
 
-                Float _ ->
-                    Just <| Dict.singleton [] e
+        Float _ ->
+            Just <| Dict.singleton [] e
 
-                Variable v ->
-                    if List.member v vars then
-                        Just <| Dict.singleton [ ( v, 1 ) ] one
+        Variable v ->
+            if List.member v vars then
+                Just <| Dict.singleton [ ( v, 1 ) ] one
 
-                    else
-                        Just <| Dict.singleton [] e
+            else
+                Just <| Dict.singleton [] e
 
-                UnaryOperation Negate c ->
-                    asPolynomial vars c
-                        |> Maybe.map negate_
+        UnaryOperation Negate c ->
+            asPolynomial vars c
+                |> Maybe.map negate_
 
-                AssociativeOperation Addition l m r ->
-                    (l :: m :: r)
-                        |> Maybe.traverse (asPolynomial vars)
-                        |> Maybe.map (List.foldr sum Dict.empty)
+        AssociativeOperation Addition l m r ->
+            (l :: m :: r)
+                |> Maybe.traverse (asPolynomial vars)
+                |> Maybe.map (List.foldr sum Dict.empty)
 
-                AssociativeOperation Multiplication l m r ->
-                    (l :: m :: r)
-                        |> Maybe.traverse (asPolynomial vars)
-                        |> Maybe.map (List.foldr by (Dict.singleton [] (Integer 1)))
+        AssociativeOperation Multiplication l m r ->
+            (l :: m :: r)
+                |> Maybe.traverse (asPolynomial vars)
+                |> Maybe.map (List.foldr by (Dict.singleton [] (Integer 1)))
 
-                BinaryOperation Power b (Integer i) ->
-                    Maybe.andThen (pow i) (asPolynomial vars b)
+        BinaryOperation Power b (Integer i) ->
+            Maybe.andThen (pow i) (asPolynomial vars b)
 
-                BinaryOperation Division n d ->
-                    let
-                        polyD =
-                            Maybe.map Dict.toList <| asPolynomial vars d
-                    in
-                    case polyD of
-                        Just [ ( [], z ) ] ->
-                            asPolynomial vars n
-                                |> Maybe.map
-                                    (Dict.map
-                                        (\_ k ->
-                                            div k z
-                                        )
-                                    )
-
-                        _ ->
-                            Nothing
+        BinaryOperation Division n d ->
+            let
+                polyD =
+                    Maybe.map Dict.toList <| asPolynomial vars d
+            in
+            case polyD of
+                Just [ ( [], z ) ] ->
+                    asPolynomial vars n
+                        |> Maybe.map
+                            (Dict.map
+                                (\_ k ->
+                                    div k z
+                                )
+                            )
 
                 _ ->
                     Nothing
-    in
-    res
+
+        _ ->
+            Nothing
 
 
 negate_ : Polynomial -> Polynomial

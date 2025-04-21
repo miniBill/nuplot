@@ -173,14 +173,14 @@ stepSimplifyNegate context expr =
 step1 : Dict String Expression -> { andThen : Expression -> Expression, ifChanged : Expression -> Expression } -> Expression -> Expression
 step1 context { andThen, ifChanged } arg =
     let
-        sarg =
+        simplifiedArg =
             stepSimplify context arg
     in
-    if Expression.equals arg sarg then
-        andThen sarg
+    if Expression.equals arg simplifiedArg then
+        andThen simplifiedArg
 
     else
-        ifChanged sarg
+        ifChanged simplifiedArg
 
 
 step2 : Dict String Expression -> { andThen : Expression -> Expression -> Expression, ifChanged : Expression -> Expression -> Expression } -> Expression -> Expression -> Expression
@@ -202,21 +202,22 @@ step2 context { andThen, ifChanged } arg1 arg2 =
 stepList : Dict String Expression -> { andThen : List Expression -> Expression, ifChanged : List Expression -> Expression } -> List Expression -> Expression
 stepList context { andThen, ifChanged } args =
     let
-        sargs =
+        simplifiedArgs : List Expression
+        simplifiedArgs =
             List.map (stepSimplify context) args
     in
-    if List.map2 Expression.equals args sargs |> List.all identity then
-        andThen sargs
+    if List.map2 Expression.equals args simplifiedArgs |> List.all identity then
+        andThen simplifiedArgs
 
     else
-        ifChanged sargs
+        ifChanged simplifiedArgs
 
 
 stepSimplifyApply : FunctionName -> List Expression -> Expression
-stepSimplifyApply fname sargs =
-    case fname of
+stepSimplifyApply functionName args =
+    case functionName of
         KnownFunction name ->
-            case ( name, sargs ) of
+            case ( name, args ) of
                 ( Sqrt, [ arg ] ) ->
                     stepSimplifySqrt arg
                         |> Maybe.withDefault (sqrt_ arg)
@@ -243,7 +244,7 @@ stepSimplifyApply fname sargs =
                             by [ i, sin_ <| by rest ]
 
                         Nothing ->
-                            Apply fname sargs
+                            Apply functionName args
 
                 ( Cosh, [ AssociativeOperation Multiplication l r o ] ) ->
                     case extract (findSpecificVariable "i") (l :: r :: o) of
@@ -251,7 +252,7 @@ stepSimplifyApply fname sargs =
                             cos_ <| by rest
 
                         Nothing ->
-                            Apply fname sargs
+                            Apply functionName args
 
                 ( Dd, [ expr, Variable var ] ) ->
                     Expression.Derivative.derivative var expr
@@ -260,16 +261,16 @@ stepSimplifyApply fname sargs =
                     Expression.Utils.determinant expr
 
                 ( Re, _ ) ->
-                    stepSimplifyRe sargs
+                    stepSimplifyRe args
 
                 ( Im, _ ) ->
-                    stepSimplifyIm sargs
+                    stepSimplifyIm args
 
                 ( Ii, [ expr, Variable var, from, to ] ) ->
                     stepSimplifyIntegral expr var from to
 
                 _ ->
-                    Apply fname sargs
+                    Apply functionName args
 
 
 stepSimplifyIntegral : Expression -> String -> Expression -> Expression -> Expression
@@ -309,8 +310,8 @@ stepSimplifyIntegral expr var from to =
 
 
 stepSimplifyAbs : Expression -> Maybe Expression
-stepSimplifyAbs sarg =
-    case sarg of
+stepSimplifyAbs arg =
+    case arg of
         Integer i ->
             Just <| Integer <| abs i
 
@@ -320,24 +321,24 @@ stepSimplifyAbs sarg =
         Variable v ->
             case v of
                 "e" ->
-                    Just sarg
+                    Just arg
 
                 "pi" ->
-                    Just sarg
+                    Just arg
 
                 _ ->
                     Nothing
 
         Apply (KnownFunction Abs) _ ->
-            Just sarg
+            Just arg
 
         _ ->
             Nothing
 
 
 stepSimplifySqrt : Expression -> Maybe Expression
-stepSimplifySqrt sarg =
-    case sarg of
+stepSimplifySqrt arg =
+    case arg of
         Integer j ->
             sqrtInteger j
 
@@ -350,7 +351,7 @@ stepSimplifySqrt sarg =
                     (l :: m :: r) |> List.map stepSimplifySqrt
             in
             if List.any ((/=) Nothing) sqrts then
-                Just <| by <| List.map2 (Maybe.withDefault << sqrt_) (l :: m :: r) sqrts
+                Just <| by <| List.map2 (\le re -> Maybe.withDefault (sqrt_ le) re) (l :: m :: r) sqrts
 
             else
                 Nothing
@@ -1437,49 +1438,6 @@ asList l =
 stepSimplifyMultiplication : Expression -> Expression -> Maybe Expression
 stepSimplifyMultiplication left right =
     let
-        go =
-            case ( left, right ) of
-                ( Integer 1, l ) ->
-                    Just l
-
-                ( c, Integer 1 ) ->
-                    Just c
-
-                ( _, Integer 0 ) ->
-                    Just <| Integer 0
-
-                ( Integer 0, _ ) ->
-                    Just <| Integer 0
-
-                ( Integer il, Integer ir ) ->
-                    Just <| Integer <| il * ir
-
-                ( Integer il, Float fr ) ->
-                    Just <| Float <| toFloat il * fr
-
-                ( Float fl, Integer ir ) ->
-                    Just <| Float <| fl * toFloat ir
-
-                ( Float fl, Float fr ) ->
-                    Just <| Float <| fl * fr
-
-                ( Integer j, _ ) ->
-                    if j == -1 then
-                        Just <| negate_ right
-
-                    else
-                        go1 ()
-
-                ( _, Integer k ) ->
-                    if k == -1 then
-                        Just <| negate_ left
-
-                    else
-                        go1 ()
-
-                _ ->
-                    go1 ()
-
         go1 () =
             case ( left, right ) of
                 ( AssociativeOperation Addition l m r, _ ) ->
@@ -1556,7 +1514,47 @@ stepSimplifyMultiplication left right =
             else
                 Nothing
     in
-    go
+    case ( left, right ) of
+        ( Integer 1, l ) ->
+            Just l
+
+        ( c, Integer 1 ) ->
+            Just c
+
+        ( _, Integer 0 ) ->
+            Just <| Integer 0
+
+        ( Integer 0, _ ) ->
+            Just <| Integer 0
+
+        ( Integer il, Integer ir ) ->
+            Just <| Integer <| il * ir
+
+        ( Integer il, Float fr ) ->
+            Just <| Float <| toFloat il * fr
+
+        ( Float fl, Integer ir ) ->
+            Just <| Float <| fl * toFloat ir
+
+        ( Float fl, Float fr ) ->
+            Just <| Float <| fl * fr
+
+        ( Integer j, _ ) ->
+            if j == -1 then
+                Just <| negate_ right
+
+            else
+                go1 ()
+
+        ( _, Integer k ) ->
+            if k == -1 then
+                Just <| negate_ left
+
+            else
+                go1 ()
+
+        _ ->
+            go1 ()
 
 
 addMatrices : Expression -> Expression -> Maybe Expression
@@ -1580,56 +1578,52 @@ multiplyMatrices =
 
 polyDegree : String -> Expression -> Maybe Int
 polyDegree var expr =
-    let
-        res =
-            case expr of
-                Integer _ ->
-                    Just 0
+    case expr of
+        Integer _ ->
+            Just 0
 
-                UnaryOperation Negate e ->
-                    polyDegree var e
+        UnaryOperation Negate e ->
+            polyDegree var e
 
-                BinaryOperation Division l r ->
-                    Maybe.map2 (-) (polyDegree var l) (polyDegree var r)
+        BinaryOperation Division l r ->
+            Maybe.map2 (-) (polyDegree var l) (polyDegree var r)
 
-                BinaryOperation Power base (Integer i) ->
-                    Maybe.map ((*) i) <| polyDegree var base
+        BinaryOperation Power base (Integer i) ->
+            Maybe.map ((*) i) <| polyDegree var base
 
-                BinaryOperation Power _ _ ->
-                    Nothing
+        BinaryOperation Power _ _ ->
+            Nothing
 
-                RelationOperation _ _ _ ->
-                    Nothing
+        RelationOperation _ _ _ ->
+            Nothing
 
-                AssociativeOperation Addition l r o ->
-                    Maybe.andThen List.maximum <| Maybe.traverse (polyDegree var) (l :: r :: o)
+        AssociativeOperation Addition l r o ->
+            Maybe.andThen List.maximum <| Maybe.traverse (polyDegree var) (l :: r :: o)
 
-                AssociativeOperation Multiplication l r o ->
-                    Maybe.map List.sum <| Maybe.traverse (polyDegree var) (l :: r :: o)
+        AssociativeOperation Multiplication l r o ->
+            Maybe.map List.sum <| Maybe.traverse (polyDegree var) (l :: r :: o)
 
-                Variable v ->
-                    if v == var then
-                        Just 1
+        Variable v ->
+            if v == var then
+                Just 1
 
-                    else
-                        Just 0
+            else
+                Just 0
 
-                Float _ ->
-                    Just 0
+        Float _ ->
+            Just 0
 
-                Apply _ _ ->
-                    Nothing
+        Apply _ _ ->
+            Nothing
 
-                Replace _ _ ->
-                    Nothing
+        Replace _ _ ->
+            Nothing
 
-                List _ ->
-                    Nothing
+        List _ ->
+            Nothing
 
-                Lambda _ _ ->
-                    Nothing
-    in
-    res
+        Lambda _ _ ->
+            Nothing
 
 
 hoistLambda : Expression -> Expression

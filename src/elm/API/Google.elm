@@ -98,9 +98,6 @@ uploadFile params =
         updateUrl =
             B.crossOrigin "https://www.googleapis.com" [ "upload", "drive", "v3", "files", id ] [ B.string "uploadType" "multipart" ]
 
-        insertUrl =
-            B.crossOrigin "https://www.googleapis.com" [ "upload", "drive", "v3", "files" ] [ B.string "uploadType" "multipart" ]
-
         (FileId id) =
             params.id
 
@@ -110,18 +107,6 @@ uploadFile params =
                     JE.object
                         [ ( "mimeType", JE.string "text/markdown" )
                         , ( "name", JE.string params.name )
-                        ]
-
-        insertMetadataEncoder =
-            BE.string <|
-                JE.encode 0 <|
-                    JE.object
-                        [ ( "id", JE.string id )
-                        , ( "mimeType", JE.string "text/markdown" )
-                        , ( "name", JE.string params.name )
-
-                        -- TODO: parents are a list of FileIDs, so it's Very Annoying and will be implemented later
-                        --, ( "parents", JE.list JE.string [ "nuPlot" ] )
                         ]
 
         updateTask =
@@ -137,26 +122,39 @@ uploadFile params =
                         ]
                 , timeout = Nothing
                 }
-
-        insertTask =
-            Http.task
-                { method = "POST"
-                , url = insertUrl
-                , headers = [ Http.header "Authorization" <| "Bearer " ++ params.accessToken ]
-                , resolver = jsonResolver <| JD.succeed ()
-                , body =
-                    Http.multipartBody
-                        [ Http.bytesPart "metadata" "application/json; charset=UTF-8" <| BE.encode insertMetadataEncoder
-                        , Http.stringPart "content" params.content
-                        ]
-                , timeout = Nothing
-                }
     in
     updateTask
         |> Task.onError
             (\e ->
                 if e == FileNotFound then
-                    insertTask
+                    let
+                        insertUrl =
+                            B.crossOrigin "https://www.googleapis.com" [ "upload", "drive", "v3", "files" ] [ B.string "uploadType" "multipart" ]
+
+                        insertMetadataEncoder =
+                            BE.string <|
+                                JE.encode 0 <|
+                                    JE.object
+                                        [ ( "id", JE.string id )
+                                        , ( "mimeType", JE.string "text/markdown" )
+                                        , ( "name", JE.string params.name )
+
+                                        -- TODO: parents are a list of FileIDs, so it's Very Annoying and will be implemented later
+                                        --, ( "parents", JE.list JE.string [ "nuPlot" ] )
+                                        ]
+                    in
+                    Http.task
+                        { method = "POST"
+                        , url = insertUrl
+                        , headers = [ Http.header "Authorization" <| "Bearer " ++ params.accessToken ]
+                        , resolver = jsonResolver <| JD.succeed ()
+                        , body =
+                            Http.multipartBody
+                                [ Http.bytesPart "metadata" "application/json; charset=UTF-8" <| BE.encode insertMetadataEncoder
+                                , Http.stringPart "content" params.content
+                                ]
+                        , timeout = Nothing
+                        }
 
                 else
                     Task.fail e

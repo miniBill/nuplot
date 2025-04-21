@@ -737,11 +737,11 @@ for :
     -> (Expression Int -> Statement r -> Statement r)
     -> Statement r
     -> Statement r
-for ( var, from, to ) loop next =
-    build (\f t -> For var f LessThan t PlusPlus)
+for ( varName, from, to ) loop next =
+    build (\f t -> For varName f LessThan t PlusPlus)
         |> withExpression from
         |> withExpression to
-        |> withStatement (loop (Glsl.var var) unsafeNop)
+        |> withStatement (loop (var varName) unsafeNop)
         |> withStatement next
         |> buildStatement
 
@@ -751,11 +751,11 @@ forLeq :
     -> (Expression Int -> Statement r -> Statement r)
     -> Statement r
     -> Statement r
-forLeq ( var, from, to ) loop next =
-    build (\f t -> For var f LessThanOrEquals t PlusPlus)
+forLeq ( varName, from, to ) loop next =
+    build (\f t -> For varName f LessThanOrEquals t PlusPlus)
         |> withExpression from
         |> withExpression to
-        |> withStatement (loop (Glsl.var var) unsafeNop)
+        |> withStatement (loop (var varName) unsafeNop)
         |> withStatement next
         |> buildStatement
 
@@ -765,11 +765,11 @@ forDown :
     -> (Expression Int -> Statement r -> Statement r)
     -> Statement r
     -> Statement r
-forDown ( var, from, to ) loop next =
-    build (\f t -> For var f GreaterThan t MinusMinus)
+forDown ( varName, from, to ) loop next =
+    build (\f t -> For varName f GreaterThan t MinusMinus)
         |> withExpression from
         |> withExpression to
-        |> withStatement (loop (Glsl.var var) unsafeNop)
+        |> withStatement (loop (var varName) unsafeNop)
         |> withStatement next
         |> buildStatement
 

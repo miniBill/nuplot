@@ -383,11 +383,8 @@ equals l r =
                 -- Yes, this is enough for now
                 goat =
                     Variable "GOATFINDER"
-
-                res =
-                    equals (partialSubstitute x goat f) (partialSubstitute y goat g)
             in
-            res
+            equals (partialSubstitute x goat f) (partialSubstitute y goat g)
 
         ( Lambda _ _, _ ) ->
             False
@@ -545,7 +542,7 @@ typecheck e =
                 |> Result.map TGList
 
         Apply (KnownFunction Sin) [ a0 ] ->
-            Result.map (TGApply << TGApply1 PSin) (typecheck a0)
+            Result.map (\t0 -> TGApply (TGApply1 PSin t0)) (typecheck a0)
 
         Apply (KnownFunction Sin) args ->
             Err <| InvalidArgCount Sin (List.length args)
@@ -1027,8 +1024,9 @@ defaultContext =
 getFreeVariables : Expression -> Set String
 getFreeVariables expr =
     let
+        concatMap : List Expression -> Set String
         concatMap =
-            List.foldl (Set.union << getFreeVariables) Set.empty
+            List.foldl (\e -> Set.union (getFreeVariables e)) Set.empty
     in
     case expr of
         Variable v ->
@@ -1678,8 +1676,9 @@ toTeXStringPrec p e =
                 case asMatrixPrint e of
                     Just childLists ->
                         let
-                            viewRow =
-                                String.join " & " << List.map (\cell -> "{" ++ toTeXStringPrec 0 cell ++ "}")
+                            viewRow : List ToGlslExpression -> String
+                            viewRow elements =
+                                String.join " & " (List.map (\cell -> "{" ++ toTeXStringPrec 0 cell ++ "}") elements)
                         in
                         "\\begin{pmatrix}" ++ String.join " \\\\ " (List.map viewRow childLists) ++ "\\end{pmatrix}"
 

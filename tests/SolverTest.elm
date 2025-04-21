@@ -4,7 +4,7 @@ import Expect
 import Expression exposing (Expression(..), RelationOperation(..), SolutionTree(..))
 import Expression.Simplify exposing (simplify)
 import Expression.Solver
-import Expression.Utils exposing (by, c, div, i, minus, minusOne, negate_, one, plus, square, two, x, zero)
+import Expression.Utils exposing (by, div, i, minus, minusOne, negate_, one, plus, square, two, x, zero)
 import List
 import Test exposing (Test, describe, test)
 
