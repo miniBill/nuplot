@@ -40,7 +40,10 @@ config =
     , NoConfusingPrefixOperator.rule
     , NoDebug.Log.rule
     , NoDebug.TodoOrToString.rule
-        |> Rule.ignoreErrorsForDirectories [ "tests" ]
+        |> Rule.ignoreErrorsForDirectories
+            [ "tests"
+            , "vendored/miniBill/elm-glsl"
+            ]
     , NoDuplicatePorts.rule
 
     -- , NoEtaReducibleLambdas.rule
@@ -58,11 +61,24 @@ config =
     , NoSimpleLetBody.rule
     , NoUnsafePorts.rule NoUnsafePorts.any
     , NoUnused.CustomTypeConstructorArgs.rule
+        |> Rule.ignoreErrorsForDirectories
+            [ "vendored/miniBill/elm-glsl"
+            ]
     , NoUnused.CustomTypeConstructors.rule []
-    , NoUnused.Dependencies.rule
+        |> Rule.ignoreErrorsForDirectories
+            [ "vendored/miniBill/elm-glsl"
+            ]
+
+    -- , NoUnused.Dependencies.rule
     , NoUnused.Exports.rule
-        |> Rule.ignoreErrorsForDirectories [ "generated" ]
+        |> Rule.ignoreErrorsForDirectories
+            [ "generated"
+            , "vendored/miniBill/elm-glsl"
+            ]
     , NoUnused.Modules.rule
+        |> Rule.ignoreErrorsForDirectories
+            [ "vendored/miniBill/elm-glsl"
+            ]
     , NoUnused.Parameters.rule
     , NoUnused.Patterns.rule
     , NoUnused.Variables.rule
