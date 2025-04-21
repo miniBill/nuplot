@@ -1,45 +1,61 @@
-module Generate exposing (main)
+module Generate exposing (run)
 
+import BackendTask exposing (BackendTask)
+import BackendTask.File as File
 import Dict exposing (Dict)
 import Elm
 import Elm.Annotation as Type
-import Gen.CodeGen.Generate as Generate
+import FatalError exposing (FatalError)
 import Gen.Debug
 import Gen.Glsl
 import Glsl exposing (BinaryOperation(..), Declaration(..), Expr(..), Expression(..), Function, RelationOperation(..), Stat(..), Statement(..), Type(..), Uniform)
 import Glsl.Parser
 import Glsl.PrettyPrinter
 import List.Extra
+import Pages.Script as Script exposing (Script)
 import Parser
 import Result.Extra
 import SortedSet exposing (SortedSet)
 
 
-main : Program String () ()
-main =
-    let
-        file : String -> Elm.File
-        file glsl =
-            generate glsl
-                |> List.Extra.gatherEqualsBy Tuple.first
-                |> List.map
-                    (\( head, tail ) ->
-                        let
-                            group : List Elm.Declaration
-                            group =
-                                List.map Tuple.second (head :: tail)
-                        in
-                        case Tuple.first head of
-                            Just groupName ->
-                                Elm.group (Elm.docs ("#" ++ groupName) :: group)
+run : Script
+run =
+    Script.withoutCliOptions task
 
-                            Nothing ->
-                                Elm.group group
-                    )
-                |> Elm.file
-                    [ "Glsl", "Functions", "NuPlot" ]
-    in
-    Generate.fromText (\glsl -> [ file glsl ])
+
+task : BackendTask FatalError ()
+task =
+    File.rawFile "codegen/functions.frag"
+        |> BackendTask.allowFatal
+        |> BackendTask.andThen
+            (\glsl ->
+                let
+                    file =
+                        generate glsl
+                            |> List.Extra.gatherEqualsBy Tuple.first
+                            |> List.map
+                                (\( head, tail ) ->
+                                    let
+                                        group : List Elm.Declaration
+                                        group =
+                                            List.map Tuple.second (head :: tail)
+                                    in
+                                    case Tuple.first head of
+                                        Just groupName ->
+                                            Elm.group (Elm.docs ("#" ++ groupName) :: group)
+
+                                        Nothing ->
+                                            Elm.group group
+                                )
+                            |> Elm.file
+                                [ "Glsl", "Functions", "NuPlot" ]
+                in
+                Script.writeFile
+                    { path = file.path
+                    , body = file.contents
+                    }
+                    |> BackendTask.allowFatal
+            )
 
 
 generate : String -> List ( Maybe String, Elm.Declaration )
