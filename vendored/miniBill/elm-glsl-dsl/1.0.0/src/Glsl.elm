@@ -5,7 +5,7 @@ module Glsl exposing
     , BinaryOperation(..), UnaryOperation(..), RelationOperation(..), ComboOperation(..)
     , BisectSignature
     , true, false, var
-    , unsafeDot, dot2X, dot2Y, dot3X, dot3Y, dot3Z
+    , dot2X, dot2Y
     , TypingFunction, TypedName(..), Type(..)
     , Vec2, Vec3, Vec4, IVec2, IVec3, IVec4, Mat3, Void, In, Out
     , unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5
@@ -29,7 +29,7 @@ module Glsl exposing
 # Utils
 
 @docs true, false, int, float, var
-@docs unsafeDot, dot2X, dot2Y, dot3X, dot3Y, dot3Z
+@docs dot2X, dot2Y
 
 
 # Typelevel types
@@ -415,21 +415,6 @@ dot2X e =
 dot2Y : Expression Vec2 -> Expression Float
 dot2Y e =
     unsafeDot e "y"
-
-
-dot3X : Expression Vec3 -> Expression Float
-dot3X e =
-    unsafeDot e "x"
-
-
-dot3Y : Expression Vec3 -> Expression Float
-dot3Y e =
-    unsafeDot e "y"
-
-
-dot3Z : Expression Vec3 -> Expression Float
-dot3Z e =
-    unsafeDot e "z"
 
 
 dot4XY : Expression Vec4 -> Expression Vec2

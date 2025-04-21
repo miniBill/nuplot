@@ -8,7 +8,7 @@ import Expression.Utils exposing (by, minus, plus)
 import Glsl exposing (BisectSignature, ExprWithDeps)
 import Glsl.Generator as Generator
 import Maybe.Extra as Maybe
-import UI.Glsl.Code exposing (mainGlsl, toSrc3D, toSrcContour, toSrcImplicit, toSrcParametric, toSrcPolar, toSrcRelation, toSrcVectorField2D)
+import UI.Glsl.Code exposing (mainGlsl, toSrcVectorField2D)
 import UI.Glsl.Plane as Plane
 import UI.Glsl.Polynomial
 import UI.Glsl.Sphere as Sphere
@@ -21,8 +21,8 @@ getGlsl rayDifferentials graph =
             extract "" graph
 
         build2d :
-            (Expression.Expression -> ExprWithDeps)
-            -> Expression.Expression
+            (Expression -> ExprWithDeps)
+            -> Expression
             ->
                 { expr : ExprWithDeps
                 , funDecls : a

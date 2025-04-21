@@ -1,4 +1,4 @@
-module Glsl.Eval exposing (Context, Error(..), Value(..), innerInterpret, innerValue, innerValue2, interpret, value)
+module Glsl.Eval exposing (Context, Error(..), Value(..), interpret, value)
 
 import Dict exposing (Dict)
 import Glsl exposing (BinaryOperation(..), Expr(..), Expression(..), RelationOperation(..), Stat(..), Statement(..), UnaryOperation(..))
@@ -63,49 +63,52 @@ innerValue ctx e =
                     )
 
         BinaryOperation And l r ->
-            innerValue2 ctx l r <| \ctx2 vl vr ->
-            case ( vl, vr ) of
-                ( VBool bl, VBool br ) ->
-                    Ok ( ctx2, VBool <| bl && br )
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VBool bl, VBool br ) ->
+                            Ok ( ctx2, VBool <| bl && br )
 
-                _ ->
-                    Err <|
-                        InvalidTypes
-                            ("Cannot calculate `and` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `and` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         BinaryOperation Or l r ->
-            innerValue2 ctx l r <| \ctx2 vl vr ->
-            case ( vl, vr ) of
-                ( VBool bl, VBool br ) ->
-                    Ok ( ctx2, VBool <| bl || br )
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VBool bl, VBool br ) ->
+                            Ok ( ctx2, VBool <| bl || br )
 
-                _ ->
-                    Err <|
-                        InvalidTypes
-                            ("Cannot calculate `or` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `or` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Comparison k l r ->
-            innerValue2 ctx l r <| \ctx2 vl vr ->
-            case ( vl, vr, k ) of
-                ( VFloat fl, VFloat fr, LessThan ) ->
-                    Ok ( ctx2, VBool (fl < fr) )
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr, k ) of
+                        ( VFloat fl, VFloat fr, LessThan ) ->
+                            Ok ( ctx2, VBool (fl < fr) )
 
-                ( VFloat fl, VFloat fr, LessThanOrEquals ) ->
-                    Ok ( ctx2, VBool (fl <= fr) )
+                        ( VFloat fl, VFloat fr, LessThanOrEquals ) ->
+                            Ok ( ctx2, VBool (fl <= fr) )
 
-                ( VFloat fl, VFloat fr, Equals ) ->
-                    Ok ( ctx2, VBool (fl == fr) )
+                        ( VFloat fl, VFloat fr, Equals ) ->
+                            Ok ( ctx2, VBool (fl == fr) )
 
-                ( VFloat fl, VFloat fr, GreaterThanOrEquals ) ->
-                    Ok ( ctx2, VBool (fl >= fr) )
+                        ( VFloat fl, VFloat fr, GreaterThanOrEquals ) ->
+                            Ok ( ctx2, VBool (fl >= fr) )
 
-                ( VFloat fl, VFloat fr, GreaterThan ) ->
-                    Ok ( ctx2, VBool (fl > fr) )
+                        ( VFloat fl, VFloat fr, GreaterThan ) ->
+                            Ok ( ctx2, VBool (fl > fr) )
 
-                _ ->
-                    Err <|
-                        InvalidTypes
-                            ("Cannot compare " ++ valueToString vl ++ " and " ++ valueToString vr)
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot compare " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Ternary _ _ _ ->
             Debug.todo "branch 'Ternary _ _ _' not implemented"
@@ -117,29 +120,31 @@ innerValue ctx e =
             Debug.todo "branch 'Subtract _ _' not implemented"
 
         BinaryOperation By l r ->
-            innerValue2 ctx l r <| \ctx2 vl vr ->
-            case ( vl, vr ) of
-                ( VFloat fl, VFloat fr ) ->
-                    Ok ( ctx2, VFloat <| fl * fr )
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VFloat fl, VFloat fr ) ->
+                            Ok ( ctx2, VFloat <| fl * fr )
 
-                _ ->
-                    Err <|
-                        InvalidTypes
-                            ("Cannot calculate `*` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `*` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         BinaryOperation Div _ _ ->
             Debug.todo "branch 'Div _ _' not implemented"
 
         Call "vec2" [ l, r ] ->
-            innerValue2 ctx l r <| \ctx2 vl vr ->
-            case ( vl, vr ) of
-                ( VFloat fl, VFloat fr ) ->
-                    Ok ( ctx2, VVec2 fl fr )
+            innerValue2 ctx l r <|
+                \ctx2 vl vr ->
+                    case ( vl, vr ) of
+                        ( VFloat fl, VFloat fr ) ->
+                            Ok ( ctx2, VVec2 fl fr )
 
-                _ ->
-                    Err <|
-                        InvalidTypes
-                            ("Cannot calculate `vec2` for " ++ valueToString vl ++ " and " ++ valueToString vr)
+                        _ ->
+                            Err <|
+                                InvalidTypes
+                                    ("Cannot calculate `vec2` for " ++ valueToString vl ++ " and " ++ valueToString vr)
 
         Call "exp" [ l ] ->
             autovectorizingFloatOp ctx "exp" (\fv -> Basics.e ^ fv) l

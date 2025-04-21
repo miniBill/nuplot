@@ -37,12 +37,17 @@ asSphere e =
                     let
                         getCenter : String -> Maybe Float
                         getCenter v =
-                            case ( Dict.get [ ( v, 2 ) ] poly, Maybe.withDefault 0 <| Dict.get [ ( v, 1 ) ] poly ) of
-                                ( Just s, l ) ->
+                            case Dict.get [ ( v, 2 ) ] poly of
+                                Just s ->
                                     if s /= 1 then
                                         Nothing
 
                                     else
+                                        let
+                                            l : Float
+                                            l =
+                                                Maybe.withDefault 0 <| Dict.get [ ( v, 1 ) ] poly
+                                        in
                                         Just <| -l / 2
 
                                 _ ->

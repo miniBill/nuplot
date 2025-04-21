@@ -40,7 +40,7 @@ config =
     , NoConfusingPrefixOperator.rule
     , NoDebug.Log.rule
     , NoDebug.TodoOrToString.rule
-        |> Rule.ignoreErrorsForDirectories [ "tests/" ]
+        |> Rule.ignoreErrorsForDirectories [ "tests" ]
     , NoDuplicatePorts.rule
 
     -- , NoEtaReducibleLambdas.rule
@@ -57,10 +57,12 @@ config =
     , NoRecordAliasConstructor.rule
     , NoSimpleLetBody.rule
     , NoUnsafePorts.rule NoUnsafePorts.any
-    , NoUnused.CustomTypeConstructorArgs.rule
-    , NoUnused.CustomTypeConstructors.rule []
+
+    -- , NoUnused.CustomTypeConstructorArgs.rule
+    -- , NoUnused.CustomTypeConstructors.rule []
     , NoUnused.Dependencies.rule
     , NoUnused.Exports.rule
+        |> Rule.ignoreErrorsForDirectories [ "generated" ]
     , NoUnused.Modules.rule
     , NoUnused.Parameters.rule
     , NoUnused.Patterns.rule

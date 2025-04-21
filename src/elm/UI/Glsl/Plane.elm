@@ -6,8 +6,8 @@ import Glsl exposing (BisectSignature, float1, int)
 import Glsl.Functions exposing (dot33, mix331, vec3111)
 import Glsl.Operations exposing (add11, add33, array33, by13, div11, gt, negate1)
 import Maybe
-import UI.Glsl.Code exposing (threshold)
-import UI.Glsl.Generator exposing (assignOut, boolT, def, def2, expr, floatT, fun4, mat3T, out, return, vec3T)
+import UI.Glsl.Code
+import UI.Glsl.Generator exposing (assignOut, boolT, def, expr, floatT, fun4, mat3T, out, return, vec3T)
 import UI.Glsl.Polynomial as Polynomial
 
 
@@ -40,22 +40,27 @@ asPlane e =
 
 toGlsl : String -> Plane -> BisectSignature
 toGlsl suffix (Plane { x, y, z, known }) =
-    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <| \o d maxDistance found ->
-    -- a x + b y + c z + k = 0
-    -- x = ox + t dx
-    -- y = oy + t dy
-    -- z = oz + t dz
-    -- a ox + a t dx + b oy + b t dy + c oz + c t dz + k = 0
-    -- t (a dx + b dy + c dy) = - k - (a ox + b oy + c oz)
-    -- t = - (k + dot abc o) / (dot abc d)
-    vec3 "coeffs" (vec3111 (float1 x) (float1 y) (float1 z)) <| \coeffs ->
-    vec3 "dMix" (mix331 (array33 d (int 0)) (array33 d (int 1)) (float1 0.5)) <| \dMix ->
-    def floatT
-        "t"
-        (div11
-            (negate1 <| add11 (float1 known) (dot33 coeffs o))
-            (dot33 coeffs dMix)
-        )
-    <| \t ->
-    expr (assignOut found <| add33 o <| by13 t dMix) <| \_ ->
-    return (gt t <| UI.Glsl.Code.toThreshold maxDistance)
+    fun4 boolT ("bisect" ++ suffix) (vec3T "o") (mat3T "d") (floatT "max_distance") (out vec3T "found") <|
+        \o d maxDistance found ->
+            -- a x + b y + c z + k = 0
+            -- x = ox + t dx
+            -- y = oy + t dy
+            -- z = oz + t dz
+            -- a ox + a t dx + b oy + b t dy + c oz + c t dz + k = 0
+            -- t (a dx + b dy + c dy) = - k - (a ox + b oy + c oz)
+            -- t = - (k + dot abc o) / (dot abc d)
+            vec3 "coeffs" (vec3111 (float1 x) (float1 y) (float1 z)) <|
+                \coeffs ->
+                    vec3 "dMix" (mix331 (array33 d (int 0)) (array33 d (int 1)) (float1 0.5)) <|
+                        \dMix ->
+                            def floatT
+                                "t"
+                                (div11
+                                    (negate1 <| add11 (float1 known) (dot33 coeffs o))
+                                    (dot33 coeffs dMix)
+                                )
+                            <|
+                                \t ->
+                                    expr (assignOut found <| add33 o <| by13 t dMix) <|
+                                        \_ ->
+                                            return (gt t <| UI.Glsl.Code.toThreshold maxDistance)
