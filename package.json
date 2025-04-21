@@ -18,6 +18,7 @@
         "elm-codegen": "^0.6.1",
         "elm-format": "^0.8.7",
         "elm-optimize-level-2": "^0.3.5",
+        "elm-pages": "3.0.22",
         "elm-review": "^2.13.2",
         "elm-test-rs": "^3.0.0-5",
         "elm-watch": "^2.0.0-beta.6",

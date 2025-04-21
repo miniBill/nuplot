@@ -20,32 +20,40 @@ main =
     let
         file : String -> Elm.File
         file glsl =
-            Elm.fileWith [ "Glsl", "Functions" ]
-                { docs =
-                    List.map
-                        (\{ group, members } ->
-                            Elm.docs
-                                { group = group
-                                , members = List.sort members
-                                }
-                        )
-                , aliases = []
-                }
-                (generate glsl)
+            generate glsl
+                |> List.Extra.gatherEqualsBy Tuple.first
+                |> List.map
+                    (\( head, tail ) ->
+                        let
+                            group : List Elm.Declaration
+                            group =
+                                List.map Tuple.second (head :: tail)
+                        in
+                        case Tuple.first head of
+                            Just groupName ->
+                                Elm.group (Elm.docs ("#" ++ groupName) :: group)
+
+                            Nothing ->
+                                Elm.group group
+                    )
+                |> Elm.file
+                    [ "Glsl", "Functions", "NuPlot" ]
     in
     Generate.fromText (\glsl -> [ file glsl ])
 
 
-generate : String -> List Elm.Declaration
+generate : String -> List ( Maybe String, Elm.Declaration )
 generate glsl =
-    case parseFile glsl of
+    case Parser.run Glsl.Parser.file glsl of
         Err e ->
-            Gen.Debug.todo "Error parsing file"
-                |> Elm.declaration "err"
-                |> Elm.withDocumentation (errorToString e)
-                |> List.singleton
+            [ ( Nothing
+              , Gen.Debug.todo "Error parsing file"
+                    |> Elm.declaration "err"
+                    |> Elm.withDocumentation (errorToString e)
+              )
+            ]
 
-        Ok declarations ->
+        Ok ( _, declarations ) ->
             let
                 functions =
                     List.filterMap
@@ -55,6 +63,9 @@ generate glsl =
                                     Just function
 
                                 UniformDeclaration _ ->
+                                    Nothing
+
+                                ConstDeclaration _ ->
                                     Nothing
                         )
                         declarations
@@ -67,6 +78,24 @@ generate glsl =
                                     Just uniform
 
                                 FunctionDeclaration _ ->
+                                    Nothing
+
+                                ConstDeclaration _ ->
+                                    Nothing
+                        )
+                        declarations
+
+                constants =
+                    List.filterMap
+                        (\declaration ->
+                            case declaration of
+                                ConstDeclaration const ->
+                                    Just const
+
+                                FunctionDeclaration _ ->
+                                    Nothing
+
+                                UniformDeclaration _ ->
                                     Nothing
                         )
                         declarations
@@ -81,10 +110,11 @@ generate glsl =
                                 returnType
                         )
                         { constantsEnv =
-                            Dict.fromList
-                                [ ( "P32M1", TInt )
-                                , ( "P31", TInt )
-                                ]
+                            constants
+                                |> List.map (\{ tipe, name } -> ( name, tipe ))
+                                |> Dict.fromList
+                                |> Dict.insert "P32M1" TInt
+                                |> Dict.insert "P31" TInt
                         , functionsEnv =
                             builtinFunctions
                                 |> Dict.map
@@ -96,34 +126,39 @@ generate glsl =
                         }
                         functions
 
-                maybeDecls : Result String (List (List Elm.Declaration))
+                maybeDecls : Result String (List ( Maybe String, Elm.Declaration ))
                 maybeDecls =
                     Result.Extra.combineMap
                         (functionToDeclarations env)
                         functions
+                        |> Result.map List.concat
 
-                uniformDecls : List Elm.Declaration
+                uniformDecls : List ( Maybe String, Elm.Declaration )
                 uniformDecls =
                     List.map uniformToDeclaration uniforms
             in
             case maybeDecls of
                 Ok decls ->
-                    List.concat decls ++ builtinDecls ++ uniformDecls
+                    decls ++ builtinDecls ++ uniformDecls
 
                 Err e ->
-                    "Error generating file"
-                        |> Gen.Debug.todo
-                        |> Elm.declaration "err"
-                        |> Elm.withDocumentation e
-                        |> List.singleton
+                    [ ( Nothing
+                      , "Error generating file"
+                            |> Gen.Debug.todo
+                            |> Elm.declaration "err"
+                            |> Elm.withDocumentation e
+                      )
+                    ]
 
 
-uniformToDeclaration : Uniform -> Elm.Declaration
+uniformToDeclaration : Uniform -> ( Maybe String, Elm.Declaration )
 uniformToDeclaration { name, tipe } =
-    Gen.Glsl.var name
+    ( Just "uniforms"
+    , Gen.Glsl.unsafeVar name
         |> Elm.withType (Gen.Glsl.annotation_.expression (typeToAnnotation tipe))
         |> Elm.declaration name
-        |> Elm.exposeWith { exposeConstructor = False, group = Just "uniforms" }
+        |> Elm.expose
+    )
 
 
 functionHasType : String -> List Type -> Type -> Env -> Env
@@ -196,7 +231,7 @@ type alias Env =
     }
 
 
-functionToDeclarations : Env -> Function -> Result String (List Elm.Declaration)
+functionToDeclarations : Env -> Function -> Result String (List ( Maybe String, Elm.Declaration ))
 functionToDeclarations env function =
     let
         fname =
@@ -213,15 +248,19 @@ functionToDeclarations env function =
     in
     Result.map
         (\deps ->
-            [ Elm.string function.body
-                |> Elm.declaration (fname ++ "Body")
+            [ ( Nothing
+              , function.stat
+                    |> Glsl.PrettyPrinter.stat 0
+                    |> Elm.string
+                    |> Elm.declaration (fname ++ "Body")
+              )
             , wrapFunction function.name (SortedSet.insert fname deps) function.args function.returnType
             ]
         )
         maybeDeps
 
 
-wrapFunction : String -> SortedSet String -> List ( Type, String ) -> Type -> Elm.Declaration
+wrapFunction : String -> SortedSet String -> List ( Type, String ) -> Type -> ( Maybe String, Elm.Declaration )
 wrapFunction name deps args returnType =
     let
         fname =
@@ -270,21 +309,18 @@ wrapFunction name deps args returnType =
                 argValues
                 |> Elm.withType (Gen.Glsl.annotation_.expression (typeToAnnotation returnType))
     in
-    Elm.function argDecls expr
-        |> Elm.declaration fname
-        |> Elm.exposeWith
-            { exposeConstructor = False
-            , group =
-                Just <|
-                    if
-                        List.member (String.left 1 name) [ "g", "i", "c" ]
-                            && not (List.member name [ "cbrt", "increment", "cosh", "is_even", "is_odd" ])
-                    then
-                        String.dropLeft 1 name
+    ( if
+        List.member (String.left 1 name) [ "g", "i", "c" ]
+            && not (List.member name [ "cbrt", "increment", "cosh", "is_even", "is_odd" ])
+      then
+        Just (String.dropLeft 1 name)
 
-                    else
-                        name
-            }
+      else
+        Just name
+    , Elm.function argDecls expr
+        |> Elm.declaration fname
+        |> Elm.expose
+    )
 
 
 typeToAnnotation : Type -> Type.Annotation
@@ -305,17 +341,26 @@ typeToAnnotation type_ =
         TIVec2 ->
             Gen.Glsl.annotation_.iVec2
 
+        TBVec2 ->
+            Gen.Glsl.annotation_.bVec2
+
         TVec3 ->
             Gen.Glsl.annotation_.vec3
 
         TIVec3 ->
             Gen.Glsl.annotation_.iVec3
 
+        TBVec3 ->
+            Gen.Glsl.annotation_.bVec3
+
         TVec4 ->
             Gen.Glsl.annotation_.vec4
 
         TIVec4 ->
             Gen.Glsl.annotation_.iVec4
+
+        TBVec4 ->
+            Gen.Glsl.annotation_.bVec4
 
         TMat3 ->
             Gen.Glsl.annotation_.mat3
@@ -328,6 +373,81 @@ typeToAnnotation type_ =
 
         TOut tt ->
             Gen.Glsl.annotation_.out (typeToAnnotation tt)
+
+        TUint ->
+            Debug.todo "branch 'TUint' not implemented"
+
+        TUVec2 ->
+            Debug.todo "branch 'TUVec2' not implemented"
+
+        TUVec3 ->
+            Debug.todo "branch 'TUVec3' not implemented"
+
+        TUVec4 ->
+            Debug.todo "branch 'TUVec4' not implemented"
+
+        TDouble ->
+            Debug.todo "branch 'TDouble' not implemented"
+
+        TDVec2 ->
+            Debug.todo "branch 'TDVec2' not implemented"
+
+        TDVec3 ->
+            Debug.todo "branch 'TDVec3' not implemented"
+
+        TDVec4 ->
+            Debug.todo "branch 'TDVec4' not implemented"
+
+        TMat2 ->
+            Debug.todo "branch 'TMat2' not implemented"
+
+        TMat4 ->
+            Debug.todo "branch 'TMat4' not implemented"
+
+        TMat23 ->
+            Debug.todo "branch 'TMat23' not implemented"
+
+        TMat24 ->
+            Debug.todo "branch 'TMat24' not implemented"
+
+        TMat32 ->
+            Debug.todo "branch 'TMat32' not implemented"
+
+        TMat34 ->
+            Debug.todo "branch 'TMat34' not implemented"
+
+        TMat42 ->
+            Debug.todo "branch 'TMat42' not implemented"
+
+        TMat43 ->
+            Debug.todo "branch 'TMat43' not implemented"
+
+        TDMat2 ->
+            Debug.todo "branch 'TDMat2' not implemented"
+
+        TDMat3 ->
+            Debug.todo "branch 'TDMat3' not implemented"
+
+        TDMat4 ->
+            Debug.todo "branch 'TDMat4' not implemented"
+
+        TDMat23 ->
+            Debug.todo "branch 'TDMat23' not implemented"
+
+        TDMat24 ->
+            Debug.todo "branch 'TDMat24' not implemented"
+
+        TDMat32 ->
+            Debug.todo "branch 'TDMat32' not implemented"
+
+        TDMat34 ->
+            Debug.todo "branch 'TDMat34' not implemented"
+
+        TDMat42 ->
+            Debug.todo "branch 'TDMat42' not implemented"
+
+        TDMat43 ->
+            Debug.todo "branch 'TDMat43' not implemented"
 
 
 variableHasType : String -> Type -> Env -> Env
@@ -343,55 +463,47 @@ union =
 findDepsStatement : Env -> Stat -> Result String (SortedSet String)
 findDepsStatement env statement =
     case statement of
-        If cond true cont ->
+        If cond true ->
             union
                 [ findDepsExpression env cond
                 , findDepsStatement env true
-                , findDepsStatement env cont
                 ]
 
-        IfElse cond true false cont ->
+        IfElse cond true false ->
             union
                 [ findDepsExpression env cond
                 , findDepsStatement env true
                 , findDepsStatement env false
-                , findDepsStatement env cont
                 ]
 
-        ExpressionStatement e cont ->
-            union
-                [ findDepsExpression env e
-                , findDepsStatement env cont
-                ]
+        ExpressionStatement e ->
+            findDepsExpression env e
 
-        For var from _ to _ step cont ->
-            let
-                newEnv : Env
-                newEnv =
-                    variableHasType var TInt env
-            in
+        For from cond step loop ->
             union
-                [ findDepsExpression env from
-                , findDepsExpression env to
-                , findDepsStatement newEnv step
-                , findDepsStatement env cont
+                [ case from of
+                    Just f ->
+                        findDepsStatement env f
+
+                    Nothing ->
+                        Ok SortedSet.empty
+                , findDepsExpression env cond
+                , findDepsExpression env step
+                , findDepsStatement env loop
                 ]
 
         Return e ->
             findDepsExpression env e
 
-        Decl type_ var maybeVal cont ->
+        Decl type_ var maybeVal ->
             let
                 newEnv : Env
                 newEnv =
                     variableHasType var type_ env
             in
-            union
-                [ maybeVal
-                    |> Maybe.map (findDepsExpression env)
-                    |> Maybe.withDefault (Ok SortedSet.empty)
-                , findDepsStatement newEnv cont
-                ]
+            maybeVal
+                |> Maybe.map (findDepsExpression newEnv)
+                |> Maybe.withDefault (Ok SortedSet.empty)
 
         Nop ->
             Ok SortedSet.empty
@@ -401,6 +513,9 @@ findDepsStatement env statement =
 
         Continue ->
             Ok SortedSet.empty
+
+        Block l m r ->
+            union (List.map (findDepsStatement env) (l :: m :: r))
 
 
 findDepsExpression : Env -> Expr -> Result String (SortedSet String)
@@ -413,6 +528,12 @@ findDepsExpression env =
                     Ok ( TFloat, SortedSet.empty )
 
                 Int _ ->
+                    Ok ( TInt, SortedSet.empty )
+
+                Uint _ ->
+                    Ok ( TInt, SortedSet.empty )
+
+                Double _ ->
                     Ok ( TInt, SortedSet.empty )
 
                 Bool _ ->
@@ -460,7 +581,7 @@ findDepsExpression env =
                         Just t ->
                             Ok ( t, SortedSet.empty )
 
-                Call f args ->
+                Call (Variable f) args ->
                     args
                         |> Result.Extra.combineMap go
                         |> Result.map List.unzip
@@ -485,23 +606,8 @@ findDepsExpression env =
                                         Ok ( to, deps )
                             )
 
-                Array l r ->
-                    Result.andThen
-                        (\( ( lt, ld ), ( rt, rd ) ) ->
-                            Result.map
-                                (\t -> ( t, SortedSet.insertAll ld rd ))
-                                (case ( lt, rt ) of
-                                    ( TVec3, TInt ) ->
-                                        Ok TFloat
-
-                                    _ ->
-                                        Err <| "Don't know what the result of " ++ Glsl.PrettyPrinter.type_ lt ++ "[" ++ Glsl.PrettyPrinter.type_ rt ++ "] is"
-                                )
-                        )
-                        (Result.map2 Tuple.pair
-                            (go l)
-                            (go r)
-                        )
+                Call _ _ ->
+                    Err "Complex calls are not supported yet"
 
                 Ternary c t f ->
                     Result.map3
@@ -518,7 +624,7 @@ findDepsExpression env =
                 UnaryOperation _ e ->
                     go e
 
-                BinaryOperation bop l r ->
+                BinaryOperation l bop r ->
                     Result.andThen
                         (\( ( lt, ld ), ( rt, rd ) ) ->
                             Result.map
@@ -548,28 +654,6 @@ findDepsExpression env =
                             (go l)
                             (go r)
                         )
-
-                Comparison _ l r ->
-                    Result.map2
-                        (\( _, ld ) ( _, rd ) ->
-                            ( TBool, SortedSet.insertAll ld rd )
-                        )
-                        (go l)
-                        (go r)
-
-                PostfixIncrement e ->
-                    go e
-
-                PostfixDecrement e ->
-                    go e
-
-                AssignCombo _ l r ->
-                    Result.map2
-                        (\( lt, ld ) ( _, rd ) ->
-                            ( lt, SortedSet.insertAll ld rd )
-                        )
-                        (go l)
-                        (go r)
     in
     go >> Result.map Tuple.second
 
@@ -595,6 +679,69 @@ binaryOperationToString bop =
         Or ->
             "||"
 
+        ArraySubscript ->
+            "[]"
+
+        Mod ->
+            "%"
+
+        ShiftLeft ->
+            "<<"
+
+        ShiftRight ->
+            ">>"
+
+        RelationOperation _ ->
+            Debug.todo "branch 'RelationOperation _' not implemented"
+
+        BitwiseAnd ->
+            "&"
+
+        BitwiseOr ->
+            "|"
+
+        BitwiseXor ->
+            "^"
+
+        Xor ->
+            "^^"
+
+        Assign ->
+            "="
+
+        ComboAdd ->
+            "+="
+
+        ComboSubtract ->
+            "-="
+
+        ComboBy ->
+            "*="
+
+        ComboDiv ->
+            "/="
+
+        ComboMod ->
+            "%="
+
+        ComboLeftShift ->
+            "<<="
+
+        ComboRightShift ->
+            ">>="
+
+        ComboBitwiseAnd ->
+            "&="
+
+        ComboBitwiseXor ->
+            "^="
+
+        ComboBitwiseOr ->
+            "|="
+
+        Comma ->
+            ","
+
 
 fullName : String -> List Type -> String
 fullName baseName argTypes =
@@ -610,11 +757,29 @@ typeToShort t =
         TInt ->
             "i1"
 
+        TBool ->
+            "b1"
+
+        TUint ->
+            "u1"
+
+        TDouble ->
+            "d1"
+
         TVec2 ->
             "2"
 
         TIVec2 ->
             "i2"
+
+        TBVec2 ->
+            "b2"
+
+        TUVec2 ->
+            "u2"
+
+        TDVec2 ->
+            "d2"
 
         TVec3 ->
             "3"
@@ -622,20 +787,86 @@ typeToShort t =
         TIVec3 ->
             "i3"
 
+        TBVec3 ->
+            "b3"
+
+        TUVec3 ->
+            "u3"
+
+        TDVec3 ->
+            "d3"
+
         TVec4 ->
             "4"
 
         TIVec4 ->
             "i4"
 
+        TBVec4 ->
+            "b4"
+
+        TUVec4 ->
+            "u4"
+
+        TDVec4 ->
+            "d4"
+
+        TMat2 ->
+            "m2"
+
+        TDMat2 ->
+            "dm2"
+
+        TMat23 ->
+            "m23"
+
+        TDMat23 ->
+            "dm23"
+
+        TMat24 ->
+            "m24"
+
+        TDMat24 ->
+            "dm24"
+
+        TMat32 ->
+            "m32"
+
+        TDMat32 ->
+            "dm32"
+
+        TMat42 ->
+            "m42"
+
+        TDMat42 ->
+            "dm42"
+
         TMat3 ->
             "m3"
 
+        TDMat3 ->
+            "dm3"
+
+        TMat34 ->
+            "m34"
+
+        TDMat34 ->
+            "dm34"
+
+        TMat43 ->
+            "m43"
+
+        TDMat43 ->
+            "dm43"
+
+        TMat4 ->
+            "m4"
+
+        TDMat4 ->
+            "dm4"
+
         TVoid ->
             "v"
-
-        TBool ->
-            "b1"
 
         TIn tt ->
             "n" ++ typeToShort tt
@@ -920,13 +1151,14 @@ builtin_vvv_v =
     )
 
 
-builtinDecls : List Elm.Declaration
+builtinDecls : List ( Maybe String, Elm.Declaration )
 builtinDecls =
     builtinFunctions
         |> Dict.toList
         |> List.map
             (\( _, { baseName, args, return } ) ->
-                wrapFunction
+                ( Just baseName
+                , wrapFunction
                     baseName
                     SortedSet.empty
                     (List.indexedMap
@@ -934,15 +1166,12 @@ builtinDecls =
                         args
                     )
                     return
-                    |> Elm.exposeWith { exposeConstructor = False, group = Just baseName }
+                    |> Tuple.second
+                    |> Elm.expose
+                )
             )
 
 
 indexedVar : Int -> String
 indexedVar i =
     String.fromChar <| Char.fromCode <| Char.toCode 'a' + i
-
-
-parseFile : String -> Result (List Parser.DeadEnd) (List Declaration)
-parseFile glsl =
-    Parser.run Glsl.Parser.file glsl

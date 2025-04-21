@@ -5,8 +5,7 @@ import Dict
 import Expect exposing (Expectation)
 import Glsl exposing (Expression, Vec2, float1)
 import Glsl.Eval exposing (Context, Error, Value)
-import Glsl.Functions exposing (cexp2, vec211)
-import Glsl.Generator exposing (one, zero)
+import Glsl.Functions exposing (vec211)
 import Test exposing (Test)
 
 
