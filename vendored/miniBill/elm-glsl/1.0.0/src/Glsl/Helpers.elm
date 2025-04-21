@@ -1,6 +1,56 @@
-module Glsl.Helpers exposing (File, FunDecl, assign, assignAdd, assignBy, assignOut, boolT, break, const, const_, continue, decl, def, def1, expr, expressionToGlsl, fileToGlsl, float, floatT, for, forDown, forLeq, fun0, fun1, fun1_, fun2, fun2_, fun3, fun3_, fun4, fun4_, fun5, fun5_, funDeclToGlsl, ifElse, if_, in_, intT, main_, mat2T, mat3, mat3T, nop, out, return, statementToGlsl, vec2, vec2T, vec3, vec3T, vec4, vec4T, voidT)
+module Glsl.Helpers exposing
+    ( File, FunDecl
+    , boolT, bvec2T, bvec3T, bvec4T
+    , floatT, vec2T, vec3T, vec4T, mat2T, mat3T, mat4T
+    , doubleT, dvec2T, dvec3T, dvec4T, dmat2T, dmat3T, dmat4T
+    , intT
+    , voidT
+    , in_, out
+    , const, const_
+    , decl, def, def1
+    , fun0, fun1, fun2, fun3, fun4, fun5
+    , fun1_, fun2_, fun3_, fun4_, fun5_
+    , float, vec2, vec3, vec4, mat2, mat3, mat4
+    , if_, ifElse, for, forDown, forLeq
+    , break, continue, return, nop
+    , assign, assignAdd, assignBy, assignOut
+    , expr
+    , expressionToGlsl, statementToGlsl, funDeclToGlsl, fileToGlsl
+    , main_
+    )
 
-import Glsl exposing (BinaryOperation(..), Bool_, Declaration(..), Expr(..), Expression(..), Float_, Int_, Mat2, Mat3, Out, RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction, UnaryOperation(..), Vec2, Vec3, Vec4, build, buildStatement, unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5, unsafeMap2, unsafeVar, withContinuation, withExpression, withStatement)
+{-|
+
+@docs File, FunDecl
+
+@docs boolT, bvec2T, bvec3T, bvec4T
+@docs floatT, vec2T, vec3T, vec4T, mat2T, mat3T, mat4T
+@docs doubleT, dvec2T, dvec3T, dvec4T, dmat2T, dmat3T, dmat4T
+@docs intT
+@docs voidT
+
+@docs in_, out
+
+@docs const, const_
+
+@docs decl, def, def1
+@docs fun0, fun1, fun2, fun3, fun4, fun5
+@docs fun1_, fun2_, fun3_, fun4_, fun5_
+
+@docs float, vec2, vec3, vec4, mat2, mat3, mat4
+
+@docs if_, ifElse, for, forDown, forLeq
+@docs break, continue, return, nop
+@docs assign, assignAdd, assignBy, assignOut
+@docs expr
+
+@docs expressionToGlsl, statementToGlsl, funDeclToGlsl, fileToGlsl
+
+@docs main_
+
+-}
+
+import Glsl exposing (BVec2, BVec3, BVec4, BinaryOperation(..), Bool_, DMat2, DMat3, DMat4, DVec2, DVec3, DVec4, Declaration(..), Double, Expr(..), Expression(..), Float_, Int_, Mat2, Mat3, Mat4, Out, RelationOperation(..), Stat(..), Statement(..), Type(..), TypedName(..), TypingFunction, UnaryOperation(..), Vec2, Vec3, Vec4, build, buildStatement, unsafeCall0, unsafeCall1, unsafeCall2, unsafeCall3, unsafeCall4, unsafeCall5, unsafeMap2, unsafeVar, withContinuation, withExpression, withStatement)
 import Glsl.PrettyPrinter
 import Set
 import SortedSet
@@ -469,9 +519,19 @@ vec4 =
     def vec4T
 
 
+mat2 : String -> Expression Mat2 -> (Expression Mat2 -> Statement r) -> Statement r
+mat2 =
+    def mat2T
+
+
 mat3 : String -> Expression Mat3 -> (Expression Mat3 -> Statement r) -> Statement r
 mat3 =
     def mat3T
+
+
+mat4 : String -> Expression Mat4 -> (Expression Mat4 -> Statement r) -> Statement r
+mat4 =
+    def mat4T
 
 
 def1 :
@@ -548,9 +608,24 @@ floatT n =
     TypedName TFloat n
 
 
+doubleT : TypingFunction Double
+doubleT n =
+    TypedName TDouble n
+
+
 vec2T : TypingFunction Vec2
 vec2T n =
     TypedName TVec2 n
+
+
+bvec2T : TypingFunction BVec2
+bvec2T n =
+    TypedName TBVec2 n
+
+
+dvec2T : TypingFunction DVec2
+dvec2T n =
+    TypedName TDVec2 n
 
 
 vec3T : TypingFunction Vec3
@@ -558,9 +633,29 @@ vec3T n =
     TypedName TVec3 n
 
 
+bvec3T : TypingFunction BVec3
+bvec3T n =
+    TypedName TBVec3 n
+
+
+dvec3T : TypingFunction DVec3
+dvec3T n =
+    TypedName TDVec3 n
+
+
 vec4T : TypingFunction Vec4
 vec4T n =
     TypedName TVec4 n
+
+
+bvec4T : TypingFunction BVec4
+bvec4T n =
+    TypedName TBVec4 n
+
+
+dvec4T : TypingFunction DVec4
+dvec4T n =
+    TypedName TDVec4 n
 
 
 mat2T : TypingFunction Mat2
@@ -568,9 +663,29 @@ mat2T n =
     TypedName TMat2 n
 
 
+dmat2T : TypingFunction DMat2
+dmat2T n =
+    TypedName TDMat2 n
+
+
 mat3T : TypingFunction Mat3
 mat3T n =
     TypedName TMat3 n
+
+
+dmat3T : TypingFunction DMat3
+dmat3T n =
+    TypedName TDMat3 n
+
+
+mat4T : TypingFunction Mat4
+mat4T n =
+    TypedName TMat4 n
+
+
+dmat4T : TypingFunction DMat4
+dmat4T n =
+    TypedName TDMat4 n
 
 
 out : TypingFunction t -> TypingFunction t
