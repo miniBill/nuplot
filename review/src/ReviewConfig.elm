@@ -3,11 +3,11 @@ module ReviewConfig exposing (config)
 import Docs.ReviewAtDocs
 import NoAlways
 import NoBooleanCase
+import NoBrokenParserFunctions
 import NoConfusingPrefixOperator
 import NoDebug.Log
 import NoDebug.TodoOrToString
 import NoDuplicatePorts
-import NoEtaReducibleLambdas
 import NoExposingEverything
 import NoImportingEverything
 import NoMissingTypeAnnotation
@@ -57,9 +57,8 @@ config =
     , NoRecordAliasConstructor.rule
     , NoSimpleLetBody.rule
     , NoUnsafePorts.rule NoUnsafePorts.any
-
-    -- , NoUnused.CustomTypeConstructorArgs.rule
-    -- , NoUnused.CustomTypeConstructors.rule []
+    , NoUnused.CustomTypeConstructorArgs.rule
+    , NoUnused.CustomTypeConstructors.rule []
     , NoUnused.Dependencies.rule
     , NoUnused.Exports.rule
         |> Rule.ignoreErrorsForDirectories [ "generated" ]
@@ -75,4 +74,5 @@ config =
         , ReviewPipelineStyles.forbid ReviewPipelineStyles.rightCompositionPipelines
             |> ReviewPipelineStyles.andCallThem "forbidden >> composition"
         ]
+    , NoBrokenParserFunctions.rule
     ]
