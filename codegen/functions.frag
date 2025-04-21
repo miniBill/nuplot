@@ -1,11 +1,11 @@
-#define MAX_DEPTH 30
-//#define MAX_DEPTH 60
+const int MAX_DEPTH = 30;
+//const int MAX_DEPTH = 60;
 
-#define P31 2147483648
-#define P32M1 4294967295
-#define PIHALF 1.5707963267948966
-#define PI 3.141592653589793
-#define TWOPI 6.283185307179586
+const int P31 = 2147483648;
+const int P32M1 = 4294967295;
+const float PIHALF = 1.5707963267948966;
+const float PI = 3.141592653589793;
+const float TWOPI = 6.283185307179586;
 
 precision highp float;
 
