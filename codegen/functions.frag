@@ -7,7 +7,7 @@ const float PIHALF = 1.5707963267948966;
 const float PI = 3.141592653589793;
 const float TWOPI = 6.283185307179586;
 
-precision highp float;
+// precision highp float;
 
 uniform float u_whiteLines;
 uniform float u_completelyReal;
