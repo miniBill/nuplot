@@ -2,6 +2,7 @@ module Glsl.Parser exposing (expression, file, function, preprocess, statement)
 
 import Glsl exposing (BinaryOperation(..), Declaration(..), Expr(..), RelationOperation(..), Stat(..), Type(..), UnaryOperation(..))
 import Parser exposing ((|.), (|=), Parser, Step(..), Trailing(..), chompIf, chompWhile, getChompedString, keyword, loop, oneOf, sequence, succeed, symbol)
+import Parser.Workaround
 
 
 file : Parser ( Maybe { version : String }, List Declaration )
@@ -155,16 +156,17 @@ typeParser =
 
 statement : Parser Stat
 statement =
-    Parser.lazy <| \_ ->
-    oneOf
-        [ blockParser
-        , returnParser
-        , breakContinueParser
-        , ifParser
-        , forParser
-        , defParser
-        , expressionStatementParser
-        ]
+    Parser.lazy <|
+        \_ ->
+            oneOf
+                [ blockParser
+                , returnParser
+                , breakContinueParser
+                , ifParser
+                , forParser
+                , defParser
+                , expressionStatementParser
+                ]
 
 
 breakContinueParser : Parser Stat
@@ -798,4 +800,24 @@ expandMacros lines =
 
 spaces : Parser ()
 spaces =
-    chompWhile (\c -> c == ' ' || c == '\n' || c == '\u{000D}' || c == '\t')
+    let
+        inner : Parser ()
+        inner =
+            chompWhile (\c -> c == ' ' || c == '\n' || c == '\u{000D}' || c == '\t')
+
+        comment : Parser ()
+        comment =
+            Parser.oneOf
+                [ Parser.Workaround.lineCommentAfter "//"
+                , Parser.Workaround.multiCommentAfter "/*" "*/" Parser.NotNestable
+                ]
+    in
+    Parser.sequence
+        { start = ""
+        , end = ""
+        , trailing = Parser.Optional
+        , spaces = inner
+        , separator = ""
+        , item = comment
+        }
+        |> Parser.map (\_ -> ())
