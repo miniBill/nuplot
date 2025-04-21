@@ -6,7 +6,7 @@ import Elm.Annotation as Type
 import Gen.CodeGen.Generate as Generate
 import Gen.Debug
 import Gen.Glsl
-import Glsl exposing (BinaryOperation(..), Declaration(..), Expr(..), Expression(..), Function, Stat(..), Statement(..), Type(..), Uniform)
+import Glsl exposing (BinaryOperation(..), Declaration(..), Expr(..), Expression(..), Function, RelationOperation(..), Stat(..), Statement(..), Type(..), Uniform)
 import Glsl.Parser
 import Glsl.PrettyPrinter
 import List.Extra
@@ -375,79 +375,79 @@ typeToAnnotation type_ =
             Gen.Glsl.annotation_.out (typeToAnnotation tt)
 
         TUint ->
-            Debug.todo "branch 'TUint' not implemented"
+            Type.int
 
         TUVec2 ->
-            Debug.todo "branch 'TUVec2' not implemented"
+            Gen.Glsl.annotation_.uVec2
 
         TUVec3 ->
-            Debug.todo "branch 'TUVec3' not implemented"
+            Gen.Glsl.annotation_.uVec3
 
         TUVec4 ->
-            Debug.todo "branch 'TUVec4' not implemented"
+            Gen.Glsl.annotation_.uVec4
 
         TDouble ->
-            Debug.todo "branch 'TDouble' not implemented"
+            Type.float
 
         TDVec2 ->
-            Debug.todo "branch 'TDVec2' not implemented"
+            Gen.Glsl.annotation_.dVec2
 
         TDVec3 ->
-            Debug.todo "branch 'TDVec3' not implemented"
+            Gen.Glsl.annotation_.dVec3
 
         TDVec4 ->
-            Debug.todo "branch 'TDVec4' not implemented"
+            Gen.Glsl.annotation_.dVec4
 
         TMat2 ->
-            Debug.todo "branch 'TMat2' not implemented"
+            Gen.Glsl.annotation_.mat2
 
         TMat4 ->
-            Debug.todo "branch 'TMat4' not implemented"
+            Gen.Glsl.annotation_.mat4
 
         TMat23 ->
-            Debug.todo "branch 'TMat23' not implemented"
+            Gen.Glsl.annotation_.mat23
 
         TMat24 ->
-            Debug.todo "branch 'TMat24' not implemented"
+            Gen.Glsl.annotation_.mat24
 
         TMat32 ->
-            Debug.todo "branch 'TMat32' not implemented"
+            Gen.Glsl.annotation_.mat32
 
         TMat34 ->
-            Debug.todo "branch 'TMat34' not implemented"
+            Gen.Glsl.annotation_.mat34
 
         TMat42 ->
-            Debug.todo "branch 'TMat42' not implemented"
+            Gen.Glsl.annotation_.mat42
 
         TMat43 ->
-            Debug.todo "branch 'TMat43' not implemented"
+            Gen.Glsl.annotation_.mat43
 
         TDMat2 ->
-            Debug.todo "branch 'TDMat2' not implemented"
+            Gen.Glsl.annotation_.dMat2
 
         TDMat3 ->
-            Debug.todo "branch 'TDMat3' not implemented"
+            Gen.Glsl.annotation_.dMat3
 
         TDMat4 ->
-            Debug.todo "branch 'TDMat4' not implemented"
+            Gen.Glsl.annotation_.dMat4
 
         TDMat23 ->
-            Debug.todo "branch 'TDMat23' not implemented"
+            Gen.Glsl.annotation_.dMat23
 
         TDMat24 ->
-            Debug.todo "branch 'TDMat24' not implemented"
+            Gen.Glsl.annotation_.dMat24
 
         TDMat32 ->
-            Debug.todo "branch 'TDMat32' not implemented"
+            Gen.Glsl.annotation_.dMat32
 
         TDMat34 ->
-            Debug.todo "branch 'TDMat34' not implemented"
+            Gen.Glsl.annotation_.dMat34
 
         TDMat42 ->
-            Debug.todo "branch 'TDMat42' not implemented"
+            Gen.Glsl.annotation_.dMat42
 
         TDMat43 ->
-            Debug.todo "branch 'TDMat43' not implemented"
+            Gen.Glsl.annotation_.dMat43
 
 
 variableHasType : String -> Type -> Env -> Env
@@ -691,9 +691,6 @@ binaryOperationToString bop =
         ShiftRight ->
             ">>"
 
-        RelationOperation _ ->
-            Debug.todo "branch 'RelationOperation _' not implemented"
-
         BitwiseAnd ->
             "&"
 
@@ -741,6 +738,24 @@ binaryOperationToString bop =
 
         Comma ->
             ","
+
+        RelationOperation LessThan ->
+            "<"
+
+        RelationOperation GreaterThan ->
+            ">"
+
+        RelationOperation LessThanOrEquals ->
+            "<="
+
+        RelationOperation GreaterThanOrEquals ->
+            ">="
+
+        RelationOperation Equals ->
+            "=="
+
+        RelationOperation NotEquals ->
+            "!="
 
 
 fullName : String -> List Type -> String
