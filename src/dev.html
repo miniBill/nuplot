@@ -1,36 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>nuPlot</title>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>nuPlot</title>
+        <meta
+            name="description"
+            content="A small graphing calculator and Algebra System"
+        />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:site" content="@miniBill" />
+        <meta name="twitter:creator" content="@miniBill" />
+        <meta property="og:url" content="https://nuplot.netlify.app/" />
+        <meta property="og:title" content="nuPlot" />
+        <meta
+            property="og:description"
+            content="A small graphing calculator and Algebra System"
+        />
+        <meta property="og:image" content="./img/screenshot.png" />
 
-    <meta name="description" content="A small graphing calculator and Algebra System">
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:site" content="@miniBill" />
-    <meta name="twitter:creator" content="@miniBill" />
-    <meta property="og:url" content="https://nuplot.netlify.app/" />
-    <meta property="og:title" content="nuPlot" />
-    <meta property="og:description" content="A small graphing calculator and Algebra System" />
-    <meta property="og:image" content="./img/screenshot.png" />
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/katex.min.css"
+            integrity="sha384-mXD7x5S50Ko38scHSnD4egvoExgMPbrseZorkbE49evAfv9nNcbrXJ8LLNsDgh9d"
+            crossorigin="anonymous"
+        />
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/katex.min.css"
-        integrity="sha384-mXD7x5S50Ko38scHSnD4egvoExgMPbrseZorkbE49evAfv9nNcbrXJ8LLNsDgh9d" crossorigin="anonymous">
+        <!-- The loading of KaTeX is deferred to speed up page rendering -->
+        <script
+            defer
+            src="https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/katex.min.js"
+            integrity="sha384-j/ZricySXBnNMJy9meJCtyXTKMhIJ42heyr7oAdxTDBy/CYA9hzpMo+YTNV5C+1X"
+            crossorigin="anonymous"
+        ></script>
+    </head>
+    <body>
+        <div id="main"></div>
 
-    <!-- The loading of KaTeX is deferred to speed up page rendering -->
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/katex.min.js"
-        integrity="sha384-j/ZricySXBnNMJy9meJCtyXTKMhIJ42heyr7oAdxTDBy/CYA9hzpMo+YTNV5C+1X"
-        crossorigin="anonymous"></script>
-</head>
+        <script src="./ts/dev.ts" type="module"></script>
 
-<body>
-    <div id="main"></div>
-
-    <script src="./ts/dev.ts" type="module"></script>
-
-    <noscript>Unfortunately this application relies on Javascript for working, because it runs its computations in your
-        browser. Enable Javascript to let it run.</noscript>
-</body>
-
+        <noscript
+            >Unfortunately this application relies on Javascript for working,
+            because it runs its computations in your browser. Enable Javascript
+            to let it run.</noscript
+        >
+    </body>
 </html>
