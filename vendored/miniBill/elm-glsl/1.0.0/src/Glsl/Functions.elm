@@ -322,12 +322,21 @@ module Glsl.Functions exposing
 
 {-|
 
+
+## abs
+
 @docs abs1, abs2, abs3, abs4, absd1, absd2
 @docs absd3, absd4, absf, absi1, absi2, absi3
 @docs absi4, abswd1, abswi1
 
+
+## ceil
+
 @docs ceil1, ceil2, ceil3, ceil4, ceild1, ceild2
 @docs ceild3, ceild4, ceilf, ceilwd1, ceil
+
+
+## clamp
 
 @docs clamp111, clamp11f, clamp1f1, clamp1ff, clamp211, clamp21f
 @docs clamp222, clamp2f1, clamp2ff, clamp311, clamp31f, clamp333
@@ -346,74 +355,143 @@ module Glsl.Functions exposing
 @docs clampwi1i1i1, clampwi1i1wi1, clampwi1wi1i1, clampwi1wi1wi1, clampwu1u1u1, clampwu1u1wu1
 @docs clampwu1wu1u1, clampwu1wu1wu1
 
+
+## cross
+
 @docs cross33, crossd3d3
+
+
+## distance
 
 @docs distance11, distance1f, distance22, distance33, distance44, distanced1d1
 @docs distanced1wd1, distanced2d2, distanced3d3, distanced4d4, distancef1, distanceff
 @docs distancewd1d1, distancewd1wd1, distance
 
+
+## dot
+
 @docs dot11, dot1f, dot22, dot33, dot44, dotd1d1
 @docs dotd1wd1, dotd2d2, dotd3d3, dotd4d4, dotf1, dotff
 @docs dotwd1d1, dotwd1wd1, dot
+
+
+## faceforward
 
 @docs faceforward111, faceforward11f, faceforward1f1, faceforward1ff, faceforward222, faceforward333
 @docs faceforward444, faceforwardd1d1d1, faceforwardd1d1wd1, faceforwardd1wd1d1, faceforwardd1wd1wd1, faceforwardd2d2d2
 @docs faceforwardd3d3d3, faceforwardd4d4d4, faceforwardf11, faceforwardf1f, faceforwardff1, faceforwardfff
 @docs faceforwardwd1d1d1, faceforwardwd1d1wd1, faceforwardwd1wd1d1, faceforwardwd1wd1wd1, faceforward
 
+
+## floatBitsToInt
+
 @docs floatBitsToInt1, floatBitsToInt2, floatBitsToInt3, floatBitsToInt4, floatBitsToIntf
+
+
+## floatBitsToUint
 
 @docs floatBitsToUint1, floatBitsToUint2, floatBitsToUint3, floatBitsToUint4, floatBitsToUintf
 
+
+## float
+
 @docs floati1, floatwi1
+
+
+## floor
 
 @docs floor1, floor2, floor3, floor4, floord1, floord2
 @docs floord3, floord4, floorf, floorwd1
+
+
+## fma
 
 @docs fma111, fma11f, fma1f1, fma1ff, fma222, fma333
 @docs fma444, fmad1d1d1, fmad1d1wd1, fmad1wd1d1, fmad1wd1wd1, fmad2d2d2
 @docs fmad3d3d3, fmad4d4d4, fmaf11, fmaf1f, fmaff1, fmafff
 @docs fmawd1d1d1, fmawd1d1wd1, fmawd1wd1d1, fmawd1wd1wd1, fma
 
+
+## fract
+
 @docs fract1, fract2, fract3, fract4, fractd1, fractd2
 @docs fractd3, fractd4, fractf, fractwd1, fract
+
+
+## frexp
 
 @docs frexp1oi1, frexp1owi1, frexp2oi2, frexp3oi3, frexp4oi4, frexpd1oi1
 @docs frexpd1owi1, frexpd2oi2, frexpd3oi3, frexpd4oi4, frexpfoi1, frexpfowi1
 @docs frexpwd1oi1, frexpwd1owi1
 
+
+## int
+
 @docs int1, intf
 
+
+## intBitsToFloat
+
 @docs intBitsToFloati1, intBitsToFloati2, intBitsToFloati3, intBitsToFloati4, intBitsToFloatwi1
+
+
+## inversesqrt
 
 @docs inversesqrt1, inversesqrt2, inversesqrt3, inversesqrt4, inversesqrtd1, inversesqrtd2
 @docs inversesqrtd3, inversesqrtd4, inversesqrtf, inversesqrtwd1, inversesqrt
 
+
+## isinf
+
 @docs isinf1, isinf2, isinf3, isinf4, isinfd1, isinfd2
 @docs isinfd3, isinfd4, isinff, isinfwd1
+
+
+## isnan
 
 @docs isnan1, isnan2, isnan3, isnan4, isnand1, isnand2
 @docs isnand3, isnand4, isnanf, isnanwd1
 
+
+## ivec2
+
 @docs ivec2i1i1, ivec2i1wi1, ivec2wi1i1, ivec2wi1wi1
+
+
+## ivec3
 
 @docs ivec3i1i1i1, ivec3i1i1wi1, ivec3i1wi1i1, ivec3i1wi1wi1, ivec3wi1i1i1, ivec3wi1i1wi1
 @docs ivec3wi1wi1i1, ivec3wi1wi1wi1
+
+
+## ivec4
 
 @docs ivec4i1i1i1i1, ivec4i1i1i1wi1, ivec4i1i1wi1i1, ivec4i1i1wi1wi1, ivec4i1wi1i1i1, ivec4i1wi1i1wi1
 @docs ivec4i1wi1wi1i1, ivec4i1wi1wi1wi1, ivec4wi1i1i1i1, ivec4wi1i1i1wi1, ivec4wi1i1wi1i1, ivec4wi1i1wi1wi1
 @docs ivec4wi1wi1i1i1, ivec4wi1wi1i1wi1, ivec4wi1wi1wi1i1, ivec4wi1wi1wi1wi1
 
+
+## ldexp
+
 @docs ldexp1i1, ldexp1wi1, ldexp2i2, ldexp3i3, ldexp4i4, ldexpd1i1
 @docs ldexpd1wi1, ldexpd2i2, ldexpd3i3, ldexpd4i4, ldexpfi1, ldexpfwi1
 @docs ldexpwd1i1, ldexpwd1wi1
 
+
+## length
+
 @docs length1, length2, length3, length4, lengthd1, lengthd2
 @docs lengthd3, lengthd4, lengthf, lengthwd1, length
+
+
+## mat2
 
 @docs mat21111, mat2111f, mat211f1, mat211ff, mat21f11, mat21f1f
 @docs mat21ff1, mat21fff, mat222, mat2f111, mat2f11f, mat2f1f1
 @docs mat2f1ff, mat2ff11, mat2ff1f, mat2fff1, mat2ffff
+
+
+## mat3
 
 @docs mat3111111111, mat311111111f, mat31111111f1, mat31111111ff, mat3111111f11, mat3111111f1f
 @docs mat3111111ff1, mat3111111fff, mat311111f111, mat311111f11f, mat311111f1f1, mat311111f1ff
@@ -502,7 +580,13 @@ module Glsl.Functions exposing
 @docs mat3fffff1fff, mat3ffffff111, mat3ffffff11f, mat3ffffff1f1, mat3ffffff1ff, mat3fffffff11
 @docs mat3fffffff1f, mat3ffffffff1, mat3fffffffff
 
+
+## mat4
+
 @docs mat44444
+
+
+## max
 
 @docs max11, max1f, max21, max22, max2f, max31
 @docs max33, max3f, max41, max44, max4f, maxd1d1
@@ -514,6 +598,9 @@ module Glsl.Functions exposing
 @docs maxu3wu1, maxu4u1, maxu4u4, maxu4wu1, maxwd1d1, maxwd1wd1
 @docs maxwi1i1, maxwi1wi1, maxwu1u1, maxwu1wu1
 
+
+## min
+
 @docs min11, min1f, min21, min22, min2f, min31
 @docs min33, min3f, min41, min44, min4f, mind1d1
 @docs mind1wd1, mind2d1, mind2d2, mind2wd1, mind3d1, mind3d3
@@ -524,6 +611,9 @@ module Glsl.Functions exposing
 @docs minu3wu1, minu4u1, minu4u4, minu4wu1, minwd1d1, minwd1wd1
 @docs minwi1i1, minwi1wi1, minwu1u1, minwu1wu1
 
+
+## mix
+
 @docs mix111, mix11f, mix1f1, mix1ff, mix221, mix222
 @docs mix22f, mix331, mix333, mix33f, mix441, mix444
 @docs mix44f, mixd1d1d1, mixd1d1wd1, mixd1wd1d1, mixd1wd1wd1, mixd2d2d1
@@ -531,22 +621,37 @@ module Glsl.Functions exposing
 @docs mixd4d4d4, mixd4d4wd1, mixf11, mixf1f, mixff1, mixfff
 @docs mixwd1d1d1, mixwd1d1wd1, mixwd1wd1d1, mixwd1wd1wd1, mix
 
+
+## mod
+
 @docs mod11, mod1f, mod21, mod22, mod2f, mod31
 @docs mod33, mod3f, mod41, mod44, mod4f, modd1d1
 @docs modd1wd1, modd2d1, modd2d2, modd2wd1, modd3d1, modd3d3
 @docs modd3wd1, modd4d1, modd4d4, modd4wd1, modf1, modff
 @docs modwd1d1, modwd1wd1, mod
 
+
+## modf
+
 @docs modf1o1, modf1of, modf2o2, modf3o3, modf4o4, modfd1od1
 @docs modfd1owd1, modfd2od2, modfd3od3, modfd4od4, modffo1, modffof
 @docs modfwd1od1, modfwd1owd1, modf
 
+
+## normalize
+
 @docs normalize1, normalize2, normalize3, normalize4, normalized1, normalized2
 @docs normalized3, normalized4, normalizef, normalizewd1, normalize
+
+
+## reflect
 
 @docs reflect11, reflect1f, reflect22, reflect33, reflect44, reflectd1d1
 @docs reflectd1wd1, reflectd2d2, reflectd3d3, reflectd4d4, reflectf1, reflectff
 @docs reflectwd1d1, reflectwd1wd1, reflect
+
+
+## refract
 
 @docs refract111, refract11f, refract1f1, refract1ff, refract221, refract22f
 @docs refract331, refract33f, refract441, refract44f, refractd1d11, refractd1d1f
@@ -554,15 +659,27 @@ module Glsl.Functions exposing
 @docs refractd4d41, refractd4d4f, refractf11, refractf1f, refractff1, refractfff
 @docs refractwd1d11, refractwd1d1f, refractwd1wd11, refractwd1wd1f, refract
 
+
+## round
+
 @docs round1, round2, round3, round4, roundd1, roundd2
 @docs roundd3, roundd4, roundf, roundwd1
+
+
+## roundEven
 
 @docs roundEven1, roundEven2, roundEven3, roundEven4, roundEvend1, roundEvend2
 @docs roundEvend3, roundEvend4, roundEvenf, roundEvenwd1, roundEven
 
+
+## sign
+
 @docs sign1, sign2, sign3, sign4, signd1, signd2
 @docs signd3, signd4, signf, signi1, signi2, signi3
 @docs signi4, signwd1, signwi1, sign
+
+
+## smoothstep
 
 @docs smoothstep111, smoothstep112, smoothstep113, smoothstep114, smoothstep11f, smoothstep1f1
 @docs smoothstep1f2, smoothstep1f3, smoothstep1f4, smoothstep1ff, smoothstep222, smoothstep333
@@ -573,8 +690,14 @@ module Glsl.Functions exposing
 @docs smoothstepwd1d1d1, smoothstepwd1d1d2, smoothstepwd1d1d3, smoothstepwd1d1d4, smoothstepwd1d1wd1, smoothstepwd1wd1d1
 @docs smoothstepwd1wd1d2, smoothstepwd1wd1d3, smoothstepwd1wd1d4, smoothstepwd1wd1wd1, smoothstep
 
+
+## sqrt
+
 @docs sqrt1, sqrt2, sqrt3, sqrt4, sqrtd1, sqrtd2
 @docs sqrtd3, sqrtd4, sqrtf, sqrtwd1
+
+
+## step
 
 @docs step11, step12, step13, step14, step1f, step22
 @docs step33, step44, stepd1d1, stepd1d2, stepd1d3, stepd1d4
@@ -582,15 +705,27 @@ module Glsl.Functions exposing
 @docs stepf3, stepf4, stepff, stepwd1d1, stepwd1d2, stepwd1d3
 @docs stepwd1d4, stepwd1wd1, step
 
+
+## trunc
+
 @docs trunc1, trunc2, trunc3, trunc4, truncd1, truncd2
 @docs truncd3, truncd4, truncf, truncwd1, trunc
 
+
+## uintBitsToFloat
+
 @docs uintBitsToFloatu1, uintBitsToFloatu2, uintBitsToFloatu3, uintBitsToFloatu4, uintBitsToFloatwu1
+
+
+## vec2
 
 @docs vec21, vec211, vec21f, vec21i1, vec21wi1, vec2f
 @docs vec2f1, vec2ff, vec2fi1, vec2fwi1, vec2i1, vec2i11
 @docs vec2i1f, vec2i1i1, vec2i1wi1, vec2wi1, vec2wi11, vec2wi1f
 @docs vec2wi1i1, vec2wi1wi1
+
+
+## vec3
 
 @docs vec31, vec3111, vec311f, vec311i1, vec311wi1, vec312
 @docs vec31f1, vec31ff, vec31fi1, vec31fwi1, vec31i11, vec31i1f
@@ -604,6 +739,9 @@ module Glsl.Functions exposing
 @docs vec3i1wi1wi1, vec3wi1, vec3wi111, vec3wi11f, vec3wi11i1, vec3wi11wi1
 @docs vec3wi1f1, vec3wi1ff, vec3wi1fi1, vec3wi1fwi1, vec3wi1i11, vec3wi1i1f
 @docs vec3wi1i1i1, vec3wi1i1wi1, vec3wi1wi11, vec3wi1wi1f, vec3wi1wi1i1, vec3wi1wi1wi1
+
+
+## vec4
 
 @docs vec41, vec41111, vec4111f, vec4111i1, vec4111wi1, vec411f1
 @docs vec411ff, vec411fi1, vec411fwi1, vec411i11, vec411i1f, vec411i1i1
@@ -651,75 +789,183 @@ module Glsl.Functions exposing
 @docs vec4wi1wi1i1f, vec4wi1wi1i1i1, vec4wi1wi1i1wi1, vec4wi1wi1wi11, vec4wi1wi1wi1f, vec4wi1wi1wi1i1
 @docs vec4wi1wi1wi1wi1
 
+
+## radians\_
+
 @docs radians_
+
+
+## degrees\_
 
 @docs degrees_
 
+
+## sin\_
+
 @docs sin_
+
+
+## cos\_
 
 @docs cos_
 
+
+## tan\_
+
 @docs tan_
+
+
+## asin\_
 
 @docs asin_
 
+
+## acos\_
+
 @docs acos_
+
+
+## atan\_
 
 @docs atan_
 
+
+## atan2\_
+
 @docs atan2_
+
+
+## sinh
 
 @docs sinh
 
+
+## cosh
+
 @docs cosh
+
+
+## tanh
 
 @docs tanh
 
+
+## asinh
+
 @docs asinh
+
+
+## acosh
 
 @docs acosh
 
+
+## atanh
+
 @docs atanh
+
+
+## pow
 
 @docs pow
 
+
+## exp
+
 @docs exp
+
+
+## log
 
 @docs log
 
+
+## exp2
+
 @docs exp2
+
+
+## log2
 
 @docs log2
 
+
+## sqrt\_
+
 @docs sqrt_
+
+
+## abs\_
 
 @docs abs_
 
+
+## floor\_
+
 @docs floor_
+
+
+## round\_
 
 @docs round_
 
+
+## min\_
+
 @docs min_
+
+
+## max\_
 
 @docs max_
 
+
+## clamp\_
+
 @docs clamp_
+
+
+## dFdx
 
 @docs dFdx
 
+
+## dFdy
+
 @docs dFdy
+
+
+## dFdxFine
 
 @docs dFdxFine
 
+
+## dFdyFine
+
 @docs dFdyFine
+
+
+## dFdxCoarse
 
 @docs dFdxCoarse
 
+
+## dFdyCoarse
+
 @docs dFdyCoarse
+
+
+## fwidth
 
 @docs fwidth
 
+
+## fwidthFine
+
 @docs fwidthFine
+
+
+## fwidthCoarse
 
 @docs fwidthCoarse
 
