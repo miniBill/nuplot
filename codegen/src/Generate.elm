@@ -15,6 +15,7 @@ import List.Extra
 import Pages.Script as Script exposing (Script)
 import Parser
 import Result.Extra
+import Set
 import SortedSet exposing (SortedSet)
 
 
@@ -32,9 +33,17 @@ task =
                 case generate glsl of
                     Err msg ->
                         let
+                            reflowedMsg : String
+                            reflowedMsg =
+                                msg
+                                    |> String.split "\n"
+                                    |> (::) ""
+                                    |> String.join "\n  "
+
                             coloredMsg : String
                             coloredMsg =
-                                Ansi.Color.fontColor Ansi.Color.red "Error:" ++ " " ++ msg
+                                Ansi.Color.fontColor Ansi.Color.red "Error:"
+                                    ++ reflowedMsg
                         in
                         BackendTask.fail (FatalError.fromString coloredMsg)
 
@@ -72,7 +81,7 @@ generate : String -> Result String (List ( Maybe String, Elm.Declaration ))
 generate glsl =
     case Parser.run Glsl.Parser.file glsl of
         Err e ->
-            Err (errorToString e)
+            Err (parserErrorToString glsl e)
 
         Ok ( _, declarations ) ->
             let
@@ -181,16 +190,54 @@ functionHasType baseName argTypes returnType env =
     { env | functionsEnv = Dict.insert (fullName baseName argTypes) returnType env.functionsEnv }
 
 
-errorToString : List Parser.DeadEnd -> String
-errorToString deadEnds =
-    deadEnds
-        |> List.map deadEndToString
+parserErrorToString : String -> List Parser.DeadEnd -> String
+parserErrorToString input err =
+    err
+        |> List.Extra.gatherEqualsBy (\{ row, col } -> ( row, col ))
+        |> List.map (errorToString input)
+        |> String.join "\n\n"
+
+
+errorToString : String -> ( Parser.DeadEnd, List Parser.DeadEnd ) -> String
+errorToString source ( error, errors ) =
+    let
+        -- How many lines of context to show
+        context : Int
+        context =
+            4
+
+        lines : List String
+        lines =
+            String.split "\n" source
+                |> List.drop (error.row - context)
+                |> List.take (context * 2)
+
+        errorString : String
+        errorString =
+            [ String.repeat (error.col - 1) " "
+            , Ansi.Color.fontColor Ansi.Color.red "^ "
+            , " at row "
+            , String.fromInt error.row
+            , ", col "
+            , String.fromInt error.col
+            , " "
+            , (error :: errors)
+                |> List.map (\{ problem } -> problemToString problem)
+                |> Set.fromList
+                |> Set.toList
+                |> String.join ", "
+                |> Ansi.Color.fontColor Ansi.Color.yellow
+            ]
+                |> String.concat
+
+        before : Int
+        before =
+            min error.row context
+    in
+    List.take before lines
+        ++ errorString
+        :: List.drop before lines
         |> String.join "\n"
-
-
-deadEndToString : Parser.DeadEnd -> String
-deadEndToString { row, col, problem } =
-    "R " ++ String.fromInt row ++ " C " ++ String.fromInt col ++ " " ++ problemToString problem
 
 
 problemToString : Parser.Problem -> String
