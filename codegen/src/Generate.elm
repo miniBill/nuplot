@@ -163,13 +163,14 @@ generate glsl =
                         (functionToDeclarations env)
                         functions
                         |> Result.map List.concat
-
-                uniformDecls : List ( Maybe String, Elm.Declaration )
-                uniformDecls =
-                    List.map uniformToDeclaration uniforms
             in
             case maybeDecls of
                 Ok decls ->
+                    let
+                        uniformDecls : List ( Maybe String, Elm.Declaration )
+                        uniformDecls =
+                            List.map uniformToDeclaration uniforms
+                    in
                     Ok (decls ++ builtinDecls ++ uniformDecls)
 
                 Err e ->
@@ -329,27 +330,28 @@ type alias Env =
 functionToDeclarations : Env -> Function -> Result String (List ( Maybe String, Elm.Declaration ))
 functionToDeclarations env function =
     let
-        fname =
+        functionName : String
+        functionName =
             fullName function.name (List.map Tuple.first function.args)
 
         envWithArgs : Env
         envWithArgs =
             List.foldl (\( type_, name ) -> variableHasType name type_) env function.args
 
-        maybeDeps : Result String (SortedSet String)
+        maybeDeps : Result String ( Env, SortedSet String )
         maybeDeps =
-            findDepsStatement envWithArgs function.stat
-                |> Result.mapError (\e -> e ++ " while generating " ++ fname)
+            findDepsStatement function.stat envWithArgs
+                |> Result.mapError (\e -> e ++ " while generating " ++ functionName)
     in
     Result.map
-        (\deps ->
+        (\( _, deps ) ->
             [ ( Nothing
               , function.stat
                     |> Glsl.PrettyPrinter.stat 0
                     |> Elm.string
-                    |> Elm.declaration (fname ++ "Body")
+                    |> Elm.declaration (functionName ++ "Body")
               )
-            , wrapFunction function.name (SortedSet.insert fname deps) function.args function.returnType
+            , wrapFunction function.name (SortedSet.insert functionName deps) function.args function.returnType
             ]
         )
         maybeDeps
@@ -550,71 +552,93 @@ variableHasType var type_ env =
     { env | variablesEnv = Dict.insert var type_ env.variablesEnv }
 
 
-union : List (Result String (SortedSet comparable)) -> Result String (SortedSet comparable)
-union =
-    List.foldl (Result.map2 SortedSet.insertAll) (Ok SortedSet.empty)
+union : List (Env -> Result String ( Env, SortedSet comparable )) -> Env -> Result String ( Env, SortedSet comparable )
+union list initialEnv =
+    List.foldl
+        (\e a ->
+            a
+                |> Result.andThen
+                    (\( env, deps ) ->
+                        e env
+                            |> Result.map
+                                (Tuple.mapSecond
+                                    (\newDeps -> SortedSet.insertAll newDeps deps)
+                                )
+                    )
+        )
+        (Ok ( initialEnv, SortedSet.empty ))
+        list
 
 
-findDepsStatement : Env -> Stat -> Result String (SortedSet String)
-findDepsStatement env statement =
+findDepsStatement : Stat -> Env -> Result String ( Env, SortedSet String )
+findDepsStatement statement =
     case statement of
         If cond true ->
             union
-                [ findDepsExpression env cond
-                , findDepsStatement env true
+                [ findDepsExpression cond
+                , findDepsStatement true
                 ]
 
         IfElse cond true false ->
             union
-                [ findDepsExpression env cond
-                , findDepsStatement env true
-                , findDepsStatement env false
+                [ findDepsExpression cond
+                , findDepsStatement true
+                , findDepsStatement false
                 ]
 
         ExpressionStatement e ->
-            findDepsExpression env e
+            findDepsExpression e
 
         For from cond step loop ->
             union
                 [ case from of
                     Just f ->
-                        findDepsStatement env f
+                        findDepsStatement f
 
                     Nothing ->
-                        Ok SortedSet.empty
-                , findDepsExpression env cond
-                , findDepsExpression env step
-                , findDepsStatement env loop
+                        nop
+                , findDepsExpression cond
+                , findDepsExpression step
+                , findDepsStatement loop
                 ]
 
         Return e ->
-            findDepsExpression env e
+            findDepsExpression e
 
         Decl type_ var maybeVal ->
-            let
-                newEnv : Env
-                newEnv =
-                    variableHasType var type_ env
-            in
-            maybeVal
-                |> Maybe.map (findDepsExpression newEnv)
-                |> Maybe.withDefault (Ok SortedSet.empty)
+            \env ->
+                let
+                    newEnv : Env
+                    newEnv =
+                        variableHasType var type_ env
+                in
+                case maybeVal of
+                    Nothing ->
+                        nop newEnv
+
+                    Just val ->
+                        findDepsExpression val newEnv
 
         Nop ->
-            Ok SortedSet.empty
+            nop
 
         Break ->
-            Ok SortedSet.empty
+            nop
 
         Continue ->
-            Ok SortedSet.empty
+            nop
 
         Block l m r ->
-            union (List.map (findDepsStatement env) (l :: m :: r))
+            union (List.map findDepsStatement (l :: m :: r))
 
 
-findDepsExpression : Env -> Expr -> Result String (SortedSet String)
-findDepsExpression env =
+nop : Env -> Result String ( Env, SortedSet String )
+nop env =
+    Ok ( env, SortedSet.empty )
+
+
+findDepsExpression : Expr -> Env -> Result String ( Env, SortedSet String )
+findDepsExpression root env =
     let
         go : Expr -> Result String ( Type, SortedSet String )
         go expr =
@@ -683,13 +707,6 @@ findDepsExpression env =
                         |> Result.andThen
                             (\( argTypes, argDeps ) ->
                                 let
-                                    deps =
-                                        if Dict.member fname builtinFunctions then
-                                            List.foldl SortedSet.insertAll SortedSet.empty argDeps
-
-                                        else
-                                            List.foldl SortedSet.insertAll (SortedSet.singleton fname) argDeps
-
                                     fname =
                                         fullName f argTypes
                                 in
@@ -698,6 +715,14 @@ findDepsExpression env =
                                         Err <| "Function " ++ fname ++ " not found"
 
                                     Just to ->
+                                        let
+                                            deps =
+                                                if Dict.member fname builtinFunctions then
+                                                    List.foldl SortedSet.insertAll SortedSet.empty argDeps
+
+                                                else
+                                                    List.foldl SortedSet.insertAll (SortedSet.singleton fname) argDeps
+                                        in
                                         Ok ( to, deps )
                             )
 
@@ -750,7 +775,8 @@ findDepsExpression env =
                             (go r)
                         )
     in
-    go >> Result.map Tuple.second
+    go root
+        |> Result.map (\( _, deps ) -> ( env, deps ))
 
 
 binaryOperationToString : BinaryOperation -> String
@@ -1041,7 +1067,9 @@ builtinFunctions =
 
         mats : List ( String, List Type, Type )
         mats =
-            [ ( [ TVec3, TVec3, TVec3 ], 3, TMat3 ) ]
+            [ ( [ TVec3, TVec3, TVec3 ], 3, TMat3 )
+            , ( [ TFloat ], 3, TMat3 )
+            ]
                 |> List.map
                     (\( inTypes, size, type_ ) ->
                         ( "mat" ++ String.fromInt size

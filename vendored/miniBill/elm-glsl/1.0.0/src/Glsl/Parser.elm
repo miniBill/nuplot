@@ -2,7 +2,7 @@ module Glsl.Parser exposing (Context(..), DeadEnd, Parser, expression, file, fun
 
 import Glsl exposing (BinaryOperation(..), Declaration(..), Expr(..), RelationOperation(..), Stat(..), Type(..), UnaryOperation(..))
 import Parser exposing (Problem(..))
-import Parser.Advanced exposing ((|.), (|=), Step(..), Token(..), Trailing(..))
+import Parser.Advanced exposing ((|.), (|=), Step(..), Trailing(..))
 import ParserWithContext exposing (chompIf, chompWhile, end, float, getChompedString, inContext, int, keyword, loop, many, oneOf, sequence, spaces, succeed, symbol)
 
 
@@ -24,7 +24,7 @@ type alias Parser a =
 type alias DeadEnd =
     { row : Int
     , col : Int
-    , problem : Parser.Problem
+    , problem : Problem
     , contextStack : List { row : Int, col : Int, context : Context }
     }
 
