@@ -1,36 +1,45 @@
-module Glsl.Parser exposing (expression, file, function, preprocess, statement)
+module Glsl.Parser exposing (Context(..), DeadEnd, Parser, expression, file, function, preprocess, statement)
 
 import Glsl exposing (BinaryOperation(..), Declaration(..), Expr(..), RelationOperation(..), Stat(..), Type(..), UnaryOperation(..))
-import Parser exposing ((|.), (|=), Parser, Step(..), Trailing(..), chompIf, chompWhile, getChompedString, keyword, loop, oneOf, sequence, succeed, symbol)
-import Parser.Workaround
+import Parser exposing (Problem(..))
+import Parser.Advanced exposing ((|.), (|=), Step(..), Token(..), Trailing(..))
+import ParserWithContext exposing (chompIf, chompWhile, end, float, getChompedString, inContext, int, keyword, loop, many, oneOf, sequence, spaces, succeed, symbol)
 
 
-file : Parser ( Maybe { version : String }, List Declaration )
+type Context
+    = ParsingFile
+    | ParsingFunction
+    | ParsingStatement
+    | ParsingExpression
+
+
+type alias Parser a =
+    ParserWithContext.Parser Context a
+
+
+type alias DeadEnd =
+    Parser.Advanced.DeadEnd Context Parser.Problem
+
+
+file : Parser ( Maybe { version : Int }, List Declaration )
 file =
     succeed Tuple.pair
+        |. spaces
         |= oneOf
             [ succeed (\version -> Just { version = version })
-                |. symbol "#version "
-                |= (chompWhile Char.isDigit
-                        |> getChompedString
-                   )
+                |. symbol "#version"
+                |= int
             , succeed Nothing
             ]
-        |. spaces
-        |= sequence
-            { start = ""
-            , separator = ""
-            , item =
-                oneOf
-                    [ const
-                    , uniform
-                    , function
-                    ]
-            , end = ""
-            , trailing = Parser.Optional
-            , spaces = spaces
-            }
-        |. Parser.end
+        |= many
+            (oneOf
+                [ const
+                , uniform
+                , function
+                ]
+            )
+        |. end
+        |> inContext ParsingFile
 
 
 function : Parser Declaration
@@ -45,19 +54,16 @@ function =
                 }
         )
         |= typeParser
-        |. spaces
         |= identifierParser
-        |. spaces
         |= sequence
             { start = "("
             , end = ")"
-            , spaces = spaces
             , separator = ","
             , item = argParser
             , trailing = Forbidden
             }
-        |. spaces
         |= statement
+        |> inContext ParsingFunction
 
 
 const : Parser Declaration
@@ -71,13 +77,9 @@ const =
                 }
         )
         |. keyword "const"
-        |. spaces
         |= typeParser
-        |. spaces
         |= identifierParser
-        |. spaces
         |. symbol "="
-        |. spaces
         |= expression
         |. symbol ";"
 
@@ -92,11 +94,8 @@ uniform =
                 }
         )
         |. keyword "uniform"
-        |. spaces
         |= typeParser
-        |. spaces
         |= identifierParser
-        |. spaces
         |. symbol ";"
 
 
@@ -104,7 +103,6 @@ argParser : Parser ( Type, String )
 argParser =
     succeed Tuple.pair
         |= typeParser
-        |. spaces
         |= identifierParser
 
 
@@ -112,9 +110,10 @@ identifierParser : Parser String
 identifierParser =
     getChompedString
         (succeed ()
-            |. chompIf (\c -> Char.isAlpha c || c == '_')
+            |. chompIf (\c -> Char.isAlpha c || c == '_') (Expecting "Letter or underscore")
             |. chompWhile (\c -> Char.isAlphaNum c || c == '_')
         )
+        |. spaces
 
 
 typeParser : Parser Type
@@ -140,15 +139,16 @@ typeParser =
                 |> oneOf
     in
     succeed identity
-        |. oneOf [ keyword "const" |. spaces, succeed () ]
+        |. oneOf
+            [ keyword "const"
+            , succeed ()
+            ]
         |= oneOf
             [ succeed TOut
                 |. keyword "out"
-                |. spaces
                 |= baseParser
             , succeed TIn
                 |. keyword "in"
-                |. spaces
                 |= baseParser
             , baseParser
             ]
@@ -156,7 +156,7 @@ typeParser =
 
 statement : Parser Stat
 statement =
-    Parser.lazy <|
+    (ParserWithContext.lazy <|
         \_ ->
             oneOf
                 [ blockParser
@@ -167,6 +167,8 @@ statement =
                 , defParser
                 , expressionStatementParser
                 ]
+    )
+        |> inContext ParsingStatement
 
 
 breakContinueParser : Parser Stat
@@ -177,7 +179,6 @@ breakContinueParser =
         , succeed Continue
             |. keyword "continue"
         ]
-        |. spaces
         |. symbol ";"
 
 
@@ -185,7 +186,6 @@ expressionStatementParser : Parser Stat
 expressionStatementParser =
     succeed ExpressionStatement
         |= expression
-        |. spaces
         |. symbol ";"
 
 
@@ -193,19 +193,13 @@ ifParser : Parser Stat
 ifParser =
     succeed (\e s k -> k e s)
         |. keyword "if"
-        |. spaces
         |. symbol "("
-        |. spaces
         |= expression
-        |. spaces
         |. symbol ")"
-        |. spaces
         |= statement
-        |. spaces
         |= oneOf
             [ succeed (\b e s -> IfElse e s b)
                 |. keyword "else"
-                |. spaces
                 |= statement
             , succeed If
             ]
@@ -215,24 +209,16 @@ forParser : Parser Stat
 forParser =
     succeed For
         |. keyword "for"
-        |. spaces
         |. symbol "("
-        |. spaces
         |= oneOf
             [ succeed Just |= statement
             , succeed Nothing
             ]
-        |. spaces
         |. symbol ";"
-        |. spaces
         |= expression
-        |. spaces
         |. symbol ";"
-        |. spaces
         |= expression
-        |. spaces
         |. symbol ")"
-        |. spaces
         |= statement
 
 
@@ -240,9 +226,7 @@ returnParser : Parser Stat
 returnParser =
     succeed Return
         |. keyword "return"
-        |. spaces
         |= expression
-        |. spaces
         |. symbol ";"
 
 
@@ -252,11 +236,10 @@ blockParser =
         { start = "{"
         , item = statement
         , separator = ""
-        , spaces = spaces
         , end = "}"
-        , trailing = Parser.Optional
+        , trailing = Optional
         }
-        |> Parser.map Glsl.block
+        |> ParserWithContext.map Glsl.block
 
 
 defParser : Parser Stat
@@ -266,24 +249,20 @@ defParser =
             Decl type_ var val
         )
         |= typeParser
-        |. spaces
         |= identifierParser
-        |. spaces
         |= oneOf
             [ succeed Just
                 |. symbol "="
-                |. spaces
                 |= expression
-                |. spaces
             , succeed Nothing
             ]
-        |. spaces
         |. symbol ";"
 
 
 expression : Parser Expr
 expression =
     prec17Parser
+        |> inContext ParsingExpression
 
 
 prec17Parser : Parser Expr
@@ -298,52 +277,40 @@ prec16Parser : Parser Expr
 prec16Parser =
     succeed (\a f -> f a)
         |= prec15Parser
-        |. spaces
         |= oneOf
             [ succeed (\r l -> BinaryOperation l Assign r)
                 |. singleSymbol "="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed (\r l -> BinaryOperation l ComboAdd r)
                 |. symbol "+="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed (\r l -> BinaryOperation l ComboSubtract r)
                 |. symbol "-="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed (\r l -> BinaryOperation l ComboBy r)
                 |. symbol "*="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed (\r l -> BinaryOperation l ComboDiv r)
                 |. symbol "/="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed (\r l -> BinaryOperation l ComboMod r)
                 |. symbol "%="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed (\r l -> BinaryOperation l ComboLeftShift r)
                 |. symbol "<<="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed (\r l -> BinaryOperation l ComboRightShift r)
                 |. symbol ">>="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed (\r l -> BinaryOperation l ComboBitwiseAnd r)
                 |. symbol "&="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed (\r l -> BinaryOperation l ComboBitwiseOr r)
                 |. symbol "|="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed (\r l -> BinaryOperation l ComboBitwiseXor r)
                 |. symbol "^="
-                |. spaces
-                |= Parser.lazy (\_ -> prec16Parser)
+                |= ParserWithContext.lazy (\_ -> prec16Parser)
             , succeed identity
             ]
 
@@ -352,18 +319,14 @@ prec15Parser : Parser Expr
 prec15Parser =
     succeed (\k f -> f k)
         |= prec14Parser
-        |. spaces
         |= oneOf
             [ succeed (\t f c -> Ternary c t f)
                 -- c is passed in last in the lambda because it's passed
                 -- from above
                 |. symbol "?"
-                |. spaces
                 |= prec14Parser
-                |. spaces
                 |. symbol ":"
-                |. spaces
-                |= Parser.lazy (\_ -> prec15Parser)
+                |= ParserWithContext.lazy (\_ -> prec15Parser)
             , succeed identity
             ]
 
@@ -434,12 +397,12 @@ singleSymbol s =
 symbolNotFollowedBy : String -> List String -> Parser ()
 symbolNotFollowedBy s nots =
     succeed ()
-        |. Parser.backtrackable (symbol s)
+        |. ParserWithContext.backtrackable (symbol s)
         |. oneOf
             [ succeed ()
                 |. oneOf (List.map symbol nots)
-                |. Parser.problem ("Expecting " ++ s ++ " not follwed by any of " ++ String.join ", " nots)
-                |> Parser.backtrackable
+                |. ParserWithContext.problem ("Expecting " ++ s ++ " not follwed by any of " ++ String.join ", " nots)
+                |> ParserWithContext.backtrackable
             , succeed ()
             ]
 
@@ -507,13 +470,13 @@ prec3Parser =
     oneOf
         [ succeed (UnaryOperation PrefixIncrement)
             |. symbol "++"
-            |= Parser.lazy (\_ -> prec3Parser)
+            |= ParserWithContext.lazy (\_ -> prec3Parser)
         , succeed (UnaryOperation Plus)
             |. singleSymbol "+"
-            |= Parser.lazy (\_ -> prec3Parser)
+            |= ParserWithContext.lazy (\_ -> prec3Parser)
         , succeed (UnaryOperation PrefixDecrement)
             |. symbol "--"
-            |= Parser.lazy (\_ -> prec3Parser)
+            |= ParserWithContext.lazy (\_ -> prec3Parser)
         , succeed
             (\c ->
                 case c of
@@ -527,13 +490,13 @@ prec3Parser =
                         UnaryOperation Negate c
             )
             |. singleSymbol "-"
-            |= Parser.lazy (\_ -> prec3Parser)
+            |= ParserWithContext.lazy (\_ -> prec3Parser)
         , succeed (UnaryOperation Invert)
             |. symbol "~"
-            |= Parser.lazy (\_ -> prec3Parser)
+            |= ParserWithContext.lazy (\_ -> prec3Parser)
         , succeed (UnaryOperation Not)
             |. symbol "!"
-            |= Parser.lazy (\_ -> prec3Parser)
+            |= ParserWithContext.lazy (\_ -> prec3Parser)
         , prec2Parser
         ]
 
@@ -542,8 +505,7 @@ prec2Parser : Parser Expr
 prec2Parser =
     succeed (\a f -> f a)
         |= prec1Parser
-        |. spaces
-        |= Parser.lazy prec2Suffixes
+        |= ParserWithContext.lazy prec2Suffixes
 
 
 prec2Suffixes : () -> Parser (Expr -> Expr)
@@ -553,42 +515,39 @@ prec2Suffixes () =
             |= sequence
                 { start = "("
                 , separator = ","
-                , item = Parser.lazy <| \_ -> prec16Parser
+                , item = ParserWithContext.lazy <| \_ -> prec16Parser
                 , end = ")"
                 , trailing = Forbidden
-                , spaces = spaces
                 }
             |= oneOf
-                [ Parser.lazy <| \_ -> prec2Suffixes ()
+                [ ParserWithContext.lazy <| \_ -> prec2Suffixes ()
                 , succeed identity
                 ]
         , succeed (\arg k v -> k (BinaryOperation v ArraySubscript arg))
             |. symbol "["
-            |. spaces
-            |= Parser.lazy (\_ -> prec16Parser)
-            |. spaces
+            |= ParserWithContext.lazy (\_ -> prec16Parser)
             |. symbol "]"
             |= oneOf
-                [ Parser.lazy <| \_ -> prec2Suffixes ()
+                [ ParserWithContext.lazy <| \_ -> prec2Suffixes ()
                 , succeed identity
                 ]
         , succeed (\p k v -> k (Dot v p))
             |. symbol "."
             |= identifierParser
             |= oneOf
-                [ Parser.lazy <| \_ -> prec2Suffixes ()
+                [ ParserWithContext.lazy <| \_ -> prec2Suffixes ()
                 , succeed identity
                 ]
         , succeed (\k v -> k (UnaryOperation PostfixIncrement v))
             |. symbol "++"
             |= oneOf
-                [ Parser.lazy <| \_ -> prec2Suffixes ()
+                [ ParserWithContext.lazy <| \_ -> prec2Suffixes ()
                 , succeed identity
                 ]
         , succeed (\k v -> k (UnaryOperation PostfixDecrement v))
             |. symbol "--"
             |= oneOf
-                [ Parser.lazy <| \_ -> prec2Suffixes ()
+                [ ParserWithContext.lazy <| \_ -> prec2Suffixes ()
                 , succeed identity
                 ]
         , succeed identity
@@ -600,9 +559,7 @@ prec1Parser =
     oneOf
         [ succeed identity
             |. symbol "("
-            |. spaces
-            |= Parser.lazy (\_ -> expression)
-            |. spaces
+            |= ParserWithContext.lazy (\_ -> expression)
             |. symbol ")"
         , succeed (Bool True)
             |. keyword "true"
@@ -610,93 +567,9 @@ prec1Parser =
             |. keyword "false"
         , succeed Variable
             |= identifierParser
-        , succeed Float |= floatParser
-        , succeed Int |= intParser
+        , succeed Float |= float
+        , succeed Int |= int
         ]
-
-
-floatParser : Parser Float
-floatParser =
-    oneOf
-        [ succeed (\c e -> e c)
-            |= (oneOf
-                    [ succeed ()
-                        |. symbol "."
-                        |. intParser
-                    , succeed ()
-                        |. Parser.backtrackable intParser
-                        |. symbol "."
-                        |. Parser.commit ()
-                        |. oneOf
-                            [ intParser
-                            , succeed 0
-                            ]
-                    ]
-                    |> getChompedString
-                    |> Parser.andThen
-                        (\s ->
-                            let
-                                withZero : String
-                                withZero =
-                                    if String.endsWith "." s then
-                                        s ++ "0"
-
-                                    else
-                                        s
-                            in
-                            case String.toFloat withZero of
-                                Just f ->
-                                    succeed f
-
-                                Nothing ->
-                                    Parser.problem ("Cannot parse \"" ++ s ++ "\" as float")
-                        )
-               )
-            |= oneOf
-                [ succeed (\e c -> c * 10 ^ toFloat e)
-                    |. oneOf [ symbol "e", symbol "E" ]
-                    |= oneOf
-                        [ succeed identity
-                            |. symbol "+"
-                            |= intParser
-                        , succeed negate
-                            |. symbol "-"
-                            |= intParser
-                        , intParser
-                        ]
-                , succeed identity
-                ]
-        , succeed (\c e -> toFloat c * 10 ^ toFloat e)
-            |= Parser.backtrackable intParser
-            |. oneOf [ symbol "e", symbol "E" ]
-            |. Parser.commit ()
-            |= oneOf
-                [ succeed identity
-                    |. symbol "+"
-                    |= intParser
-                , succeed negate
-                    |. symbol "-"
-                    |= intParser
-                , intParser
-                ]
-        ]
-
-
-intParser : Parser Int
-intParser =
-    succeed ()
-        |. chompIf Char.isDigit
-        |. chompWhile Char.isDigit
-        |> getChompedString
-        |> Parser.andThen
-            (\s ->
-                case String.toInt s of
-                    Just i ->
-                        succeed i
-
-                    Nothing ->
-                        Parser.problem ("Cannot parse \"" ++ s ++ "\" as int")
-            )
 
 
 type alias SequenceData =
@@ -709,8 +582,7 @@ multiSequenceAssocLeft : SequenceData -> Parser Expr
 multiSequenceAssocLeft data =
     succeed identity
         |= data.item
-        |. spaces
-        |> Parser.andThen
+        |> ParserWithContext.andThen
             (\first ->
                 loop first (\expr -> multiSequenceHelpLeft data expr)
             )
@@ -729,9 +601,7 @@ multiSequenceHelpLeft { separators, item } acc =
                     (\( f, parser ) ->
                         succeed (\e -> Loop <| f acc e)
                             |. parser
-                            |. spaces
                             |= item
-                            |. spaces
                     )
                 |> oneOf
     in
@@ -796,28 +666,3 @@ expandMacros : List String -> List String
 expandMacros lines =
     -- TODO: macros
     lines
-
-
-spaces : Parser ()
-spaces =
-    let
-        inner : Parser ()
-        inner =
-            chompWhile (\c -> c == ' ' || c == '\n' || c == '\u{000D}' || c == '\t')
-
-        comment : Parser ()
-        comment =
-            Parser.oneOf
-                [ Parser.Workaround.lineCommentAfter "//"
-                , Parser.Workaround.multiCommentAfter "/*" "*/" Parser.NotNestable
-                ]
-    in
-    Parser.sequence
-        { start = ""
-        , end = ""
-        , trailing = Parser.Optional
-        , spaces = inner
-        , separator = ""
-        , item = comment
-        }
-        |> Parser.map (\_ -> ())

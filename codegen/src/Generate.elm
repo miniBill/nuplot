@@ -14,6 +14,7 @@ import Glsl.PrettyPrinter
 import List.Extra
 import Pages.Script as Script exposing (Script)
 import Parser
+import Parser.Advanced
 import Result.Extra
 import Set
 import SortedSet exposing (SortedSet)
@@ -79,7 +80,7 @@ task =
 
 generate : String -> Result String (List ( Maybe String, Elm.Declaration ))
 generate glsl =
-    case Parser.run Glsl.Parser.file glsl of
+    case Parser.Advanced.run Glsl.Parser.file glsl of
         Err e ->
             Err (parserErrorToString glsl e)
 
@@ -190,7 +191,7 @@ functionHasType baseName argTypes returnType env =
     { env | functionsEnv = Dict.insert (fullName baseName argTypes) returnType env.functionsEnv }
 
 
-parserErrorToString : String -> List Parser.DeadEnd -> String
+parserErrorToString : String -> List Glsl.Parser.DeadEnd -> String
 parserErrorToString input err =
     err
         |> List.Extra.gatherEqualsBy (\{ row, col } -> ( row, col ))
@@ -198,7 +199,7 @@ parserErrorToString input err =
         |> String.join "\n\n"
 
 
-errorToString : String -> ( Parser.DeadEnd, List Parser.DeadEnd ) -> String
+errorToString : String -> ( Glsl.Parser.DeadEnd, List Glsl.Parser.DeadEnd ) -> String
 errorToString source ( error, errors ) =
     let
         -- How many lines of context to show
