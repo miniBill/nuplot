@@ -11,6 +11,10 @@ type Context
     | ParsingFunction
     | ParsingStatement
     | ParsingExpression
+    | ParsingForInitialization
+    | ParsingForCondition
+    | ParsingForStep
+    | ParsingForBody
 
 
 type alias Parser a =
@@ -18,7 +22,11 @@ type alias Parser a =
 
 
 type alias DeadEnd =
-    Parser.Advanced.DeadEnd Context Parser.Problem
+    { row : Int
+    , col : Int
+    , problem : Parser.Problem
+    , contextStack : List { row : Int, col : Int, context : Context }
+    }
 
 
 file : Parser ( Maybe { version : Int }, List Declaration )
@@ -210,16 +218,18 @@ forParser =
     succeed For
         |. keyword "for"
         |. symbol "("
-        |= oneOf
-            [ succeed Just |= statement
-            , succeed Nothing
-            ]
+        |= (oneOf
+                [ succeed Just |= statement
+                , succeed Nothing
+                    |. symbol ";"
+                ]
+                |> inContext ParsingForInitialization
+           )
+        |= (expression |> inContext ParsingForCondition)
         |. symbol ";"
-        |= expression
-        |. symbol ";"
-        |= expression
+        |= (expression |> inContext ParsingForStep)
         |. symbol ")"
-        |= statement
+        |= (statement |> inContext ParsingForBody)
 
 
 returnParser : Parser Stat

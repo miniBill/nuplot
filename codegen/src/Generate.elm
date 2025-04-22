@@ -194,7 +194,7 @@ functionHasType baseName argTypes returnType env =
 parserErrorToString : String -> List Glsl.Parser.DeadEnd -> String
 parserErrorToString input err =
     err
-        |> List.Extra.gatherEqualsBy (\{ row, col } -> ( row, col ))
+        |> List.Extra.gatherEqualsBy (\{ row, col, contextStack } -> ( row, col, contextStack ))
         |> List.map (errorToString input)
         |> String.join "\n\n"
 
@@ -203,15 +203,15 @@ errorToString : String -> ( Glsl.Parser.DeadEnd, List Glsl.Parser.DeadEnd ) -> S
 errorToString source ( error, errors ) =
     let
         -- How many lines of context to show
-        context : Int
-        context =
+        contextSize : Int
+        contextSize =
             4
 
         lines : List String
         lines =
             String.split "\n" source
-                |> List.drop (error.row - context)
-                |> List.take (context * 2)
+                |> List.drop (error.row - contextSize)
+                |> List.take (contextSize * 2)
 
         errorString : String
         errorString =
@@ -228,17 +228,49 @@ errorToString source ( error, errors ) =
                 |> Set.toList
                 |> String.join ", "
                 |> Ansi.Color.fontColor Ansi.Color.yellow
+            , " while "
+            , error.contextStack
+                |> List.map (\frame -> contextToString frame.context)
+                |> String.join ", while "
             ]
                 |> String.concat
 
         before : Int
         before =
-            min error.row context
+            min error.row contextSize
     in
     List.take before lines
         ++ errorString
         :: List.drop before lines
         |> String.join "\n"
+
+
+contextToString : Glsl.Parser.Context -> String
+contextToString context =
+    case context of
+        Glsl.Parser.ParsingFile ->
+            "parsing a file"
+
+        Glsl.Parser.ParsingFunction ->
+            "parsing a function"
+
+        Glsl.Parser.ParsingStatement ->
+            "parsing a statement"
+
+        Glsl.Parser.ParsingExpression ->
+            "parsing an expression"
+
+        Glsl.Parser.ParsingForInitialization ->
+            "parsing a for's initialization"
+
+        Glsl.Parser.ParsingForCondition ->
+            "parsing a for's condition"
+
+        Glsl.Parser.ParsingForStep ->
+            "parsing a for's step"
+
+        Glsl.Parser.ParsingForBody ->
+            "parsing a for's body"
 
 
 problemToString : Parser.Problem -> String
