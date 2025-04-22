@@ -1,8 +1,727 @@
-module Glsl.Functions exposing (abs1, abs2, abs3, abs4, abs_, absd1, absd2, absd3, absd4, absf, absi1, absi2, absi3, absi4, abswd1, abswi1, acos_, acosh, asin_, asinh, atan2_, atan_, atanh, ceil, ceil1, ceil2, ceil3, ceil4, ceild1, ceild2, ceild3, ceild4, ceilf, ceilwd1, clamp111, clamp11f, clamp1f1, clamp1ff, clamp211, clamp21f, clamp222, clamp2f1, clamp2ff, clamp311, clamp31f, clamp333, clamp3f1, clamp3ff, clamp411, clamp41f, clamp444, clamp4f1, clamp4ff, clamp_, clampd1d1d1, clampd1d1wd1, clampd1wd1d1, clampd1wd1wd1, clampd2d1d1, clampd2d1wd1, clampd2d2d2, clampd2wd1d1, clampd2wd1wd1, clampd3d1d1, clampd3d1wd1, clampd3d3d3, clampd3wd1d1, clampd3wd1wd1, clampd4d1d1, clampd4d1wd1, clampd4d4d4, clampd4wd1d1, clampd4wd1wd1, clampf11, clampf1f, clampff1, clampfff, clampi1i1i1, clampi1i1wi1, clampi1wi1i1, clampi1wi1wi1, clampi2i1i1, clampi2i1wi1, clampi2i2i2, clampi2wi1i1, clampi2wi1wi1, clampi3i1i1, clampi3i1wi1, clampi3i3i3, clampi3wi1i1, clampi3wi1wi1, clampi4i1i1, clampi4i1wi1, clampi4i4i4, clampi4wi1i1, clampi4wi1wi1, clampu1u1u1, clampu1u1wu1, clampu1wu1u1, clampu1wu1wu1, clampu2u1u1, clampu2u1wu1, clampu2u2u2, clampu2wu1u1, clampu2wu1wu1, clampu3u1u1, clampu3u1wu1, clampu3u3u3, clampu3wu1u1, clampu3wu1wu1, clampu4u1u1, clampu4u1wu1, clampu4u4u4, clampu4wu1u1, clampu4wu1wu1, clampwd1d1d1, clampwd1d1wd1, clampwd1wd1d1, clampwd1wd1wd1, clampwi1i1i1, clampwi1i1wi1, clampwi1wi1i1, clampwi1wi1wi1, clampwu1u1u1, clampwu1u1wu1, clampwu1wu1u1, clampwu1wu1wu1, cos_, cosh, cross33, crossd3d3, dFdx, dFdxCoarse, dFdxFine, dFdy, dFdyCoarse, dFdyFine, degrees_, distance, distance11, distance1f, distance22, distance33, distance44, distanced1d1, distanced1wd1, distanced2d2, distanced3d3, distanced4d4, distancef1, distanceff, distancewd1d1, distancewd1wd1, dot, dot11, dot1f, dot22, dot33, dot44, dotd1d1, dotd1wd1, dotd2d2, dotd3d3, dotd4d4, dotf1, dotff, dotwd1d1, dotwd1wd1, exp, exp2, faceforward, faceforward111, faceforward11f, faceforward1f1, faceforward1ff, faceforward222, faceforward333, faceforward444, faceforwardd1d1d1, faceforwardd1d1wd1, faceforwardd1wd1d1, faceforwardd1wd1wd1, faceforwardd2d2d2, faceforwardd3d3d3, faceforwardd4d4d4, faceforwardf11, faceforwardf1f, faceforwardff1, faceforwardfff, faceforwardwd1d1d1, faceforwardwd1d1wd1, faceforwardwd1wd1d1, faceforwardwd1wd1wd1, floatBitsToInt1, floatBitsToInt2, floatBitsToInt3, floatBitsToInt4, floatBitsToIntf, floatBitsToUint1, floatBitsToUint2, floatBitsToUint3, floatBitsToUint4, floatBitsToUintf, floati1, floatwi1, floor1, floor2, floor3, floor4, floor_, floord1, floord2, floord3, floord4, floorf, floorwd1, fma, fma111, fma11f, fma1f1, fma1ff, fma222, fma333, fma444, fmad1d1d1, fmad1d1wd1, fmad1wd1d1, fmad1wd1wd1, fmad2d2d2, fmad3d3d3, fmad4d4d4, fmaf11, fmaf1f, fmaff1, fmafff, fmawd1d1d1, fmawd1d1wd1, fmawd1wd1d1, fmawd1wd1wd1, fract, fract1, fract2, fract3, fract4, fractd1, fractd2, fractd3, fractd4, fractf, fractwd1, frexp1oi1, frexp1owi1, frexp2oi2, frexp3oi3, frexp4oi4, frexpd1oi1, frexpd1owi1, frexpd2oi2, frexpd3oi3, frexpd4oi4, frexpfoi1, frexpfowi1, frexpwd1oi1, frexpwd1owi1, fwidth, fwidthCoarse, fwidthFine, int1, intBitsToFloati1, intBitsToFloati2, intBitsToFloati3, intBitsToFloati4, intBitsToFloatwi1, intf, inversesqrt, inversesqrt1, inversesqrt2, inversesqrt3, inversesqrt4, inversesqrtd1, inversesqrtd2, inversesqrtd3, inversesqrtd4, inversesqrtf, inversesqrtwd1, isinf1, isinf2, isinf3, isinf4, isinfd1, isinfd2, isinfd3, isinfd4, isinff, isinfwd1, isnan1, isnan2, isnan3, isnan4, isnand1, isnand2, isnand3, isnand4, isnanf, isnanwd1, ivec2i1i1, ivec2i1wi1, ivec2wi1i1, ivec2wi1wi1, ivec3i1i1i1, ivec3i1i1wi1, ivec3i1wi1i1, ivec3i1wi1wi1, ivec3wi1i1i1, ivec3wi1i1wi1, ivec3wi1wi1i1, ivec3wi1wi1wi1, ivec4i1i1i1i1, ivec4i1i1i1wi1, ivec4i1i1wi1i1, ivec4i1i1wi1wi1, ivec4i1wi1i1i1, ivec4i1wi1i1wi1, ivec4i1wi1wi1i1, ivec4i1wi1wi1wi1, ivec4wi1i1i1i1, ivec4wi1i1i1wi1, ivec4wi1i1wi1i1, ivec4wi1i1wi1wi1, ivec4wi1wi1i1i1, ivec4wi1wi1i1wi1, ivec4wi1wi1wi1i1, ivec4wi1wi1wi1wi1, ldexp1i1, ldexp1wi1, ldexp2i2, ldexp3i3, ldexp4i4, ldexpd1i1, ldexpd1wi1, ldexpd2i2, ldexpd3i3, ldexpd4i4, ldexpfi1, ldexpfwi1, ldexpwd1i1, ldexpwd1wi1, length, length1, length2, length3, length4, lengthd1, lengthd2, lengthd3, lengthd4, lengthf, lengthwd1, log, log2, mat21111, mat2111f, mat211f1, mat211ff, mat21f11, mat21f1f, mat21ff1, mat21fff, mat222, mat2f111, mat2f11f, mat2f1f1, mat2f1ff, mat2ff11, mat2ff1f, mat2fff1, mat2ffff, mat3111111111, mat311111111f, mat31111111f1, mat31111111ff, mat3111111f11, mat3111111f1f, mat3111111ff1, mat3111111fff, mat311111f111, mat311111f11f, mat311111f1f1, mat311111f1ff, mat311111ff11, mat311111ff1f, mat311111fff1, mat311111ffff, mat31111f1111, mat31111f111f, mat31111f11f1, mat31111f11ff, mat31111f1f11, mat31111f1f1f, mat31111f1ff1, mat31111f1fff, mat31111ff111, mat31111ff11f, mat31111ff1f1, mat31111ff1ff, mat31111fff11, mat31111fff1f, mat31111ffff1, mat31111fffff, mat3111f11111, mat3111f1111f, mat3111f111f1, mat3111f111ff, mat3111f11f11, mat3111f11f1f, mat3111f11ff1, mat3111f11fff, mat3111f1f111, mat3111f1f11f, mat3111f1f1f1, mat3111f1f1ff, mat3111f1ff11, mat3111f1ff1f, mat3111f1fff1, mat3111f1ffff, mat3111ff1111, mat3111ff111f, mat3111ff11f1, mat3111ff11ff, mat3111ff1f11, mat3111ff1f1f, mat3111ff1ff1, mat3111ff1fff, mat3111fff111, mat3111fff11f, mat3111fff1f1, mat3111fff1ff, mat3111ffff11, mat3111ffff1f, mat3111fffff1, mat3111ffffff, mat311f111111, mat311f11111f, mat311f1111f1, mat311f1111ff, mat311f111f11, mat311f111f1f, mat311f111ff1, mat311f111fff, mat311f11f111, mat311f11f11f, mat311f11f1f1, mat311f11f1ff, mat311f11ff11, mat311f11ff1f, mat311f11fff1, mat311f11ffff, mat311f1f1111, mat311f1f111f, mat311f1f11f1, mat311f1f11ff, mat311f1f1f11, mat311f1f1f1f, mat311f1f1ff1, mat311f1f1fff, mat311f1ff111, mat311f1ff11f, mat311f1ff1f1, mat311f1ff1ff, mat311f1fff11, mat311f1fff1f, mat311f1ffff1, mat311f1fffff, mat311ff11111, mat311ff1111f, mat311ff111f1, mat311ff111ff, mat311ff11f11, mat311ff11f1f, mat311ff11ff1, mat311ff11fff, mat311ff1f111, mat311ff1f11f, mat311ff1f1f1, mat311ff1f1ff, mat311ff1ff11, mat311ff1ff1f, mat311ff1fff1, mat311ff1ffff, mat311fff1111, mat311fff111f, mat311fff11f1, mat311fff11ff, mat311fff1f11, mat311fff1f1f, mat311fff1ff1, mat311fff1fff, mat311ffff111, mat311ffff11f, mat311ffff1f1, mat311ffff1ff, mat311fffff11, mat311fffff1f, mat311ffffff1, mat311fffffff, mat31f1111111, mat31f111111f, mat31f11111f1, mat31f11111ff, mat31f1111f11, mat31f1111f1f, mat31f1111ff1, mat31f1111fff, mat31f111f111, mat31f111f11f, mat31f111f1f1, mat31f111f1ff, mat31f111ff11, mat31f111ff1f, mat31f111fff1, mat31f111ffff, mat31f11f1111, mat31f11f111f, mat31f11f11f1, mat31f11f11ff, mat31f11f1f11, mat31f11f1f1f, mat31f11f1ff1, mat31f11f1fff, mat31f11ff111, mat31f11ff11f, mat31f11ff1f1, mat31f11ff1ff, mat31f11fff11, mat31f11fff1f, mat31f11ffff1, mat31f11fffff, mat31f1f11111, mat31f1f1111f, mat31f1f111f1, mat31f1f111ff, mat31f1f11f11, mat31f1f11f1f, mat31f1f11ff1, mat31f1f11fff, mat31f1f1f111, mat31f1f1f11f, mat31f1f1f1f1, mat31f1f1f1ff, mat31f1f1ff11, mat31f1f1ff1f, mat31f1f1fff1, mat31f1f1ffff, mat31f1ff1111, mat31f1ff111f, mat31f1ff11f1, mat31f1ff11ff, mat31f1ff1f11, mat31f1ff1f1f, mat31f1ff1ff1, mat31f1ff1fff, mat31f1fff111, mat31f1fff11f, mat31f1fff1f1, mat31f1fff1ff, mat31f1ffff11, mat31f1ffff1f, mat31f1fffff1, mat31f1ffffff, mat31ff111111, mat31ff11111f, mat31ff1111f1, mat31ff1111ff, mat31ff111f11, mat31ff111f1f, mat31ff111ff1, mat31ff111fff, mat31ff11f111, mat31ff11f11f, mat31ff11f1f1, mat31ff11f1ff, mat31ff11ff11, mat31ff11ff1f, mat31ff11fff1, mat31ff11ffff, mat31ff1f1111, mat31ff1f111f, mat31ff1f11f1, mat31ff1f11ff, mat31ff1f1f11, mat31ff1f1f1f, mat31ff1f1ff1, mat31ff1f1fff, mat31ff1ff111, mat31ff1ff11f, mat31ff1ff1f1, mat31ff1ff1ff, mat31ff1fff11, mat31ff1fff1f, mat31ff1ffff1, mat31ff1fffff, mat31fff11111, mat31fff1111f, mat31fff111f1, mat31fff111ff, mat31fff11f11, mat31fff11f1f, mat31fff11ff1, mat31fff11fff, mat31fff1f111, mat31fff1f11f, mat31fff1f1f1, mat31fff1f1ff, mat31fff1ff11, mat31fff1ff1f, mat31fff1fff1, mat31fff1ffff, mat31ffff1111, mat31ffff111f, mat31ffff11f1, mat31ffff11ff, mat31ffff1f11, mat31ffff1f1f, mat31ffff1ff1, mat31ffff1fff, mat31fffff111, mat31fffff11f, mat31fffff1f1, mat31fffff1ff, mat31ffffff11, mat31ffffff1f, mat31fffffff1, mat31ffffffff, mat3333, mat3f11111111, mat3f1111111f, mat3f111111f1, mat3f111111ff, mat3f11111f11, mat3f11111f1f, mat3f11111ff1, mat3f11111fff, mat3f1111f111, mat3f1111f11f, mat3f1111f1f1, mat3f1111f1ff, mat3f1111ff11, mat3f1111ff1f, mat3f1111fff1, mat3f1111ffff, mat3f111f1111, mat3f111f111f, mat3f111f11f1, mat3f111f11ff, mat3f111f1f11, mat3f111f1f1f, mat3f111f1ff1, mat3f111f1fff, mat3f111ff111, mat3f111ff11f, mat3f111ff1f1, mat3f111ff1ff, mat3f111fff11, mat3f111fff1f, mat3f111ffff1, mat3f111fffff, mat3f11f11111, mat3f11f1111f, mat3f11f111f1, mat3f11f111ff, mat3f11f11f11, mat3f11f11f1f, mat3f11f11ff1, mat3f11f11fff, mat3f11f1f111, mat3f11f1f11f, mat3f11f1f1f1, mat3f11f1f1ff, mat3f11f1ff11, mat3f11f1ff1f, mat3f11f1fff1, mat3f11f1ffff, mat3f11ff1111, mat3f11ff111f, mat3f11ff11f1, mat3f11ff11ff, mat3f11ff1f11, mat3f11ff1f1f, mat3f11ff1ff1, mat3f11ff1fff, mat3f11fff111, mat3f11fff11f, mat3f11fff1f1, mat3f11fff1ff, mat3f11ffff11, mat3f11ffff1f, mat3f11fffff1, mat3f11ffffff, mat3f1f111111, mat3f1f11111f, mat3f1f1111f1, mat3f1f1111ff, mat3f1f111f11, mat3f1f111f1f, mat3f1f111ff1, mat3f1f111fff, mat3f1f11f111, mat3f1f11f11f, mat3f1f11f1f1, mat3f1f11f1ff, mat3f1f11ff11, mat3f1f11ff1f, mat3f1f11fff1, mat3f1f11ffff, mat3f1f1f1111, mat3f1f1f111f, mat3f1f1f11f1, mat3f1f1f11ff, mat3f1f1f1f11, mat3f1f1f1f1f, mat3f1f1f1ff1, mat3f1f1f1fff, mat3f1f1ff111, mat3f1f1ff11f, mat3f1f1ff1f1, mat3f1f1ff1ff, mat3f1f1fff11, mat3f1f1fff1f, mat3f1f1ffff1, mat3f1f1fffff, mat3f1ff11111, mat3f1ff1111f, mat3f1ff111f1, mat3f1ff111ff, mat3f1ff11f11, mat3f1ff11f1f, mat3f1ff11ff1, mat3f1ff11fff, mat3f1ff1f111, mat3f1ff1f11f, mat3f1ff1f1f1, mat3f1ff1f1ff, mat3f1ff1ff11, mat3f1ff1ff1f, mat3f1ff1fff1, mat3f1ff1ffff, mat3f1fff1111, mat3f1fff111f, mat3f1fff11f1, mat3f1fff11ff, mat3f1fff1f11, mat3f1fff1f1f, mat3f1fff1ff1, mat3f1fff1fff, mat3f1ffff111, mat3f1ffff11f, mat3f1ffff1f1, mat3f1ffff1ff, mat3f1fffff11, mat3f1fffff1f, mat3f1ffffff1, mat3f1fffffff, mat3ff1111111, mat3ff111111f, mat3ff11111f1, mat3ff11111ff, mat3ff1111f11, mat3ff1111f1f, mat3ff1111ff1, mat3ff1111fff, mat3ff111f111, mat3ff111f11f, mat3ff111f1f1, mat3ff111f1ff, mat3ff111ff11, mat3ff111ff1f, mat3ff111fff1, mat3ff111ffff, mat3ff11f1111, mat3ff11f111f, mat3ff11f11f1, mat3ff11f11ff, mat3ff11f1f11, mat3ff11f1f1f, mat3ff11f1ff1, mat3ff11f1fff, mat3ff11ff111, mat3ff11ff11f, mat3ff11ff1f1, mat3ff11ff1ff, mat3ff11fff11, mat3ff11fff1f, mat3ff11ffff1, mat3ff11fffff, mat3ff1f11111, mat3ff1f1111f, mat3ff1f111f1, mat3ff1f111ff, mat3ff1f11f11, mat3ff1f11f1f, mat3ff1f11ff1, mat3ff1f11fff, mat3ff1f1f111, mat3ff1f1f11f, mat3ff1f1f1f1, mat3ff1f1f1ff, mat3ff1f1ff11, mat3ff1f1ff1f, mat3ff1f1fff1, mat3ff1f1ffff, mat3ff1ff1111, mat3ff1ff111f, mat3ff1ff11f1, mat3ff1ff11ff, mat3ff1ff1f11, mat3ff1ff1f1f, mat3ff1ff1ff1, mat3ff1ff1fff, mat3ff1fff111, mat3ff1fff11f, mat3ff1fff1f1, mat3ff1fff1ff, mat3ff1ffff11, mat3ff1ffff1f, mat3ff1fffff1, mat3ff1ffffff, mat3fff111111, mat3fff11111f, mat3fff1111f1, mat3fff1111ff, mat3fff111f11, mat3fff111f1f, mat3fff111ff1, mat3fff111fff, mat3fff11f111, mat3fff11f11f, mat3fff11f1f1, mat3fff11f1ff, mat3fff11ff11, mat3fff11ff1f, mat3fff11fff1, mat3fff11ffff, mat3fff1f1111, mat3fff1f111f, mat3fff1f11f1, mat3fff1f11ff, mat3fff1f1f11, mat3fff1f1f1f, mat3fff1f1ff1, mat3fff1f1fff, mat3fff1ff111, mat3fff1ff11f, mat3fff1ff1f1, mat3fff1ff1ff, mat3fff1fff11, mat3fff1fff1f, mat3fff1ffff1, mat3fff1fffff, mat3ffff11111, mat3ffff1111f, mat3ffff111f1, mat3ffff111ff, mat3ffff11f11, mat3ffff11f1f, mat3ffff11ff1, mat3ffff11fff, mat3ffff1f111, mat3ffff1f11f, mat3ffff1f1f1, mat3ffff1f1ff, mat3ffff1ff11, mat3ffff1ff1f, mat3ffff1fff1, mat3ffff1ffff, mat3fffff1111, mat3fffff111f, mat3fffff11f1, mat3fffff11ff, mat3fffff1f11, mat3fffff1f1f, mat3fffff1ff1, mat3fffff1fff, mat3ffffff111, mat3ffffff11f, mat3ffffff1f1, mat3ffffff1ff, mat3fffffff11, mat3fffffff1f, mat3ffffffff1, mat3fffffffff, mat44444, max11, max1f, max21, max22, max2f, max31, max33, max3f, max41, max44, max4f, max_, maxd1d1, maxd1wd1, maxd2d1, maxd2d2, maxd2wd1, maxd3d1, maxd3d3, maxd3wd1, maxd4d1, maxd4d4, maxd4wd1, maxf1, maxff, maxi1i1, maxi1wi1, maxi2i1, maxi2i2, maxi2wi1, maxi3i1, maxi3i3, maxi3wi1, maxi4i1, maxi4i4, maxi4wi1, maxu1u1, maxu1wu1, maxu2u1, maxu2u2, maxu2wu1, maxu3u1, maxu3u3, maxu3wu1, maxu4u1, maxu4u4, maxu4wu1, maxwd1d1, maxwd1wd1, maxwi1i1, maxwi1wi1, maxwu1u1, maxwu1wu1, min11, min1f, min21, min22, min2f, min31, min33, min3f, min41, min44, min4f, min_, mind1d1, mind1wd1, mind2d1, mind2d2, mind2wd1, mind3d1, mind3d3, mind3wd1, mind4d1, mind4d4, mind4wd1, minf1, minff, mini1i1, mini1wi1, mini2i1, mini2i2, mini2wi1, mini3i1, mini3i3, mini3wi1, mini4i1, mini4i4, mini4wi1, minu1u1, minu1wu1, minu2u1, minu2u2, minu2wu1, minu3u1, minu3u3, minu3wu1, minu4u1, minu4u4, minu4wu1, minwd1d1, minwd1wd1, minwi1i1, minwi1wi1, minwu1u1, minwu1wu1, mix, mix111, mix11f, mix1f1, mix1ff, mix221, mix222, mix22f, mix331, mix333, mix33f, mix441, mix444, mix44f, mixd1d1d1, mixd1d1wd1, mixd1wd1d1, mixd1wd1wd1, mixd2d2d1, mixd2d2d2, mixd2d2wd1, mixd3d3d1, mixd3d3d3, mixd3d3wd1, mixd4d4d1, mixd4d4d4, mixd4d4wd1, mixf11, mixf1f, mixff1, mixfff, mixwd1d1d1, mixwd1d1wd1, mixwd1wd1d1, mixwd1wd1wd1, mod, mod11, mod1f, mod21, mod22, mod2f, mod31, mod33, mod3f, mod41, mod44, mod4f, modd1d1, modd1wd1, modd2d1, modd2d2, modd2wd1, modd3d1, modd3d3, modd3wd1, modd4d1, modd4d4, modd4wd1, modf, modf1, modf1o1, modf1of, modf2o2, modf3o3, modf4o4, modfd1od1, modfd1owd1, modfd2od2, modfd3od3, modfd4od4, modff, modffo1, modffof, modfwd1od1, modfwd1owd1, modwd1d1, modwd1wd1, normalize, normalize1, normalize2, normalize3, normalize4, normalized1, normalized2, normalized3, normalized4, normalizef, normalizewd1, pow, radians_, reflect, reflect11, reflect1f, reflect22, reflect33, reflect44, reflectd1d1, reflectd1wd1, reflectd2d2, reflectd3d3, reflectd4d4, reflectf1, reflectff, reflectwd1d1, reflectwd1wd1, refract, refract111, refract11f, refract1f1, refract1ff, refract221, refract22f, refract331, refract33f, refract441, refract44f, refractd1d11, refractd1d1f, refractd1wd11, refractd1wd1f, refractd2d21, refractd2d2f, refractd3d31, refractd3d3f, refractd4d41, refractd4d4f, refractf11, refractf1f, refractff1, refractfff, refractwd1d11, refractwd1d1f, refractwd1wd11, refractwd1wd1f, round1, round2, round3, round4, roundEven, roundEven1, roundEven2, roundEven3, roundEven4, roundEvend1, roundEvend2, roundEvend3, roundEvend4, roundEvenf, roundEvenwd1, round_, roundd1, roundd2, roundd3, roundd4, roundf, roundwd1, sign, sign1, sign2, sign3, sign4, signd1, signd2, signd3, signd4, signf, signi1, signi2, signi3, signi4, signwd1, signwi1, sin_, sinh, smoothstep, smoothstep111, smoothstep112, smoothstep113, smoothstep114, smoothstep11f, smoothstep1f1, smoothstep1f2, smoothstep1f3, smoothstep1f4, smoothstep1ff, smoothstep222, smoothstep333, smoothstep444, smoothstepd1d1d1, smoothstepd1d1d2, smoothstepd1d1d3, smoothstepd1d1d4, smoothstepd1d1wd1, smoothstepd1wd1d1, smoothstepd1wd1d2, smoothstepd1wd1d3, smoothstepd1wd1d4, smoothstepd1wd1wd1, smoothstepd2d2d2, smoothstepd3d3d3, smoothstepd4d4d4, smoothstepf11, smoothstepf12, smoothstepf13, smoothstepf14, smoothstepf1f, smoothstepff1, smoothstepff2, smoothstepff3, smoothstepff4, smoothstepfff, smoothstepwd1d1d1, smoothstepwd1d1d2, smoothstepwd1d1d3, smoothstepwd1d1d4, smoothstepwd1d1wd1, smoothstepwd1wd1d1, smoothstepwd1wd1d2, smoothstepwd1wd1d3, smoothstepwd1wd1d4, smoothstepwd1wd1wd1, sqrt1, sqrt2, sqrt3, sqrt4, sqrt_, sqrtd1, sqrtd2, sqrtd3, sqrtd4, sqrtf, sqrtwd1, step, step11, step12, step13, step14, step1f, step22, step33, step44, stepd1d1, stepd1d2, stepd1d3, stepd1d4, stepd1wd1, stepd2d2, stepd3d3, stepd4d4, stepf1, stepf2, stepf3, stepf4, stepff, stepwd1d1, stepwd1d2, stepwd1d3, stepwd1d4, stepwd1wd1, tan_, tanh, trunc, trunc1, trunc2, trunc3, trunc4, truncd1, truncd2, truncd3, truncd4, truncf, truncwd1, uintBitsToFloatu1, uintBitsToFloatu2, uintBitsToFloatu3, uintBitsToFloatu4, uintBitsToFloatwu1, vec21, vec211, vec21f, vec21i1, vec21wi1, vec2f, vec2f1, vec2ff, vec2fi1, vec2fwi1, vec2i1, vec2i11, vec2i1f, vec2i1i1, vec2i1wi1, vec2wi1, vec2wi11, vec2wi1f, vec2wi1i1, vec2wi1wi1, vec31, vec3111, vec311f, vec311i1, vec311wi1, vec312, vec31f1, vec31ff, vec31fi1, vec31fwi1, vec31i11, vec31i1f, vec31i1i1, vec31i1wi1, vec31wi11, vec31wi1f, vec31wi1i1, vec31wi1wi1, vec321, vec32f, vec3f, vec3f11, vec3f1f, vec3f1i1, vec3f1wi1, vec3f2, vec3ff1, vec3fff, vec3ffi1, vec3ffwi1, vec3fi11, vec3fi1f, vec3fi1i1, vec3fi1wi1, vec3fwi11, vec3fwi1f, vec3fwi1i1, vec3fwi1wi1, vec3i1, vec3i111, vec3i11f, vec3i11i1, vec3i11wi1, vec3i1f1, vec3i1ff, vec3i1fi1, vec3i1fwi1, vec3i1i11, vec3i1i1f, vec3i1i1i1, vec3i1i1wi1, vec3i1wi11, vec3i1wi1f, vec3i1wi1i1, vec3i1wi1wi1, vec3wi1, vec3wi111, vec3wi11f, vec3wi11i1, vec3wi11wi1, vec3wi1f1, vec3wi1ff, vec3wi1fi1, vec3wi1fwi1, vec3wi1i11, vec3wi1i1f, vec3wi1i1i1, vec3wi1i1wi1, vec3wi1wi11, vec3wi1wi1f, vec3wi1wi1i1, vec3wi1wi1wi1, vec41, vec41111, vec4111f, vec4111i1, vec4111wi1, vec411f1, vec411ff, vec411fi1, vec411fwi1, vec411i11, vec411i1f, vec411i1i1, vec411i1wi1, vec411wi11, vec411wi1f, vec411wi1i1, vec411wi1wi1, vec413, vec41f11, vec41f1f, vec41f1i1, vec41f1wi1, vec41ff1, vec41fff, vec41ffi1, vec41ffwi1, vec41fi11, vec41fi1f, vec41fi1i1, vec41fi1wi1, vec41fwi11, vec41fwi1f, vec41fwi1i1, vec41fwi1wi1, vec41i111, vec41i11f, vec41i11i1, vec41i11wi1, vec41i1f1, vec41i1ff, vec41i1fi1, vec41i1fwi1, vec41i1i11, vec41i1i1f, vec41i1i1i1, vec41i1i1wi1, vec41i1wi11, vec41i1wi1f, vec41i1wi1i1, vec41i1wi1wi1, vec41wi111, vec41wi11f, vec41wi11i1, vec41wi11wi1, vec41wi1f1, vec41wi1ff, vec41wi1fi1, vec41wi1fwi1, vec41wi1i11, vec41wi1i1f, vec41wi1i1i1, vec41wi1i1wi1, vec41wi1wi11, vec41wi1wi1f, vec41wi1wi1i1, vec41wi1wi1wi1, vec422, vec431, vec43f, vec4f, vec4f111, vec4f11f, vec4f11i1, vec4f11wi1, vec4f1f1, vec4f1ff, vec4f1fi1, vec4f1fwi1, vec4f1i11, vec4f1i1f, vec4f1i1i1, vec4f1i1wi1, vec4f1wi11, vec4f1wi1f, vec4f1wi1i1, vec4f1wi1wi1, vec4f3, vec4ff11, vec4ff1f, vec4ff1i1, vec4ff1wi1, vec4fff1, vec4ffff, vec4fffi1, vec4fffwi1, vec4ffi11, vec4ffi1f, vec4ffi1i1, vec4ffi1wi1, vec4ffwi11, vec4ffwi1f, vec4ffwi1i1, vec4ffwi1wi1, vec4fi111, vec4fi11f, vec4fi11i1, vec4fi11wi1, vec4fi1f1, vec4fi1ff, vec4fi1fi1, vec4fi1fwi1, vec4fi1i11, vec4fi1i1f, vec4fi1i1i1, vec4fi1i1wi1, vec4fi1wi11, vec4fi1wi1f, vec4fi1wi1i1, vec4fi1wi1wi1, vec4fwi111, vec4fwi11f, vec4fwi11i1, vec4fwi11wi1, vec4fwi1f1, vec4fwi1ff, vec4fwi1fi1, vec4fwi1fwi1, vec4fwi1i11, vec4fwi1i1f, vec4fwi1i1i1, vec4fwi1i1wi1, vec4fwi1wi11, vec4fwi1wi1f, vec4fwi1wi1i1, vec4fwi1wi1wi1, vec4i1, vec4i1111, vec4i111f, vec4i111i1, vec4i111wi1, vec4i11f1, vec4i11ff, vec4i11fi1, vec4i11fwi1, vec4i11i11, vec4i11i1f, vec4i11i1i1, vec4i11i1wi1, vec4i11wi11, vec4i11wi1f, vec4i11wi1i1, vec4i11wi1wi1, vec4i1f11, vec4i1f1f, vec4i1f1i1, vec4i1f1wi1, vec4i1ff1, vec4i1fff, vec4i1ffi1, vec4i1ffwi1, vec4i1fi11, vec4i1fi1f, vec4i1fi1i1, vec4i1fi1wi1, vec4i1fwi11, vec4i1fwi1f, vec4i1fwi1i1, vec4i1fwi1wi1, vec4i1i111, vec4i1i11f, vec4i1i11i1, vec4i1i11wi1, vec4i1i1f1, vec4i1i1ff, vec4i1i1fi1, vec4i1i1fwi1, vec4i1i1i11, vec4i1i1i1f, vec4i1i1i1i1, vec4i1i1i1wi1, vec4i1i1wi11, vec4i1i1wi1f, vec4i1i1wi1i1, vec4i1i1wi1wi1, vec4i1wi111, vec4i1wi11f, vec4i1wi11i1, vec4i1wi11wi1, vec4i1wi1f1, vec4i1wi1ff, vec4i1wi1fi1, vec4i1wi1fwi1, vec4i1wi1i11, vec4i1wi1i1f, vec4i1wi1i1i1, vec4i1wi1i1wi1, vec4i1wi1wi11, vec4i1wi1wi1f, vec4i1wi1wi1i1, vec4i1wi1wi1wi1, vec4wi1, vec4wi1111, vec4wi111f, vec4wi111i1, vec4wi111wi1, vec4wi11f1, vec4wi11ff, vec4wi11fi1, vec4wi11fwi1, vec4wi11i11, vec4wi11i1f, vec4wi11i1i1, vec4wi11i1wi1, vec4wi11wi11, vec4wi11wi1f, vec4wi11wi1i1, vec4wi11wi1wi1, vec4wi1f11, vec4wi1f1f, vec4wi1f1i1, vec4wi1f1wi1, vec4wi1ff1, vec4wi1fff, vec4wi1ffi1, vec4wi1ffwi1, vec4wi1fi11, vec4wi1fi1f, vec4wi1fi1i1, vec4wi1fi1wi1, vec4wi1fwi11, vec4wi1fwi1f, vec4wi1fwi1i1, vec4wi1fwi1wi1, vec4wi1i111, vec4wi1i11f, vec4wi1i11i1, vec4wi1i11wi1, vec4wi1i1f1, vec4wi1i1ff, vec4wi1i1fi1, vec4wi1i1fwi1, vec4wi1i1i11, vec4wi1i1i1f, vec4wi1i1i1i1, vec4wi1i1i1wi1, vec4wi1i1wi11, vec4wi1i1wi1f, vec4wi1i1wi1i1, vec4wi1i1wi1wi1, vec4wi1wi111, vec4wi1wi11f, vec4wi1wi11i1, vec4wi1wi11wi1, vec4wi1wi1f1, vec4wi1wi1ff, vec4wi1wi1fi1, vec4wi1wi1fwi1, vec4wi1wi1i11, vec4wi1wi1i1f, vec4wi1wi1i1i1, vec4wi1wi1i1wi1, vec4wi1wi1wi11, vec4wi1wi1wi1f, vec4wi1wi1wi1i1, vec4wi1wi1wi1wi1)
+module Glsl.Functions exposing
+    ( abs1, abs2, abs3, abs4, absd1, absd2
+    , absd3, absd4, absf, absi1, absi2, absi3
+    , absi4, abswd1, abswi1
+    , ceil1, ceil2, ceil3, ceil4, ceild1, ceild2
+    , ceild3, ceild4, ceilf, ceilwd1, ceil
+    , clamp111, clamp11f, clamp1f1, clamp1ff, clamp211, clamp21f
+    , clamp222, clamp2f1, clamp2ff, clamp311, clamp31f, clamp333
+    , clamp3f1, clamp3ff, clamp411, clamp41f, clamp444, clamp4f1
+    , clamp4ff, clampd1d1d1, clampd1d1wd1, clampd1wd1d1, clampd1wd1wd1, clampd2d1d1
+    , clampd2d1wd1, clampd2d2d2, clampd2wd1d1, clampd2wd1wd1, clampd3d1d1, clampd3d1wd1
+    , clampd3d3d3, clampd3wd1d1, clampd3wd1wd1, clampd4d1d1, clampd4d1wd1, clampd4d4d4
+    , clampd4wd1d1, clampd4wd1wd1, clampf11, clampf1f, clampff1, clampfff
+    , clampi1i1i1, clampi1i1wi1, clampi1wi1i1, clampi1wi1wi1, clampi2i1i1, clampi2i1wi1
+    , clampi2i2i2, clampi2wi1i1, clampi2wi1wi1, clampi3i1i1, clampi3i1wi1, clampi3i3i3
+    , clampi3wi1i1, clampi3wi1wi1, clampi4i1i1, clampi4i1wi1, clampi4i4i4, clampi4wi1i1
+    , clampi4wi1wi1, clampu1u1u1, clampu1u1wu1, clampu1wu1u1, clampu1wu1wu1, clampu2u1u1
+    , clampu2u1wu1, clampu2u2u2, clampu2wu1u1, clampu2wu1wu1, clampu3u1u1, clampu3u1wu1
+    , clampu3u3u3, clampu3wu1u1, clampu3wu1wu1, clampu4u1u1, clampu4u1wu1, clampu4u4u4
+    , clampu4wu1u1, clampu4wu1wu1, clampwd1d1d1, clampwd1d1wd1, clampwd1wd1d1, clampwd1wd1wd1
+    , clampwi1i1i1, clampwi1i1wi1, clampwi1wi1i1, clampwi1wi1wi1, clampwu1u1u1, clampwu1u1wu1
+    , clampwu1wu1u1, clampwu1wu1wu1
+    , cross33, crossd3d3
+    , distance11, distance1f, distance22, distance33, distance44, distanced1d1
+    , distanced1wd1, distanced2d2, distanced3d3, distanced4d4, distancef1, distanceff
+    , distancewd1d1, distancewd1wd1, distance
+    , dot11, dot1f, dot22, dot33, dot44, dotd1d1
+    , dotd1wd1, dotd2d2, dotd3d3, dotd4d4, dotf1, dotff
+    , dotwd1d1, dotwd1wd1, dot
+    , faceforward111, faceforward11f, faceforward1f1, faceforward1ff, faceforward222, faceforward333
+    , faceforward444, faceforwardd1d1d1, faceforwardd1d1wd1, faceforwardd1wd1d1, faceforwardd1wd1wd1, faceforwardd2d2d2
+    , faceforwardd3d3d3, faceforwardd4d4d4, faceforwardf11, faceforwardf1f, faceforwardff1, faceforwardfff
+    , faceforwardwd1d1d1, faceforwardwd1d1wd1, faceforwardwd1wd1d1, faceforwardwd1wd1wd1, faceforward
+    , floatBitsToInt1, floatBitsToInt2, floatBitsToInt3, floatBitsToInt4, floatBitsToIntf
+    , floatBitsToUint1, floatBitsToUint2, floatBitsToUint3, floatBitsToUint4, floatBitsToUintf
+    , floati1, floatwi1
+    , floor1, floor2, floor3, floor4, floord1, floord2
+    , floord3, floord4, floorf, floorwd1
+    , fma111, fma11f, fma1f1, fma1ff, fma222, fma333
+    , fma444, fmad1d1d1, fmad1d1wd1, fmad1wd1d1, fmad1wd1wd1, fmad2d2d2
+    , fmad3d3d3, fmad4d4d4, fmaf11, fmaf1f, fmaff1, fmafff
+    , fmawd1d1d1, fmawd1d1wd1, fmawd1wd1d1, fmawd1wd1wd1, fma
+    , fract1, fract2, fract3, fract4, fractd1, fractd2
+    , fractd3, fractd4, fractf, fractwd1, fract
+    , frexp1oi1, frexp1owi1, frexp2oi2, frexp3oi3, frexp4oi4, frexpd1oi1
+    , frexpd1owi1, frexpd2oi2, frexpd3oi3, frexpd4oi4, frexpfoi1, frexpfowi1
+    , frexpwd1oi1, frexpwd1owi1
+    , int1, intf
+    , intBitsToFloati1, intBitsToFloati2, intBitsToFloati3, intBitsToFloati4, intBitsToFloatwi1
+    , inversesqrt1, inversesqrt2, inversesqrt3, inversesqrt4, inversesqrtd1, inversesqrtd2
+    , inversesqrtd3, inversesqrtd4, inversesqrtf, inversesqrtwd1, inversesqrt
+    , isinf1, isinf2, isinf3, isinf4, isinfd1, isinfd2
+    , isinfd3, isinfd4, isinff, isinfwd1
+    , isnan1, isnan2, isnan3, isnan4, isnand1, isnand2
+    , isnand3, isnand4, isnanf, isnanwd1
+    , ivec2i1i1, ivec2i1wi1, ivec2wi1i1, ivec2wi1wi1
+    , ivec3i1i1i1, ivec3i1i1wi1, ivec3i1wi1i1, ivec3i1wi1wi1, ivec3wi1i1i1, ivec3wi1i1wi1
+    , ivec3wi1wi1i1, ivec3wi1wi1wi1
+    , ivec4i1i1i1i1, ivec4i1i1i1wi1, ivec4i1i1wi1i1, ivec4i1i1wi1wi1, ivec4i1wi1i1i1, ivec4i1wi1i1wi1
+    , ivec4i1wi1wi1i1, ivec4i1wi1wi1wi1, ivec4wi1i1i1i1, ivec4wi1i1i1wi1, ivec4wi1i1wi1i1, ivec4wi1i1wi1wi1
+    , ivec4wi1wi1i1i1, ivec4wi1wi1i1wi1, ivec4wi1wi1wi1i1, ivec4wi1wi1wi1wi1
+    , ldexp1i1, ldexp1wi1, ldexp2i2, ldexp3i3, ldexp4i4, ldexpd1i1
+    , ldexpd1wi1, ldexpd2i2, ldexpd3i3, ldexpd4i4, ldexpfi1, ldexpfwi1
+    , ldexpwd1i1, ldexpwd1wi1
+    , length1, length2, length3, length4, lengthd1, lengthd2
+    , lengthd3, lengthd4, lengthf, lengthwd1, length
+    , mat21111, mat2111f, mat211f1, mat211ff, mat21f11, mat21f1f
+    , mat21ff1, mat21fff, mat222, mat2f111, mat2f11f, mat2f1f1
+    , mat2f1ff, mat2ff11, mat2ff1f, mat2fff1, mat2ffff
+    , mat3111111111, mat311111111f, mat31111111f1, mat31111111ff, mat3111111f11, mat3111111f1f
+    , mat3111111ff1, mat3111111fff, mat311111f111, mat311111f11f, mat311111f1f1, mat311111f1ff
+    , mat311111ff11, mat311111ff1f, mat311111fff1, mat311111ffff, mat31111f1111, mat31111f111f
+    , mat31111f11f1, mat31111f11ff, mat31111f1f11, mat31111f1f1f, mat31111f1ff1, mat31111f1fff
+    , mat31111ff111, mat31111ff11f, mat31111ff1f1, mat31111ff1ff, mat31111fff11, mat31111fff1f
+    , mat31111ffff1, mat31111fffff, mat3111f11111, mat3111f1111f, mat3111f111f1, mat3111f111ff
+    , mat3111f11f11, mat3111f11f1f, mat3111f11ff1, mat3111f11fff, mat3111f1f111, mat3111f1f11f
+    , mat3111f1f1f1, mat3111f1f1ff, mat3111f1ff11, mat3111f1ff1f, mat3111f1fff1, mat3111f1ffff
+    , mat3111ff1111, mat3111ff111f, mat3111ff11f1, mat3111ff11ff, mat3111ff1f11, mat3111ff1f1f
+    , mat3111ff1ff1, mat3111ff1fff, mat3111fff111, mat3111fff11f, mat3111fff1f1, mat3111fff1ff
+    , mat3111ffff11, mat3111ffff1f, mat3111fffff1, mat3111ffffff, mat311f111111, mat311f11111f
+    , mat311f1111f1, mat311f1111ff, mat311f111f11, mat311f111f1f, mat311f111ff1, mat311f111fff
+    , mat311f11f111, mat311f11f11f, mat311f11f1f1, mat311f11f1ff, mat311f11ff11, mat311f11ff1f
+    , mat311f11fff1, mat311f11ffff, mat311f1f1111, mat311f1f111f, mat311f1f11f1, mat311f1f11ff
+    , mat311f1f1f11, mat311f1f1f1f, mat311f1f1ff1, mat311f1f1fff, mat311f1ff111, mat311f1ff11f
+    , mat311f1ff1f1, mat311f1ff1ff, mat311f1fff11, mat311f1fff1f, mat311f1ffff1, mat311f1fffff
+    , mat311ff11111, mat311ff1111f, mat311ff111f1, mat311ff111ff, mat311ff11f11, mat311ff11f1f
+    , mat311ff11ff1, mat311ff11fff, mat311ff1f111, mat311ff1f11f, mat311ff1f1f1, mat311ff1f1ff
+    , mat311ff1ff11, mat311ff1ff1f, mat311ff1fff1, mat311ff1ffff, mat311fff1111, mat311fff111f
+    , mat311fff11f1, mat311fff11ff, mat311fff1f11, mat311fff1f1f, mat311fff1ff1, mat311fff1fff
+    , mat311ffff111, mat311ffff11f, mat311ffff1f1, mat311ffff1ff, mat311fffff11, mat311fffff1f
+    , mat311ffffff1, mat311fffffff, mat31f1111111, mat31f111111f, mat31f11111f1, mat31f11111ff
+    , mat31f1111f11, mat31f1111f1f, mat31f1111ff1, mat31f1111fff, mat31f111f111, mat31f111f11f
+    , mat31f111f1f1, mat31f111f1ff, mat31f111ff11, mat31f111ff1f, mat31f111fff1, mat31f111ffff
+    , mat31f11f1111, mat31f11f111f, mat31f11f11f1, mat31f11f11ff, mat31f11f1f11, mat31f11f1f1f
+    , mat31f11f1ff1, mat31f11f1fff, mat31f11ff111, mat31f11ff11f, mat31f11ff1f1, mat31f11ff1ff
+    , mat31f11fff11, mat31f11fff1f, mat31f11ffff1, mat31f11fffff, mat31f1f11111, mat31f1f1111f
+    , mat31f1f111f1, mat31f1f111ff, mat31f1f11f11, mat31f1f11f1f, mat31f1f11ff1, mat31f1f11fff
+    , mat31f1f1f111, mat31f1f1f11f, mat31f1f1f1f1, mat31f1f1f1ff, mat31f1f1ff11, mat31f1f1ff1f
+    , mat31f1f1fff1, mat31f1f1ffff, mat31f1ff1111, mat31f1ff111f, mat31f1ff11f1, mat31f1ff11ff
+    , mat31f1ff1f11, mat31f1ff1f1f, mat31f1ff1ff1, mat31f1ff1fff, mat31f1fff111, mat31f1fff11f
+    , mat31f1fff1f1, mat31f1fff1ff, mat31f1ffff11, mat31f1ffff1f, mat31f1fffff1, mat31f1ffffff
+    , mat31ff111111, mat31ff11111f, mat31ff1111f1, mat31ff1111ff, mat31ff111f11, mat31ff111f1f
+    , mat31ff111ff1, mat31ff111fff, mat31ff11f111, mat31ff11f11f, mat31ff11f1f1, mat31ff11f1ff
+    , mat31ff11ff11, mat31ff11ff1f, mat31ff11fff1, mat31ff11ffff, mat31ff1f1111, mat31ff1f111f
+    , mat31ff1f11f1, mat31ff1f11ff, mat31ff1f1f11, mat31ff1f1f1f, mat31ff1f1ff1, mat31ff1f1fff
+    , mat31ff1ff111, mat31ff1ff11f, mat31ff1ff1f1, mat31ff1ff1ff, mat31ff1fff11, mat31ff1fff1f
+    , mat31ff1ffff1, mat31ff1fffff, mat31fff11111, mat31fff1111f, mat31fff111f1, mat31fff111ff
+    , mat31fff11f11, mat31fff11f1f, mat31fff11ff1, mat31fff11fff, mat31fff1f111, mat31fff1f11f
+    , mat31fff1f1f1, mat31fff1f1ff, mat31fff1ff11, mat31fff1ff1f, mat31fff1fff1, mat31fff1ffff
+    , mat31ffff1111, mat31ffff111f, mat31ffff11f1, mat31ffff11ff, mat31ffff1f11, mat31ffff1f1f
+    , mat31ffff1ff1, mat31ffff1fff, mat31fffff111, mat31fffff11f, mat31fffff1f1, mat31fffff1ff
+    , mat31ffffff11, mat31ffffff1f, mat31fffffff1, mat31ffffffff, mat3333, mat3f11111111
+    , mat3f1111111f, mat3f111111f1, mat3f111111ff, mat3f11111f11, mat3f11111f1f, mat3f11111ff1
+    , mat3f11111fff, mat3f1111f111, mat3f1111f11f, mat3f1111f1f1, mat3f1111f1ff, mat3f1111ff11
+    , mat3f1111ff1f, mat3f1111fff1, mat3f1111ffff, mat3f111f1111, mat3f111f111f, mat3f111f11f1
+    , mat3f111f11ff, mat3f111f1f11, mat3f111f1f1f, mat3f111f1ff1, mat3f111f1fff, mat3f111ff111
+    , mat3f111ff11f, mat3f111ff1f1, mat3f111ff1ff, mat3f111fff11, mat3f111fff1f, mat3f111ffff1
+    , mat3f111fffff, mat3f11f11111, mat3f11f1111f, mat3f11f111f1, mat3f11f111ff, mat3f11f11f11
+    , mat3f11f11f1f, mat3f11f11ff1, mat3f11f11fff, mat3f11f1f111, mat3f11f1f11f, mat3f11f1f1f1
+    , mat3f11f1f1ff, mat3f11f1ff11, mat3f11f1ff1f, mat3f11f1fff1, mat3f11f1ffff, mat3f11ff1111
+    , mat3f11ff111f, mat3f11ff11f1, mat3f11ff11ff, mat3f11ff1f11, mat3f11ff1f1f, mat3f11ff1ff1
+    , mat3f11ff1fff, mat3f11fff111, mat3f11fff11f, mat3f11fff1f1, mat3f11fff1ff, mat3f11ffff11
+    , mat3f11ffff1f, mat3f11fffff1, mat3f11ffffff, mat3f1f111111, mat3f1f11111f, mat3f1f1111f1
+    , mat3f1f1111ff, mat3f1f111f11, mat3f1f111f1f, mat3f1f111ff1, mat3f1f111fff, mat3f1f11f111
+    , mat3f1f11f11f, mat3f1f11f1f1, mat3f1f11f1ff, mat3f1f11ff11, mat3f1f11ff1f, mat3f1f11fff1
+    , mat3f1f11ffff, mat3f1f1f1111, mat3f1f1f111f, mat3f1f1f11f1, mat3f1f1f11ff, mat3f1f1f1f11
+    , mat3f1f1f1f1f, mat3f1f1f1ff1, mat3f1f1f1fff, mat3f1f1ff111, mat3f1f1ff11f, mat3f1f1ff1f1
+    , mat3f1f1ff1ff, mat3f1f1fff11, mat3f1f1fff1f, mat3f1f1ffff1, mat3f1f1fffff, mat3f1ff11111
+    , mat3f1ff1111f, mat3f1ff111f1, mat3f1ff111ff, mat3f1ff11f11, mat3f1ff11f1f, mat3f1ff11ff1
+    , mat3f1ff11fff, mat3f1ff1f111, mat3f1ff1f11f, mat3f1ff1f1f1, mat3f1ff1f1ff, mat3f1ff1ff11
+    , mat3f1ff1ff1f, mat3f1ff1fff1, mat3f1ff1ffff, mat3f1fff1111, mat3f1fff111f, mat3f1fff11f1
+    , mat3f1fff11ff, mat3f1fff1f11, mat3f1fff1f1f, mat3f1fff1ff1, mat3f1fff1fff, mat3f1ffff111
+    , mat3f1ffff11f, mat3f1ffff1f1, mat3f1ffff1ff, mat3f1fffff11, mat3f1fffff1f, mat3f1ffffff1
+    , mat3f1fffffff, mat3ff1111111, mat3ff111111f, mat3ff11111f1, mat3ff11111ff, mat3ff1111f11
+    , mat3ff1111f1f, mat3ff1111ff1, mat3ff1111fff, mat3ff111f111, mat3ff111f11f, mat3ff111f1f1
+    , mat3ff111f1ff, mat3ff111ff11, mat3ff111ff1f, mat3ff111fff1, mat3ff111ffff, mat3ff11f1111
+    , mat3ff11f111f, mat3ff11f11f1, mat3ff11f11ff, mat3ff11f1f11, mat3ff11f1f1f, mat3ff11f1ff1
+    , mat3ff11f1fff, mat3ff11ff111, mat3ff11ff11f, mat3ff11ff1f1, mat3ff11ff1ff, mat3ff11fff11
+    , mat3ff11fff1f, mat3ff11ffff1, mat3ff11fffff, mat3ff1f11111, mat3ff1f1111f, mat3ff1f111f1
+    , mat3ff1f111ff, mat3ff1f11f11, mat3ff1f11f1f, mat3ff1f11ff1, mat3ff1f11fff, mat3ff1f1f111
+    , mat3ff1f1f11f, mat3ff1f1f1f1, mat3ff1f1f1ff, mat3ff1f1ff11, mat3ff1f1ff1f, mat3ff1f1fff1
+    , mat3ff1f1ffff, mat3ff1ff1111, mat3ff1ff111f, mat3ff1ff11f1, mat3ff1ff11ff, mat3ff1ff1f11
+    , mat3ff1ff1f1f, mat3ff1ff1ff1, mat3ff1ff1fff, mat3ff1fff111, mat3ff1fff11f, mat3ff1fff1f1
+    , mat3ff1fff1ff, mat3ff1ffff11, mat3ff1ffff1f, mat3ff1fffff1, mat3ff1ffffff, mat3fff111111
+    , mat3fff11111f, mat3fff1111f1, mat3fff1111ff, mat3fff111f11, mat3fff111f1f, mat3fff111ff1
+    , mat3fff111fff, mat3fff11f111, mat3fff11f11f, mat3fff11f1f1, mat3fff11f1ff, mat3fff11ff11
+    , mat3fff11ff1f, mat3fff11fff1, mat3fff11ffff, mat3fff1f1111, mat3fff1f111f, mat3fff1f11f1
+    , mat3fff1f11ff, mat3fff1f1f11, mat3fff1f1f1f, mat3fff1f1ff1, mat3fff1f1fff, mat3fff1ff111
+    , mat3fff1ff11f, mat3fff1ff1f1, mat3fff1ff1ff, mat3fff1fff11, mat3fff1fff1f, mat3fff1ffff1
+    , mat3fff1fffff, mat3ffff11111, mat3ffff1111f, mat3ffff111f1, mat3ffff111ff, mat3ffff11f11
+    , mat3ffff11f1f, mat3ffff11ff1, mat3ffff11fff, mat3ffff1f111, mat3ffff1f11f, mat3ffff1f1f1
+    , mat3ffff1f1ff, mat3ffff1ff11, mat3ffff1ff1f, mat3ffff1fff1, mat3ffff1ffff, mat3fffff1111
+    , mat3fffff111f, mat3fffff11f1, mat3fffff11ff, mat3fffff1f11, mat3fffff1f1f, mat3fffff1ff1
+    , mat3fffff1fff, mat3ffffff111, mat3ffffff11f, mat3ffffff1f1, mat3ffffff1ff, mat3fffffff11
+    , mat3fffffff1f, mat3ffffffff1, mat3fffffffff
+    , mat44444
+    , max11, max1f, max21, max22, max2f, max31
+    , max33, max3f, max41, max44, max4f, maxd1d1
+    , maxd1wd1, maxd2d1, maxd2d2, maxd2wd1, maxd3d1, maxd3d3
+    , maxd3wd1, maxd4d1, maxd4d4, maxd4wd1, maxf1, maxff
+    , maxi1i1, maxi1wi1, maxi2i1, maxi2i2, maxi2wi1, maxi3i1
+    , maxi3i3, maxi3wi1, maxi4i1, maxi4i4, maxi4wi1, maxu1u1
+    , maxu1wu1, maxu2u1, maxu2u2, maxu2wu1, maxu3u1, maxu3u3
+    , maxu3wu1, maxu4u1, maxu4u4, maxu4wu1, maxwd1d1, maxwd1wd1
+    , maxwi1i1, maxwi1wi1, maxwu1u1, maxwu1wu1
+    , min11, min1f, min21, min22, min2f, min31
+    , min33, min3f, min41, min44, min4f, mind1d1
+    , mind1wd1, mind2d1, mind2d2, mind2wd1, mind3d1, mind3d3
+    , mind3wd1, mind4d1, mind4d4, mind4wd1, minf1, minff
+    , mini1i1, mini1wi1, mini2i1, mini2i2, mini2wi1, mini3i1
+    , mini3i3, mini3wi1, mini4i1, mini4i4, mini4wi1, minu1u1
+    , minu1wu1, minu2u1, minu2u2, minu2wu1, minu3u1, minu3u3
+    , minu3wu1, minu4u1, minu4u4, minu4wu1, minwd1d1, minwd1wd1
+    , minwi1i1, minwi1wi1, minwu1u1, minwu1wu1
+    , mix111, mix11f, mix1f1, mix1ff, mix221, mix222
+    , mix22f, mix331, mix333, mix33f, mix441, mix444
+    , mix44f, mixd1d1d1, mixd1d1wd1, mixd1wd1d1, mixd1wd1wd1, mixd2d2d1
+    , mixd2d2d2, mixd2d2wd1, mixd3d3d1, mixd3d3d3, mixd3d3wd1, mixd4d4d1
+    , mixd4d4d4, mixd4d4wd1, mixf11, mixf1f, mixff1, mixfff
+    , mixwd1d1d1, mixwd1d1wd1, mixwd1wd1d1, mixwd1wd1wd1, mix
+    , mod11, mod1f, mod21, mod22, mod2f, mod31
+    , mod33, mod3f, mod41, mod44, mod4f, modd1d1
+    , modd1wd1, modd2d1, modd2d2, modd2wd1, modd3d1, modd3d3
+    , modd3wd1, modd4d1, modd4d4, modd4wd1, modf1, modff
+    , modwd1d1, modwd1wd1, mod
+    , modf1o1, modf1of, modf2o2, modf3o3, modf4o4, modfd1od1
+    , modfd1owd1, modfd2od2, modfd3od3, modfd4od4, modffo1, modffof
+    , modfwd1od1, modfwd1owd1, modf
+    , normalize1, normalize2, normalize3, normalize4, normalized1, normalized2
+    , normalized3, normalized4, normalizef, normalizewd1, normalize
+    , reflect11, reflect1f, reflect22, reflect33, reflect44, reflectd1d1
+    , reflectd1wd1, reflectd2d2, reflectd3d3, reflectd4d4, reflectf1, reflectff
+    , reflectwd1d1, reflectwd1wd1, reflect
+    , refract111, refract11f, refract1f1, refract1ff, refract221, refract22f
+    , refract331, refract33f, refract441, refract44f, refractd1d11, refractd1d1f
+    , refractd1wd11, refractd1wd1f, refractd2d21, refractd2d2f, refractd3d31, refractd3d3f
+    , refractd4d41, refractd4d4f, refractf11, refractf1f, refractff1, refractfff
+    , refractwd1d11, refractwd1d1f, refractwd1wd11, refractwd1wd1f, refract
+    , round1, round2, round3, round4, roundd1, roundd2
+    , roundd3, roundd4, roundf, roundwd1
+    , roundEven1, roundEven2, roundEven3, roundEven4, roundEvend1, roundEvend2
+    , roundEvend3, roundEvend4, roundEvenf, roundEvenwd1, roundEven
+    , sign1, sign2, sign3, sign4, signd1, signd2
+    , signd3, signd4, signf, signi1, signi2, signi3
+    , signi4, signwd1, signwi1, sign
+    , smoothstep111, smoothstep112, smoothstep113, smoothstep114, smoothstep11f, smoothstep1f1
+    , smoothstep1f2, smoothstep1f3, smoothstep1f4, smoothstep1ff, smoothstep222, smoothstep333
+    , smoothstep444, smoothstepd1d1d1, smoothstepd1d1d2, smoothstepd1d1d3, smoothstepd1d1d4, smoothstepd1d1wd1
+    , smoothstepd1wd1d1, smoothstepd1wd1d2, smoothstepd1wd1d3, smoothstepd1wd1d4, smoothstepd1wd1wd1, smoothstepd2d2d2
+    , smoothstepd3d3d3, smoothstepd4d4d4, smoothstepf11, smoothstepf12, smoothstepf13, smoothstepf14
+    , smoothstepf1f, smoothstepff1, smoothstepff2, smoothstepff3, smoothstepff4, smoothstepfff
+    , smoothstepwd1d1d1, smoothstepwd1d1d2, smoothstepwd1d1d3, smoothstepwd1d1d4, smoothstepwd1d1wd1, smoothstepwd1wd1d1
+    , smoothstepwd1wd1d2, smoothstepwd1wd1d3, smoothstepwd1wd1d4, smoothstepwd1wd1wd1, smoothstep
+    , sqrt1, sqrt2, sqrt3, sqrt4, sqrtd1, sqrtd2
+    , sqrtd3, sqrtd4, sqrtf, sqrtwd1
+    , step11, step12, step13, step14, step1f, step22
+    , step33, step44, stepd1d1, stepd1d2, stepd1d3, stepd1d4
+    , stepd1wd1, stepd2d2, stepd3d3, stepd4d4, stepf1, stepf2
+    , stepf3, stepf4, stepff, stepwd1d1, stepwd1d2, stepwd1d3
+    , stepwd1d4, stepwd1wd1, step
+    , trunc1, trunc2, trunc3, trunc4, truncd1, truncd2
+    , truncd3, truncd4, truncf, truncwd1, trunc
+    , uintBitsToFloatu1, uintBitsToFloatu2, uintBitsToFloatu3, uintBitsToFloatu4, uintBitsToFloatwu1
+    , vec21, vec211, vec21f, vec21i1, vec21wi1, vec2f
+    , vec2f1, vec2ff, vec2fi1, vec2fwi1, vec2i1, vec2i11
+    , vec2i1f, vec2i1i1, vec2i1wi1, vec2wi1, vec2wi11, vec2wi1f
+    , vec2wi1i1, vec2wi1wi1
+    , vec31, vec3111, vec311f, vec311i1, vec311wi1, vec312
+    , vec31f1, vec31ff, vec31fi1, vec31fwi1, vec31i11, vec31i1f
+    , vec31i1i1, vec31i1wi1, vec31wi11, vec31wi1f, vec31wi1i1, vec31wi1wi1
+    , vec321, vec32f, vec3f, vec3f11, vec3f1f, vec3f1i1
+    , vec3f1wi1, vec3f2, vec3ff1, vec3fff, vec3ffi1, vec3ffwi1
+    , vec3fi11, vec3fi1f, vec3fi1i1, vec3fi1wi1, vec3fwi11, vec3fwi1f
+    , vec3fwi1i1, vec3fwi1wi1, vec3i1, vec3i111, vec3i11f, vec3i11i1
+    , vec3i11wi1, vec3i1f1, vec3i1ff, vec3i1fi1, vec3i1fwi1, vec3i1i11
+    , vec3i1i1f, vec3i1i1i1, vec3i1i1wi1, vec3i1wi11, vec3i1wi1f, vec3i1wi1i1
+    , vec3i1wi1wi1, vec3wi1, vec3wi111, vec3wi11f, vec3wi11i1, vec3wi11wi1
+    , vec3wi1f1, vec3wi1ff, vec3wi1fi1, vec3wi1fwi1, vec3wi1i11, vec3wi1i1f
+    , vec3wi1i1i1, vec3wi1i1wi1, vec3wi1wi11, vec3wi1wi1f, vec3wi1wi1i1, vec3wi1wi1wi1
+    , vec41, vec41111, vec4111f, vec4111i1, vec4111wi1, vec411f1
+    , vec411ff, vec411fi1, vec411fwi1, vec411i11, vec411i1f, vec411i1i1
+    , vec411i1wi1, vec411wi11, vec411wi1f, vec411wi1i1, vec411wi1wi1, vec413
+    , vec41f11, vec41f1f, vec41f1i1, vec41f1wi1, vec41ff1, vec41fff
+    , vec41ffi1, vec41ffwi1, vec41fi11, vec41fi1f, vec41fi1i1, vec41fi1wi1
+    , vec41fwi11, vec41fwi1f, vec41fwi1i1, vec41fwi1wi1, vec41i111, vec41i11f
+    , vec41i11i1, vec41i11wi1, vec41i1f1, vec41i1ff, vec41i1fi1, vec41i1fwi1
+    , vec41i1i11, vec41i1i1f, vec41i1i1i1, vec41i1i1wi1, vec41i1wi11, vec41i1wi1f
+    , vec41i1wi1i1, vec41i1wi1wi1, vec41wi111, vec41wi11f, vec41wi11i1, vec41wi11wi1
+    , vec41wi1f1, vec41wi1ff, vec41wi1fi1, vec41wi1fwi1, vec41wi1i11, vec41wi1i1f
+    , vec41wi1i1i1, vec41wi1i1wi1, vec41wi1wi11, vec41wi1wi1f, vec41wi1wi1i1, vec41wi1wi1wi1
+    , vec422, vec431, vec43f, vec4f, vec4f111, vec4f11f
+    , vec4f11i1, vec4f11wi1, vec4f1f1, vec4f1ff, vec4f1fi1, vec4f1fwi1
+    , vec4f1i11, vec4f1i1f, vec4f1i1i1, vec4f1i1wi1, vec4f1wi11, vec4f1wi1f
+    , vec4f1wi1i1, vec4f1wi1wi1, vec4f3, vec4ff11, vec4ff1f, vec4ff1i1
+    , vec4ff1wi1, vec4fff1, vec4ffff, vec4fffi1, vec4fffwi1, vec4ffi11
+    , vec4ffi1f, vec4ffi1i1, vec4ffi1wi1, vec4ffwi11, vec4ffwi1f, vec4ffwi1i1
+    , vec4ffwi1wi1, vec4fi111, vec4fi11f, vec4fi11i1, vec4fi11wi1, vec4fi1f1
+    , vec4fi1ff, vec4fi1fi1, vec4fi1fwi1, vec4fi1i11, vec4fi1i1f, vec4fi1i1i1
+    , vec4fi1i1wi1, vec4fi1wi11, vec4fi1wi1f, vec4fi1wi1i1, vec4fi1wi1wi1, vec4fwi111
+    , vec4fwi11f, vec4fwi11i1, vec4fwi11wi1, vec4fwi1f1, vec4fwi1ff, vec4fwi1fi1
+    , vec4fwi1fwi1, vec4fwi1i11, vec4fwi1i1f, vec4fwi1i1i1, vec4fwi1i1wi1, vec4fwi1wi11
+    , vec4fwi1wi1f, vec4fwi1wi1i1, vec4fwi1wi1wi1, vec4i1, vec4i1111, vec4i111f
+    , vec4i111i1, vec4i111wi1, vec4i11f1, vec4i11ff, vec4i11fi1, vec4i11fwi1
+    , vec4i11i11, vec4i11i1f, vec4i11i1i1, vec4i11i1wi1, vec4i11wi11, vec4i11wi1f
+    , vec4i11wi1i1, vec4i11wi1wi1, vec4i1f11, vec4i1f1f, vec4i1f1i1, vec4i1f1wi1
+    , vec4i1ff1, vec4i1fff, vec4i1ffi1, vec4i1ffwi1, vec4i1fi11, vec4i1fi1f
+    , vec4i1fi1i1, vec4i1fi1wi1, vec4i1fwi11, vec4i1fwi1f, vec4i1fwi1i1, vec4i1fwi1wi1
+    , vec4i1i111, vec4i1i11f, vec4i1i11i1, vec4i1i11wi1, vec4i1i1f1, vec4i1i1ff
+    , vec4i1i1fi1, vec4i1i1fwi1, vec4i1i1i11, vec4i1i1i1f, vec4i1i1i1i1, vec4i1i1i1wi1
+    , vec4i1i1wi11, vec4i1i1wi1f, vec4i1i1wi1i1, vec4i1i1wi1wi1, vec4i1wi111, vec4i1wi11f
+    , vec4i1wi11i1, vec4i1wi11wi1, vec4i1wi1f1, vec4i1wi1ff, vec4i1wi1fi1, vec4i1wi1fwi1
+    , vec4i1wi1i11, vec4i1wi1i1f, vec4i1wi1i1i1, vec4i1wi1i1wi1, vec4i1wi1wi11, vec4i1wi1wi1f
+    , vec4i1wi1wi1i1, vec4i1wi1wi1wi1, vec4wi1, vec4wi1111, vec4wi111f, vec4wi111i1
+    , vec4wi111wi1, vec4wi11f1, vec4wi11ff, vec4wi11fi1, vec4wi11fwi1, vec4wi11i11
+    , vec4wi11i1f, vec4wi11i1i1, vec4wi11i1wi1, vec4wi11wi11, vec4wi11wi1f, vec4wi11wi1i1
+    , vec4wi11wi1wi1, vec4wi1f11, vec4wi1f1f, vec4wi1f1i1, vec4wi1f1wi1, vec4wi1ff1
+    , vec4wi1fff, vec4wi1ffi1, vec4wi1ffwi1, vec4wi1fi11, vec4wi1fi1f, vec4wi1fi1i1
+    , vec4wi1fi1wi1, vec4wi1fwi11, vec4wi1fwi1f, vec4wi1fwi1i1, vec4wi1fwi1wi1, vec4wi1i111
+    , vec4wi1i11f, vec4wi1i11i1, vec4wi1i11wi1, vec4wi1i1f1, vec4wi1i1ff, vec4wi1i1fi1
+    , vec4wi1i1fwi1, vec4wi1i1i11, vec4wi1i1i1f, vec4wi1i1i1i1, vec4wi1i1i1wi1, vec4wi1i1wi11
+    , vec4wi1i1wi1f, vec4wi1i1wi1i1, vec4wi1i1wi1wi1, vec4wi1wi111, vec4wi1wi11f, vec4wi1wi11i1
+    , vec4wi1wi11wi1, vec4wi1wi1f1, vec4wi1wi1ff, vec4wi1wi1fi1, vec4wi1wi1fwi1, vec4wi1wi1i11
+    , vec4wi1wi1i1f, vec4wi1wi1i1i1, vec4wi1wi1i1wi1, vec4wi1wi1wi11, vec4wi1wi1wi1f, vec4wi1wi1wi1i1
+    , vec4wi1wi1wi1wi1
+    , radians_
+    , degrees_
+    , sin_
+    , cos_
+    , tan_
+    , asin_
+    , acos_
+    , atan_
+    , atan2_
+    , sinh
+    , cosh
+    , tanh
+    , asinh
+    , acosh
+    , atanh
+    , pow
+    , exp
+    , log
+    , exp2
+    , log2
+    , sqrt_
+    , abs_
+    , floor_
+    , round_
+    , min_
+    , max_
+    , clamp_
+    , dFdx
+    , dFdy
+    , dFdxFine
+    , dFdyFine
+    , dFdxCoarse
+    , dFdyCoarse
+    , fwidth
+    , fwidthFine
+    , fwidthCoarse
+    )
 
 {-|
 
-@docs abs1, abs2, abs3, abs4, abs_, absd1, absd2, absd3, absd4, absf, absi1, absi2, absi3, absi4, abswd1, abswi1, acos_, acosh, asin_, asinh, atan2_, atan_, atanh, ceil, ceil1, ceil2, ceil3, ceil4, ceild1, ceild2, ceild3, ceild4, ceilf, ceilwd1, clamp111, clamp11f, clamp1f1, clamp1ff, clamp211, clamp21f, clamp222, clamp2f1, clamp2ff, clamp311, clamp31f, clamp333, clamp3f1, clamp3ff, clamp411, clamp41f, clamp444, clamp4f1, clamp4ff, clamp_, clampd1d1d1, clampd1d1wd1, clampd1wd1d1, clampd1wd1wd1, clampd2d1d1, clampd2d1wd1, clampd2d2d2, clampd2wd1d1, clampd2wd1wd1, clampd3d1d1, clampd3d1wd1, clampd3d3d3, clampd3wd1d1, clampd3wd1wd1, clampd4d1d1, clampd4d1wd1, clampd4d4d4, clampd4wd1d1, clampd4wd1wd1, clampf11, clampf1f, clampff1, clampfff, clampi1i1i1, clampi1i1wi1, clampi1wi1i1, clampi1wi1wi1, clampi2i1i1, clampi2i1wi1, clampi2i2i2, clampi2wi1i1, clampi2wi1wi1, clampi3i1i1, clampi3i1wi1, clampi3i3i3, clampi3wi1i1, clampi3wi1wi1, clampi4i1i1, clampi4i1wi1, clampi4i4i4, clampi4wi1i1, clampi4wi1wi1, clampu1u1u1, clampu1u1wu1, clampu1wu1u1, clampu1wu1wu1, clampu2u1u1, clampu2u1wu1, clampu2u2u2, clampu2wu1u1, clampu2wu1wu1, clampu3u1u1, clampu3u1wu1, clampu3u3u3, clampu3wu1u1, clampu3wu1wu1, clampu4u1u1, clampu4u1wu1, clampu4u4u4, clampu4wu1u1, clampu4wu1wu1, clampwd1d1d1, clampwd1d1wd1, clampwd1wd1d1, clampwd1wd1wd1, clampwi1i1i1, clampwi1i1wi1, clampwi1wi1i1, clampwi1wi1wi1, clampwu1u1u1, clampwu1u1wu1, clampwu1wu1u1, clampwu1wu1wu1, cos_, cosh, cross33, crossd3d3, dFdx, dFdxCoarse, dFdxFine, dFdy, dFdyCoarse, dFdyFine, degrees_, distance, distance11, distance1f, distance22, distance33, distance44, distanced1d1, distanced1wd1, distanced2d2, distanced3d3, distanced4d4, distancef1, distanceff, distancewd1d1, distancewd1wd1, dot, dot11, dot1f, dot22, dot33, dot44, dotd1d1, dotd1wd1, dotd2d2, dotd3d3, dotd4d4, dotf1, dotff, dotwd1d1, dotwd1wd1, exp, exp2, faceforward, faceforward111, faceforward11f, faceforward1f1, faceforward1ff, faceforward222, faceforward333, faceforward444, faceforwardd1d1d1, faceforwardd1d1wd1, faceforwardd1wd1d1, faceforwardd1wd1wd1, faceforwardd2d2d2, faceforwardd3d3d3, faceforwardd4d4d4, faceforwardf11, faceforwardf1f, faceforwardff1, faceforwardfff, faceforwardwd1d1d1, faceforwardwd1d1wd1, faceforwardwd1wd1d1, faceforwardwd1wd1wd1, floatBitsToInt1, floatBitsToInt2, floatBitsToInt3, floatBitsToInt4, floatBitsToIntf, floatBitsToUint1, floatBitsToUint2, floatBitsToUint3, floatBitsToUint4, floatBitsToUintf, floati1, floatwi1, floor1, floor2, floor3, floor4, floor_, floord1, floord2, floord3, floord4, floorf, floorwd1, fma, fma111, fma11f, fma1f1, fma1ff, fma222, fma333, fma444, fmad1d1d1, fmad1d1wd1, fmad1wd1d1, fmad1wd1wd1, fmad2d2d2, fmad3d3d3, fmad4d4d4, fmaf11, fmaf1f, fmaff1, fmafff, fmawd1d1d1, fmawd1d1wd1, fmawd1wd1d1, fmawd1wd1wd1, fract, fract1, fract2, fract3, fract4, fractd1, fractd2, fractd3, fractd4, fractf, fractwd1, frexp1oi1, frexp1owi1, frexp2oi2, frexp3oi3, frexp4oi4, frexpd1oi1, frexpd1owi1, frexpd2oi2, frexpd3oi3, frexpd4oi4, frexpfoi1, frexpfowi1, frexpwd1oi1, frexpwd1owi1, fwidth, fwidthCoarse, fwidthFine, int1, intBitsToFloati1, intBitsToFloati2, intBitsToFloati3, intBitsToFloati4, intBitsToFloatwi1, intf, inversesqrt, inversesqrt1, inversesqrt2, inversesqrt3, inversesqrt4, inversesqrtd1, inversesqrtd2, inversesqrtd3, inversesqrtd4, inversesqrtf, inversesqrtwd1, isinf1, isinf2, isinf3, isinf4, isinfd1, isinfd2, isinfd3, isinfd4, isinff, isinfwd1, isnan1, isnan2, isnan3, isnan4, isnand1, isnand2, isnand3, isnand4, isnanf, isnanwd1, ivec2i1i1, ivec2i1wi1, ivec2wi1i1, ivec2wi1wi1, ivec3i1i1i1, ivec3i1i1wi1, ivec3i1wi1i1, ivec3i1wi1wi1, ivec3wi1i1i1, ivec3wi1i1wi1, ivec3wi1wi1i1, ivec3wi1wi1wi1, ivec4i1i1i1i1, ivec4i1i1i1wi1, ivec4i1i1wi1i1, ivec4i1i1wi1wi1, ivec4i1wi1i1i1, ivec4i1wi1i1wi1, ivec4i1wi1wi1i1, ivec4i1wi1wi1wi1, ivec4wi1i1i1i1, ivec4wi1i1i1wi1, ivec4wi1i1wi1i1, ivec4wi1i1wi1wi1, ivec4wi1wi1i1i1, ivec4wi1wi1i1wi1, ivec4wi1wi1wi1i1, ivec4wi1wi1wi1wi1, ldexp1i1, ldexp1wi1, ldexp2i2, ldexp3i3, ldexp4i4, ldexpd1i1, ldexpd1wi1, ldexpd2i2, ldexpd3i3, ldexpd4i4, ldexpfi1, ldexpfwi1, ldexpwd1i1, ldexpwd1wi1, length, length1, length2, length3, length4, lengthd1, lengthd2, lengthd3, lengthd4, lengthf, lengthwd1, log, log2, mat21111, mat2111f, mat211f1, mat211ff, mat21f11, mat21f1f, mat21ff1, mat21fff, mat222, mat2f111, mat2f11f, mat2f1f1, mat2f1ff, mat2ff11, mat2ff1f, mat2fff1, mat2ffff, mat3111111111, mat311111111f, mat31111111f1, mat31111111ff, mat3111111f11, mat3111111f1f, mat3111111ff1, mat3111111fff, mat311111f111, mat311111f11f, mat311111f1f1, mat311111f1ff, mat311111ff11, mat311111ff1f, mat311111fff1, mat311111ffff, mat31111f1111, mat31111f111f, mat31111f11f1, mat31111f11ff, mat31111f1f11, mat31111f1f1f, mat31111f1ff1, mat31111f1fff, mat31111ff111, mat31111ff11f, mat31111ff1f1, mat31111ff1ff, mat31111fff11, mat31111fff1f, mat31111ffff1, mat31111fffff, mat3111f11111, mat3111f1111f, mat3111f111f1, mat3111f111ff, mat3111f11f11, mat3111f11f1f, mat3111f11ff1, mat3111f11fff, mat3111f1f111, mat3111f1f11f, mat3111f1f1f1, mat3111f1f1ff, mat3111f1ff11, mat3111f1ff1f, mat3111f1fff1, mat3111f1ffff, mat3111ff1111, mat3111ff111f, mat3111ff11f1, mat3111ff11ff, mat3111ff1f11, mat3111ff1f1f, mat3111ff1ff1, mat3111ff1fff, mat3111fff111, mat3111fff11f, mat3111fff1f1, mat3111fff1ff, mat3111ffff11, mat3111ffff1f, mat3111fffff1, mat3111ffffff, mat311f111111, mat311f11111f, mat311f1111f1, mat311f1111ff, mat311f111f11, mat311f111f1f, mat311f111ff1, mat311f111fff, mat311f11f111, mat311f11f11f, mat311f11f1f1, mat311f11f1ff, mat311f11ff11, mat311f11ff1f, mat311f11fff1, mat311f11ffff, mat311f1f1111, mat311f1f111f, mat311f1f11f1, mat311f1f11ff, mat311f1f1f11, mat311f1f1f1f, mat311f1f1ff1, mat311f1f1fff, mat311f1ff111, mat311f1ff11f, mat311f1ff1f1, mat311f1ff1ff, mat311f1fff11, mat311f1fff1f, mat311f1ffff1, mat311f1fffff, mat311ff11111, mat311ff1111f, mat311ff111f1, mat311ff111ff, mat311ff11f11, mat311ff11f1f, mat311ff11ff1, mat311ff11fff, mat311ff1f111, mat311ff1f11f, mat311ff1f1f1, mat311ff1f1ff, mat311ff1ff11, mat311ff1ff1f, mat311ff1fff1, mat311ff1ffff, mat311fff1111, mat311fff111f, mat311fff11f1, mat311fff11ff, mat311fff1f11, mat311fff1f1f, mat311fff1ff1, mat311fff1fff, mat311ffff111, mat311ffff11f, mat311ffff1f1, mat311ffff1ff, mat311fffff11, mat311fffff1f, mat311ffffff1, mat311fffffff, mat31f1111111, mat31f111111f, mat31f11111f1, mat31f11111ff, mat31f1111f11, mat31f1111f1f, mat31f1111ff1, mat31f1111fff, mat31f111f111, mat31f111f11f, mat31f111f1f1, mat31f111f1ff, mat31f111ff11, mat31f111ff1f, mat31f111fff1, mat31f111ffff, mat31f11f1111, mat31f11f111f, mat31f11f11f1, mat31f11f11ff, mat31f11f1f11, mat31f11f1f1f, mat31f11f1ff1, mat31f11f1fff, mat31f11ff111, mat31f11ff11f, mat31f11ff1f1, mat31f11ff1ff, mat31f11fff11, mat31f11fff1f, mat31f11ffff1, mat31f11fffff, mat31f1f11111, mat31f1f1111f, mat31f1f111f1, mat31f1f111ff, mat31f1f11f11, mat31f1f11f1f, mat31f1f11ff1, mat31f1f11fff, mat31f1f1f111, mat31f1f1f11f, mat31f1f1f1f1, mat31f1f1f1ff, mat31f1f1ff11, mat31f1f1ff1f, mat31f1f1fff1, mat31f1f1ffff, mat31f1ff1111, mat31f1ff111f, mat31f1ff11f1, mat31f1ff11ff, mat31f1ff1f11, mat31f1ff1f1f, mat31f1ff1ff1, mat31f1ff1fff, mat31f1fff111, mat31f1fff11f, mat31f1fff1f1, mat31f1fff1ff, mat31f1ffff11, mat31f1ffff1f, mat31f1fffff1, mat31f1ffffff, mat31ff111111, mat31ff11111f, mat31ff1111f1, mat31ff1111ff, mat31ff111f11, mat31ff111f1f, mat31ff111ff1, mat31ff111fff, mat31ff11f111, mat31ff11f11f, mat31ff11f1f1, mat31ff11f1ff, mat31ff11ff11, mat31ff11ff1f, mat31ff11fff1, mat31ff11ffff, mat31ff1f1111, mat31ff1f111f, mat31ff1f11f1, mat31ff1f11ff, mat31ff1f1f11, mat31ff1f1f1f, mat31ff1f1ff1, mat31ff1f1fff, mat31ff1ff111, mat31ff1ff11f, mat31ff1ff1f1, mat31ff1ff1ff, mat31ff1fff11, mat31ff1fff1f, mat31ff1ffff1, mat31ff1fffff, mat31fff11111, mat31fff1111f, mat31fff111f1, mat31fff111ff, mat31fff11f11, mat31fff11f1f, mat31fff11ff1, mat31fff11fff, mat31fff1f111, mat31fff1f11f, mat31fff1f1f1, mat31fff1f1ff, mat31fff1ff11, mat31fff1ff1f, mat31fff1fff1, mat31fff1ffff, mat31ffff1111, mat31ffff111f, mat31ffff11f1, mat31ffff11ff, mat31ffff1f11, mat31ffff1f1f, mat31ffff1ff1, mat31ffff1fff, mat31fffff111, mat31fffff11f, mat31fffff1f1, mat31fffff1ff, mat31ffffff11, mat31ffffff1f, mat31fffffff1, mat31ffffffff, mat3333, mat3f11111111, mat3f1111111f, mat3f111111f1, mat3f111111ff, mat3f11111f11, mat3f11111f1f, mat3f11111ff1, mat3f11111fff, mat3f1111f111, mat3f1111f11f, mat3f1111f1f1, mat3f1111f1ff, mat3f1111ff11, mat3f1111ff1f, mat3f1111fff1, mat3f1111ffff, mat3f111f1111, mat3f111f111f, mat3f111f11f1, mat3f111f11ff, mat3f111f1f11, mat3f111f1f1f, mat3f111f1ff1, mat3f111f1fff, mat3f111ff111, mat3f111ff11f, mat3f111ff1f1, mat3f111ff1ff, mat3f111fff11, mat3f111fff1f, mat3f111ffff1, mat3f111fffff, mat3f11f11111, mat3f11f1111f, mat3f11f111f1, mat3f11f111ff, mat3f11f11f11, mat3f11f11f1f, mat3f11f11ff1, mat3f11f11fff, mat3f11f1f111, mat3f11f1f11f, mat3f11f1f1f1, mat3f11f1f1ff, mat3f11f1ff11, mat3f11f1ff1f, mat3f11f1fff1, mat3f11f1ffff, mat3f11ff1111, mat3f11ff111f, mat3f11ff11f1, mat3f11ff11ff, mat3f11ff1f11, mat3f11ff1f1f, mat3f11ff1ff1, mat3f11ff1fff, mat3f11fff111, mat3f11fff11f, mat3f11fff1f1, mat3f11fff1ff, mat3f11ffff11, mat3f11ffff1f, mat3f11fffff1, mat3f11ffffff, mat3f1f111111, mat3f1f11111f, mat3f1f1111f1, mat3f1f1111ff, mat3f1f111f11, mat3f1f111f1f, mat3f1f111ff1, mat3f1f111fff, mat3f1f11f111, mat3f1f11f11f, mat3f1f11f1f1, mat3f1f11f1ff, mat3f1f11ff11, mat3f1f11ff1f, mat3f1f11fff1, mat3f1f11ffff, mat3f1f1f1111, mat3f1f1f111f, mat3f1f1f11f1, mat3f1f1f11ff, mat3f1f1f1f11, mat3f1f1f1f1f, mat3f1f1f1ff1, mat3f1f1f1fff, mat3f1f1ff111, mat3f1f1ff11f, mat3f1f1ff1f1, mat3f1f1ff1ff, mat3f1f1fff11, mat3f1f1fff1f, mat3f1f1ffff1, mat3f1f1fffff, mat3f1ff11111, mat3f1ff1111f, mat3f1ff111f1, mat3f1ff111ff, mat3f1ff11f11, mat3f1ff11f1f, mat3f1ff11ff1, mat3f1ff11fff, mat3f1ff1f111, mat3f1ff1f11f, mat3f1ff1f1f1, mat3f1ff1f1ff, mat3f1ff1ff11, mat3f1ff1ff1f, mat3f1ff1fff1, mat3f1ff1ffff, mat3f1fff1111, mat3f1fff111f, mat3f1fff11f1, mat3f1fff11ff, mat3f1fff1f11, mat3f1fff1f1f, mat3f1fff1ff1, mat3f1fff1fff, mat3f1ffff111, mat3f1ffff11f, mat3f1ffff1f1, mat3f1ffff1ff, mat3f1fffff11, mat3f1fffff1f, mat3f1ffffff1, mat3f1fffffff, mat3ff1111111, mat3ff111111f, mat3ff11111f1, mat3ff11111ff, mat3ff1111f11, mat3ff1111f1f, mat3ff1111ff1, mat3ff1111fff, mat3ff111f111, mat3ff111f11f, mat3ff111f1f1, mat3ff111f1ff, mat3ff111ff11, mat3ff111ff1f, mat3ff111fff1, mat3ff111ffff, mat3ff11f1111, mat3ff11f111f, mat3ff11f11f1, mat3ff11f11ff, mat3ff11f1f11, mat3ff11f1f1f, mat3ff11f1ff1, mat3ff11f1fff, mat3ff11ff111, mat3ff11ff11f, mat3ff11ff1f1, mat3ff11ff1ff, mat3ff11fff11, mat3ff11fff1f, mat3ff11ffff1, mat3ff11fffff, mat3ff1f11111, mat3ff1f1111f, mat3ff1f111f1, mat3ff1f111ff, mat3ff1f11f11, mat3ff1f11f1f, mat3ff1f11ff1, mat3ff1f11fff, mat3ff1f1f111, mat3ff1f1f11f, mat3ff1f1f1f1, mat3ff1f1f1ff, mat3ff1f1ff11, mat3ff1f1ff1f, mat3ff1f1fff1, mat3ff1f1ffff, mat3ff1ff1111, mat3ff1ff111f, mat3ff1ff11f1, mat3ff1ff11ff, mat3ff1ff1f11, mat3ff1ff1f1f, mat3ff1ff1ff1, mat3ff1ff1fff, mat3ff1fff111, mat3ff1fff11f, mat3ff1fff1f1, mat3ff1fff1ff, mat3ff1ffff11, mat3ff1ffff1f, mat3ff1fffff1, mat3ff1ffffff, mat3fff111111, mat3fff11111f, mat3fff1111f1, mat3fff1111ff, mat3fff111f11, mat3fff111f1f, mat3fff111ff1, mat3fff111fff, mat3fff11f111, mat3fff11f11f, mat3fff11f1f1, mat3fff11f1ff, mat3fff11ff11, mat3fff11ff1f, mat3fff11fff1, mat3fff11ffff, mat3fff1f1111, mat3fff1f111f, mat3fff1f11f1, mat3fff1f11ff, mat3fff1f1f11, mat3fff1f1f1f, mat3fff1f1ff1, mat3fff1f1fff, mat3fff1ff111, mat3fff1ff11f, mat3fff1ff1f1, mat3fff1ff1ff, mat3fff1fff11, mat3fff1fff1f, mat3fff1ffff1, mat3fff1fffff, mat3ffff11111, mat3ffff1111f, mat3ffff111f1, mat3ffff111ff, mat3ffff11f11, mat3ffff11f1f, mat3ffff11ff1, mat3ffff11fff, mat3ffff1f111, mat3ffff1f11f, mat3ffff1f1f1, mat3ffff1f1ff, mat3ffff1ff11, mat3ffff1ff1f, mat3ffff1fff1, mat3ffff1ffff, mat3fffff1111, mat3fffff111f, mat3fffff11f1, mat3fffff11ff, mat3fffff1f11, mat3fffff1f1f, mat3fffff1ff1, mat3fffff1fff, mat3ffffff111, mat3ffffff11f, mat3ffffff1f1, mat3ffffff1ff, mat3fffffff11, mat3fffffff1f, mat3ffffffff1, mat3fffffffff, mat44444, max11, max1f, max21, max22, max2f, max31, max33, max3f, max41, max44, max4f, max_, maxd1d1, maxd1wd1, maxd2d1, maxd2d2, maxd2wd1, maxd3d1, maxd3d3, maxd3wd1, maxd4d1, maxd4d4, maxd4wd1, maxf1, maxff, maxi1i1, maxi1wi1, maxi2i1, maxi2i2, maxi2wi1, maxi3i1, maxi3i3, maxi3wi1, maxi4i1, maxi4i4, maxi4wi1, maxu1u1, maxu1wu1, maxu2u1, maxu2u2, maxu2wu1, maxu3u1, maxu3u3, maxu3wu1, maxu4u1, maxu4u4, maxu4wu1, maxwd1d1, maxwd1wd1, maxwi1i1, maxwi1wi1, maxwu1u1, maxwu1wu1, min11, min1f, min21, min22, min2f, min31, min33, min3f, min41, min44, min4f, min_, mind1d1, mind1wd1, mind2d1, mind2d2, mind2wd1, mind3d1, mind3d3, mind3wd1, mind4d1, mind4d4, mind4wd1, minf1, minff, mini1i1, mini1wi1, mini2i1, mini2i2, mini2wi1, mini3i1, mini3i3, mini3wi1, mini4i1, mini4i4, mini4wi1, minu1u1, minu1wu1, minu2u1, minu2u2, minu2wu1, minu3u1, minu3u3, minu3wu1, minu4u1, minu4u4, minu4wu1, minwd1d1, minwd1wd1, minwi1i1, minwi1wi1, minwu1u1, minwu1wu1, mix, mix111, mix11f, mix1f1, mix1ff, mix221, mix222, mix22f, mix331, mix333, mix33f, mix441, mix444, mix44f, mixd1d1d1, mixd1d1wd1, mixd1wd1d1, mixd1wd1wd1, mixd2d2d1, mixd2d2d2, mixd2d2wd1, mixd3d3d1, mixd3d3d3, mixd3d3wd1, mixd4d4d1, mixd4d4d4, mixd4d4wd1, mixf11, mixf1f, mixff1, mixfff, mixwd1d1d1, mixwd1d1wd1, mixwd1wd1d1, mixwd1wd1wd1, mod, mod11, mod1f, mod21, mod22, mod2f, mod31, mod33, mod3f, mod41, mod44, mod4f, modd1d1, modd1wd1, modd2d1, modd2d2, modd2wd1, modd3d1, modd3d3, modd3wd1, modd4d1, modd4d4, modd4wd1, modf, modf1, modf1o1, modf1of, modf2o2, modf3o3, modf4o4, modfd1od1, modfd1owd1, modfd2od2, modfd3od3, modfd4od4, modff, modffo1, modffof, modfwd1od1, modfwd1owd1, modwd1d1, modwd1wd1, normalize, normalize1, normalize2, normalize3, normalize4, normalized1, normalized2, normalized3, normalized4, normalizef, normalizewd1, pow, radians_, reflect, reflect11, reflect1f, reflect22, reflect33, reflect44, reflectd1d1, reflectd1wd1, reflectd2d2, reflectd3d3, reflectd4d4, reflectf1, reflectff, reflectwd1d1, reflectwd1wd1, refract, refract111, refract11f, refract1f1, refract1ff, refract221, refract22f, refract331, refract33f, refract441, refract44f, refractd1d11, refractd1d1f, refractd1wd11, refractd1wd1f, refractd2d21, refractd2d2f, refractd3d31, refractd3d3f, refractd4d41, refractd4d4f, refractf11, refractf1f, refractff1, refractfff, refractwd1d11, refractwd1d1f, refractwd1wd11, refractwd1wd1f, round1, round2, round3, round4, roundEven, roundEven1, roundEven2, roundEven3, roundEven4, roundEvend1, roundEvend2, roundEvend3, roundEvend4, roundEvenf, roundEvenwd1, round_, roundd1, roundd2, roundd3, roundd4, roundf, roundwd1, sign, sign1, sign2, sign3, sign4, signd1, signd2, signd3, signd4, signf, signi1, signi2, signi3, signi4, signwd1, signwi1, sin_, sinh, smoothstep, smoothstep111, smoothstep112, smoothstep113, smoothstep114, smoothstep11f, smoothstep1f1, smoothstep1f2, smoothstep1f3, smoothstep1f4, smoothstep1ff, smoothstep222, smoothstep333, smoothstep444, smoothstepd1d1d1, smoothstepd1d1d2, smoothstepd1d1d3, smoothstepd1d1d4, smoothstepd1d1wd1, smoothstepd1wd1d1, smoothstepd1wd1d2, smoothstepd1wd1d3, smoothstepd1wd1d4, smoothstepd1wd1wd1, smoothstepd2d2d2, smoothstepd3d3d3, smoothstepd4d4d4, smoothstepf11, smoothstepf12, smoothstepf13, smoothstepf14, smoothstepf1f, smoothstepff1, smoothstepff2, smoothstepff3, smoothstepff4, smoothstepfff, smoothstepwd1d1d1, smoothstepwd1d1d2, smoothstepwd1d1d3, smoothstepwd1d1d4, smoothstepwd1d1wd1, smoothstepwd1wd1d1, smoothstepwd1wd1d2, smoothstepwd1wd1d3, smoothstepwd1wd1d4, smoothstepwd1wd1wd1, sqrt1, sqrt2, sqrt3, sqrt4, sqrt_, sqrtd1, sqrtd2, sqrtd3, sqrtd4, sqrtf, sqrtwd1, step, step11, step12, step13, step14, step1f, step22, step33, step44, stepd1d1, stepd1d2, stepd1d3, stepd1d4, stepd1wd1, stepd2d2, stepd3d3, stepd4d4, stepf1, stepf2, stepf3, stepf4, stepff, stepwd1d1, stepwd1d2, stepwd1d3, stepwd1d4, stepwd1wd1, tan_, tanh, trunc, trunc1, trunc2, trunc3, trunc4, truncd1, truncd2, truncd3, truncd4, truncf, truncwd1, uintBitsToFloatu1, uintBitsToFloatu2, uintBitsToFloatu3, uintBitsToFloatu4, uintBitsToFloatwu1, vec21, vec211, vec21f, vec21i1, vec21wi1, vec2f, vec2f1, vec2ff, vec2fi1, vec2fwi1, vec2i1, vec2i11, vec2i1f, vec2i1i1, vec2i1wi1, vec2wi1, vec2wi11, vec2wi1f, vec2wi1i1, vec2wi1wi1, vec31, vec3111, vec311f, vec311i1, vec311wi1, vec312, vec31f1, vec31ff, vec31fi1, vec31fwi1, vec31i11, vec31i1f, vec31i1i1, vec31i1wi1, vec31wi11, vec31wi1f, vec31wi1i1, vec31wi1wi1, vec321, vec32f, vec3f, vec3f11, vec3f1f, vec3f1i1, vec3f1wi1, vec3f2, vec3ff1, vec3fff, vec3ffi1, vec3ffwi1, vec3fi11, vec3fi1f, vec3fi1i1, vec3fi1wi1, vec3fwi11, vec3fwi1f, vec3fwi1i1, vec3fwi1wi1, vec3i1, vec3i111, vec3i11f, vec3i11i1, vec3i11wi1, vec3i1f1, vec3i1ff, vec3i1fi1, vec3i1fwi1, vec3i1i11, vec3i1i1f, vec3i1i1i1, vec3i1i1wi1, vec3i1wi11, vec3i1wi1f, vec3i1wi1i1, vec3i1wi1wi1, vec3wi1, vec3wi111, vec3wi11f, vec3wi11i1, vec3wi11wi1, vec3wi1f1, vec3wi1ff, vec3wi1fi1, vec3wi1fwi1, vec3wi1i11, vec3wi1i1f, vec3wi1i1i1, vec3wi1i1wi1, vec3wi1wi11, vec3wi1wi1f, vec3wi1wi1i1, vec3wi1wi1wi1, vec41, vec41111, vec4111f, vec4111i1, vec4111wi1, vec411f1, vec411ff, vec411fi1, vec411fwi1, vec411i11, vec411i1f, vec411i1i1, vec411i1wi1, vec411wi11, vec411wi1f, vec411wi1i1, vec411wi1wi1, vec413, vec41f11, vec41f1f, vec41f1i1, vec41f1wi1, vec41ff1, vec41fff, vec41ffi1, vec41ffwi1, vec41fi11, vec41fi1f, vec41fi1i1, vec41fi1wi1, vec41fwi11, vec41fwi1f, vec41fwi1i1, vec41fwi1wi1, vec41i111, vec41i11f, vec41i11i1, vec41i11wi1, vec41i1f1, vec41i1ff, vec41i1fi1, vec41i1fwi1, vec41i1i11, vec41i1i1f, vec41i1i1i1, vec41i1i1wi1, vec41i1wi11, vec41i1wi1f, vec41i1wi1i1, vec41i1wi1wi1, vec41wi111, vec41wi11f, vec41wi11i1, vec41wi11wi1, vec41wi1f1, vec41wi1ff, vec41wi1fi1, vec41wi1fwi1, vec41wi1i11, vec41wi1i1f, vec41wi1i1i1, vec41wi1i1wi1, vec41wi1wi11, vec41wi1wi1f, vec41wi1wi1i1, vec41wi1wi1wi1, vec422, vec431, vec43f, vec4f, vec4f111, vec4f11f, vec4f11i1, vec4f11wi1, vec4f1f1, vec4f1ff, vec4f1fi1, vec4f1fwi1, vec4f1i11, vec4f1i1f, vec4f1i1i1, vec4f1i1wi1, vec4f1wi11, vec4f1wi1f, vec4f1wi1i1, vec4f1wi1wi1, vec4f3, vec4ff11, vec4ff1f, vec4ff1i1, vec4ff1wi1, vec4fff1, vec4ffff, vec4fffi1, vec4fffwi1, vec4ffi11, vec4ffi1f, vec4ffi1i1, vec4ffi1wi1, vec4ffwi11, vec4ffwi1f, vec4ffwi1i1, vec4ffwi1wi1, vec4fi111, vec4fi11f, vec4fi11i1, vec4fi11wi1, vec4fi1f1, vec4fi1ff, vec4fi1fi1, vec4fi1fwi1, vec4fi1i11, vec4fi1i1f, vec4fi1i1i1, vec4fi1i1wi1, vec4fi1wi11, vec4fi1wi1f, vec4fi1wi1i1, vec4fi1wi1wi1, vec4fwi111, vec4fwi11f, vec4fwi11i1, vec4fwi11wi1, vec4fwi1f1, vec4fwi1ff, vec4fwi1fi1, vec4fwi1fwi1, vec4fwi1i11, vec4fwi1i1f, vec4fwi1i1i1, vec4fwi1i1wi1, vec4fwi1wi11, vec4fwi1wi1f, vec4fwi1wi1i1, vec4fwi1wi1wi1, vec4i1, vec4i1111, vec4i111f, vec4i111i1, vec4i111wi1, vec4i11f1, vec4i11ff, vec4i11fi1, vec4i11fwi1, vec4i11i11, vec4i11i1f, vec4i11i1i1, vec4i11i1wi1, vec4i11wi11, vec4i11wi1f, vec4i11wi1i1, vec4i11wi1wi1, vec4i1f11, vec4i1f1f, vec4i1f1i1, vec4i1f1wi1, vec4i1ff1, vec4i1fff, vec4i1ffi1, vec4i1ffwi1, vec4i1fi11, vec4i1fi1f, vec4i1fi1i1, vec4i1fi1wi1, vec4i1fwi11, vec4i1fwi1f, vec4i1fwi1i1, vec4i1fwi1wi1, vec4i1i111, vec4i1i11f, vec4i1i11i1, vec4i1i11wi1, vec4i1i1f1, vec4i1i1ff, vec4i1i1fi1, vec4i1i1fwi1, vec4i1i1i11, vec4i1i1i1f, vec4i1i1i1i1, vec4i1i1i1wi1, vec4i1i1wi11, vec4i1i1wi1f, vec4i1i1wi1i1, vec4i1i1wi1wi1, vec4i1wi111, vec4i1wi11f, vec4i1wi11i1, vec4i1wi11wi1, vec4i1wi1f1, vec4i1wi1ff, vec4i1wi1fi1, vec4i1wi1fwi1, vec4i1wi1i11, vec4i1wi1i1f, vec4i1wi1i1i1, vec4i1wi1i1wi1, vec4i1wi1wi11, vec4i1wi1wi1f, vec4i1wi1wi1i1, vec4i1wi1wi1wi1, vec4wi1, vec4wi1111, vec4wi111f, vec4wi111i1, vec4wi111wi1, vec4wi11f1, vec4wi11ff, vec4wi11fi1, vec4wi11fwi1, vec4wi11i11, vec4wi11i1f, vec4wi11i1i1, vec4wi11i1wi1, vec4wi11wi11, vec4wi11wi1f, vec4wi11wi1i1, vec4wi11wi1wi1, vec4wi1f11, vec4wi1f1f, vec4wi1f1i1, vec4wi1f1wi1, vec4wi1ff1, vec4wi1fff, vec4wi1ffi1, vec4wi1ffwi1, vec4wi1fi11, vec4wi1fi1f, vec4wi1fi1i1, vec4wi1fi1wi1, vec4wi1fwi11, vec4wi1fwi1f, vec4wi1fwi1i1, vec4wi1fwi1wi1, vec4wi1i111, vec4wi1i11f, vec4wi1i11i1, vec4wi1i11wi1, vec4wi1i1f1, vec4wi1i1ff, vec4wi1i1fi1, vec4wi1i1fwi1, vec4wi1i1i11, vec4wi1i1i1f, vec4wi1i1i1i1, vec4wi1i1i1wi1, vec4wi1i1wi11, vec4wi1i1wi1f, vec4wi1i1wi1i1, vec4wi1i1wi1wi1, vec4wi1wi111, vec4wi1wi11f, vec4wi1wi11i1, vec4wi1wi11wi1, vec4wi1wi1f1, vec4wi1wi1ff, vec4wi1wi1fi1, vec4wi1wi1fwi1, vec4wi1wi1i11, vec4wi1wi1i1f, vec4wi1wi1i1i1, vec4wi1wi1i1wi1, vec4wi1wi1wi11, vec4wi1wi1wi1f, vec4wi1wi1wi1i1, vec4wi1wi1wi1wi1
+@docs abs1, abs2, abs3, abs4, absd1, absd2
+@docs absd3, absd4, absf, absi1, absi2, absi3
+@docs absi4, abswd1, abswi1
+
+@docs ceil1, ceil2, ceil3, ceil4, ceild1, ceild2
+@docs ceild3, ceild4, ceilf, ceilwd1, ceil
+
+@docs clamp111, clamp11f, clamp1f1, clamp1ff, clamp211, clamp21f
+@docs clamp222, clamp2f1, clamp2ff, clamp311, clamp31f, clamp333
+@docs clamp3f1, clamp3ff, clamp411, clamp41f, clamp444, clamp4f1
+@docs clamp4ff, clampd1d1d1, clampd1d1wd1, clampd1wd1d1, clampd1wd1wd1, clampd2d1d1
+@docs clampd2d1wd1, clampd2d2d2, clampd2wd1d1, clampd2wd1wd1, clampd3d1d1, clampd3d1wd1
+@docs clampd3d3d3, clampd3wd1d1, clampd3wd1wd1, clampd4d1d1, clampd4d1wd1, clampd4d4d4
+@docs clampd4wd1d1, clampd4wd1wd1, clampf11, clampf1f, clampff1, clampfff
+@docs clampi1i1i1, clampi1i1wi1, clampi1wi1i1, clampi1wi1wi1, clampi2i1i1, clampi2i1wi1
+@docs clampi2i2i2, clampi2wi1i1, clampi2wi1wi1, clampi3i1i1, clampi3i1wi1, clampi3i3i3
+@docs clampi3wi1i1, clampi3wi1wi1, clampi4i1i1, clampi4i1wi1, clampi4i4i4, clampi4wi1i1
+@docs clampi4wi1wi1, clampu1u1u1, clampu1u1wu1, clampu1wu1u1, clampu1wu1wu1, clampu2u1u1
+@docs clampu2u1wu1, clampu2u2u2, clampu2wu1u1, clampu2wu1wu1, clampu3u1u1, clampu3u1wu1
+@docs clampu3u3u3, clampu3wu1u1, clampu3wu1wu1, clampu4u1u1, clampu4u1wu1, clampu4u4u4
+@docs clampu4wu1u1, clampu4wu1wu1, clampwd1d1d1, clampwd1d1wd1, clampwd1wd1d1, clampwd1wd1wd1
+@docs clampwi1i1i1, clampwi1i1wi1, clampwi1wi1i1, clampwi1wi1wi1, clampwu1u1u1, clampwu1u1wu1
+@docs clampwu1wu1u1, clampwu1wu1wu1
+
+@docs cross33, crossd3d3
+
+@docs distance11, distance1f, distance22, distance33, distance44, distanced1d1
+@docs distanced1wd1, distanced2d2, distanced3d3, distanced4d4, distancef1, distanceff
+@docs distancewd1d1, distancewd1wd1, distance
+
+@docs dot11, dot1f, dot22, dot33, dot44, dotd1d1
+@docs dotd1wd1, dotd2d2, dotd3d3, dotd4d4, dotf1, dotff
+@docs dotwd1d1, dotwd1wd1, dot
+
+@docs faceforward111, faceforward11f, faceforward1f1, faceforward1ff, faceforward222, faceforward333
+@docs faceforward444, faceforwardd1d1d1, faceforwardd1d1wd1, faceforwardd1wd1d1, faceforwardd1wd1wd1, faceforwardd2d2d2
+@docs faceforwardd3d3d3, faceforwardd4d4d4, faceforwardf11, faceforwardf1f, faceforwardff1, faceforwardfff
+@docs faceforwardwd1d1d1, faceforwardwd1d1wd1, faceforwardwd1wd1d1, faceforwardwd1wd1wd1, faceforward
+
+@docs floatBitsToInt1, floatBitsToInt2, floatBitsToInt3, floatBitsToInt4, floatBitsToIntf
+
+@docs floatBitsToUint1, floatBitsToUint2, floatBitsToUint3, floatBitsToUint4, floatBitsToUintf
+
+@docs floati1, floatwi1
+
+@docs floor1, floor2, floor3, floor4, floord1, floord2
+@docs floord3, floord4, floorf, floorwd1
+
+@docs fma111, fma11f, fma1f1, fma1ff, fma222, fma333
+@docs fma444, fmad1d1d1, fmad1d1wd1, fmad1wd1d1, fmad1wd1wd1, fmad2d2d2
+@docs fmad3d3d3, fmad4d4d4, fmaf11, fmaf1f, fmaff1, fmafff
+@docs fmawd1d1d1, fmawd1d1wd1, fmawd1wd1d1, fmawd1wd1wd1, fma
+
+@docs fract1, fract2, fract3, fract4, fractd1, fractd2
+@docs fractd3, fractd4, fractf, fractwd1, fract
+
+@docs frexp1oi1, frexp1owi1, frexp2oi2, frexp3oi3, frexp4oi4, frexpd1oi1
+@docs frexpd1owi1, frexpd2oi2, frexpd3oi3, frexpd4oi4, frexpfoi1, frexpfowi1
+@docs frexpwd1oi1, frexpwd1owi1
+
+@docs int1, intf
+
+@docs intBitsToFloati1, intBitsToFloati2, intBitsToFloati3, intBitsToFloati4, intBitsToFloatwi1
+
+@docs inversesqrt1, inversesqrt2, inversesqrt3, inversesqrt4, inversesqrtd1, inversesqrtd2
+@docs inversesqrtd3, inversesqrtd4, inversesqrtf, inversesqrtwd1, inversesqrt
+
+@docs isinf1, isinf2, isinf3, isinf4, isinfd1, isinfd2
+@docs isinfd3, isinfd4, isinff, isinfwd1
+
+@docs isnan1, isnan2, isnan3, isnan4, isnand1, isnand2
+@docs isnand3, isnand4, isnanf, isnanwd1
+
+@docs ivec2i1i1, ivec2i1wi1, ivec2wi1i1, ivec2wi1wi1
+
+@docs ivec3i1i1i1, ivec3i1i1wi1, ivec3i1wi1i1, ivec3i1wi1wi1, ivec3wi1i1i1, ivec3wi1i1wi1
+@docs ivec3wi1wi1i1, ivec3wi1wi1wi1
+
+@docs ivec4i1i1i1i1, ivec4i1i1i1wi1, ivec4i1i1wi1i1, ivec4i1i1wi1wi1, ivec4i1wi1i1i1, ivec4i1wi1i1wi1
+@docs ivec4i1wi1wi1i1, ivec4i1wi1wi1wi1, ivec4wi1i1i1i1, ivec4wi1i1i1wi1, ivec4wi1i1wi1i1, ivec4wi1i1wi1wi1
+@docs ivec4wi1wi1i1i1, ivec4wi1wi1i1wi1, ivec4wi1wi1wi1i1, ivec4wi1wi1wi1wi1
+
+@docs ldexp1i1, ldexp1wi1, ldexp2i2, ldexp3i3, ldexp4i4, ldexpd1i1
+@docs ldexpd1wi1, ldexpd2i2, ldexpd3i3, ldexpd4i4, ldexpfi1, ldexpfwi1
+@docs ldexpwd1i1, ldexpwd1wi1
+
+@docs length1, length2, length3, length4, lengthd1, lengthd2
+@docs lengthd3, lengthd4, lengthf, lengthwd1, length
+
+@docs mat21111, mat2111f, mat211f1, mat211ff, mat21f11, mat21f1f
+@docs mat21ff1, mat21fff, mat222, mat2f111, mat2f11f, mat2f1f1
+@docs mat2f1ff, mat2ff11, mat2ff1f, mat2fff1, mat2ffff
+
+@docs mat3111111111, mat311111111f, mat31111111f1, mat31111111ff, mat3111111f11, mat3111111f1f
+@docs mat3111111ff1, mat3111111fff, mat311111f111, mat311111f11f, mat311111f1f1, mat311111f1ff
+@docs mat311111ff11, mat311111ff1f, mat311111fff1, mat311111ffff, mat31111f1111, mat31111f111f
+@docs mat31111f11f1, mat31111f11ff, mat31111f1f11, mat31111f1f1f, mat31111f1ff1, mat31111f1fff
+@docs mat31111ff111, mat31111ff11f, mat31111ff1f1, mat31111ff1ff, mat31111fff11, mat31111fff1f
+@docs mat31111ffff1, mat31111fffff, mat3111f11111, mat3111f1111f, mat3111f111f1, mat3111f111ff
+@docs mat3111f11f11, mat3111f11f1f, mat3111f11ff1, mat3111f11fff, mat3111f1f111, mat3111f1f11f
+@docs mat3111f1f1f1, mat3111f1f1ff, mat3111f1ff11, mat3111f1ff1f, mat3111f1fff1, mat3111f1ffff
+@docs mat3111ff1111, mat3111ff111f, mat3111ff11f1, mat3111ff11ff, mat3111ff1f11, mat3111ff1f1f
+@docs mat3111ff1ff1, mat3111ff1fff, mat3111fff111, mat3111fff11f, mat3111fff1f1, mat3111fff1ff
+@docs mat3111ffff11, mat3111ffff1f, mat3111fffff1, mat3111ffffff, mat311f111111, mat311f11111f
+@docs mat311f1111f1, mat311f1111ff, mat311f111f11, mat311f111f1f, mat311f111ff1, mat311f111fff
+@docs mat311f11f111, mat311f11f11f, mat311f11f1f1, mat311f11f1ff, mat311f11ff11, mat311f11ff1f
+@docs mat311f11fff1, mat311f11ffff, mat311f1f1111, mat311f1f111f, mat311f1f11f1, mat311f1f11ff
+@docs mat311f1f1f11, mat311f1f1f1f, mat311f1f1ff1, mat311f1f1fff, mat311f1ff111, mat311f1ff11f
+@docs mat311f1ff1f1, mat311f1ff1ff, mat311f1fff11, mat311f1fff1f, mat311f1ffff1, mat311f1fffff
+@docs mat311ff11111, mat311ff1111f, mat311ff111f1, mat311ff111ff, mat311ff11f11, mat311ff11f1f
+@docs mat311ff11ff1, mat311ff11fff, mat311ff1f111, mat311ff1f11f, mat311ff1f1f1, mat311ff1f1ff
+@docs mat311ff1ff11, mat311ff1ff1f, mat311ff1fff1, mat311ff1ffff, mat311fff1111, mat311fff111f
+@docs mat311fff11f1, mat311fff11ff, mat311fff1f11, mat311fff1f1f, mat311fff1ff1, mat311fff1fff
+@docs mat311ffff111, mat311ffff11f, mat311ffff1f1, mat311ffff1ff, mat311fffff11, mat311fffff1f
+@docs mat311ffffff1, mat311fffffff, mat31f1111111, mat31f111111f, mat31f11111f1, mat31f11111ff
+@docs mat31f1111f11, mat31f1111f1f, mat31f1111ff1, mat31f1111fff, mat31f111f111, mat31f111f11f
+@docs mat31f111f1f1, mat31f111f1ff, mat31f111ff11, mat31f111ff1f, mat31f111fff1, mat31f111ffff
+@docs mat31f11f1111, mat31f11f111f, mat31f11f11f1, mat31f11f11ff, mat31f11f1f11, mat31f11f1f1f
+@docs mat31f11f1ff1, mat31f11f1fff, mat31f11ff111, mat31f11ff11f, mat31f11ff1f1, mat31f11ff1ff
+@docs mat31f11fff11, mat31f11fff1f, mat31f11ffff1, mat31f11fffff, mat31f1f11111, mat31f1f1111f
+@docs mat31f1f111f1, mat31f1f111ff, mat31f1f11f11, mat31f1f11f1f, mat31f1f11ff1, mat31f1f11fff
+@docs mat31f1f1f111, mat31f1f1f11f, mat31f1f1f1f1, mat31f1f1f1ff, mat31f1f1ff11, mat31f1f1ff1f
+@docs mat31f1f1fff1, mat31f1f1ffff, mat31f1ff1111, mat31f1ff111f, mat31f1ff11f1, mat31f1ff11ff
+@docs mat31f1ff1f11, mat31f1ff1f1f, mat31f1ff1ff1, mat31f1ff1fff, mat31f1fff111, mat31f1fff11f
+@docs mat31f1fff1f1, mat31f1fff1ff, mat31f1ffff11, mat31f1ffff1f, mat31f1fffff1, mat31f1ffffff
+@docs mat31ff111111, mat31ff11111f, mat31ff1111f1, mat31ff1111ff, mat31ff111f11, mat31ff111f1f
+@docs mat31ff111ff1, mat31ff111fff, mat31ff11f111, mat31ff11f11f, mat31ff11f1f1, mat31ff11f1ff
+@docs mat31ff11ff11, mat31ff11ff1f, mat31ff11fff1, mat31ff11ffff, mat31ff1f1111, mat31ff1f111f
+@docs mat31ff1f11f1, mat31ff1f11ff, mat31ff1f1f11, mat31ff1f1f1f, mat31ff1f1ff1, mat31ff1f1fff
+@docs mat31ff1ff111, mat31ff1ff11f, mat31ff1ff1f1, mat31ff1ff1ff, mat31ff1fff11, mat31ff1fff1f
+@docs mat31ff1ffff1, mat31ff1fffff, mat31fff11111, mat31fff1111f, mat31fff111f1, mat31fff111ff
+@docs mat31fff11f11, mat31fff11f1f, mat31fff11ff1, mat31fff11fff, mat31fff1f111, mat31fff1f11f
+@docs mat31fff1f1f1, mat31fff1f1ff, mat31fff1ff11, mat31fff1ff1f, mat31fff1fff1, mat31fff1ffff
+@docs mat31ffff1111, mat31ffff111f, mat31ffff11f1, mat31ffff11ff, mat31ffff1f11, mat31ffff1f1f
+@docs mat31ffff1ff1, mat31ffff1fff, mat31fffff111, mat31fffff11f, mat31fffff1f1, mat31fffff1ff
+@docs mat31ffffff11, mat31ffffff1f, mat31fffffff1, mat31ffffffff, mat3333, mat3f11111111
+@docs mat3f1111111f, mat3f111111f1, mat3f111111ff, mat3f11111f11, mat3f11111f1f, mat3f11111ff1
+@docs mat3f11111fff, mat3f1111f111, mat3f1111f11f, mat3f1111f1f1, mat3f1111f1ff, mat3f1111ff11
+@docs mat3f1111ff1f, mat3f1111fff1, mat3f1111ffff, mat3f111f1111, mat3f111f111f, mat3f111f11f1
+@docs mat3f111f11ff, mat3f111f1f11, mat3f111f1f1f, mat3f111f1ff1, mat3f111f1fff, mat3f111ff111
+@docs mat3f111ff11f, mat3f111ff1f1, mat3f111ff1ff, mat3f111fff11, mat3f111fff1f, mat3f111ffff1
+@docs mat3f111fffff, mat3f11f11111, mat3f11f1111f, mat3f11f111f1, mat3f11f111ff, mat3f11f11f11
+@docs mat3f11f11f1f, mat3f11f11ff1, mat3f11f11fff, mat3f11f1f111, mat3f11f1f11f, mat3f11f1f1f1
+@docs mat3f11f1f1ff, mat3f11f1ff11, mat3f11f1ff1f, mat3f11f1fff1, mat3f11f1ffff, mat3f11ff1111
+@docs mat3f11ff111f, mat3f11ff11f1, mat3f11ff11ff, mat3f11ff1f11, mat3f11ff1f1f, mat3f11ff1ff1
+@docs mat3f11ff1fff, mat3f11fff111, mat3f11fff11f, mat3f11fff1f1, mat3f11fff1ff, mat3f11ffff11
+@docs mat3f11ffff1f, mat3f11fffff1, mat3f11ffffff, mat3f1f111111, mat3f1f11111f, mat3f1f1111f1
+@docs mat3f1f1111ff, mat3f1f111f11, mat3f1f111f1f, mat3f1f111ff1, mat3f1f111fff, mat3f1f11f111
+@docs mat3f1f11f11f, mat3f1f11f1f1, mat3f1f11f1ff, mat3f1f11ff11, mat3f1f11ff1f, mat3f1f11fff1
+@docs mat3f1f11ffff, mat3f1f1f1111, mat3f1f1f111f, mat3f1f1f11f1, mat3f1f1f11ff, mat3f1f1f1f11
+@docs mat3f1f1f1f1f, mat3f1f1f1ff1, mat3f1f1f1fff, mat3f1f1ff111, mat3f1f1ff11f, mat3f1f1ff1f1
+@docs mat3f1f1ff1ff, mat3f1f1fff11, mat3f1f1fff1f, mat3f1f1ffff1, mat3f1f1fffff, mat3f1ff11111
+@docs mat3f1ff1111f, mat3f1ff111f1, mat3f1ff111ff, mat3f1ff11f11, mat3f1ff11f1f, mat3f1ff11ff1
+@docs mat3f1ff11fff, mat3f1ff1f111, mat3f1ff1f11f, mat3f1ff1f1f1, mat3f1ff1f1ff, mat3f1ff1ff11
+@docs mat3f1ff1ff1f, mat3f1ff1fff1, mat3f1ff1ffff, mat3f1fff1111, mat3f1fff111f, mat3f1fff11f1
+@docs mat3f1fff11ff, mat3f1fff1f11, mat3f1fff1f1f, mat3f1fff1ff1, mat3f1fff1fff, mat3f1ffff111
+@docs mat3f1ffff11f, mat3f1ffff1f1, mat3f1ffff1ff, mat3f1fffff11, mat3f1fffff1f, mat3f1ffffff1
+@docs mat3f1fffffff, mat3ff1111111, mat3ff111111f, mat3ff11111f1, mat3ff11111ff, mat3ff1111f11
+@docs mat3ff1111f1f, mat3ff1111ff1, mat3ff1111fff, mat3ff111f111, mat3ff111f11f, mat3ff111f1f1
+@docs mat3ff111f1ff, mat3ff111ff11, mat3ff111ff1f, mat3ff111fff1, mat3ff111ffff, mat3ff11f1111
+@docs mat3ff11f111f, mat3ff11f11f1, mat3ff11f11ff, mat3ff11f1f11, mat3ff11f1f1f, mat3ff11f1ff1
+@docs mat3ff11f1fff, mat3ff11ff111, mat3ff11ff11f, mat3ff11ff1f1, mat3ff11ff1ff, mat3ff11fff11
+@docs mat3ff11fff1f, mat3ff11ffff1, mat3ff11fffff, mat3ff1f11111, mat3ff1f1111f, mat3ff1f111f1
+@docs mat3ff1f111ff, mat3ff1f11f11, mat3ff1f11f1f, mat3ff1f11ff1, mat3ff1f11fff, mat3ff1f1f111
+@docs mat3ff1f1f11f, mat3ff1f1f1f1, mat3ff1f1f1ff, mat3ff1f1ff11, mat3ff1f1ff1f, mat3ff1f1fff1
+@docs mat3ff1f1ffff, mat3ff1ff1111, mat3ff1ff111f, mat3ff1ff11f1, mat3ff1ff11ff, mat3ff1ff1f11
+@docs mat3ff1ff1f1f, mat3ff1ff1ff1, mat3ff1ff1fff, mat3ff1fff111, mat3ff1fff11f, mat3ff1fff1f1
+@docs mat3ff1fff1ff, mat3ff1ffff11, mat3ff1ffff1f, mat3ff1fffff1, mat3ff1ffffff, mat3fff111111
+@docs mat3fff11111f, mat3fff1111f1, mat3fff1111ff, mat3fff111f11, mat3fff111f1f, mat3fff111ff1
+@docs mat3fff111fff, mat3fff11f111, mat3fff11f11f, mat3fff11f1f1, mat3fff11f1ff, mat3fff11ff11
+@docs mat3fff11ff1f, mat3fff11fff1, mat3fff11ffff, mat3fff1f1111, mat3fff1f111f, mat3fff1f11f1
+@docs mat3fff1f11ff, mat3fff1f1f11, mat3fff1f1f1f, mat3fff1f1ff1, mat3fff1f1fff, mat3fff1ff111
+@docs mat3fff1ff11f, mat3fff1ff1f1, mat3fff1ff1ff, mat3fff1fff11, mat3fff1fff1f, mat3fff1ffff1
+@docs mat3fff1fffff, mat3ffff11111, mat3ffff1111f, mat3ffff111f1, mat3ffff111ff, mat3ffff11f11
+@docs mat3ffff11f1f, mat3ffff11ff1, mat3ffff11fff, mat3ffff1f111, mat3ffff1f11f, mat3ffff1f1f1
+@docs mat3ffff1f1ff, mat3ffff1ff11, mat3ffff1ff1f, mat3ffff1fff1, mat3ffff1ffff, mat3fffff1111
+@docs mat3fffff111f, mat3fffff11f1, mat3fffff11ff, mat3fffff1f11, mat3fffff1f1f, mat3fffff1ff1
+@docs mat3fffff1fff, mat3ffffff111, mat3ffffff11f, mat3ffffff1f1, mat3ffffff1ff, mat3fffffff11
+@docs mat3fffffff1f, mat3ffffffff1, mat3fffffffff
+
+@docs mat44444
+
+@docs max11, max1f, max21, max22, max2f, max31
+@docs max33, max3f, max41, max44, max4f, maxd1d1
+@docs maxd1wd1, maxd2d1, maxd2d2, maxd2wd1, maxd3d1, maxd3d3
+@docs maxd3wd1, maxd4d1, maxd4d4, maxd4wd1, maxf1, maxff
+@docs maxi1i1, maxi1wi1, maxi2i1, maxi2i2, maxi2wi1, maxi3i1
+@docs maxi3i3, maxi3wi1, maxi4i1, maxi4i4, maxi4wi1, maxu1u1
+@docs maxu1wu1, maxu2u1, maxu2u2, maxu2wu1, maxu3u1, maxu3u3
+@docs maxu3wu1, maxu4u1, maxu4u4, maxu4wu1, maxwd1d1, maxwd1wd1
+@docs maxwi1i1, maxwi1wi1, maxwu1u1, maxwu1wu1
+
+@docs min11, min1f, min21, min22, min2f, min31
+@docs min33, min3f, min41, min44, min4f, mind1d1
+@docs mind1wd1, mind2d1, mind2d2, mind2wd1, mind3d1, mind3d3
+@docs mind3wd1, mind4d1, mind4d4, mind4wd1, minf1, minff
+@docs mini1i1, mini1wi1, mini2i1, mini2i2, mini2wi1, mini3i1
+@docs mini3i3, mini3wi1, mini4i1, mini4i4, mini4wi1, minu1u1
+@docs minu1wu1, minu2u1, minu2u2, minu2wu1, minu3u1, minu3u3
+@docs minu3wu1, minu4u1, minu4u4, minu4wu1, minwd1d1, minwd1wd1
+@docs minwi1i1, minwi1wi1, minwu1u1, minwu1wu1
+
+@docs mix111, mix11f, mix1f1, mix1ff, mix221, mix222
+@docs mix22f, mix331, mix333, mix33f, mix441, mix444
+@docs mix44f, mixd1d1d1, mixd1d1wd1, mixd1wd1d1, mixd1wd1wd1, mixd2d2d1
+@docs mixd2d2d2, mixd2d2wd1, mixd3d3d1, mixd3d3d3, mixd3d3wd1, mixd4d4d1
+@docs mixd4d4d4, mixd4d4wd1, mixf11, mixf1f, mixff1, mixfff
+@docs mixwd1d1d1, mixwd1d1wd1, mixwd1wd1d1, mixwd1wd1wd1, mix
+
+@docs mod11, mod1f, mod21, mod22, mod2f, mod31
+@docs mod33, mod3f, mod41, mod44, mod4f, modd1d1
+@docs modd1wd1, modd2d1, modd2d2, modd2wd1, modd3d1, modd3d3
+@docs modd3wd1, modd4d1, modd4d4, modd4wd1, modf1, modff
+@docs modwd1d1, modwd1wd1, mod
+
+@docs modf1o1, modf1of, modf2o2, modf3o3, modf4o4, modfd1od1
+@docs modfd1owd1, modfd2od2, modfd3od3, modfd4od4, modffo1, modffof
+@docs modfwd1od1, modfwd1owd1, modf
+
+@docs normalize1, normalize2, normalize3, normalize4, normalized1, normalized2
+@docs normalized3, normalized4, normalizef, normalizewd1, normalize
+
+@docs reflect11, reflect1f, reflect22, reflect33, reflect44, reflectd1d1
+@docs reflectd1wd1, reflectd2d2, reflectd3d3, reflectd4d4, reflectf1, reflectff
+@docs reflectwd1d1, reflectwd1wd1, reflect
+
+@docs refract111, refract11f, refract1f1, refract1ff, refract221, refract22f
+@docs refract331, refract33f, refract441, refract44f, refractd1d11, refractd1d1f
+@docs refractd1wd11, refractd1wd1f, refractd2d21, refractd2d2f, refractd3d31, refractd3d3f
+@docs refractd4d41, refractd4d4f, refractf11, refractf1f, refractff1, refractfff
+@docs refractwd1d11, refractwd1d1f, refractwd1wd11, refractwd1wd1f, refract
+
+@docs round1, round2, round3, round4, roundd1, roundd2
+@docs roundd3, roundd4, roundf, roundwd1
+
+@docs roundEven1, roundEven2, roundEven3, roundEven4, roundEvend1, roundEvend2
+@docs roundEvend3, roundEvend4, roundEvenf, roundEvenwd1, roundEven
+
+@docs sign1, sign2, sign3, sign4, signd1, signd2
+@docs signd3, signd4, signf, signi1, signi2, signi3
+@docs signi4, signwd1, signwi1, sign
+
+@docs smoothstep111, smoothstep112, smoothstep113, smoothstep114, smoothstep11f, smoothstep1f1
+@docs smoothstep1f2, smoothstep1f3, smoothstep1f4, smoothstep1ff, smoothstep222, smoothstep333
+@docs smoothstep444, smoothstepd1d1d1, smoothstepd1d1d2, smoothstepd1d1d3, smoothstepd1d1d4, smoothstepd1d1wd1
+@docs smoothstepd1wd1d1, smoothstepd1wd1d2, smoothstepd1wd1d3, smoothstepd1wd1d4, smoothstepd1wd1wd1, smoothstepd2d2d2
+@docs smoothstepd3d3d3, smoothstepd4d4d4, smoothstepf11, smoothstepf12, smoothstepf13, smoothstepf14
+@docs smoothstepf1f, smoothstepff1, smoothstepff2, smoothstepff3, smoothstepff4, smoothstepfff
+@docs smoothstepwd1d1d1, smoothstepwd1d1d2, smoothstepwd1d1d3, smoothstepwd1d1d4, smoothstepwd1d1wd1, smoothstepwd1wd1d1
+@docs smoothstepwd1wd1d2, smoothstepwd1wd1d3, smoothstepwd1wd1d4, smoothstepwd1wd1wd1, smoothstep
+
+@docs sqrt1, sqrt2, sqrt3, sqrt4, sqrtd1, sqrtd2
+@docs sqrtd3, sqrtd4, sqrtf, sqrtwd1
+
+@docs step11, step12, step13, step14, step1f, step22
+@docs step33, step44, stepd1d1, stepd1d2, stepd1d3, stepd1d4
+@docs stepd1wd1, stepd2d2, stepd3d3, stepd4d4, stepf1, stepf2
+@docs stepf3, stepf4, stepff, stepwd1d1, stepwd1d2, stepwd1d3
+@docs stepwd1d4, stepwd1wd1, step
+
+@docs trunc1, trunc2, trunc3, trunc4, truncd1, truncd2
+@docs truncd3, truncd4, truncf, truncwd1, trunc
+
+@docs uintBitsToFloatu1, uintBitsToFloatu2, uintBitsToFloatu3, uintBitsToFloatu4, uintBitsToFloatwu1
+
+@docs vec21, vec211, vec21f, vec21i1, vec21wi1, vec2f
+@docs vec2f1, vec2ff, vec2fi1, vec2fwi1, vec2i1, vec2i11
+@docs vec2i1f, vec2i1i1, vec2i1wi1, vec2wi1, vec2wi11, vec2wi1f
+@docs vec2wi1i1, vec2wi1wi1
+
+@docs vec31, vec3111, vec311f, vec311i1, vec311wi1, vec312
+@docs vec31f1, vec31ff, vec31fi1, vec31fwi1, vec31i11, vec31i1f
+@docs vec31i1i1, vec31i1wi1, vec31wi11, vec31wi1f, vec31wi1i1, vec31wi1wi1
+@docs vec321, vec32f, vec3f, vec3f11, vec3f1f, vec3f1i1
+@docs vec3f1wi1, vec3f2, vec3ff1, vec3fff, vec3ffi1, vec3ffwi1
+@docs vec3fi11, vec3fi1f, vec3fi1i1, vec3fi1wi1, vec3fwi11, vec3fwi1f
+@docs vec3fwi1i1, vec3fwi1wi1, vec3i1, vec3i111, vec3i11f, vec3i11i1
+@docs vec3i11wi1, vec3i1f1, vec3i1ff, vec3i1fi1, vec3i1fwi1, vec3i1i11
+@docs vec3i1i1f, vec3i1i1i1, vec3i1i1wi1, vec3i1wi11, vec3i1wi1f, vec3i1wi1i1
+@docs vec3i1wi1wi1, vec3wi1, vec3wi111, vec3wi11f, vec3wi11i1, vec3wi11wi1
+@docs vec3wi1f1, vec3wi1ff, vec3wi1fi1, vec3wi1fwi1, vec3wi1i11, vec3wi1i1f
+@docs vec3wi1i1i1, vec3wi1i1wi1, vec3wi1wi11, vec3wi1wi1f, vec3wi1wi1i1, vec3wi1wi1wi1
+
+@docs vec41, vec41111, vec4111f, vec4111i1, vec4111wi1, vec411f1
+@docs vec411ff, vec411fi1, vec411fwi1, vec411i11, vec411i1f, vec411i1i1
+@docs vec411i1wi1, vec411wi11, vec411wi1f, vec411wi1i1, vec411wi1wi1, vec413
+@docs vec41f11, vec41f1f, vec41f1i1, vec41f1wi1, vec41ff1, vec41fff
+@docs vec41ffi1, vec41ffwi1, vec41fi11, vec41fi1f, vec41fi1i1, vec41fi1wi1
+@docs vec41fwi11, vec41fwi1f, vec41fwi1i1, vec41fwi1wi1, vec41i111, vec41i11f
+@docs vec41i11i1, vec41i11wi1, vec41i1f1, vec41i1ff, vec41i1fi1, vec41i1fwi1
+@docs vec41i1i11, vec41i1i1f, vec41i1i1i1, vec41i1i1wi1, vec41i1wi11, vec41i1wi1f
+@docs vec41i1wi1i1, vec41i1wi1wi1, vec41wi111, vec41wi11f, vec41wi11i1, vec41wi11wi1
+@docs vec41wi1f1, vec41wi1ff, vec41wi1fi1, vec41wi1fwi1, vec41wi1i11, vec41wi1i1f
+@docs vec41wi1i1i1, vec41wi1i1wi1, vec41wi1wi11, vec41wi1wi1f, vec41wi1wi1i1, vec41wi1wi1wi1
+@docs vec422, vec431, vec43f, vec4f, vec4f111, vec4f11f
+@docs vec4f11i1, vec4f11wi1, vec4f1f1, vec4f1ff, vec4f1fi1, vec4f1fwi1
+@docs vec4f1i11, vec4f1i1f, vec4f1i1i1, vec4f1i1wi1, vec4f1wi11, vec4f1wi1f
+@docs vec4f1wi1i1, vec4f1wi1wi1, vec4f3, vec4ff11, vec4ff1f, vec4ff1i1
+@docs vec4ff1wi1, vec4fff1, vec4ffff, vec4fffi1, vec4fffwi1, vec4ffi11
+@docs vec4ffi1f, vec4ffi1i1, vec4ffi1wi1, vec4ffwi11, vec4ffwi1f, vec4ffwi1i1
+@docs vec4ffwi1wi1, vec4fi111, vec4fi11f, vec4fi11i1, vec4fi11wi1, vec4fi1f1
+@docs vec4fi1ff, vec4fi1fi1, vec4fi1fwi1, vec4fi1i11, vec4fi1i1f, vec4fi1i1i1
+@docs vec4fi1i1wi1, vec4fi1wi11, vec4fi1wi1f, vec4fi1wi1i1, vec4fi1wi1wi1, vec4fwi111
+@docs vec4fwi11f, vec4fwi11i1, vec4fwi11wi1, vec4fwi1f1, vec4fwi1ff, vec4fwi1fi1
+@docs vec4fwi1fwi1, vec4fwi1i11, vec4fwi1i1f, vec4fwi1i1i1, vec4fwi1i1wi1, vec4fwi1wi11
+@docs vec4fwi1wi1f, vec4fwi1wi1i1, vec4fwi1wi1wi1, vec4i1, vec4i1111, vec4i111f
+@docs vec4i111i1, vec4i111wi1, vec4i11f1, vec4i11ff, vec4i11fi1, vec4i11fwi1
+@docs vec4i11i11, vec4i11i1f, vec4i11i1i1, vec4i11i1wi1, vec4i11wi11, vec4i11wi1f
+@docs vec4i11wi1i1, vec4i11wi1wi1, vec4i1f11, vec4i1f1f, vec4i1f1i1, vec4i1f1wi1
+@docs vec4i1ff1, vec4i1fff, vec4i1ffi1, vec4i1ffwi1, vec4i1fi11, vec4i1fi1f
+@docs vec4i1fi1i1, vec4i1fi1wi1, vec4i1fwi11, vec4i1fwi1f, vec4i1fwi1i1, vec4i1fwi1wi1
+@docs vec4i1i111, vec4i1i11f, vec4i1i11i1, vec4i1i11wi1, vec4i1i1f1, vec4i1i1ff
+@docs vec4i1i1fi1, vec4i1i1fwi1, vec4i1i1i11, vec4i1i1i1f, vec4i1i1i1i1, vec4i1i1i1wi1
+@docs vec4i1i1wi11, vec4i1i1wi1f, vec4i1i1wi1i1, vec4i1i1wi1wi1, vec4i1wi111, vec4i1wi11f
+@docs vec4i1wi11i1, vec4i1wi11wi1, vec4i1wi1f1, vec4i1wi1ff, vec4i1wi1fi1, vec4i1wi1fwi1
+@docs vec4i1wi1i11, vec4i1wi1i1f, vec4i1wi1i1i1, vec4i1wi1i1wi1, vec4i1wi1wi11, vec4i1wi1wi1f
+@docs vec4i1wi1wi1i1, vec4i1wi1wi1wi1, vec4wi1, vec4wi1111, vec4wi111f, vec4wi111i1
+@docs vec4wi111wi1, vec4wi11f1, vec4wi11ff, vec4wi11fi1, vec4wi11fwi1, vec4wi11i11
+@docs vec4wi11i1f, vec4wi11i1i1, vec4wi11i1wi1, vec4wi11wi11, vec4wi11wi1f, vec4wi11wi1i1
+@docs vec4wi11wi1wi1, vec4wi1f11, vec4wi1f1f, vec4wi1f1i1, vec4wi1f1wi1, vec4wi1ff1
+@docs vec4wi1fff, vec4wi1ffi1, vec4wi1ffwi1, vec4wi1fi11, vec4wi1fi1f, vec4wi1fi1i1
+@docs vec4wi1fi1wi1, vec4wi1fwi11, vec4wi1fwi1f, vec4wi1fwi1i1, vec4wi1fwi1wi1, vec4wi1i111
+@docs vec4wi1i11f, vec4wi1i11i1, vec4wi1i11wi1, vec4wi1i1f1, vec4wi1i1ff, vec4wi1i1fi1
+@docs vec4wi1i1fwi1, vec4wi1i1i11, vec4wi1i1i1f, vec4wi1i1i1i1, vec4wi1i1i1wi1, vec4wi1i1wi11
+@docs vec4wi1i1wi1f, vec4wi1i1wi1i1, vec4wi1i1wi1wi1, vec4wi1wi111, vec4wi1wi11f, vec4wi1wi11i1
+@docs vec4wi1wi11wi1, vec4wi1wi1f1, vec4wi1wi1ff, vec4wi1wi1fi1, vec4wi1wi1fwi1, vec4wi1wi1i11
+@docs vec4wi1wi1i1f, vec4wi1wi1i1i1, vec4wi1wi1i1wi1, vec4wi1wi1wi11, vec4wi1wi1wi1f, vec4wi1wi1wi1i1
+@docs vec4wi1wi1wi1wi1
+
+@docs radians_
+
+@docs degrees_
+
+@docs sin_
+
+@docs cos_
+
+@docs tan_
+
+@docs asin_
+
+@docs acos_
+
+@docs atan_
+
+@docs atan2_
+
+@docs sinh
+
+@docs cosh
+
+@docs tanh
+
+@docs asinh
+
+@docs acosh
+
+@docs atanh
+
+@docs pow
+
+@docs exp
+
+@docs log
+
+@docs exp2
+
+@docs log2
+
+@docs sqrt_
+
+@docs abs_
+
+@docs floor_
+
+@docs round_
+
+@docs min_
+
+@docs max_
+
+@docs clamp_
+
+@docs dFdx
+
+@docs dFdy
+
+@docs dFdxFine
+
+@docs dFdyFine
+
+@docs dFdxCoarse
+
+@docs dFdyCoarse
+
+@docs fwidth
+
+@docs fwidthFine
+
+@docs fwidthCoarse
 
 -}
 
