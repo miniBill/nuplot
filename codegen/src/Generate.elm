@@ -146,10 +146,7 @@ generate glsl =
                                 |> Dict.fromList
                                 |> Dict.insert "P32M1" TInt
                                 |> Dict.insert "P31" TInt
-                        , functionsEnv =
-                            builtinFunctions
-                                |> Dict.map
-                                    (\_ { return } -> return)
+                        , functionsEnv = Dict.empty
                         , variablesEnv =
                             uniforms
                                 |> List.map (\{ tipe, name } -> ( name, tipe ))
@@ -171,7 +168,7 @@ generate glsl =
                         uniformDecls =
                             List.map uniformToDeclaration uniforms
                     in
-                    Ok (decls ++ builtinDecls ++ uniformDecls)
+                    Ok (decls ++ uniformDecls)
 
                 Err e ->
                     Err ("Error generating file: " ++ e)
@@ -640,90 +637,43 @@ nop env =
 findDepsExpression : Expr -> Env -> Result String ( Env, SortedSet String )
 findDepsExpression root env =
     let
-        go : Expr -> Result String ( Type, SortedSet String )
+        go : Expr -> Result String (SortedSet String)
         go expr =
             case expr of
                 Float _ ->
-                    Ok ( TFloat, SortedSet.empty )
+                    Ok SortedSet.empty
 
                 Int _ ->
-                    Ok ( TInt, SortedSet.empty )
+                    Ok SortedSet.empty
 
                 Uint _ ->
-                    Ok ( TInt, SortedSet.empty )
+                    Ok SortedSet.empty
 
                 Double _ ->
-                    Ok ( TInt, SortedSet.empty )
+                    Ok SortedSet.empty
 
                 Bool _ ->
-                    Ok ( TBool, SortedSet.empty )
+                    Ok SortedSet.empty
 
-                Dot e field ->
-                    Result.andThen
-                        (\( et, deps ) ->
-                            Result.map
-                                (\t ->
-                                    ( t
-                                    , deps
-                                    )
-                                )
-                                (case ( et, String.length field ) of
-                                    ( TIVec2, 1 ) ->
-                                        Ok TInt
+                Dot e _ ->
+                    go e
 
-                                    ( _, 1 ) ->
-                                        Ok TFloat
-
-                                    ( _, 2 ) ->
-                                        Ok TVec2
-
-                                    ( _, 3 ) ->
-                                        Ok TVec3
-
-                                    _ ->
-                                        Err <| "Unknown size when accessing field " ++ field
-                                )
-                        )
-                        (go e)
-
-                Variable "P32M1" ->
-                    Ok ( TInt, SortedSet.empty )
-
-                Variable "P31" ->
-                    Ok ( TInt, SortedSet.empty )
-
-                Variable v ->
-                    case Dict.get v env.variablesEnv of
-                        Nothing ->
-                            Err <| "Couldn't find variable " ++ v
-
-                        Just t ->
-                            Ok ( t, SortedSet.empty )
+                Variable _ ->
+                    Ok SortedSet.empty
 
                 Call (Variable f) args ->
                     args
                         |> Result.Extra.combineMap go
-                        |> Result.map List.unzip
                         |> Result.andThen
-                            (\( argTypes, argDeps ) ->
+                            (\argDeps ->
                                 let
-                                    fname =
-                                        fullName f argTypes
+                                    initial =
+                                        SortedSet.singleton (fullName f [])
+
+                                    deps =
+                                        List.foldl SortedSet.insertAll initial argDeps
                                 in
-                                case Dict.get fname env.functionsEnv of
-                                    Nothing ->
-                                        Err <| "Function " ++ fname ++ " not found"
-
-                                    Just to ->
-                                        let
-                                            deps =
-                                                if Dict.member fname builtinFunctions then
-                                                    List.foldl SortedSet.insertAll SortedSet.empty argDeps
-
-                                                else
-                                                    List.foldl SortedSet.insertAll (SortedSet.singleton fname) argDeps
-                                        in
-                                        Ok ( to, deps )
+                                Ok deps
                             )
 
                 Call _ _ ->
@@ -731,11 +681,9 @@ findDepsExpression root env =
 
                 Ternary c t f ->
                     Result.map3
-                        (\( _, cd ) ( tt, td ) ( _, fd ) ->
-                            ( tt
-                            , SortedSet.insertAll cd td
+                        (\cd td fd ->
+                            SortedSet.insertAll cd td
                                 |> SortedSet.insertAll fd
-                            )
                         )
                         (go c)
                         (go t)
@@ -744,139 +692,16 @@ findDepsExpression root env =
                 UnaryOperation _ e ->
                     go e
 
-                BinaryOperation l bop r ->
-                    Result.andThen
-                        (\( ( lt, ld ), ( rt, rd ) ) ->
-                            Result.map
-                                (\t -> ( t, SortedSet.insertAll ld rd ))
-                                (if lt == rt then
-                                    Ok lt
-
-                                 else
-                                    case ( lt, rt ) of
-                                        ( TFloat, _ ) ->
-                                            Ok rt
-
-                                        ( _, TFloat ) ->
-                                            Ok lt
-
-                                        ( TInt, _ ) ->
-                                            Ok rt
-
-                                        ( _, TInt ) ->
-                                            Ok lt
-
-                                        _ ->
-                                            Err <| "Don't know what the result of " ++ Glsl.PrettyPrinter.type_ lt ++ " " ++ binaryOperationToString bop ++ " " ++ Glsl.PrettyPrinter.type_ rt
-                                )
+                BinaryOperation l _ r ->
+                    Result.map2
+                        (\ld rd ->
+                            SortedSet.insertAll ld rd
                         )
-                        (Result.map2 Tuple.pair
-                            (go l)
-                            (go r)
-                        )
+                        (go l)
+                        (go r)
     in
     go root
-        |> Result.map (\( _, deps ) -> ( env, deps ))
-
-
-binaryOperationToString : BinaryOperation -> String
-binaryOperationToString bop =
-    case bop of
-        Add ->
-            "+"
-
-        Subtract ->
-            "-"
-
-        By ->
-            "*"
-
-        Div ->
-            "/"
-
-        And ->
-            "&&"
-
-        Or ->
-            "||"
-
-        ArraySubscript ->
-            "[]"
-
-        Mod ->
-            "%"
-
-        ShiftLeft ->
-            "<<"
-
-        ShiftRight ->
-            ">>"
-
-        BitwiseAnd ->
-            "&"
-
-        BitwiseOr ->
-            "|"
-
-        BitwiseXor ->
-            "^"
-
-        Xor ->
-            "^^"
-
-        Assign ->
-            "="
-
-        ComboAdd ->
-            "+="
-
-        ComboSubtract ->
-            "-="
-
-        ComboBy ->
-            "*="
-
-        ComboDiv ->
-            "/="
-
-        ComboMod ->
-            "%="
-
-        ComboLeftShift ->
-            "<<="
-
-        ComboRightShift ->
-            ">>="
-
-        ComboBitwiseAnd ->
-            "&="
-
-        ComboBitwiseXor ->
-            "^="
-
-        ComboBitwiseOr ->
-            "|="
-
-        Comma ->
-            ","
-
-        RelationOperation LessThan ->
-            "<"
-
-        RelationOperation GreaterThan ->
-            ">"
-
-        RelationOperation LessThanOrEquals ->
-            "<="
-
-        RelationOperation GreaterThanOrEquals ->
-            ">="
-
-        RelationOperation Equals ->
-            "=="
-
-        RelationOperation NotEquals ->
-            "!="
+        |> Result.map (\deps -> ( env, deps ))
 
 
 fullName : String -> List Type -> String
@@ -1009,307 +834,3 @@ typeToShort t =
 
         TOut tt ->
             "o" ++ typeToShort tt
-
-
-builtinFunctions : Dict String { baseName : String, args : List Type, return : Type }
-builtinFunctions =
-    let
-        overload : List String -> List ( List Type, Type ) -> List ( String, List Type, Type )
-        overload names kinds =
-            List.Extra.lift2
-                (\name ( inTypes, result ) -> ( name, inTypes, result ))
-                names
-                kinds
-
-        regular : List ( String, List Type, Type )
-        regular =
-            [ builtin_v_v
-            , builtin_v_s
-            , builtin_vv_v
-            , builtin_vv_s
-            , builtin_vs_v
-            , builtin_sv_v
-            , builtin_vvv_v
-            , builtin_vss_v
-            , builtin_ssv_v
-            , builtin_vvs_v
-            ]
-                |> List.concatMap (\( names, kinds ) -> overload names kinds)
-
-        vecs : List ( String, List Type, Type )
-        vecs =
-            [ ( 2, TVec2 )
-            , ( 3, TVec3 )
-            , ( 4, TVec4 )
-            ]
-                |> List.concatMap
-                    (\( size, type_ ) ->
-                        List.map
-                            (\inTypes ->
-                                ( "vec" ++ String.fromInt size, inTypes, type_ )
-                            )
-                            ([ TFloat, TInt ]
-                                |> List.repeat size
-                                |> List.Extra.cartesianProduct
-                                |> (++)
-                                    (if size == 4 then
-                                        [ [ TInt ]
-                                        , [ TFloat ]
-                                        , [ TFloat, TVec3 ]
-                                        , [ TVec3, TFloat ]
-                                        ]
-
-                                     else
-                                        [ [ TInt ], [ TFloat ] ]
-                                    )
-                            )
-                    )
-
-        mats : List ( String, List Type, Type )
-        mats =
-            [ ( [ TVec3, TVec3, TVec3 ], 3, TMat3 )
-            , ( [ TFloat ], 3, TMat3 )
-            ]
-                |> List.map
-                    (\( inTypes, size, type_ ) ->
-                        ( "mat" ++ String.fromInt size
-                        , inTypes
-                        , type_
-                        )
-                    )
-
-        ivecs : List ( String, List Type, Type )
-        ivecs =
-            [ ( 2, TVec2 )
-            , ( 3, TVec3 )
-            , ( 4, TVec4 )
-            ]
-                |> List.map
-                    (\( size, type_ ) ->
-                        ( "ivec" ++ String.fromInt size, List.repeat size TInt, type_ )
-                    )
-
-        others : List ( String, List Type, Type )
-        others =
-            [ ( "cross", [ TVec3, TVec3 ], TVec3 )
-            , ( "float", [ TInt ], TFloat )
-            , ( "int", [ TFloat ], TInt )
-            ]
-
-        builtTuple :
-            ( String, List Type, Type )
-            -> ( String, { baseName : String, args : List Type, return : Type } )
-        builtTuple ( name, inTypes, resultType ) =
-            ( fullName name inTypes, { baseName = name, args = inTypes, return = resultType } )
-    in
-    (regular ++ vecs ++ ivecs ++ mats ++ others)
-        |> List.map builtTuple
-        |> Dict.fromList
-
-
-builtin_v_s : ( List String, List ( List Type, Type ) )
-builtin_v_s =
-    ( [ -- Geometric
-        "length"
-      ]
-    , [ ( [ TFloat ], TFloat )
-      , ( [ TVec2 ], TFloat )
-      , ( [ TVec3 ], TFloat )
-      , ( [ TVec4 ], TFloat )
-      ]
-    )
-
-
-builtin_v_v : ( List String, List ( List Type, Type ) )
-builtin_v_v =
-    ( [ "fwidth"
-
-      -- Rounding
-      , "ceil"
-      , "floor"
-      , "fract"
-
-      -- Complex and power
-      , "sign"
-      , "exp"
-      , "log"
-      , "abs"
-      , "exp2"
-      , "log2"
-      , "sqrt"
-      , "inversesqrt"
-
-      -- Trig
-      , "radians"
-      , "degrees"
-      , "sin"
-      , "cos"
-      , "tan"
-      , "asin"
-      , "acos"
-      , "atan"
-      , "normalize"
-      ]
-    , [ ( [ TFloat ], TFloat )
-      , ( [ TVec2 ], TVec2 )
-      , ( [ TVec3 ], TVec3 )
-      , ( [ TVec4 ], TVec4 )
-      ]
-    )
-
-
-builtin_vv_v : ( List String, List ( List Type, Type ) )
-builtin_vv_v =
-    ( [ -- Comparison
-        "min"
-      , "max"
-
-      -- Complex and power
-      , "pow"
-
-      -- Trig
-      , "atan"
-
-      -- Geometry
-      , "reflect"
-
-      -- Other
-      , "mod"
-      , "step"
-      ]
-    , [ ( [ TFloat, TFloat ], TFloat )
-      , ( [ TVec2, TVec2 ], TVec2 )
-      , ( [ TVec3, TVec3 ], TVec3 )
-      , ( [ TVec4, TVec4 ], TVec4 )
-      ]
-    )
-
-
-builtin_sv_v : ( List String, List ( List Type, Type ) )
-builtin_sv_v =
-    ( [ -- Other
-        "step"
-      ]
-    , [ ( [ TFloat, TFloat ], TFloat )
-      , ( [ TFloat, TVec2 ], TVec2 )
-      , ( [ TFloat, TVec3 ], TVec3 )
-      , ( [ TFloat, TVec4 ], TVec4 )
-      ]
-    )
-
-
-builtin_vs_v : ( List String, List ( List Type, Type ) )
-builtin_vs_v =
-    ( [ -- Comparison
-        "min"
-      , "max"
-
-      -- Other
-      , "mod"
-      ]
-    , [ ( [ TFloat, TFloat ], TFloat )
-      , ( [ TVec2, TFloat ], TVec2 )
-      , ( [ TVec3, TFloat ], TVec3 )
-      , ( [ TVec4, TFloat ], TVec4 )
-      ]
-    )
-
-
-builtin_vv_s : ( List String, List ( List Type, Type ) )
-builtin_vv_s =
-    ( [ -- Geometric
-        "distance"
-      , "dot"
-      ]
-    , [ ( [ TFloat, TFloat ], TFloat )
-      , ( [ TVec2, TVec2 ], TFloat )
-      , ( [ TVec3, TVec3 ], TFloat )
-      , ( [ TVec4, TVec4 ], TFloat )
-      ]
-    )
-
-
-builtin_vvs_v : ( List String, List ( List Type, Type ) )
-builtin_vvs_v =
-    ( [ --Geometric
-        "refract"
-
-      -- Other
-      , "mix"
-      ]
-    , [ ( [ TFloat, TFloat, TFloat ], TFloat )
-      , ( [ TVec2, TVec2, TFloat ], TVec2 )
-      , ( [ TVec3, TVec3, TFloat ], TVec3 )
-      , ( [ TVec4, TVec4, TFloat ], TVec4 )
-      ]
-    )
-
-
-builtin_ssv_v : ( List String, List ( List Type, Type ) )
-builtin_ssv_v =
-    ( [ -- Other
-        "smoothstep"
-      ]
-    , [ ( [ TFloat, TFloat, TFloat ], TFloat )
-      , ( [ TFloat, TFloat, TVec2 ], TVec2 )
-      , ( [ TFloat, TFloat, TVec3 ], TVec3 )
-      , ( [ TFloat, TFloat, TVec4 ], TVec4 )
-      ]
-    )
-
-
-builtin_vss_v : ( List String, List ( List Type, Type ) )
-builtin_vss_v =
-    ( [ -- Other
-        "clamp"
-      ]
-    , [ ( [ TFloat, TFloat, TFloat ], TFloat )
-      , ( [ TVec2, TFloat, TFloat ], TVec2 )
-      , ( [ TVec3, TFloat, TFloat ], TVec3 )
-      , ( [ TVec4, TFloat, TFloat ], TVec4 )
-      ]
-    )
-
-
-builtin_vvv_v : ( List String, List ( List Type, Type ) )
-builtin_vvv_v =
-    ( [ -- Other
-        "clamp"
-      , "mix"
-      , "smoothstep"
-
-      -- Geometry
-      , "faceforward"
-      ]
-    , [ ( [ TFloat, TFloat, TFloat ], TFloat )
-      , ( [ TVec2, TVec2, TVec2 ], TVec2 )
-      , ( [ TVec3, TVec3, TVec3 ], TVec3 )
-      , ( [ TVec4, TVec4, TVec4 ], TVec4 )
-      ]
-    )
-
-
-builtinDecls : List ( Maybe String, Elm.Declaration )
-builtinDecls =
-    builtinFunctions
-        |> Dict.toList
-        |> List.map
-            (\( _, { baseName, args, return } ) ->
-                ( Just baseName
-                , wrapFunction
-                    baseName
-                    SortedSet.empty
-                    (List.indexedMap
-                        (\i type_ -> ( type_, indexedVar i ))
-                        args
-                    )
-                    return
-                    |> Tuple.second
-                    |> Elm.expose
-                )
-            )
-
-
-indexedVar : Int -> String
-indexedVar i =
-    String.fromChar <| Char.fromCode <| Char.toCode 'a' + i
