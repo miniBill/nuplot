@@ -1,0 +1,9 @@
+{
+    "targets": {
+        "UI": {
+            "inputs": ["src/elm/UI.elm"],
+            "output": "src/build/ui.js"
+        }
+    },
+    "serve": "src"
+}

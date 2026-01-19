@@ -17,14 +17,12 @@
     "devDependencies": {
         "elm-optimize-level-2": "^0.1.5",
         "elm-review": "^2.10.2",
-        "elm-watch": "^1.1.2",
-        "typescript": "^4.3.5"
+        "elm-watch": "^2.0.0-beta.6",
+        "typescript": "^5.8.3"
     },
     "scripts": {
-        "build": "rm -rf .cache dist elm-stuff; elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js && parcel build src/index.html --public-url .",
-        "buildForBenchmark": "rm -rf .cache elm-stuff dist; elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js && parcel build --no-minify src/index.html --public-url .",
-        "start": "parcel src/dev.html",
-        "test": "elm-test"
+        "start": "yarn elm-watch hot",
+        "test": "elm-test-rs"
     },
     "name": "nuplot",
     "description": "A small CAS and plotter",
@@ -53,6 +51,5 @@
     },
     "dependencies": {
         "localforage": "^1.9.0"
-    },
-    "packageManager": "yarn@4.0.2"
+    }
 }
