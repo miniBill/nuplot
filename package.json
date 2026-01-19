@@ -15,10 +15,10 @@
         ]
     },
     "devDependencies": {
-        "elm-optimize-level-2": "^0.1.5",
-        "elm-review": "^2.10.2",
-        "elm-watch": "^1.1.2",
-        "typescript": "^4.3.5"
+        "elm-optimize-level-2": "^0.3.5",
+        "elm-review": "^2.13.5",
+        "elm-watch": "^1.2.3",
+        "typescript": "^5.9.3"
     },
     "scripts": {
         "build": "rm -rf .cache dist elm-stuff; elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js && parcel build src/index.html --public-url .",
@@ -52,7 +52,7 @@
         }
     },
     "dependencies": {
-        "localforage": "^1.9.0"
+        "localforage": "^1.10.0"
     },
     "packageManager": "yarn@4.0.2"
 }
