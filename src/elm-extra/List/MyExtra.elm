@@ -1,9 +1,4 @@
-module List.MyExtra exposing (LeftOrRight(..), categorize, groupOneWith, unzip3)
-
-
-unzip3 : List ( a, b, c ) -> ( List a, List b, List c )
-unzip3 =
-    List.foldr (\( x, y, z ) ( xs, ys, zs ) -> ( x :: xs, y :: ys, z :: zs )) ( [], [], [] )
+module List.MyExtra exposing (LeftOrRight(..), categorize, groupOneWith)
 
 
 groupOneWith : (a -> a -> Maybe a) -> List a -> List a

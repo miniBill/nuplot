@@ -1,4 +1,4 @@
-module SortedAnySet exposing (SortedAnySet, empty, fromList, insert, isEmpty, member, singleton, toList)
+module SortedAnySet exposing (SortedAnySet, empty, insert, member, toList)
 
 
 type SortedAnySet a
@@ -19,26 +19,11 @@ insert x ((SortedAnySet list) as o) =
         SortedAnySet <| x :: list
 
 
-fromList : List a -> SortedAnySet a
-fromList =
-    List.foldr insert empty
-
-
 toList : SortedAnySet a -> List a
 toList (SortedAnySet list) =
     List.reverse list
 
 
-singleton : a -> SortedAnySet a
-singleton x =
-    SortedAnySet [ x ]
-
-
 empty : SortedAnySet a
 empty =
     SortedAnySet []
-
-
-isEmpty : SortedAnySet a -> Bool
-isEmpty (SortedAnySet l) =
-    List.isEmpty l
