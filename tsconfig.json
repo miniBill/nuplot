@@ -8,6 +8,7 @@
         "strict": true,
         "sourceMap": true,
         "allowSyntheticDefaultImports": true,
-        "moduleResolution": "node"
+        "moduleResolution": "node",
+        "lib": ["WebWorker"]
     }
 }
