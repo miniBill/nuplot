@@ -47,8 +47,5 @@
         "development": {
             "disabled": true
         }
-    },
-    "dependencies": {
-        "localforage": "^1.10.0"
     }
 }

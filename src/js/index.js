@@ -1,6 +1,6 @@
 import { NuPlot } from "./nuplot.js";
 import { KaTeXElement } from "./katex.js";
-import localForage from "/node_modules/localforage";
+import localForage from "./localforage.min.js";
 
 // declare class ClipboardItem {
 //     constructor(data: { [mimeType: string]: Blob });
