@@ -1,10 +1,4 @@
 elm-stuff
-.cache
 node_modules
 /dist
-
-# Ignore Yarn caches
-.yarn/*
-!.yarn/releases
-!.yarn/plugins
-.pnp.*
+build

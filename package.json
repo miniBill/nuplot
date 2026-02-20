@@ -15,15 +15,12 @@
         ]
     },
     "devDependencies": {
-        "elm-optimize-level-2": "^0.3.5",
         "elm-review": "^2.13.5",
-        "elm-watch": "^1.2.3",
-        "typescript": "^5.9.3"
+        "elm-watch": "^2.0.0-beta.12"
     },
     "scripts": {
-        "build": "rm -rf .cache dist elm-stuff; elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js && parcel build src/index.html --public-url .",
-        "buildForBenchmark": "rm -rf .cache elm-stuff dist; elm-optimize-level-2 src/elm/UI.elm --output src/optimized.js && parcel build --no-minify src/index.html --public-url .",
-        "start": "parcel src/dev.html",
+        "build": "rm -rf dist; elm-watch make --optimize",
+        "start": "elm-watch hot",
         "test": "elm-test"
     },
     "name": "nuplot",

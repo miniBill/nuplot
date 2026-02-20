@@ -41,7 +41,7 @@
     <body>
         <div id="main"></div>
 
-        <script type="module" src="./ts/dev.ts"></script>
+        <script src="./build/main.js"></script>
 
         <noscript
             >Unfortunately this application relies on Javascript for working,
@@ -49,11 +49,9 @@
             to let it run.</noscript
         >
 
-        <script type="module">
+        <script>
             if ("serviceWorker" in navigator)
-                navigator.serviceWorker.register(
-                    new URL("./service-worker.js", import.meta.url)
-                );
+                navigator.serviceWorker.register("/service-worker.js");
         </script>
     </body>
 </html>
