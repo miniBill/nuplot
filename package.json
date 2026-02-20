@@ -53,6 +53,5 @@
     },
     "dependencies": {
         "localforage": "^1.10.0"
-    },
-    "packageManager": "yarn@4.0.2"
+    }
 }

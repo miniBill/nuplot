@@ -5,13 +5,13 @@
     "": {
       "name": "nuplot",
       "dependencies": {
-        "localforage": "latest",
+        "localforage": "^1.10.0",
       },
       "devDependencies": {
-        "elm-optimize-level-2": "latest",
-        "elm-review": "latest",
-        "elm-watch": "latest",
-        "typescript": "latest",
+        "elm-optimize-level-2": "^0.3.5",
+        "elm-review": "^2.13.5",
+        "elm-watch": "^1.2.3",
+        "typescript": "^5.9.3",
       },
     },
   },
