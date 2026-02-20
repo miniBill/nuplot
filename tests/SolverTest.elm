@@ -47,11 +47,10 @@ toTestSolve ( from, x, to ) =
         toString e =
             Expression.toString e ++ " = " ++ Debug.toString e
     in
-    test ("Has the correct solutions for " ++ Expression.toString from) <|
-        \_ ->
-            Expect.equalLists
-                (List.map toString solutions)
-                (List.map toString to)
+    test ("Has the correct solutions for " ++ Expression.toString from) <| \_ ->
+    Expect.equalLists
+        (List.map toString solutions)
+        (List.map toString to)
 
 
 solveTests : List ( Expression, Expression, List Expression )

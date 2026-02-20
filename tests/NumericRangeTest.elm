@@ -12,14 +12,12 @@ import Test exposing (Test, describe)
 suite : Test
 suite =
     describe "The NumericRange module"
-        [ Test.test "Real² = Nonegative" <|
-            \() ->
-                square x
-                    |> expectValueRange Nonnegative
-        , Test.test "sin(Real² + Real²) = Real" <|
-            \() ->
-                sin_ (plus [ square x, square y ])
-                    |> expectValueRange Real
+        [ Test.test "Real² = Nonegative" <| \() ->
+        square x
+            |> expectValueRange Nonnegative
+        , Test.test "sin(Real² + Real²) = Real" <| \() ->
+        sin_ (plus [ square x, square y ])
+            |> expectValueRange Real
         ]
 
 

@@ -20,16 +20,14 @@ suite =
                 doublySimplified =
                     Expression.Simplify.simplify simplified
             in
-            [ test (Expression.toString from ++ " simplifies to " ++ Expression.toString to) <|
-                \_ ->
-                    Expect.equal
-                        (Expression.toString to ++ " = " ++ Debug.toString to)
-                        (Expression.toString simplified ++ " = " ++ Debug.toString simplified)
-            , test ("Simplification is idempotent for " ++ Expression.toString from) <|
-                \_ ->
-                    Expect.equal
-                        (Expression.toString simplified ++ " = " ++ Debug.toString simplified)
-                        (Expression.toString doublySimplified ++ " = " ++ Debug.toString doublySimplified)
+            [ test (Expression.toString from ++ " simplifies to " ++ Expression.toString to) <| \_ ->
+            Expect.equal
+                (Expression.toString to ++ " = " ++ Debug.toString to)
+                (Expression.toString simplified ++ " = " ++ Debug.toString simplified)
+            , test ("Simplification is idempotent for " ++ Expression.toString from) <| \_ ->
+            Expect.equal
+                (Expression.toString simplified ++ " = " ++ Debug.toString simplified)
+                (Expression.toString doublySimplified ++ " = " ++ Debug.toString doublySimplified)
             ]
 
         toTestsStepSimplify ( from, to ) =
@@ -37,11 +35,10 @@ suite =
                 stepSimplified =
                     Expression.Simplify.stepSimplify Dict.empty from
             in
-            [ test (Expression.toString from ++ " step simplifies to " ++ Expression.toString to) <|
-                \_ ->
-                    Expect.equal
-                        (Expression.toString to ++ " = " ++ Debug.toString to)
-                        (Expression.toString stepSimplified ++ " = " ++ Debug.toString stepSimplified)
+            [ test (Expression.toString from ++ " step simplifies to " ++ Expression.toString to) <| \_ ->
+            Expect.equal
+                (Expression.toString to ++ " = " ++ Debug.toString to)
+                (Expression.toString stepSimplified ++ " = " ++ Debug.toString stepSimplified)
             ]
 
         toTestSort ( aop, from, to ) =
@@ -49,11 +46,10 @@ suite =
                 sorted =
                     Expression.Simplify.sortByDegree aop from
             in
-            test (Expression.toString (List from) ++ " sorts (" ++ Debug.toString aop ++ ") to " ++ Expression.toString (List to)) <|
-                \_ ->
-                    Expect.equal
-                        (Expression.toString (List to) ++ " = " ++ Debug.toString to)
-                        (Expression.toString (List sorted) ++ " = " ++ Debug.toString sorted)
+            test (Expression.toString (List from) ++ " sorts (" ++ Debug.toString aop ++ ") to " ++ Expression.toString (List to)) <| \_ ->
+            Expect.equal
+                (Expression.toString (List to) ++ " = " ++ Debug.toString to)
+                (Expression.toString (List sorted) ++ " = " ++ Debug.toString sorted)
     in
     describe "The Expression.Simplify module"
         [ describe "Expression.Simplify.simplify" <|

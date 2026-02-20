@@ -12,22 +12,21 @@ suite : Test
 suite =
     let
         toTest ( from, to, expectedString ) =
-            test ("has the same behaviour of the java one on " ++ from) <|
-                \_ ->
-                    let
-                        parsed =
-                            Parser.parse from
-                    in
-                    case parsed of
-                        Ok ok ->
-                            Expect.all
-                                [ Expect.equal (Expression.toString to ++ " = " ++ Debug.toString to)
-                                , Expect.equal (expectedString ++ " = " ++ Debug.toString to)
-                                ]
-                                (Expression.toString ok ++ " = " ++ Debug.toString ok)
+            test ("has the same behaviour of the java one on " ++ from) <| \_ ->
+            let
+                parsed =
+                    Parser.parse from
+            in
+            case parsed of
+                Ok ok ->
+                    Expect.all
+                        [ Expect.equal (Expression.toString to ++ " = " ++ Debug.toString to)
+                        , Expect.equal (expectedString ++ " = " ++ Debug.toString to)
+                        ]
+                        (Expression.toString ok ++ " = " ++ Debug.toString ok)
 
-                        Err err ->
-                            Expect.fail (Parser.errorsToString from err).en
+                Err err ->
+                    Expect.fail (Parser.errorsToString from err).en
     in
     describe "The Parser module"
         [ describe "Parser.parse" <|

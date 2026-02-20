@@ -34,26 +34,25 @@ constantToGlsl c =
 
 by2Tuple : ( FunDecl, Expression Vec2 -> Expression Vec2 -> Expression Vec2 )
 by2Tuple =
-    fun2 vec2T "by" (vec2T "a") (vec2T "b") <|
-        \a b ->
-            let
-                da =
-                    dotted2 a
+    fun2 vec2T "by" (vec2T "a") (vec2T "b") <| \a b ->
+    let
+        da =
+            dotted2 a
 
-                db =
-                    dotted2 b
-            in
-            [ return <|
-                vec2
-                    (subtract
-                        (by da.x db.x)
-                        (by da.y db.y)
-                    )
-                    (add
-                        (by da.x db.y)
-                        (by da.y db.x)
-                    )
-            ]
+        db =
+            dotted2 b
+    in
+    [ return <|
+        vec2
+            (subtract
+                (by da.x db.x)
+                (by da.y db.y)
+            )
+            (add
+                (by da.x db.y)
+                (by da.y db.x)
+            )
+    ]
 
 
 by2Decl : FunDecl
@@ -68,9 +67,8 @@ by2 =
 
 by3Tuple : ( FunDecl, Expression Vec2 -> Expression Vec2 -> Expression Vec2 -> Expression Vec2 )
 by3Tuple =
-    fun3 vec2T "by" (vec2T "a") (vec2T "b") (vec2T "c") <|
-        \a b c ->
-            [ return <| by2 (by2 a b) c ]
+    fun3 vec2T "by" (vec2T "a") (vec2T "b") (vec2T "c") <| \a b c ->
+    [ return <| by2 (by2 a b) c ]
 
 
 by3Decl : FunDecl
@@ -85,27 +83,23 @@ by3 =
 
 div2Tuple : ( FunDecl, Expression Vec2 -> Expression Vec2 -> Expression Vec2 )
 div2Tuple =
-    fun2 vec2T "div" (vec2T "a") (vec2T "b") <|
-        \a b ->
-            let
-                da =
-                    dotted2 a
+    fun2 vec2T "div" (vec2T "a") (vec2T "b") <| \a b ->
+    let
+        da =
+            dotted2 a
 
-                db =
-                    dotted2 b
-            in
-            def floatT "k" (div one <| dot2 b b) <|
-                \k ->
-                    def floatT "r" (by k <| dot2 a b) <|
-                        \r ->
-                            def floatT
-                                "i"
-                                (by k
-                                    (subtract (by da.y db.x) (by da.x db.y))
-                                )
-                            <|
-                                \i ->
-                                    [ return <| vec2 r i ]
+        db =
+            dotted2 b
+    in
+    def floatT "k" (div one <| dot2 b b) <| \k ->
+    def floatT "r" (by k <| dot2 a b) <| \r ->
+    def floatT
+        "i"
+        (by k
+            (subtract (by da.y db.x) (by da.x db.y))
+        )
+    <| \i ->
+    [ return <| vec2 r i ]
 
 
 div2Decl : FunDecl
@@ -154,26 +148,25 @@ straightOperationToGlsl op =
 
         GlslPower ->
             [ Tuple.first <|
-                fun2 vec2T "cpow" (vec2T "w") (vec2T "z") <|
-                    \w z ->
-                        let
-                            dw =
-                                dotted2 w
+                fun2 vec2T "cpow" (vec2T "w") (vec2T "z") <| \w z ->
+                let
+                    dw =
+                        dotted2 w
 
-                            dz =
-                                dotted2 z
-                        in
-                        [ return <|
-                            ternary
-                                (ands
-                                    [ geq dw.x zero
-                                    , eq dw.y zero
-                                    , eq dz.y zero
-                                    ]
-                                )
-                                (vec2 (pow dw.x dz.x) zero)
-                                (call1 (unknownTypedName "cexp") <| by (call1 (unknownTypedName "cln") w) z)
-                        ]
+                    dz =
+                        dotted2 z
+                in
+                [ return <|
+                    ternary
+                        (ands
+                            [ geq dw.x zero
+                            , eq dw.y zero
+                            , eq dz.y zero
+                            ]
+                        )
+                        (vec2 (pow dw.x dz.x) zero)
+                        (call1 (unknownTypedName "cexp") <| by (call1 (unknownTypedName "cln") w) z)
+                ]
             ]
 
         GlslRelations ->
@@ -328,17 +321,14 @@ straightFunctionToGlsl name =
 
         Tanh11 ->
             [ Tuple.first <|
-                fun1 floatT "tanh" (floatT "x") <|
-                    \x ->
-                        if_ (gt (abs_ x) (float 10))
-                            (return <| sign x)
-                            :: (def floatT "p" (exp x) <|
-                                    \p ->
-                                        def floatT "m" (exp <| negate_ x) <|
-                                            \m ->
-                                                [ return <| div (subtract p m) (add p m)
-                                                ]
-                               )
+                fun1 floatT "tanh" (floatT "x") <| \x ->
+                if_ (gt (abs_ x) (float 10))
+                    (return <| sign x)
+                    :: (def floatT "p" (exp x) <| \p ->
+                    def floatT "m" (exp <| negate_ x) <| \m ->
+                    [ return <| div (subtract p m) (add p m)
+                    ]
+                       )
             ]
 
         Sin22 ->
@@ -1758,84 +1748,65 @@ pixel2Decl uniforms pixels =
                 |> List.concat
     in
     fun0 vec4T "pixel2" <|
-        def vec2T "canvasSize" (vec2 uniforms.u_canvasWidth uniforms.u_canvasHeight) <|
-            \canvasSize ->
-                def vec2T "uv_centered" (subtract (dotted4 gl_FragCoord).xy (byF (float 0.5) canvasSize)) <|
-                    \uv_centered ->
-                        def vec2T "viewportSize" (byF (div uniforms.u_viewportWidth uniforms.u_canvasWidth) canvasSize) <|
-                            \viewportSize ->
-                                def vec2T "uv" (by (div uv_centered canvasSize) viewportSize) <|
-                                    \uv ->
-                                        def vec2T "c" (add uniforms.u_zoomCenter uv) <|
-                                            \c ->
-                                                def floatT "x" (dotted2 c).x <|
-                                                    \x ->
-                                                        def floatT "y" (dotted2 c).y <|
-                                                            \y ->
-                                                                def floatT "deltaX" (div uniforms.u_viewportWidth uniforms.u_canvasWidth) <|
-                                                                    \deltaX ->
-                                                                        def floatT "deltaY" (div uniforms.u_viewportWidth uniforms.u_canvasHeight) <|
-                                                                            \deltaY ->
-                                                                                def vec3T "px" vec3Zero <|
-                                                                                    \px ->
-                                                                                        decl vec3T "curr" <|
-                                                                                            \curr ->
-                                                                                                inner deltaX deltaY x y px curr
-                                                                                                    ++ (def floatT "maxDelta" (max_ deltaX deltaY) <|
-                                                                                                            \maxDelta ->
-                                                                                                                def vec3T
-                                                                                                                    "yax"
-                                                                                                                    (ternary
-                                                                                                                        (eq uniforms.u_drawAxes one)
-                                                                                                                        (byF (axis x y maxDelta) (vec3 zero one zero))
-                                                                                                                        vec3Zero
-                                                                                                                    )
-                                                                                                                <|
-                                                                                                                    \yax ->
-                                                                                                                        def vec3T
-                                                                                                                            "xax"
-                                                                                                                            (ternary
-                                                                                                                                (eq uniforms.u_drawAxes one)
-                                                                                                                                (byF (axis y x maxDelta) (vec3 one zero zero))
-                                                                                                                                vec3Zero
-                                                                                                                            )
-                                                                                                                        <|
-                                                                                                                            \xax ->
-                                                                                                                                [ return <| vec4_3_1 (max_ px (max_ xax yax)) one
-                                                                                                                                ]
-                                                                                                       )
+        def vec2T "canvasSize" (vec2 uniforms.u_canvasWidth uniforms.u_canvasHeight) <| \canvasSize ->
+        def vec2T "uv_centered" (subtract (dotted4 gl_FragCoord).xy (byF (float 0.5) canvasSize)) <| \uv_centered ->
+        def vec2T "viewportSize" (byF (div uniforms.u_viewportWidth uniforms.u_canvasWidth) canvasSize) <| \viewportSize ->
+        def vec2T "uv" (by (div uv_centered canvasSize) viewportSize) <| \uv ->
+        def vec2T "c" (add uniforms.u_zoomCenter uv) <| \c ->
+        def floatT "x" (dotted2 c).x <| \x ->
+        def floatT "y" (dotted2 c).y <| \y ->
+        def floatT "deltaX" (div uniforms.u_viewportWidth uniforms.u_canvasWidth) <| \deltaX ->
+        def floatT "deltaY" (div uniforms.u_viewportWidth uniforms.u_canvasHeight) <| \deltaY ->
+        def vec3T "px" vec3Zero <| \px ->
+        decl vec3T "curr" <| \curr ->
+        inner deltaX deltaY x y px curr
+            ++ (def floatT "maxDelta" (max_ deltaX deltaY) <| \maxDelta ->
+            def vec3T
+                "yax"
+                (ternary
+                    (eq uniforms.u_drawAxes one)
+                    (byF (axis x y maxDelta) (vec3 zero one zero))
+                    vec3Zero
+                )
+            <| \yax ->
+            def vec3T
+                "xax"
+                (ternary
+                    (eq uniforms.u_drawAxes one)
+                    (byF (axis y x maxDelta) (vec3 one zero zero))
+                    vec3Zero
+                )
+            <| \xax ->
+            [ return <| vec4_3_1 (max_ px (max_ xax yax)) one
+            ]
+               )
 
 
 axisTuple : ( FunDecl, Expression Float -> Expression Float -> Expression Float -> Expression Float )
 axisTuple =
-    fun3 floatT "axis" (floatT "coord") (floatT "otherCoord") (floatT "maxDelta") <|
-        \coord otherCoord maxDelta ->
-            def floatT "across" (subtract one <| abs_ <| div coord maxDelta) <|
-                \across ->
-                    if_ (lt across (float -12))
-                        (return zero)
-                        :: (def floatT "smallUnit" (pow (float 10) (ceil_ (log10 maxDelta))) <|
-                                \smallUnit ->
-                                    if_ (ands [ lt across zero, lt (abs_ otherCoord) (by maxDelta (float 2)) ])
-                                        (return zero)
-                                        :: (def floatT
-                                                "unit"
-                                                (ternary
-                                                    (lt across (float -6))
-                                                    (by smallUnit (float 100))
-                                                    (ternary
-                                                        (lt across (float -0.1))
-                                                        (by smallUnit (float 10))
-                                                        (by smallUnit (float 5))
-                                                    )
-                                                )
-                                            <|
-                                                \unit ->
-                                                    def floatT "parallel" (ternary (lt (mod (abs_ otherCoord) unit) maxDelta) one zero) <|
-                                                        \parallel ->
-                                                            [ return <| max_ zero (max_ across parallel) ]
-                                           )
-                           )
+    fun3 floatT "axis" (floatT "coord") (floatT "otherCoord") (floatT "maxDelta") <| \coord otherCoord maxDelta ->
+    def floatT "across" (subtract one <| abs_ <| div coord maxDelta) <| \across ->
+    if_ (lt across (float -12))
+        (return zero)
+        :: (def floatT "smallUnit" (pow (float 10) (ceil_ (log10 maxDelta))) <| \smallUnit ->
+        if_ (ands [ lt across zero, lt (abs_ otherCoord) (by maxDelta (float 2)) ])
+            (return zero)
+            :: (def floatT
+                    "unit"
+                    (ternary
+                        (lt across (float -6))
+                        (by smallUnit (float 100))
+                        (ternary
+                            (lt across (float -0.1))
+                            (by smallUnit (float 10))
+                            (by smallUnit (float 5))
+                        )
+                    )
+                <| \unit ->
+                def floatT "parallel" (ternary (lt (mod (abs_ otherCoord) unit) maxDelta) one zero) <| \parallel ->
+                [ return <| max_ zero (max_ across parallel) ]
+               )
+           )
 
 
 axis : Expression Float -> Expression Float -> Expression Float -> Expression Float
@@ -1851,42 +1822,31 @@ axisDecl =
 toSrc3D : Bool -> String -> Expression.Expression -> File
 toSrc3D expandIntervals suffix e =
     [ Tuple.first <|
-        fun1 vec3T ("normal" ++ suffix) (vec3T "p") <|
-            \p ->
-                let
-                    dp =
-                        dotted3 p
-                in
-                def floatT "x" dp.x <|
-                    \x ->
-                        def floatT "y" dp.y <|
-                            \y ->
-                                def floatT "z" dp.z <|
-                                    \z ->
-                                        def vec4T "gradient" (expressionToNormalGlsl { x = x, y = y, z = z } e) <|
-                                            \gradient ->
-                                                [ return <| normalize (dotted4 gradient).yzw ]
+        fun1 vec3T ("normal" ++ suffix) (vec3T "p") <| \p ->
+        let
+            dp =
+                dotted3 p
+        in
+        def floatT "x" dp.x <| \x ->
+        def floatT "y" dp.y <| \y ->
+        def floatT "z" dp.z <| \z ->
+        def vec4T "gradient" (expressionToNormalGlsl { x = x, y = y, z = z } e) <| \gradient ->
+        [ return <| normalize (dotted4 gradient).yzw ]
     , Tuple.first <|
-        fun2 vec2T ("interval" ++ suffix) (mat3T "f") (mat3T "t") <|
-            \f t ->
-                def vec3T "mn" (min_ (arr f <| int 0) (arr t <| int 0)) <|
-                    \mn ->
-                        def vec3T "mx" (max_ (arr f <| int 1) (arr t <| int 1)) <|
-                            \mx ->
-                                let
-                                    dmn =
-                                        dotted3 mn
+        fun2 vec2T ("interval" ++ suffix) (mat3T "f") (mat3T "t") <| \f t ->
+        def vec3T "mn" (min_ (arr f <| int 0) (arr t <| int 0)) <| \mn ->
+        def vec3T "mx" (max_ (arr f <| int 1) (arr t <| int 1)) <| \mx ->
+        let
+            dmn =
+                dotted3 mn
 
-                                    dmx =
-                                        dotted3 mx
-                                in
-                                def vec2T "x" (vec2 dmn.x dmx.x) <|
-                                    \x ->
-                                        def vec2T "y" (vec2 dmn.y dmx.y) <|
-                                            \y ->
-                                                def vec2T "z" (vec2 dmn.z dmx.z) <|
-                                                    \z ->
-                                                        [ return <| unknown <| expressionToIntervalGlsl expandIntervals e ]
+            dmx =
+                dotted3 mx
+        in
+        def vec2T "x" (vec2 dmn.x dmx.x) <| \x ->
+        def vec2T "y" (vec2 dmn.y dmx.y) <| \y ->
+        def vec2T "z" (vec2 dmn.z dmx.z) <| \z ->
+        [ return <| unknown <| expressionToIntervalGlsl expandIntervals e ]
     ]
 
 

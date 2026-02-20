@@ -9,10 +9,9 @@ import Trie
 suite : Test
 suite =
     describe "The Trie module"
-        [ Test.fuzz Fuzz.string "insert >> get === Just" <|
-            \s ->
-                Trie.empty
-                    |> Trie.insert s 0
-                    |> Trie.get s
-                    |> Expect.equal (Just 0)
+        [ Test.fuzz Fuzz.string "insert >> get === Just" <| \s ->
+        Trie.empty
+            |> Trie.insert s 0
+            |> Trie.get s
+            |> Expect.equal (Just 0)
         ]

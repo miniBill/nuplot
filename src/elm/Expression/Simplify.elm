@@ -1153,14 +1153,13 @@ sortByDegree aop ee =
     List.foldl
         (\var ->
             List.stableSortWith
-                (by <|
-                    \e ->
-                        -- "i" doesn't have higher nonsimplified powers, and we want it later
-                        if var == "i" && aop == Addition then
-                            negate <| Maybe.withDefault -1 <| polyDegree var e
+                (by <| \e ->
+                -- "i" doesn't have higher nonsimplified powers, and we want it later
+                if var == "i" && aop == Addition then
+                    negate <| Maybe.withDefault -1 <| polyDegree var e
 
-                        else
-                            Maybe.withDefault -1 <| polyDegree var e
+                else
+                    Maybe.withDefault -1 <| polyDegree var e
                 )
         )
         ee

@@ -90,35 +90,33 @@ draw size id { wdiv, hdiv } { graph, axes } =
             { topLeft = 0, topRight = 0, bottomLeft = 0, bottomRight = 0 }
 
         brButtonsRow =
-            Element.with identity <|
-                \{ isFullscreen, hasFullscreen } ->
-                    row [ alignRight, alignBottom ] <|
-                        if isFullscreen then
-                            [ iconButton ResetZoom { noRound | topLeft = Theme.rythm } Icons.aimOutlined
-                            , iconButton ExitFullscreenCanvas noRound Icons.fullscreenExitOutlined
-                            ]
+            Element.with identity <| \{ isFullscreen, hasFullscreen } ->
+            row [ alignRight, alignBottom ] <|
+                if isFullscreen then
+                    [ iconButton ResetZoom { noRound | topLeft = Theme.rythm } Icons.aimOutlined
+                    , iconButton ExitFullscreenCanvas noRound Icons.fullscreenExitOutlined
+                    ]
 
-                        else if hasFullscreen then
-                            [ iconButton ResetZoom { noRound | topLeft = Theme.rythm } Icons.aimOutlined
-                            , iconButton FullscreenCanvas noRound Icons.fullscreenOutlined
-                            ]
+                else if hasFullscreen then
+                    [ iconButton ResetZoom { noRound | topLeft = Theme.rythm } Icons.aimOutlined
+                    , iconButton FullscreenCanvas noRound Icons.fullscreenOutlined
+                    ]
 
-                        else
-                            [ iconButton ResetZoom { noRound | topLeft = Theme.rythm } Icons.aimOutlined
-                            ]
+                else
+                    [ iconButton ResetZoom { noRound | topLeft = Theme.rythm } Icons.aimOutlined
+                    ]
 
         urButtonsRow =
-            Element.with .hasClipboard <|
-                \hasClipboard ->
-                    row [ alignRight, alignTop ] <|
-                        if hasClipboard then
-                            [ iconButton CopyCanvas { noRound | bottomLeft = Theme.rythm } Icons.copyOutlined
-                            , iconButton SaveCanvas noRound Icons.saveOutlined
-                            ]
+            Element.with .hasClipboard <| \hasClipboard ->
+            row [ alignRight, alignTop ] <|
+                if hasClipboard then
+                    [ iconButton CopyCanvas { noRound | bottomLeft = Theme.rythm } Icons.copyOutlined
+                    , iconButton SaveCanvas noRound Icons.saveOutlined
+                    ]
 
-                        else
-                            [ iconButton SaveCanvas { noRound | bottomLeft = Theme.rythm } Icons.saveOutlined
-                            ]
+                else
+                    [ iconButton SaveCanvas { noRound | bottomLeft = Theme.rythm } Icons.saveOutlined
+                    ]
 
         (CanvasId cid) =
             id
@@ -130,22 +128,21 @@ draw size id { wdiv, hdiv } { graph, axes } =
             , htmlAttribute <| Html.Attributes.class "hover-parent"
             ]
     in
-    Element.with identity <|
-        \{ rayDifferentials, expandIntervals } ->
-            el attrs <|
-                Element.html <|
-                    Html.node "nu-plot"
-                        [ Html.Attributes.id cid
-                        , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl expandIntervals rayDifferentials graph
-                        , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
-                        , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
-                        , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
-                        , Html.Attributes.attribute "completely-real" <| boolToIntString <| isCompletelyReal graph
-                        , Html.Attributes.attribute "draw-axes" <| boolToIntString axes
-                        , Html.Attributes.attribute "is-3d" <| boolToIntString <| is3D graph
-                        , Html.Attributes.title <| Expression.toString <| Expression.Graph.toExpression graph
-                        ]
-                        []
+    Element.with identity <| \{ rayDifferentials, expandIntervals } ->
+    el attrs <|
+        Element.html <|
+            Html.node "nu-plot"
+                [ Html.Attributes.id cid
+                , Html.Attributes.property "exprSrc" <| Json.Encode.string <| getGlsl expandIntervals rayDifferentials graph
+                , Html.Attributes.attribute "canvas-width" <| String.fromInt <| imageWidth // wdiv
+                , Html.Attributes.attribute "canvas-height" <| String.fromInt <| imageHeight // hdiv
+                , Html.Attributes.attribute "white-lines" <| String.fromInt Theme.whiteLines
+                , Html.Attributes.attribute "completely-real" <| boolToIntString <| isCompletelyReal graph
+                , Html.Attributes.attribute "draw-axes" <| boolToIntString axes
+                , Html.Attributes.attribute "is-3d" <| boolToIntString <| is3D graph
+                , Html.Attributes.title <| Expression.toString <| Expression.Graph.toExpression graph
+                ]
+                []
 
 
 view : { width : Int, height : Int } -> Int -> Row -> Element DocumentMsg
@@ -285,19 +282,18 @@ codeInputLine size index input =
         label =
             text <| invariant <| "In [" ++ String.fromInt index ++ "]"
     in
-    Element.with .deviceClass <|
-        \deviceClass ->
-            case deviceClass of
-                Phone ->
-                    Theme.column [ width fill ]
-                        [ Theme.row [ width fill ]
-                            (label :: buttons)
-                        , inputBox (size.width - 2 * Theme.rythm) input
-                        ]
+    Element.with .deviceClass <| \deviceClass ->
+    case deviceClass of
+        Phone ->
+            Theme.column [ width fill ]
+                [ Theme.row [ width fill ]
+                    (label :: buttons)
+                , inputBox (size.width - 2 * Theme.rythm) input
+                ]
 
-                _ ->
-                    Theme.row [ width fill ]
-                        (label :: inputBox (size.width - 180) input :: buttons)
+        _ ->
+            Theme.row [ width fill ]
+                (label :: inputBox (size.width - 180) input :: buttons)
 
 
 statusLine : Int -> Output -> Element msg

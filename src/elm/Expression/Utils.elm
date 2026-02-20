@@ -352,35 +352,34 @@ associativeOperation op default xs =
 
 squash : Expression -> Expression
 squash =
-    visit <|
-        \expr ->
-            case expr of
-                AssociativeOperation Addition ol or oo ->
-                    let
-                        extract el =
-                            case squash el of
-                                AssociativeOperation Addition il ir io ->
-                                    List.concatMap extract <| il :: ir :: io
+    visit <| \expr ->
+    case expr of
+        AssociativeOperation Addition ol or oo ->
+            let
+                extract el =
+                    case squash el of
+                        AssociativeOperation Addition il ir io ->
+                            List.concatMap extract <| il :: ir :: io
 
-                                ex ->
-                                    [ ex ]
-                    in
-                    Just <| plus <| List.concatMap extract (ol :: or :: oo)
+                        ex ->
+                            [ ex ]
+            in
+            Just <| plus <| List.concatMap extract (ol :: or :: oo)
 
-                AssociativeOperation Multiplication ol or oo ->
-                    let
-                        extract el =
-                            case squash el of
-                                AssociativeOperation Multiplication il ir io ->
-                                    List.concatMap extract <| il :: ir :: io
+        AssociativeOperation Multiplication ol or oo ->
+            let
+                extract el =
+                    case squash el of
+                        AssociativeOperation Multiplication il ir io ->
+                            List.concatMap extract <| il :: ir :: io
 
-                                ex ->
-                                    [ ex ]
-                    in
-                    Just <| by <| List.concatMap extract (ol :: or :: oo)
+                        ex ->
+                            [ ex ]
+            in
+            Just <| by <| List.concatMap extract (ol :: or :: oo)
 
-                _ ->
-                    Nothing
+        _ ->
+            Nothing
 
 
 complex : Expression -> Expression -> Expression

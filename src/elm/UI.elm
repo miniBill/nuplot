@@ -854,17 +854,16 @@ viewDocumentModal document =
             wrap (DocumentRename name)
                 [ Input.text
                     [ Input.focusedOnLoad
-                    , onKey <|
-                        \key ->
-                            case key of
-                                "Enter" ->
-                                    Just <| DocumentRename name
+                    , onKey <| \key ->
+                    case key of
+                        "Enter" ->
+                            Just <| DocumentRename name
 
-                                "Escape" ->
-                                    Just DocumentPopModal
+                        "Escape" ->
+                            Just DocumentPopModal
 
-                                _ ->
-                                    Nothing
+                        _ ->
+                            Nothing
                     ]
                     { onChange = DocumentReplaceModal << ModalRename
                     , text = name

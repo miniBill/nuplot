@@ -33,7 +33,6 @@ module Expression exposing
     , visit
     )
 
-import Char
 import Dict exposing (Dict)
 import Element.WithContext as Element exposing (Element)
 import Element.WithContext.Border as Border
@@ -256,29 +255,28 @@ partialSubstitute var val =
 
 fullSubstitute : Dict String Expression -> Expression -> Expression
 fullSubstitute dict =
-    visit <|
-        \expr ->
-            case expr of
-                Replace vars e ->
-                    Just <|
-                        Replace (Dict.map (\_ -> Maybe.map <| fullSubstitute dict) vars) <|
-                            let
-                                reduced =
-                                    Dict.filter (\k _ -> not <| Dict.member k vars) dict
-                            in
-                            if Dict.isEmpty reduced then
-                                e
+    visit <| \expr ->
+    case expr of
+        Replace vars e ->
+            Just <|
+                Replace (Dict.map (\_ -> Maybe.map <| fullSubstitute dict) vars) <|
+                    let
+                        reduced =
+                            Dict.filter (\k _ -> not <| Dict.member k vars) dict
+                    in
+                    if Dict.isEmpty reduced then
+                        e
 
-                            else
-                                fullSubstitute dict e
+                    else
+                        fullSubstitute dict e
 
-                Variable string ->
-                    Dict.get string dict
-                        |> Maybe.withDefault expr
-                        |> Just
+        Variable string ->
+            Dict.get string dict
+                |> Maybe.withDefault expr
+                |> Just
 
-                _ ->
-                    Nothing
+        _ ->
+            Nothing
 
 
 equals : Expression -> Expression -> Bool
@@ -972,30 +970,29 @@ functionNameToString name =
 
 pfullSubstitute : Dict String (Maybe PrintExpression) -> PrintExpression -> PrintExpression
 pfullSubstitute dict =
-    pvisit <|
-        \expr ->
-            case expr of
-                PReplace vars e ->
-                    Just <|
-                        PReplace (Dict.map (\_ -> Maybe.map <| pfullSubstitute dict) vars) <|
-                            let
-                                reduced =
-                                    Dict.filter (\k _ -> not <| Dict.member k vars) dict
-                            in
-                            if Dict.isEmpty reduced then
-                                e
+    pvisit <| \expr ->
+    case expr of
+        PReplace vars e ->
+            Just <|
+                PReplace (Dict.map (\_ -> Maybe.map <| pfullSubstitute dict) vars) <|
+                    let
+                        reduced =
+                            Dict.filter (\k _ -> not <| Dict.member k vars) dict
+                    in
+                    if Dict.isEmpty reduced then
+                        e
 
-                            else
-                                pfullSubstitute dict e
+                    else
+                        pfullSubstitute dict e
 
-                PVariable string ->
-                    Dict.get string dict
-                        |> Maybe.andThen identity
-                        |> Maybe.withDefault expr
-                        |> Just
+        PVariable string ->
+            Dict.get string dict
+                |> Maybe.andThen identity
+                |> Maybe.withDefault expr
+                |> Just
 
-                _ ->
-                    Nothing
+        _ ->
+            Nothing
 
 
 toTeXString : Expression -> String
@@ -1134,14 +1131,13 @@ asMatrixPrint =
 
 asMatrix : Expression -> Maybe (List (List Expression))
 asMatrix =
-    genericAsMatrix <|
-        \e ->
-            case e of
-                List es ->
-                    Just es
+    genericAsMatrix <| \e ->
+    case e of
+        List es ->
+            Just es
 
-                _ ->
-                    Nothing
+        _ ->
+            Nothing
 
 
 genericAsMatrix : (a -> Maybe (List a)) -> a -> Maybe (List (List a))
