@@ -10,5 +10,6 @@
         "allowSyntheticDefaultImports": true,
         "moduleResolution": "node",
         "lib": ["WebWorker"]
-    }
+    },
+    "exclude": ["node_modules"]
 }
