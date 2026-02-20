@@ -9,7 +9,7 @@
         "sourceMap": true,
         "allowSyntheticDefaultImports": true,
         "moduleResolution": "node",
-        "lib": ["WebWorker"]
+        "lib": ["WebWorker", "DOM"]
     },
     "exclude": ["node_modules"]
 }

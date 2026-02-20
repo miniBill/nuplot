@@ -165,8 +165,7 @@ export class NuPlot extends HTMLElement {
         this.program = this.gl.createProgram();
 
         if (this.program == null) {
-            if (process.env.NODE_ENV === "development")
-                console.error("invalid program");
+            console.error("invalid program");
             return;
         }
 
@@ -223,10 +222,7 @@ export class NuPlot extends HTMLElement {
                 if (this.pendingTimeout >= 0) clearTimeout(this.pendingTimeout);
                 this.wrapper.removeChild(this.canvas);
 
-                if (process.env.NODE_ENV === "development") {
-                    console.error("webglcontextlost");
-                    return;
-                }
+                console.error("webglcontextlost", e);
                 this.label.innerHTML =
                     "Something went wrong with the graphics.<br/>Try reloading the page";
             },
@@ -301,8 +297,7 @@ export class NuPlot extends HTMLElement {
         const shader = this.gl.createShader(type);
 
         if (shader == null) {
-            if (process.env.NODE_ENV === "development")
-                console.error("invalid shader");
+            console.error("invalid shader");
             return null;
         }
 
@@ -716,11 +711,7 @@ export class NuPlot extends HTMLElement {
 ${built}`;
         built = this.#translateToWebGl2(built);
 
-        if (
-            process.env.NODE_ENV === "development" &&
-            this.currIterations == this.maxIterations &&
-            false
-        )
+        if (this.currIterations == this.maxIterations && false)
             console.info(built);
 
         this.gl.shaderSource(shader, built);
@@ -772,12 +763,11 @@ ${built}`;
      */
     #displayError(shader, built) {
         const log = this.gl?.getShaderInfoLog(shader);
-        if (process.env.NODE_ENV !== "development") {
-            const errorNode = document.createElement("div");
-            errorNode.innerText =
-                "Error creating graph. Try contacting the author.";
-            this.label.appendChild(errorNode);
-        }
+
+        const errorNode = document.createElement("div");
+        errorNode.innerText =
+            "Error creating graph. Try contacting the author.";
+        this.label.appendChild(errorNode);
 
         const preNode = document.createElement("pre");
         preNode.style.whiteSpace = "pre-wrap";

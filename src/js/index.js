@@ -1,6 +1,5 @@
 import { NuPlot } from "./nuplot.js";
 import { KaTeXElement } from "./katex.js";
-import localForage from "./localforage.min.js";
 
 // declare class ClipboardItem {
 //     constructor(data: { [mimeType: string]: Blob });
@@ -24,19 +23,16 @@ function fromLS() {
     return saved;
 }
 
-/**
- * @param {ElmType} Elm
- */
-export async function init(Elm) {
+export async function init() {
     /** @type {{ [key: string]: string }} */
     let saved;
     try {
-        saved = await localForage.getItem(storageKey);
+        saved = await window.localForage.getItem(storageKey);
     } catch {
         saved = fromLS();
     }
 
-    const node = document.getElementById("main");
+    const node = document.querySelector("main");
     if (node == null) {
         document.write(
             "Error initializing application. This might be caused by a browser extension."
@@ -44,7 +40,12 @@ export async function init(Elm) {
         return;
     }
 
-    const app = window.Elm.UI.init({
+    /**
+     * @type {import('./UI.elm.d.ts').ElmType}
+     */
+    // @ts-ignore
+    const Elm = window.Elm;
+    const app = Elm.UI.init({
         node: node,
         flags: {
             saved: saved,
@@ -60,10 +61,10 @@ export async function init(Elm) {
             app.ports.gotGoogleAccessToken.send(e.newValue ?? "");
     });
     app.ports.persist.subscribe((value) => {
-        localForage.setItem(storageKey, value);
+        window.localForage.setItem(storageKey, value);
     });
     app.ports.save.subscribe((id) => {
-        /** @type {NuPlot} */
+        /** @type {NuPlot | null} */
         const element = document.getElementById(id);
         element?.save();
     });
@@ -77,20 +78,20 @@ export async function init(Elm) {
             app.ports.isFullscreen.send(document.fullscreenElement !== null)
         );
     app.ports.resetZoom.subscribe((id) => {
-        /** @type {NuPlot} */
+        /** @type {NuPlot | null} */
         const element = document.getElementById(id);
         element?.resetZoom(true);
     });
     app.ports.copy.subscribe((id) => {
-        /** @type {NuPlot} */
+        /** @type {NuPlot | null} */
         const element = document.getElementById(id);
         element?.copy();
     });
-    app.ports.saveGoogleAccessToken.subscribe((token) => {
-        localStorage.setItem("googleAccessToken", token);
+    app.ports.saveGoogleAccessToken.subscribe(async (token) => {
+        await window.localForage.setItem("googleAccessToken", token);
     });
-    app.ports.saveGoogleAccessTokenAndCloseWindow.subscribe((token) => {
-        localStorage.setItem("googleAccessToken", token);
+    app.ports.saveGoogleAccessTokenAndCloseWindow.subscribe(async (token) => {
+        await window.localForage.setItem("googleAccessToken", token);
         window.close();
     });
     app.ports.openWindow.subscribe((url) => {
@@ -101,3 +102,5 @@ export async function init(Elm) {
         );
     });
 }
+
+init();
