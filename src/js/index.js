@@ -1,11 +1,10 @@
-import { ElmType } from "../elm/UI.elm";
-import { NuPlot } from "./nuplot";
-import { KaTeXElement } from "./katex";
-import localForage from "localforage";
+import { NuPlot } from "./nuplot.js";
+import { KaTeXElement } from "./katex.js";
+import localForage from "/node_modules/localforage";
 
-declare class ClipboardItem {
-    constructor(data: { [mimeType: string]: Blob });
-}
+// declare class ClipboardItem {
+//     constructor(data: { [mimeType: string]: Blob });
+// }
 
 customElements.define("nu-plot", NuPlot);
 customElements.define("ka-tex", KaTeXElement);
@@ -13,7 +12,8 @@ customElements.define("ka-tex", KaTeXElement);
 const storageKey = "documents";
 
 function fromLS() {
-    const saved: { [key: string]: string } = {};
+    /** @type {{ [key: string]: string }} */
+    const saved = {};
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key === null) continue;
@@ -24,12 +24,14 @@ function fromLS() {
     return saved;
 }
 
-export async function init(Elm: ElmType) {
+/**
+ * @param {ElmType} Elm
+ */
+export async function init(Elm) {
+    /** @type {{ [key: string]: string }} */
     let saved;
     try {
-        saved = await (localForage.getItem(storageKey) as Promise<{
-            [key: string]: string;
-        }>);
+        saved = await localForage.getItem(storageKey);
     } catch {
         saved = fromLS();
     }
@@ -42,7 +44,7 @@ export async function init(Elm: ElmType) {
         return;
     }
 
-    const app = Elm.UI.init({
+    const app = window.Elm.UI.init({
         node: node,
         flags: {
             saved: saved,
@@ -61,7 +63,8 @@ export async function init(Elm: ElmType) {
         localForage.setItem(storageKey, value);
     });
     app.ports.save.subscribe((id) => {
-        const element = document.getElementById(id) as NuPlot;
+        /** @type {NuPlot} */
+        const element = document.getElementById(id);
         element?.save();
     });
     app.ports.fullscreen.subscribe((id) => {
@@ -74,11 +77,13 @@ export async function init(Elm: ElmType) {
             app.ports.isFullscreen.send(document.fullscreenElement !== null)
         );
     app.ports.resetZoom.subscribe((id) => {
-        const element = document.getElementById(id) as NuPlot;
+        /** @type {NuPlot} */
+        const element = document.getElementById(id);
         element?.resetZoom(true);
     });
     app.ports.copy.subscribe((id) => {
-        const element = document.getElementById(id) as NuPlot;
+        /** @type {NuPlot} */
+        const element = document.getElementById(id);
         element?.copy();
     });
     app.ports.saveGoogleAccessToken.subscribe((token) => {

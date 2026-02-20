@@ -42,6 +42,7 @@
         <div id="main"></div>
 
         <script src="./build/main.js"></script>
+        <script type="module" src="./src/js/index.js"></script>
 
         <noscript
             >Unfortunately this application relies on Javascript for working,
@@ -51,7 +52,7 @@
 
         <script>
             if ("serviceWorker" in navigator)
-                navigator.serviceWorker.register("/service-worker.js");
+                navigator.serviceWorker.register("./src/js/service-worker.js");
         </script>
     </body>
 </html>
