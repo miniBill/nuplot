@@ -1,6 +1,7 @@
-module Trie exposing (Trie, empty, fromList, get, getLongestPrefix, insert, isEmpty, member, size, union)
+module Trie exposing (Trie, empty, fromList, get, getLongestPrefix, insert, union)
 
 import Dict exposing (Dict)
+import Maybe.MyExtra
 
 
 type Trie a
@@ -15,30 +16,10 @@ fromList =
     List.foldl (\( k, v ) -> insert k v) empty
 
 
-size : Trie a -> Int
-size (Trie { value, children }) =
-    let
-        childrenSize =
-            children
-                |> Dict.values
-                |> List.map size
-                |> List.sum
-    in
-    if value == Nothing then
-        childrenSize
-
-    else
-        1 + childrenSize
-
-
-member : String -> Trie a -> Bool
-member key trie =
-    get key trie /= Nothing
-
-
 get : String -> Trie a -> Maybe a
 get key =
     let
+        go : List Char -> Trie b -> Maybe b
         go k (Trie { value, children }) =
             case k of
                 [] ->
@@ -51,14 +32,10 @@ get key =
     go (String.toList key)
 
 
-isEmpty : Trie a -> Bool
-isEmpty (Trie { value, children }) =
-    value == Nothing && Dict.isEmpty children
-
-
 insert : String -> a -> Trie a -> Trie a
 insert s v =
     let
+        go : List Char -> Trie a -> Trie a
         go ss ((Trie trie) as orig) =
             case ss of
                 [] ->
@@ -90,47 +67,28 @@ empty =
 
 union : Trie a -> Trie a -> Trie a
 union (Trie l) (Trie r) =
-    let
-        go x y =
-            case x of
-                [] ->
-                    y
-
-                (( xc, xn ) as xh) :: xt ->
-                    case y of
-                        [] ->
-                            x
-
-                        (( yc, yn ) as yh) :: yt ->
-                            if xc == yc then
-                                ( xc, union xn yn ) :: go xt yt
-
-                            else if xc < yc then
-                                xh :: go xt y
-
-                            else
-                                yh :: go x yt
-
-        value =
-            case l.value of
-                Nothing ->
-                    r.value
-
-                Just _ ->
-                    l.value
-    in
     Trie
-        { value = value
-        , children = Dict.fromList <| go (Dict.toList l.children) (Dict.toList r.children)
+        { value =
+            l.value
+                |> Maybe.MyExtra.withDefaultMaybe r.value
+        , children =
+            Dict.merge Dict.insert
+                (\k lv rv -> Dict.insert k (union lv rv))
+                Dict.insert
+                l.children
+                r.children
+                Dict.empty
         }
 
 
 getLongestPrefix : String -> Trie a -> Maybe ( String, a )
 getLongestPrefix s =
     let
+        tryClose : List Char -> Maybe a -> Maybe ( String, a )
         tryClose acc value =
             Maybe.map (\v -> ( String.fromList <| List.reverse acc, v )) value
 
+        go : List Char -> List Char -> Trie a -> Maybe ( String, a )
         go cs acc (Trie { value, children }) =
             case cs of
                 [] ->
